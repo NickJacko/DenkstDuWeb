@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Kategorien wählen</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="goBack()">← Zurück</button>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="content-area">
+                <h2 class="screen-title">Kategorien wählen</h2>
+                
+                <div class="glass-card">
+                    <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 25px;">
+                        Wähle eine oder mehrere Kategorien aus
+                    </p>
+                    
+                    <div class="category-grid">
+                        <div class="category-card" data-category="fsk0" onclick="toggleCategory(this)">
+                            <span class="category-emoji">👨‍👩‍👧‍👦</span>
+                            <h3 class="category-title">Familie & Freunde</h3>
+                            <p class="category-subtitle">FSK 0 - Harmlose Fragen für alle Altersgruppen</p>
+                            <div class="category-examples">
+                                Beispiele: Tiere retten, Kinderserien schauen, mit Pflanzen reden
+                            </div>
+                        </div>
+                        
+                        <div class="category-card" data-category="fsk16" onclick="toggleCategory(this)">
+                            <span class="category-emoji">🎉</span>
+                            <h3 class="category-title">Party Time</h3>
+                            <p class="category-subtitle">FSK 16 - Unterhaltsame und lustige Fragen</p>
+                            <div class="category-examples">
+                                Beispiele: Promi-Crushes, peinliche Nachrichten, Dating-Fails
+                            </div>
+                        </div>
+                        
+                        <div class="category-card premium-category" data-category="fsk18" onclick="toggleCategory(this)">
+                            <span class="category-emoji">🔥</span>
+                            <h3 class="category-title">Heiß & Gewagt</h3>
+                            <p class="category-subtitle">FSK 18 - Nur für Erwachsene</p>
+                            <div class="category-examples">
+                                Beispiele: One-Night-Stands, intime Fantasien, Tabus
+                            </div>
+                            <div class="premium-badge">🔒 PREMIUM</div>
+                        </div>
+                    </div>
+
+                    <!-- Auswahl-Info -->
+                    <div class="selection-info" id="selection-info" style="display: none;">
+                        <div style="background: rgba(79, 172, 254, 0.2); border-radius: 12px; padding: 15px; margin-top: 20px;">
+                            <div style="color: #4facfe; font-weight: 600; margin-bottom: 8px;">
+                                📝 Deine Auswahl:
+                            </div>
+                            <div id="selected-categories-display" style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
+                    <button class="btn" onclick="proceedWithCategories()" id="continue-categories" disabled>
+                        Weiter (<span id="selected-count">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium Modal -->
+    <div class="premium-modal" id="premium-modal" style="display: none;">
+        <div class="premium-modal-content">
+            <div class="premium-header">
+                <span style="font-size: 2rem;">🔥</span>
+                <h3>Premium Kategorie</h3>
+            </div>
+            
+            <p style="margin: 15px 0;">
+                Die "Heiß & Gewagt" Kategorie ist nur für Premium-Nutzer verfügbar.
+            </p>
+            
+            <div class="premium-features">
+                <h4>🌟 Premium Features:</h4>
+                <div class="feature-list">
+                    <div class="feature-item">✅ FSK18 Kategorien freischalten</div>
+                    <div class="feature-item">✅ Unbegrenzte Spieleranzahl</div>
+                    <div class="feature-item">✅ Eigene Fragen hinzufügen</div>
+                    <div class="feature-item">✅ Erweiterte Multiplayer-Features</div>
+                    <div class="feature-item">✅ Werbefreies Spielerlebnis</div>
+                    <div class="feature-item">✅ Exklusive Premium-Fragen</div>
+                </div>
+            </div>
+            
+            <div class="premium-price">
+                <div style="text-align: center; margin: 20px 0;">
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #FFD700;">
+                        Nur 2,99€ einmalig
+                    </div>
+                    <div style="font-size: 0.8rem; opacity: 0.8;">
+                        Lebenslang Premium • Keine Abos
+                    </div>
+                </div>
+            </div>
+            
+            <div class="premium-buttons">
+                <button class="btn btn-outline" onclick="closePremiumModal()">Vielleicht später</button>
+                <button class="btn premium-btn" onclick="upgradeToPremium()">
+                    🔥 Premium freischalten
+                </button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">
+                    💡 Demo-Modus: Wird für Tests automatisch freigeschaltet
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/gameState.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/privacy.js"></script>
+    <script>
+        let selectedCategories = [];
+
+        // Initialize category selection page
+        function initCategorySelection() {
+            // Initialize Firebase
+            initFirebase();
+
+            // Load previously selected categories
+            selectedCategories = [...(gameState.selectedCategories || [])];
+            updateSelectedCategories();
+            updateContinueButton();
+
+            // Initialize mobile optimizations
+            initMobileOptimizations();
+
+            // Add entrance animations
+            setTimeout(() => {
+                document.querySelectorAll('.category-card').forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        card.style.transition = 'all 0.5s ease';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 100);
+                    }, index * 150);
+                });
+            }, 300);
+        }
+
+        // Toggle category selection
+        function toggleCategory(element) {
+            const category = element.dataset.category;
+
+            // Check if premium category
+            if (category === 'fsk18' && !isPremiumUser()) {
+                showPremiumModal();
+                return;
+            }
+
+            const index = selectedCategories.indexOf(category);
+
+            if (index === -1) {
+                selectedCategories.push(category);
+                element.classList.add('selected');
+                
+                // Add selection animation
+                element.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    element.style.transform = '';
+                }, 200);
+            } else {
+                selectedCategories.splice(index, 1);
+                element.classList.remove('selected');
+            }
+
+            // Update game state
+            gameState.selectedCategories = [...selectedCategories];
+            gameState.saveToStorage();
+
+            updateContinueButton();
+            updateSelectionDisplay();
+        }
+
+        // Update visual state of selected categories
+        function updateSelectedCategories() {
+            selectedCategories.forEach(category => {
+                const element = document.querySelector(`[data-category="${category}"]`);
+                if (element) {
+                    element.classList.add('selected');
+                }
+            });
+            updateSelectionDisplay();
+        }
+
+        // Update continue button state
+        function updateContinueButton() {
+            const continueBtn = document.getElementById('continue-categories');
+            const countSpan = document.getElementById('selected-count');
+            const hasSelection = selectedCategories.length > 0;
+            
+            continueBtn.disabled = !hasSelection;
+            continueBtn.style.opacity = hasSelection ? '1' : '0.5';
+            continueBtn.style.cursor = hasSelection ? 'pointer' : 'not-allowed';
+            countSpan.textContent = selectedCategories.length;
+        }
+
+        // Update selection display
+        function updateSelectionDisplay() {
+            const selectionInfo = document.getElementById('selection-info');
+            const display = document.getElementById('selected-categories-display');
+            
+            if (selectedCategories.length > 0) {
+                selectionInfo.style.display = 'block';
+                
+                const categoryNames = {
+                    'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
+                    'fsk16': '🎉 Party Time',
+                    'fsk18': '🔥 Heiß & Gewagt'
+                };
+                
+                const names = selectedCategories.map(cat => categoryNames[cat]).join(' • ');
+                display.textContent = names;
+            } else {
+                selectionInfo.style.display = 'none';
+            }
+        }
+
+        // Proceed with selected categories
+        function proceedWithCategories() {
+            if (selectedCategories.length > 0) {
+                showLoading();
+                setTimeout(() => {
+                    window.location.href = 'difficulty-selection.html';
+                }, 500);
+            } else {
+                showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
+            }
+        }
+
+        // Show premium modal
+        function showPremiumModal() {
+            const modal = document.getElementById('premium-modal');
+            modal.style.display = 'flex';
+            
+            // Animate in
+            const content = modal.querySelector('.premium-modal-content');
+            content.style.transform = 'scale(0.8)';
+            content.style.opacity = '0';
+            
+            setTimeout(() => {
+                content.style.transition = 'all 0.3s ease';
+                content.style.transform = 'scale(1)';
+                content.style.opacity = '1';
+            }, 10);
+        }
+
+        // Close premium modal
+        function closePremiumModal() {
+            const modal = document.getElementById('premium-modal');
+            const content = modal.querySelector('.premium-modal-content');
+            
+            content.style.transform = 'scale(0.8)';
+            content.style.opacity = '0';
+            
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+
+        // Upgrade to premium (Demo)
+        function upgradeToPremium() {
+            showNotification('Premium-Features werden implementiert...', 'info');
+            
+            // For demo purposes, unlock premium
+            localStorage.setItem('denkstdu_premium', 'true');
+            localStorage.setItem('denkstdu_premium_date', new Date().toISOString());
+            
+            closePremiumModal();
+            
+            setTimeout(() => {
+                showNotification('🎉 Demo: Premium freigeschaltet!', 'success');
+            }, 1000);
+        }
+
+        // Check if user has premium
+        function isPremiumUser() {
+            // For demo purposes, check localStorage
+            const isPremium = localStorage.getItem('denkstdu_premium') === 'true';
+            const premiumDate = localStorage.getItem('denkstdu_premium_date');
+            
+            // Check if premium is still valid (for demo, always valid)
+            return isPremium && premiumDate;
+        }
+
+        // Go back to previous page
+        function goBack() {
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'device-selection.html';
+            }, 300);
+        }
+
+        // Start page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initCategorySelection);
+    </script>
+
+    <style>
+        /* Category selection specific styles */
+        .category-card {
+            min-height: 250px;
+            padding: 25px;
+            position: relative;
+        }
+
+        .category-card.selected {
+            border-color: #4facfe;
+            background: rgba(79, 172, 254, 0.2);
+            transform: scale(1.02);
+            box-shadow: 0 8px 32px rgba(79, 172, 254, 0.3);
+        }
+
+        .category-examples {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+            line-height: 1.3;
+        }
+
+        .premium-category {
+            position: relative;
+        }
+
+        .premium-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .selection-info {
+            animation: slideInUp 0.3s ease;
+        }
+
+        /* Premium Modal Styles */
+        .premium-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .premium-modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 100%;
+            color: white;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .premium-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .premium-header h3 {
+            font-size: 1.4rem;
+            margin-top: 10px;
+        }
+
+        .premium-features h4 {
+            margin: 15px 0 10px 0;
+            color: #FFD700;
+            font-size: 1rem;
+        }
+
+        .feature-list {
+            display: grid;
+            gap: 5px;
+        }
+
+        .feature-item {
+            font-size: 0.85rem;
+            padding: 3px 0;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .premium-price {
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .premium

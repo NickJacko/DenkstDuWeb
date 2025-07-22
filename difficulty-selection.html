@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Schlücke wählen</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="goBack()">← Zurück</button>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="content-area">
+                <h2 class="screen-title">Wie viele Schlücke?</h2>
+                
+                <div class="glass-card">
+                    <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 20px;">
+                        Wähle die Basis-Schlückzahl für falsche Schätzungen
+                    </p>
+                    
+                    <div class="difficulty-grid">
+                        <div class="difficulty-card easy" data-difficulty="easy" onclick="selectDifficulty(this)">
+                            <div class="sips-indicator">🍺</div>
+                            <h3 class="difficulty-title">Entspannt</h3>
+                            <p class="category-subtitle"><strong>1 Schluck</strong> + Abweichung</p>
+                            <div class="difficulty-description" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 10px;">
+                                Perfekt für gemütliche Runden
+                            </div>
+                        </div>
+                        
+                        <div class="difficulty-card medium" data-difficulty="medium" onclick="selectDifficulty(this)">
+                            <div class="sips-indicator">🍺🍺</div>
+                            <h3 class="difficulty-title">Standard</h3>
+                            <p class="category-subtitle"><strong>2 Schlücke</strong> + Abweichung</p>
+                            <div class="difficulty-description" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 10px;">
+                                Die klassische Party-Variante
+                            </div>
+                        </div>
+                        
+                        <div class="difficulty-card hard" data-difficulty="hard" onclick="selectDifficulty(this)">
+                            <div class="sips-indicator">🍺🍺🍺</div>
+                            <h3 class="difficulty-title">Hardcore</h3>
+                            <p class="category-subtitle"><strong>3 Schlücke</strong> + Abweichung</p>
+                            <div class="difficulty-description" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 10px;">
+                                Nur für erfahrene Trinker!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Erklärungs-Box -->
+                    <div class="info-box" style="background: rgba(79, 172, 254, 0.2); border-radius: 12px; padding: 15px; margin-top: 20px;">
+                        <h4 style="color: #4facfe; margin-bottom: 10px;">📝 So funktioniert's:</h4>
+                        <ul style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.4; margin-left: 20px;">
+                            <li>Exakte Schätzung = <strong>0 Schlücke</strong> ✨</li>
+                            <li>Falsche Schätzung = <strong>Basis-Schlücke + Abweichung</strong></li>
+                            <li>Beispiel: Bei "Standard" und 2 Personen Abweichung = <strong>4 Schlücke</strong></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
+                    <button class="btn" onclick="proceedWithDifficulty()" id="continue-difficulty" disabled>Weiter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/gameState.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/privacy.js"></script>
+    <script>
+        let selectedDifficulty = null;
+
+        // Initialize difficulty selection page
+        function initDifficultySelection() {
+            // Initialize Firebase
+            initFirebase();
+
+            // Load previously selected difficulty
+            selectedDifficulty = gameState.difficulty;
+            if (selectedDifficulty) {
+                updateSelectedDifficulty();
+                updateContinueButton();
+            }
+
+            // Initialize mobile optimizations
+            initMobileOptimizations();
+
+            // Add entrance animations
+            setTimeout(() => {
+                document.querySelectorAll('.difficulty-card').forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        card.style.transition = 'all 0.5s ease';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 100);
+                    }, index * 150);
+                });
+            }, 300);
+        }
+
+        // Select difficulty
+        function selectDifficulty(element) {
+            selectedDifficulty = element.dataset.difficulty;
+
+            // Update game state
+            gameState.setDifficulty(selectedDifficulty);
+
+            // Visual feedback
+            document.querySelectorAll('.difficulty-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            element.classList.add('selected');
+
+            // Add selection animation
+            element.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                element.style.transform = '';
+            }, 200);
+
+            updateContinueButton();
+            showDifficultyInfo(selectedDifficulty);
+        }
+
+        // Update visual state of selected difficulty
+        function updateSelectedDifficulty() {
+            if (selectedDifficulty) {
+                const element = document.querySelector(`[data-difficulty="${selectedDifficulty}"]`);
+                if (element) {
+                    element.classList.add('selected');
+                }
+            }
+        }
+
+        // Update continue button state
+        function updateContinueButton() {
+            const continueBtn = document.getElementById('continue-difficulty');
+            const hasSelection = selectedDifficulty !== null;
+            
+            continueBtn.disabled = !hasSelection;
+            continueBtn.style.opacity = hasSelection ? '1' : '0.5';
+            continueBtn.style.cursor = hasSelection ? 'pointer' : 'not-allowed';
+        }
+
+        // Show difficulty information
+        function showDifficultyInfo(difficulty) {
+            const difficultyInfo = {
+                easy: {
+                    emoji: '🍺',
+                    title: 'Entspannt',
+                    description: 'Nur 1 Basis-Schluck + Abweichung. Perfekt für den lockeren Einstieg!'
+                },
+                medium: {
+                    emoji: '🍺🍺',
+                    title: 'Standard',  
+                    description: '2 Basis-Schlücke + Abweichung. Die klassische Party-Variante!'
+                },
+                hard: {
+                    emoji: '🍺🍺🍺',
+                    title: 'Hardcore',
+                    description: '3 Basis-Schlücke + Abweichung. Nur für echte Profis!'
+                }
+            };
+
+            const info = difficultyInfo[difficulty];
+            if (info) {
+                showNotification(`${info.emoji} ${info.title}: ${info.description}`, 'info', 4000);
+            }
+        }
+
+        // Proceed with selected difficulty
+        function proceedWithDifficulty() {
+            if (selectedDifficulty) {
+                showLoading();
+                
+                // Check if multiplayer mode
+                if (gameState.deviceMode === 'multi') {
+                    setTimeout(() => {
+                        window.location.href = 'multiplayer-lobby.html';
+                    }, 500);
+                } else {
+                    setTimeout(() => {
+                        window.location.href = 'player-setup.html';
+                    }, 500);
+                }
+            } else {
+                showNotification('Bitte wähle eine Schlück-Einstellung aus', 'warning');
+            }
+        }
+
+        // Go back to previous page
+        function goBack() {
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'category-selection.html';
+            }, 300);
+        }
+
+        // Start page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initDifficultySelection);
+    </script>
+
+    <style>
+        /* Additional styles for difficulty page */
+        .difficulty-description {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            margin-top: 10px;
+            line-height: 1.3;
+        }
+
+        .info-box h4 {
+            color: #4facfe;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .info-box ul {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-left: 20px;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        .sips-indicator {
+            font-size: 2rem;
+            margin: 10px 0;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .difficulty-card.easy.selected {
+            border-color: #4CAF50;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .difficulty-card.medium.selected {
+            border-color: #FF9800;
+            box-shadow: 0 0 20px rgba(255, 152, 0, 0.3);
+        }
+
+        .difficulty-card.hard.selected {
+            border-color: #F44336;
+            box-shadow: 0 0 20px rgba(244, 67, 54, 0.3);
+        }
+
+        /* Mobile improvements */
+        @media (max-width: 768px) {
+            .difficulty-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .info-box {
+                font-size: 0.85rem;
+            }
+            
+            .info-box ul {
+                margin-left: 15px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .difficulty-grid {
+                grid-template-columns: repeat(3, 1fr);
+                max-width: 900px;
+                margin: 30px auto;
+                gap: 25px;
+            }
+        }
+    </style>
+</body>
+</html>

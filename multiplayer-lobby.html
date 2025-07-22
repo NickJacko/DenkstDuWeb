@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Multiplayer Lobby</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="leaveLobby()">← Lobby verlassen</button>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="content-area">
+                <h2 class="screen-title">Multiplayer Lobby</h2>
+                
+                <div class="glass-card">
+                    <!-- Game ID Section -->
+                    <div class="game-id-section">
+                        <h3 style="color: white; margin-bottom: 10px; text-align: center;">🎮 Game ID</h3>
+                        <div class="game-id-display" id="game-id-display">
+                            <span class="game-id-text" id="game-id-text">ERSTELLE...</span>
+                            <button class="copy-btn" onclick="copyGameId()" id="copy-btn" title="ID kopieren">📋</button>
+                        </div>
+                        
+                        <div class="share-buttons">
+                            <button class="btn btn-outline share-btn" onclick="shareGame()" style="width: 100%;">
+                                📤 Spiel teilen
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- QR Code Section -->
+                    <div class="qr-section" id="qr-section" style="display: none;">
+                        <button class="btn btn-secondary" onclick="toggleQRCode()" id="qr-toggle">
+                            📱 QR-Code anzeigen
+                        </button>
+                        <div class="qr-code-container" id="qr-code-container" style="display: none;">
+                            <canvas id="qr-canvas" width="200" height="200"></canvas>
+                            <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-top: 10px;">
+                                Andere können diesen QR-Code scannen um beizutreten
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Players Section -->
+                    <div class="players-section">
+                        <h4 style="color: white; margin-bottom: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                            <span>👥 Wartende Spieler</span>
+                            <span class="player-counter" id="player-counter">(0/8)</span>
+                        </h4>
+                        
+                        <div id="waiting-players" class="player-list">
+                            <div class="player-item host-player">
+                                <span class="player-emoji">👑</span>
+                                <span class="player-name">Du (Gastgeber)</span>
+                                <span class="player-status ready">Bereit</span>
+                            </div>
+                        </div>
+                        
+                        <div class="lobby-status" id="lobby-status">
+                            <div style="color: rgba(255,255,255,0.7); text-align: center; font-size: 0.9rem;">
+                                Warte auf weitere Spieler...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Game Settings Display -->
+                    <div class="game-settings">
+                        <h4 style="color: #4facfe; margin-bottom: 10px;">⚙️ Spiel-Einstellungen</h4>
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <span class="setting-label">📝 Kategorien:</span>
+                                <span class="setting-value" id="categories-display">Wird geladen...</span>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">🍺 Schlücke:</span>
+                                <span class="setting-value" id="difficulty-display">Wird geladen...</span>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">🎯 Runden:</span>
+                                <span class="setting-value">10 Fragen</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Start Game Button -->
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="leaveLobby()">Lobby verlassen</button>
+                    <button class="btn btn-success" onclick="startMultiplayerGame()" id="start-multiplayer" disabled>
+                        🚀 Spiel starten <span id="start-counter">(1/2)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/gameState.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/privacy.js"></script>
+    <script>
+        let gameId = null;
+        let isHost = true;
+        let gameRef = null;
+        let playersRef = null;
+        let connectedPlayers = [];
+
+        // Initialize multiplayer lobby
+        function initMultiplayerLobby() {
+            // Initialize Firebase
+            if (!initFirebase()) {
+                showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
+                setTimeout(() => goBack(), 2000);
+                return;
+            }
+
+            // Load game settings
+            loadGameSettings();
+
+            // Create or join game
+            createGame();
+
+            // Initialize mobile optimizations
+            initMobileOptimizations();
+
+            // Add connection status listener
+            addConnectionListeners();
+        }
+
+        // Load game settings display
+        function loadGameSettings() {
+            const categoryNames = {
+                'fsk0': '👨‍👩‍👧‍👦 Familie',
+                'fsk16': '🎉 Party',
+                'fsk18': '🔥 Erwachsene'
+            };
+
+            const difficultyNames = {
+                'easy': '🍺 Entspannt (1+)',
+                'medium': '🍺🍺 Standard (2+)',
+                'hard': '🍺🍺🍺 Hardcore (3+)'
+            };
+
+            const categories = gameState.selectedCategories.map(cat => categoryNames[cat]).join(' • ');
+            document.getElementById('categories-display').textContent = categories;
+            
+            document.getElementById('difficulty-display').textContent = 
+                difficultyNames[gameState.difficulty] || 'Standard';
+        }
+
+        // Create new game
+        async function createGame() {
+            try {
+                showLoading();
+
+                // Generate game ID
+                gameId = gameState.generateGameId();
+                
+                // Create Firebase game
+                const gameData = await firebaseGameManager.createGame({
+                    creatorName: 'Host',
+                    categories: gameState.selectedCategories,
+                    difficulty: gameState.difficulty,
+                    maxPlayers: 8,
+                    roundsCount: 10
+                });
+
+                // Update UI
+                document.getElementById('game-id-text').textContent = gameId;
+                document.getElementById('qr-section').style.display = 'block';
+                
+                // Generate QR Code
+                generateQRCode();
+
+                // Start listening for players
+                listenForPlayers();
+
+                hideLoading();
+                
+                showNotification('Lobby erstellt! Teile die Game ID mit deinen Freunden.', 'success');
+
+            } catch (error) {
+                console.error('Error creating game:', error);
+                hideLoading();
+                showNotification('Fehler beim Erstellen der Lobby: ' + error.message, 'error');
+            }
+        }
+
+        // Listen for joining players
+        function listenForPlayers() {
+            if (!firebaseGameManager.currentGameRef) return;
+
+            firebaseGameManager.onPlayersUpdate((players) => {
+                connectedPlayers = Object.entries(players || {});
+                updatePlayersList();
+                updateStartButton();
+            });
+        }
+
+        // Update players list
+        function updatePlayersList() {
+            const container = document.getElementById('waiting-players');
+            const counter = document.getElementById('player-counter');
+            const status = document.getElementById('lobby-status');
+            
+            // Clear existing players (except host)
+            const hostPlayer = container.querySelector('.host-player');
+            container.innerHTML = '';
+            container.appendChild(hostPlayer);
+
+            // Add connected players
+            connectedPlayers.forEach(([playerName, playerData]) => {
+                if (playerName !== 'Host') {
+                    const playerItem = document.createElement('div');
+                    playerItem.className = 'player-item';
+                    playerItem.innerHTML = `
+                        <span class="player-emoji">👤</span>
+                        <span class="player-name">${playerName}</span>
+                        <span class="player-status ${playerData.isReady ? 'ready' : 'waiting'}">
+                            ${playerData.isReady ? 'Bereit' : 'Wartet...'}
+                        </span>
+                    `;
+                    container.appendChild(playerItem);
+
+                    // Add entrance animation
+                    playerItem.style.opacity = '0';
+                    playerItem.style.transform = 'translateX(-20px)';
+                    setTimeout(() => {
+                        playerItem.style.transition = 'all 0.3s ease';
+                        playerItem.style.opacity = '1';
+                        playerItem.style.transform = 'translateX(0)';
+                    }, 10);
+                }
+            });
+
+            // Update counter
+            const totalPl

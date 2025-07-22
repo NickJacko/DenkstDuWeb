@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Das ultimative Trinkspiel</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="main-menu">
+                <h1 class="logo">DenkstDu</h1>
+                <p class="tagline">Das ultimative Trinkspiel für unvergessliche Abende</p>
+                
+                <div class="menu-buttons">
+                    <button class="btn" onclick="navigateTo('device-selection.html')">
+                        🎮 Spiel starten
+                    </button>
+                    <button class="btn btn-secondary" onclick="navigateTo('join-game.html')">
+                        🔗 Spiel beitreten
+                    </button>
+                    <button class="btn btn-outline" onclick="showPrivacyInfo()">
+                        ℹ️ Datenschutz
+                    </button>
+                </div>
+
+                <!-- Footer Links -->
+                <div class="footer-links">
+                    <a href="privacy.html" class="footer-link">Datenschutz</a>
+                    <a href="imprint.html" class="footer-link">Impressum</a>
+                    <a href="https://github.com/nickjacklin/denkstdu" target="_blank" class="footer-link">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Notice -->
+    <div class="privacy-notice" id="privacy-notice">
+        <div class="privacy-text">
+            <strong>🍪 Datenschutz & Cookies</strong><br>
+            Wir verwenden nur technisch notwendige Daten für das Multiplayer-Spiel. 
+            Keine Werbung, kein Tracking. Alle Daten werden nach 24h automatisch gelöscht.
+            <br><br>
+            <a href="privacy.html" style="color: #4facfe;">→ Vollständige Datenschutzerklärung</a>
+        </div>
+        <div class="privacy-buttons">
+            <button class="btn btn-outline" onclick="declinePrivacy()">Ablehnen</button>
+            <button class="btn" onclick="acceptPrivacy()">Akzeptieren</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/gameState.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/privacy.js"></script>
+    <script>
+        // Initialize main menu
+        function initMainMenu() {
+            // Initialize Firebase
+            initFirebase();
+
+            // Check for game ID in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameIdFromUrl = urlParams.get('gameId');
+            if (gameIdFromUrl) {
+                localStorage.setItem('pendingGameId', gameIdFromUrl);
+                navigateTo('join-game.html');
+                return;
+            }
+
+            // Check if privacy was accepted
+            const privacyAccepted = localStorage.getItem('denkstdu_privacy_accepted');
+            const consentDate = localStorage.getItem('denkstdu_privacy_date');
+            
+            // Check if consent is expired (1 year)
+            if (privacyAccepted && consentDate) {
+                const daysSinceConsent = (Date.now() - new Date(consentDate).getTime()) / (24 * 60 * 60 * 1000);
+                if (daysSinceConsent > 365) {
+                    // Consent expired
+                    localStorage.removeItem('denkstdu_privacy_accepted');
+                    localStorage.removeItem('denkstdu_privacy_date');
+                }
+            }
+
+            if (!localStorage.getItem('denkstdu_privacy_accepted')) {
+                setTimeout(() => {
+                    showPrivacyInfo();
+                }, 2000);
+            }
+
+            // Initialize mobile optimizations
+            initMobileOptimizations();
+
+            // Add entrance animations
+            setTimeout(() => {
+                document.querySelectorAll('.menu-buttons .btn').forEach((btn, index) => {
+                    setTimeout(() => {
+                        btn.style.opacity = '0';
+                        btn.style.transform = 'translateY(20px)';
+                        btn.style.transition = 'all 0.5s ease';
+                        setTimeout(() => {
+                            btn.style.opacity = '1';
+                            btn.style.transform = 'translateY(0)';
+                        }, 100);
+                    }, index * 100);
+                });
+            }, 500);
+        }
+
+        // Navigation function
+        function navigateTo(page) {
+            // Check privacy for multiplayer features
+            if ((page === 'join-game.html' || page === 'device-selection.html') && 
+                !localStorage.getItem('denkstdu_privacy_accepted')) {
+                showNotification('Für Multiplayer-Features ist eine Datenschutz-Zustimmung erforderlich', 'warning');
+                showPrivacyInfo();
+                return;
+            }
+
+            showLoading();
+            setTimeout(() => {
+                window.location.href = page;
+            }, 500);
+        }
+
+        // Start app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initMainMenu);
+    </script>
+</body>
+</html>

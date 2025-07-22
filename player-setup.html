@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Spieler hinzufügen</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="goBack()">← Zurück</button>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="content-area">
+                <h2 class="screen-title">Spieler hinzufügen</h2>
+                
+                <div class="glass-card">
+                    <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 25px;">
+                        Füge alle Mitspieler hinzu (mindestens 2, maximal <span id="max-players">8</span>)
+                    </p>
+                    
+                    <div class="player-input-section" id="player-inputs">
+                        <div class="player-input-row">
+                            <input type="text" class="player-input" placeholder="Spieler 1 Name" maxlength="20" data-player="1">
+                            <button class="remove-player-btn" onclick="removePlayer(this)" style="display: none;">❌</button>
+                        </div>
+                        <div class="player-input-row">
+                            <input type="text" class="player-input" placeholder="Spieler 2 Name" maxlength="20" data-player="2">
+                            <button class="remove-player-btn" onclick="removePlayer(this)" style="display: none;">❌</button>
+                        </div>
+                    </div>
+                    
+                    <button class="add-player-btn" onclick="addPlayer()" id="add-player-btn">
+                        ➕ Weiteren Spieler hinzufügen
+                    </button>
+
+                    <!-- Player Preview -->
+                    <div class="player-preview" id="player-preview" style="display: none;">
+                        <h4 style="color: #4facfe; margin-bottom: 10px;">👥 Aktuelle Spieler:</h4>
+                        <div class="player-list" id="current-players"></div>
+                    </div>
+
+                    <!-- Game Info -->
+                    <div class="game-info">
+                        <div class="info-row">
+                            <span class="info-label">📝 Kategorien:</span>
+                            <span class="info-value" id="selected-categories-info">Wird geladen...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">🍺 Schlücke-Modus:</span>
+                            <span class="info-value" id="difficulty-info">Wird geladen...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">🎮 Modus:</span>
+                            <span class="info-value" id="device-mode-info">Wird geladen...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
+                    <button class="btn" onclick="startGame()" id="start-game" disabled>
+                        Spiel starten (<span id="player-count">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/gameState.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/privacy.js"></script>
+    <script>
+        let playerCount = 2;
+        const maxPlayersLimit = isPremiumUser() ? 12 : 8;
+
+        // Initialize player setup page
+        function initPlayerSetup() {
+            // Initialize Firebase
+            initFirebase();
+
+            // Set max players based on premium status
+            document.getElementById('max-players').textContent = maxPlayersLimit;
+
+            // Load game info
+            loadGameInfo();
+
+            // Load existing players if any
+            loadExistingPlayers();
+
+            // Initialize mobile optimizations
+            initMobileOptimizations();
+
+            // Add input listeners
+            addInputListeners();
+
+            // Initial update
+            updatePlayerCount();
+            updateStartButton();
+
+            // Add entrance animation
+            setTimeout(() => {
+                document.querySelectorAll('.player-input-row').forEach((row, index) => {
+                    setTimeout(() => {
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateX(-20px)';
+                        row.style.transition = 'all 0.4s ease';
+                        setTimeout(() => {
+                            row.style.opacity = '1';
+                            row.style.transform = 'translateX(0)';
+                        }, 100);
+                    }, index * 100);
+                });
+            }, 300);
+        }
+
+        // Load game info
+        function loadGameInfo() {
+            const categoryNames = {
+                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
+                'fsk16': '🎉 Party Time',
+                'fsk18': '🔥 Heiß & Gewagt'
+            };
+
+            const difficultyNames = {
+                'easy': '🍺 Entspannt (1 + Abweichung)',
+                'medium': '🍺🍺 Standard (2 + Abweichung)',
+                'hard': '🍺🍺🍺 Hardcore (3 + Abweichung)'
+            };
+
+            const deviceModeNames = {
+                'single': '📱 Ein Gerät',
+                'multi': '🌐 Online Multiplayer'
+            };
+
+            // Update displays
+            const categories = gameState.selectedCategories.map(cat => categoryNames[cat]).join(' • ');
+            document.getElementById('selected-categories-info').textContent = categories || 'Keine ausgewählt';
+            
+            document.getElementById('difficulty-info').textContent = 
+                difficultyNames[gameState.difficulty] || 'Nicht ausgewählt';
+            
+            document.getElementById('device-mode-info').textContent = 
+                deviceModeNames[gameState.deviceMode] || 'Nicht ausgewählt';
+        }
+
+        // Load existing players
+        function loadExistingPlayers() {
+            if (gameState.players && gameState.players.length > 0) {
+                const inputs = document.querySelectorAll('.player-input');
+                gameState.players.forEach((player, index) => {
+                    if (inputs[index]) {
+                        inputs[index].value = player;
+                    } else {
+                        // Add more inputs if needed
+                        while (playerCount <= index) {
+                            addPlayer();
+                        }
+                        const newInput = document.querySelector(`[data-player="${index + 1}"]`);
+                        if (newInput) {
+                            newInput.value = player;
+                        }
+                    }
+                });
+            }
+        }
+
+        // Add input listeners
+        function addInputListeners() {
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('player-input')) {
+                    updatePlayerCount();
+                    updateStartButton();
+                    updatePlayerPreview();
+                    
+                    // Show/hide remove buttons
+                    updateRemoveButtons();
+                }
+            });
+
+            // Add enter key listener
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && e.target.classList.contains('player-input')) {
+                    if (playerCount < maxPlayersLimit) {
+                        addPlayer();
+                    }
+                }
+            });
+        }
+
+        // Add new player input
+        function addPlayer() {
+            if (playerCount >= maxPlayersLimit) {
+                showNotification(`Maximal ${maxPlayersLimit} Spieler erlaubt`, 'warning');
+                return;
+            }
+
+            playerCount++;
+            const playerInputsContainer = document.getElementById('player-inputs');
+            
+            const playerRow = document.createElement('div');
+            playerRow.className = 'player-input-row';
+            playerRow.innerHTML = `
+                <input type="text" class="player-input" placeholder="Spieler ${playerCount} Name" 
+                       maxlength="20" data-player="${playerCount}">
+                <button class="remove-player-btn" onclick="removePlayer(this)">❌</button>
+            `;
+            
+            playerInputsContainer.appendChild(playerRow);
+            
+            // Focus new input
+            const newInput = playerRow.querySelector('.player-input');
+            newInput.focus();
+
+            // Add entrance animation
+            playerRow.style.opacity = '0';
+            playerRow.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                playerRow.style.transition = 'all 0.3s ease';
+                playerRow.style.opacity = '1';
+                playerRow.style.transform = 'translateY(0)';
+            }, 10);
+
+            // Update UI
+            updateAddButton();
+            updateRemoveButtons();
+            updatePlayerCount();
+        }
+
+        // Remove player input
+        function removePlayer(button) {
+            const row = button.parentElement;
+            const input = row.querySelector('.player-input');
+            
+            // Don't remove if it would leave us with less than 2 players
+            const filledInputs = getFilledInputs();
+            if (filledInputs.length <= 2 && input.value.trim()) {
+                showNotification('Mindestens 2 Spieler erforderlich', 'warning');
+                return;
+            }
+
+            // Animate out
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(-20px)';
+            
+            setTimeout(() => {
+                row.remove();
+                playerCount--;
+                renumberPlayers();
+                updateAddButton();
+                updateRemoveButtons();
+                updatePlayerCount();
+                updateStartButton();
+                updatePlayerPreview();
+            }, 300);
+        }
+
+        // Renumber players after removal
+        function renumberPlayers() {
+            const rows = document.querySelectorAll('.player-input-row');
+            rows.forEach((row, index) => {
+                const input = row.querySelector('.player-input');
+                input.placeholder = `Spieler ${index + 1} Name`;
+                input.dataset.player = index + 1;
+            });
+        }
+
+        // Update add button state
+        function updateAddButton() {
+            const addBtn = document.getElementById('add-player-btn');
+            if (playerCount >= maxPlayersLimit) {
+                addBtn.style.display = 'none';
+            } else {
+                addBtn.style.display = 'block';
+            }
+        }
+
+        // Update remove buttons visibility
+        function updateRemoveButtons() {
+            const removeButtons = document.querySelectorAll('.remove-player-btn');
+            removeButtons.forEach(btn => {
+                btn.style.display = playerCount > 2 ? 'inline-block' : 'none';
+            });
+        }
+
+        // Get filled inputs
+        function getFilledInputs() {
+            return Array.from(document.querySelectorAll('.player-input'))
+                .filter(input => input.value.trim().length > 0);
+        }
+
+        // Update player count display
+        function updatePlayerCount() {
+            const filledInputs = getFilledInputs();
+            document.getElementById('player-count').textContent = filledInputs.length;
+        }
+
+        // Update start button
+        function updateStartButton() {
+            const startBtn = document.getElementById('start-game');
+            const filledInputs = getFilledInputs();
+            const isValid = filledInputs.length >= 2 && validatePlayerNames(filledInputs);
+            
+            startBtn.disabled = !isValid;
+            startBtn.style.opacity = isValid ? '1' : '0.5';
+            startBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+        }
+
+        // Validate player names
+        function validatePlayerNames(inputs) {
+            const names = inputs.map(input => input.value.trim().toLowerCase());
+            const uniqueNames = new Set(names);
+            
+            // Check for duplicates
+            if (names.length !== uniqueNames.size) {
+                return false;
+            }
+            
+            // Check name lengths
+            return names.every(name => name.length >= 2 && name.length <= 20);
+        }
+
+        // Update player preview
+        function updatePlayerPreview() {
+            const filledInputs = getFilledInputs();
+            const preview = document.getElementById('player-preview');
+            const playersList = document.getElementById('current-players');
+            
+            if (filledInputs.length > 0) {
+                preview.style.display = 'block';
+                playersList.innerHTML = filledInputs.map((input, index) => `
+                    <div class="preview-player">
+                        <span class="player-number">${index + 1}</span>
+                        <span class="player-name">${input.value.trim()}</span>
+                    </div>
+                `).join('');
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        // Check if user is premium
+        function isPremiumUser() {
+            return localStorage.getItem('denkstdu_premium') === 'true';
+        }
+
+        // Start the game
+        function startGame() {
+            const filledInputs = getFilledInputs();
+            
+            if (filledInputs.length < 2) {
+                showNotification('Mindestens 2 Spieler erforderlich!', 'error');
+                return;
+            }
+
+            // Validate names
+            if (!validatePlayerNames(filledInputs)) {
+                showNotification('Alle Namen müssen einzigartig und zwischen 2-20 Zeichen sein!', 'error');
+                return;
+            }
+
+            // Save players to game state
+            const playerNames = filledInputs.map(input => input.value.trim());
+            gameState.setPlayers(playerNames);
+
+            // Show loading
+            showLoading();
+
+            // Initialize game
+            gameState.initializeGame();
+
+            // Navigate to gameplay
+            setTimeout(() => {
+                window.location.href = 'gameplay.html';
+            }, 1000);
+        }
+
+        // Go back to previous page
+        function goBack() {
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'difficulty-selection.html';
+            }, 300);
+        }
+
+        // Start page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initPlayerSetup);
+    </script>
+
+    <style>
+        /* Player setup specific styles */
+        .player-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .player-input {
+            flex: 1;
+        }
+
+        .remove-player-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .remove-player-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        .player-preview {
+            margin-top: 20px;
+            background: rgba(79, 172, 254, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+
+        .preview-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+            color: white;
+        }
+
+        .player-number {
+            background: #4facfe;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .player-name {
+            font-weight: 500;
+        }
+
+        .game-info {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #4facfe;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+            
+            .remove-player-btn {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!-- DenkstDu Web - Komplettes Gameplay Screen mit Firebase Anbindung + Startlogik -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DenkstDu - Spielrunde</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background: #0F172A;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .question-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.4);
+            margin: 20px;
+            max-width: 400px;
+            animation: fadeIn 0.5s ease;
+        }
+        .btn {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            border: none;
+            border-radius: 30px;
+            padding: 15px 30px;
+            color: white;
+            font-weight: bold;
+            margin: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        .feedback {
+            margin-top: 20px;
+            color: #4facfe;
+            font-size: 1rem;
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="question-card" id="phase1" style="display:none;">
+        <h2 id="questionText">Frage wird geladen...</h2>
+        <button class="btn" onclick="submitAnswer('yes')">✅ Ja</button>
+        <button class="btn" onclick="submitAnswer('no')">❌ Nein</button>
+        <div class="feedback" id="votesFeedback">0 Spieler haben abgestimmt...</div>
+    </div>
+
+    <div class="question-card" id="phase2" style="display: none;">
+        <h2>Wie viele haben wohl Ja gesagt?</h2>
+        <input type="number" id="guessInput" min="0" max="10" style="padding: 10px; border-radius: 10px; width: 80px;">
+        <br><br>
+        <button class="btn" onclick="submitGuess()">🎯 Tipp abgeben</button>
+    </div>
+
+    <div class="question-card" id="phase3" style="display: none;">
+        <h2 id="resultText">Auflösung wird geladen...</h2>
+        <p id="penaltyText">Ergebnis folgt...</p>
+        <button class="btn" onclick="nextRound()">➡️ Nächste Runde</button>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+        apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+        authDomain: "denkstduwebsite.firebaseapp.com",
+        projectId: "denkstduwebsite",
+        storageBucket: "denkstduwebsite.firebasestorage.app",
+        messagingSenderId: "27029260611",
+        appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+        measurementId: "G-BNKNW95HK8"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const gameId = localStorage.getItem('activeGameId') || prompt("Game ID eingeben:");
+        const playerName = localStorage.getItem('playerName') || prompt("Dein Name:");
+
+        db.ref(`games/${gameId}/currentRound`).on('value', snapshot => {
+            const roundData = snapshot.val();
+            if (!roundData) return;
+            document.getElementById('phase1').style.display = 'none';
+            document.getElementById('phase2').style.display = 'none';
+            document.getElementById('phase3').style.display = 'none';
+
+            if (roundData.status === 'answer') {
+                document.getElementById('phase1').style.display = 'block';
+                document.getElementById('questionText').textContent = roundData.question;
+                updateVotesFeedback();
+            } else if (roundData.status === 'guess') {
+                document.getElementById('phase2').style.display = 'block';
+            } else if (roundData.status === 'result') {
+                document.getElementById('phase3').style.display = 'block';
+                document.getElementById('resultText').textContent = `${roundData.result.yesCount} von ${roundData.totalPlayers} haben Ja gesagt!`;
+                document.getElementById('penaltyText').textContent = `Du trinkst ${roundData.penalties?.[playerName] || 0} Schlücke! 🍺`;
+            }
+        });
+
+        function submitAnswer(answer) {
+            db.ref(`games/${gameId}/answers/${playerName}`).set(answer);
+        }
+
+        function submitGuess() {
+            const guess = parseInt(document.getElementById('guessInput').value) || 0;
+            db.ref(`games/${gameId}/guesses/${playerName}`).set(guess);
+        }
+
+        function nextRound() {
+            db.ref(`games/${gameId}/hostControl/nextRound`).set(true);
+        }
+
+        function updateVotesFeedback() {
+            db.ref(`games/${gameId}/answers`).on('value', snapshot => {
+                const answers = snapshot.val() || {};
+                document.getElementById('votesFeedback').textContent = `${Object.keys(answers).length} Spieler haben abgestimmt...`;
+            });
+        }
+    </script>
+</body>
+</html>

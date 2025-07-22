@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Spielmodus wählen</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="goBack()">← Zurück</button>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="content-area">
+                <h2 class="screen-title">Spielmodus wählen</h2>
+                
+                <div class="glass-card">
+                    <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 30px;">
+                        Wie möchtet ihr spielen?
+                    </p>
+                    
+                    <div class="category-grid">
+                        <div class="category-card device-card" data-mode="single" onclick="selectDeviceMode('single')">
+                            <span class="category-emoji">📱</span>
+                            <h3 class="category-title">Ein Gerät</h3>
+                            <p class="category-subtitle">
+                                Alle Spieler nutzen dieses Gerät gemeinsam.<br>
+                                Das Handy wird herumgereicht.
+                            </p>
+                            <div class="mode-benefits">
+                                <div class="benefit">✅ Keine App-Installation nötig</div>
+                                <div class="benefit">✅ Funktioniert offline</div>
+                                <div class="benefit">✅ Sofort spielbereit</div>
+                            </div>
+                        </div>
+                        
+                        <div class="category-card device-card" data-mode="multi" onclick="selectDeviceMode('multi')">
+                            <span class="category-emoji">🌐</span>
+                            <h3 class="category-title">Online Multiplayer</h3>
+                            <p class="category-subtitle">
+                                Jeder Spieler nutzt sein eigenes Gerät.<br>
+                                Synchrones Spielen über das Internet.
+                            </p>
+                            <div class="mode-benefits">
+                                <div class="benefit">✅ Jeder auf seinem Handy</div>
+                                <div class="benefit">✅ Gleichzeitige Abstimmung</div>
+                                <div class="benefit">✅ Bis zu 8 Spieler</div>
+                            </div>
+                            <div class="privacy-note" id="privacy-note-multi" style="display: none;">
+                                <div style="color: #ff6b6b; font-size: 0.8rem; margin-top: 10px;">
+                                    🔒 Erfordert Datenschutz-Zustimmung
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/gameState.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/privacy.js"></script>
+    <script>
+        // Initialize device selection page
+        function initDeviceSelection() {
+            // Initialize Firebase
+            initFirebase();
+
+            // Check privacy consent for multiplayer
+            checkPrivacyForMultiplayer();
+
+            // Initialize mobile optimizations
+            initMobileOptimizations();
+
+            // Add entrance animations
+            setTimeout(() => {
+                document.querySelectorAll('.device-card').forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(30px)';
+                        card.style.transition = 'all 0.6s ease';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 100);
+                    }, index * 200);
+                });
+            }, 300);
+        }
+
+        // Check if user has privacy consent
+        function checkPrivacyForMultiplayer() {
+            const hasConsent = localStorage.getItem('denkstdu_privacy_accepted');
+            const multiCard = document.querySelector('[data-mode="multi"]');
+            const privacyNote = document.getElementById('privacy-note-multi');
+            
+            if (!hasConsent) {
+                // Show privacy warning
+                privacyNote.style.display = 'block';
+                // Don't disable the card, let user click and show privacy notice
+            }
+        }
+
+        // Select device mode
+        function selectDeviceMode(mode) {
+            // Check privacy for multiplayer
+            if (mode === 'multi' && !localStorage.getItem('denkstdu_privacy_accepted')) {
+                showPrivacyNotice();
+                return;
+            }
+
+            // Set in game state
+            gameState.setDeviceMode(mode);
+            
+            // Visual feedback
+            document.querySelectorAll('.device-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('selected');
+
+            // Add selection animation
+            const selectedCard = document.querySelector(`[data-mode="${mode}"]`);
+            selectedCard.style.transform = 'scale(1.05)';
+            
+            // Show loading and proceed
+            setTimeout(() => {
+                selectedCard.style.transform = 'scale(1.02)';
+                showLoading();
+                
+                setTimeout(() => {
+                    window.location.href = 'category-selection.html';
+                }, 500);
+            }, 300);
+        }
+
+        // Show privacy notice
+        function showPrivacyNotice() {
+            const modal = document.createElement('div');
+            modal.className = 'privacy-modal';
+            modal.innerHTML = `
+                <div class="privacy-modal-content">
+                    <h3>🔒 Datenschutz-Zustimmung erforderlich</h3>
+                    <p>Für den Online-Multiplayer benötigen wir deine Zustimmung zur Datenverarbeitung.</p>
+                    
+                    <div class="privacy-info">
+                        <h4>Was passiert mit deinen Daten?</h4>
+                        <ul>
+                            <li>✅ Nur Spielername und Antworten werden gespeichert</li>
+                            <li>✅ Automatische Löschung nach 24 Stunden</li>
+                            <li>✅ Keine Werbung oder Tracking</li>
+                            <li>✅ Verschlüsselte Übertragung</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="privacy-buttons">
+                        <button class="btn btn-outline" onclick="closePrivacyModal()">Abbrechen</button>
+                        <button class="btn" onclick="acceptPrivacyAndContinue()">Zustimmen & Fortfahren</button>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <a href="privacy.html" target="_blank" style="color: #4facfe; font-size: 0.9rem;">
+                            → Vollständige Datenschutzerklärung
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 9999; padding: 20px;
+            `;
+            
+            document.body.appendChild(modal);
+
+            // Animate in
+            const content = modal.querySelector('.privacy-modal-content');
+            content.style.transform = 'scale(0.8)';
+            content.style.opacity = '0';
+            setTimeout(() => {
+                content.style.transition = 'all 0.3s ease';
+                content.style.transform = 'scale(1)';
+                content.style.opacity = '1';
+            }, 10);
+        }
+
+        // Accept privacy and continue
+        function acceptPrivacyAndContinue() {
+            localStorage.setItem('denkstdu_privacy_accepted', 'true');
+            localStorage.setItem('denkstdu_privacy_date', new Date().toISOString());
+            closePrivacyModal();
+            
+            setTimeout(() => {
+                selectDeviceMode('multi');
+            }, 300);
+        }
+
+        // Close privacy modal
+        function closePrivacyModal() {
+            const modal = document.querySelector('.privacy-modal');
+            if (modal) {
+                const content = modal.querySelector('.privacy-modal-content');
+                content.style.transform = 'scale(0.8)';
+                content.style.opacity = '0';
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+        }
+
+        // Go back to main menu
+        function goBack() {
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 300);
+        }
+
+        // Start page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initDeviceSelection);
+    </script>
+
+    <style>
+        /* Device selection specific styles */
+        .device-card {
+            min-height: 300px;
+            position: relative;
+            padding: 30px 25px;
+        }
+
+        .device-card.selected {
+            border-color: #4facfe;
+            background: rgba(79, 172, 254, 0.2);
+            transform: scale(1.02);
+            box-shadow: 0 8px 32px rgba(79, 172, 254, 0.3);
+        }
+
+        .mode-benefits {
+            margin-top: 20px;
+        }
+
+        .benefit {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+
+        .privacy-note {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .privacy-modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            color: white;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .privacy-modal-content h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .privacy-modal-content h4 {
+            margin: 20px 0 10px 0;
+            color: #4facfe;
+            font-size: 1rem;
+        }
+
+        .privacy-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .privacy-info ul {
+            margin: 10px 0 0 20px;
+        }
+
+        .privacy-info li {
+            margin: 5px 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .privacy-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .privacy-buttons .btn {
+            flex: 1;
+            padding: 15px 25px;
+        }
+
+        @media (max-width: 768px) {
+            .privacy-modal-content {
+                margin: 20px;
+                padding: 25px 20px;
+            }
+            
+            .privacy-buttons {
+                flex-direction: column;
+            }
+            
+            .device-card {
+                min-height: 250px;
+                padding: 25px 20px;
+            }
+        }
+    </style>
+</body>
+</html>
