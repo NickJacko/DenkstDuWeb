@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Das ultimative Trinkspiel</title>
+    <title>DenkstDu - Das ultimative Schätzspiel</title>
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,19 +32,43 @@
     <div class="app-container">
         <div class="screen active">
             <div class="main-menu">
-                <h1 class="logo">DenkstDu</h1>
-                <p class="tagline">Das ultimative Trinkspiel für unvergessliche Abende</p>
-                
+                <!-- Logo & Header -->
+                <div class="logo-section">
+                    <h1 class="logo">DenkstDu</h1>
+                    <p class="tagline">Das ultimative Schätzspiel für unvergessliche Abende</p>
+                    <div class="game-description">
+                        <p>🤔 <strong>Schätze</strong>, wie viele aus der Runde etwas schon mal gemacht haben</p>
+                        <p>🍻 <strong>Trinke</strong>, wenn du falsch liegst</p>
+                        <p>🎉 <strong>Lache</strong> über peinliche Geständnisse</p>
+                    </div>
+                </div>
+
+                <!-- Main Menu Buttons -->
                 <div class="menu-buttons">
-                    <button class="btn" onclick="navigateTo('device-selection.html')">
-                        🎮 Spiel starten
+                    <button class="btn btn-primary pulse-animation" onclick="startNewGame()">
+                        🎮 Neues Spiel starten
                     </button>
-                    <button class="btn btn-secondary" onclick="navigateTo('join-game.html')">
+                    <button class="btn btn-secondary" onclick="joinExistingGame()">
                         🔗 Spiel beitreten
                     </button>
-                    <button class="btn btn-outline" onclick="showPrivacyInfo()">
-                        ℹ️ Datenschutz
+                    <button class="btn btn-outline" onclick="showGameRules()">
+                        📖 Spielregeln
                     </button>
+                    <button class="btn btn-outline" onclick="showSettings()">
+                        ⚙️ Einstellungen
+                    </button>
+                </div>
+
+                <!-- Quick Stats (if available) -->
+                <div class="quick-stats" id="quick-stats" style="display: none;">
+                    <div class="stat-item">
+                        <span class="stat-number" id="games-played">0</span>
+                        <span class="stat-label">Spiele gespielt</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="best-streak">0</span>
+                        <span class="stat-label">Beste Serie</span>
+                    </div>
                 </div>
 
                 <!-- Footer Links -->
@@ -53,6 +77,203 @@
                     <a href="imprint.html" class="footer-link">Impressum</a>
                     <a href="https://github.com/nickjacklin/denkstdu" target="_blank" class="footer-link">GitHub</a>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Rules Modal -->
+    <div class="modal" id="rules-modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>📖 Spielregeln</h3>
+                <button class="close-btn" onclick="closeRulesModal()">✕</button>
+            </div>
+            
+            <div class="rules-content">
+                <div class="rule-section">
+                    <h4>🎯 Spielprinzip</h4>
+                    <p><strong>DenkstDu</strong> ist ein unterhaltsames Schätzspiel für Gruppen. Das Ziel: Erraten, wie viele Spieler etwas schon einmal gemacht haben!</p>
+                </div>
+
+                <div class="rule-section">
+                    <h4>🔄 So läuft eine Runde:</h4>
+                    <div class="rule-steps">
+                        <div class="rule-step">
+                            <span class="step-number">1</span>
+                            <div class="step-content">
+                                <h5>Frage anzeigen</h5>
+                                <p>Eine provokante oder lustige Frage wird gestellt - z.B. "Hast du schon mal nackt gebadet?"</p>
+                            </div>
+                        </div>
+                        <div class="rule-step">
+                            <span class="step-number">2</span>
+                            <div class="step-content">
+                                <h5>Jeder antwortet anonym</h5>
+                                <p>Alle Spieler tippen <strong>"Ja" oder "Nein"</strong> auf ihrem Gerät - ohne dass die anderen es sehen.</p>
+                            </div>
+                        </div>
+                        <div class="rule-step">
+                            <span class="step-number">3</span>
+                            <div class="step-content">
+                                <h5>Dann: Schätzen!</h5>
+                                <p>Jeder schätzt, <strong>wie viele von allen "Ja" gesagt haben</strong>.</p>
+                            </div>
+                        </div>
+                        <div class="rule-step">
+                            <span class="step-number">4</span>
+                            <div class="step-content">
+                                <h5>Auflösung & Schlücke</h5>
+                                <p>Die tatsächliche Anzahl wird aufgelöst. Wer falsch lag, muss trinken - je <strong>weiter daneben</strong>, desto <strong>mehr Schlücke</strong>!</p>
+                            </div>
+                        </div>
+                        <div class="rule-step">
+                            <span class="step-number">5</span>
+                            <div class="step-content">
+                                <h5>Neue Runde</h5>
+                                <p>Der Ablauf startet von vorn mit einer neuen Frage.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rule-section">
+                    <h4>🍺 Schlücke-Regeln</h4>
+                    <div class="sips-rules">
+                        <div class="sips-rule">
+                            <span class="sips-icon">🎯</span>
+                            <span class="sips-text"><strong>Exakte Schätzung</strong> = 0 Schlücke</span>
+                        </div>
+                        <div class="sips-rule">
+                            <span class="sips-icon">📏</span>
+                            <span class="sips-text"><strong>1 daneben</strong> = Basis + 1 Schluck</span>
+                        </div>
+                        <div class="sips-rule">
+                            <span class="sips-icon">📐</span>
+                            <span class="sips-text"><strong>2 daneben</strong> = Basis + 2 Schlücke</span>
+                        </div>
+                        <div class="sips-rule">
+                            <span class="sips-icon">📊</span>
+                            <span class="sips-text"><strong>usw.</strong> (je nach Schwierigkeitsgrad)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rule-section">
+                    <h4>🎮 Spielmodi</h4>
+                    <div class="game-modes">
+                        <div class="mode-item">
+                            <span class="mode-icon">📱</span>
+                            <div class="mode-info">
+                                <h5>Ein Gerät</h5>
+                                <p>Alle spielen auf einem Handy - perfekt für kleine Runden</p>
+                            </div>
+                        </div>
+                        <div class="mode-item">
+                            <span class="mode-icon">🌐</span>
+                            <div class="mode-info">
+                                <h5>Online Multiplayer</h5>
+                                <p>Jeder nutzt sein eigenes Gerät - ideal für größere Gruppen</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rule-section">
+                    <h4>📝 Kategorien</h4>
+                    <div class="categories-info">
+                        <div class="category-info">
+                            <span class="category-icon">👨‍👩‍👧‍👦</span>
+                            <div class="category-details">
+                                <h5>Familie & Freunde (FSK 0)</h5>
+                                <p>Harmlose Fragen für alle Altersgruppen</p>
+                            </div>
+                        </div>
+                        <div class="category-info">
+                            <span class="category-icon">🎉</span>
+                            <div class="category-details">
+                                <h5>Party Time (FSK 16)</h5>
+                                <p>Unterhaltsame und lustige Fragen</p>
+                            </div>
+                        </div>
+                        <div class="category-info">
+                            <span class="category-icon">🔥</span>
+                            <div class="category-details">
+                                <h5>Heiß & Gewagt (FSK 18)</h5>
+                                <p>Nur für Erwachsene</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" onclick="closeRulesModal()">Verstanden!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Einstellungen</h3>
+                <button class="close-btn" onclick="closeSettingsModal()">✕</button>
+            </div>
+            
+            <div class="settings-content">
+                <div class="setting-group">
+                    <h4>🔊 Audio</h4>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="sound-effects" checked>
+                            <span class="checkmark"></span>
+                            Sound-Effekte
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="notification-sounds" checked>
+                            <span class="checkmark"></span>
+                            Benachrichtigungstöne
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h4>📱 Interface</h4>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="dark-mode" checked>
+                            <span class="checkmark"></span>
+                            Dark Mode
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="animations" checked>
+                            <span class="checkmark"></span>
+                            Animationen
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h4>🔒 Datenschutz</h4>
+                    <div class="setting-item">
+                        <button class="btn btn-outline" onclick="clearAllData()">
+                            🗑️ Alle Daten löschen
+                        </button>
+                    </div>
+                    <div class="setting-item">
+                        <button class="btn btn-outline" onclick="exportUserData()">
+                            📤 Daten exportieren
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" onclick="saveSettings()">Einstellungen speichern</button>
             </div>
         </div>
     </div>
@@ -83,16 +304,126 @@
             // Initialize Firebase
             initFirebase();
 
-            // Check for game ID in URL
+            // Check for game ID in URL (deep linking)
             const urlParams = new URLSearchParams(window.location.search);
             const gameIdFromUrl = urlParams.get('gameId');
             if (gameIdFromUrl) {
                 localStorage.setItem('pendingGameId', gameIdFromUrl);
-                navigateTo('join-game.html');
+                joinExistingGame();
                 return;
             }
 
-            // Check if privacy was accepted
+            // Load user statistics
+            loadUserStats();
+
+            // Check privacy consent
+            checkPrivacyConsent();
+
+            // Initialize mobile optimizations
+            initMobileOptimizations();
+
+            // Add entrance animations
+            addEntranceAnimations();
+
+            // Initialize settings
+            loadSettings();
+        }
+
+        // Start new game - navigate to device selection
+        function startNewGame() {
+            // Clear any previous game data
+            gameState.reset();
+            
+            // Add click animation
+            animateButtonClick(event.target);
+            
+            // Show loading and navigate
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'device-selection.html';
+            }, 500);
+        }
+
+        // Join existing game
+        function joinExistingGame() {
+            // Check if there's a pending game ID from URL
+            const pendingGameId = localStorage.getItem('pendingGameId');
+            if (pendingGameId) {
+                localStorage.removeItem('pendingGameId');
+                window.location.href = `join-game.html?gameId=${pendingGameId}`;
+                return;
+            }
+
+            // Add click animation
+            if (event && event.target) {
+                animateButtonClick(event.target);
+            }
+            
+            // Navigate to join game page
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'join-game.html';
+            }, 500);
+        }
+
+        // Show game rules modal
+        function showGameRules() {
+            const modal = document.getElementById('rules-modal');
+            modal.style.display = 'flex';
+            
+            // Animate in
+            setTimeout(() => {
+                modal.querySelector('.modal-content').classList.add('modal-enter');
+            }, 10);
+        }
+
+        // Close game rules modal
+        function closeRulesModal() {
+            const modal = document.getElementById('rules-modal');
+            modal.querySelector('.modal-content').classList.remove('modal-enter');
+            
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+
+        // Show settings modal
+        function showSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = 'flex';
+            
+            // Load current settings
+            loadCurrentSettings();
+            
+            // Animate in
+            setTimeout(() => {
+                modal.querySelector('.modal-content').classList.add('modal-enter');
+            }, 10);
+        }
+
+        // Close settings modal
+        function closeSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.querySelector('.modal-content').classList.remove('modal-enter');
+            
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+
+        // Load user statistics
+        function loadUserStats() {
+            const stats = JSON.parse(localStorage.getItem('denkstdu_user_stats') || '{}');
+            
+            if (stats.gamesPlayed > 0) {
+                document.getElementById('games-played').textContent = stats.gamesPlayed || 0;
+                document.getElementById('best-streak').textContent = stats.bestStreak || 0;
+                document.getElementById('quick-stats').style.display = 'flex';
+            }
+        }
+
+        // Check privacy consent
+        function checkPrivacyConsent() {
             const privacyAccepted = localStorage.getItem('denkstdu_privacy_accepted');
             const consentDate = localStorage.getItem('denkstdu_privacy_date');
             
@@ -111,11 +442,10 @@
                     showPrivacyInfo();
                 }, 2000);
             }
+        }
 
-            // Initialize mobile optimizations
-            initMobileOptimizations();
-
-            // Add entrance animations
+        // Add entrance animations
+        function addEntranceAnimations() {
             setTimeout(() => {
                 document.querySelectorAll('.menu-buttons .btn').forEach((btn, index) => {
                     setTimeout(() => {
@@ -131,24 +461,631 @@
             }, 500);
         }
 
-        // Navigation function
-        function navigateTo(page) {
-            // Check privacy for multiplayer features
-            if ((page === 'join-game.html' || page === 'device-selection.html') && 
-                !localStorage.getItem('denkstdu_privacy_accepted')) {
-                showNotification('Für Multiplayer-Features ist eine Datenschutz-Zustimmung erforderlich', 'warning');
-                showPrivacyInfo();
-                return;
-            }
-
-            showLoading();
+        // Animate button click
+        function animateButtonClick(button) {
+            button.style.transform = 'scale(0.95)';
             setTimeout(() => {
-                window.location.href = page;
-            }, 500);
+                button.style.transform = '';
+            }, 150);
+        }
+
+        // Load and apply settings
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('denkstdu_settings') || '{}');
+            
+            // Apply sound settings
+            if (settings.soundEffects === false) {
+                // Disable sound effects
+            }
+            
+            // Apply theme settings
+            if (settings.darkMode === false) {
+                document.body.classList.add('light-mode');
+            }
+            
+            // Apply animation settings
+            if (settings.animations === false) {
+                document.body.classList.add('no-animations');
+            }
+        }
+
+        // Load current settings into modal
+        function loadCurrentSettings() {
+            const settings = JSON.parse(localStorage.getItem('denkstdu_settings') || '{}');
+            
+            document.getElementById('sound-effects').checked = settings.soundEffects !== false;
+            document.getElementById('notification-sounds').checked = settings.notificationSounds !== false;
+            document.getElementById('dark-mode').checked = settings.darkMode !== false;
+            document.getElementById('animations').checked = settings.animations !== false;
+        }
+
+        // Save settings
+        function saveSettings() {
+            const settings = {
+                soundEffects: document.getElementById('sound-effects').checked,
+                notificationSounds: document.getElementById('notification-sounds').checked,
+                darkMode: document.getElementById('dark-mode').checked,
+                animations: document.getElementById('animations').checked,
+                savedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('denkstdu_settings', JSON.stringify(settings));
+            
+            // Apply settings immediately
+            loadSettings();
+            
+            showNotification('Einstellungen gespeichert!', 'success');
+            closeSettingsModal();
+        }
+
+        // Clear all user data
+        function clearAllData() {
+            if (confirm('Wirklich alle Daten löschen? Dies kann nicht rückgängig gemacht werden.')) {
+                // Clear all DenkstDu related localStorage
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('denkstdu_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                // Reset game state
+                gameState.reset();
+                
+                showNotification('Alle Daten wurden gelöscht!', 'success');
+                closeSettingsModal();
+                
+                // Reload page to reset everything
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
+        }
+
+        // Export user data (GDPR compliance)
+        function exportUserData() {
+            const userData = {
+                settings: JSON.parse(localStorage.getItem('denkstdu_settings') || '{}'),
+                stats: JSON.parse(localStorage.getItem('denkstdu_user_stats') || '{}'),
+                gameState: gameState.exportGameData(),
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(userData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `denkstdu-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Daten wurden exportiert!', 'success');
+        }
+
+        // Privacy functions
+        function showPrivacyInfo() {
+            const notice = document.getElementById('privacy-notice');
+            notice.classList.add('show');
+        }
+
+        function acceptPrivacy() {
+            localStorage.setItem('denkstdu_privacy_accepted', 'true');
+            localStorage.setItem('denkstdu_privacy_date', new Date().toISOString());
+            
+            const notice = document.getElementById('privacy-notice');
+            notice.classList.remove('show');
+            
+            showNotification('Datenschutz akzeptiert!', 'success');
+        }
+
+        function declinePrivacy() {
+            const notice = document.getElementById('privacy-notice');
+            notice.classList.remove('show');
+            
+            showNotification('Ohne Datenschutz-Zustimmung sind nur lokale Spiele möglich.', 'warning');
         }
 
         // Start app when DOM is loaded
         document.addEventListener('DOMContentLoaded', initMainMenu);
+
+        // Handle app lifecycle
+        window.addEventListener('beforeunload', function() {
+            // Update user stats before leaving
+            const stats = JSON.parse(localStorage.getItem('denkstdu_user_stats') || '{}');
+            stats.lastVisit = new Date().toISOString();
+            localStorage.setItem('denkstdu_user_stats', JSON.stringify(stats));
+        });
+
+        // Handle service worker registration (PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(function(err) {
+                        console.log('ServiceWorker registration failed');
+                    });
+            });
+        }
     </script>
+
+    <style>
+        /* Enhanced Main Menu Styles */
+        .logo-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .game-description {
+            margin-top: 20px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .game-description p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            }
+            50% {
+                box-shadow: 0 6px 25px rgba(79, 172, 254, 0.7);
+                transform: translateY(-1px);
+            }
+            100% {
+                box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            }
+        }
+
+        .quick-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            display: block;
+            color: #4facfe;
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        /* Large Modal Styles */
+        .large-modal {
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: white;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .modal-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        /* Rules Modal Styles */
+        .rules-content {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .rule-section {
+            margin-bottom: 30px;
+        }
+
+        .rule-section h4 {
+            color: #4facfe;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rule-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .rule-step {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            background: #4facfe;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .step-content h5 {
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .step-content p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .sips-rules {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sips-rule {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .sips-icon {
+            font-size: 1.2rem;
+        }
+
+        .sips-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+        }
+
+        .game-modes {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .mode-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .mode-icon {
+            font-size: 1.8rem;
+        }
+
+        .mode-info h5 {
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .mode-info p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .categories-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .category-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .category-icon {
+            font-size: 1.5rem;
+        }
+
+        .category-details h5 {
+            color: white;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .category-details p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        /* Settings Modal Styles */
+        .settings-content {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-group h4 {
+            color: #4facfe;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting-item {
+            margin-bottom: 12px;
+        }
+
+        .setting-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px 0;
+            transition: all 0.2s ease;
+        }
+
+        .setting-label:hover {
+            color: white;
+        }
+
+        .setting-label input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkmark {
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.2s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .setting-label input[type="checkbox"]:checked + .checkmark {
+            background: #4facfe;
+            border-color: #4facfe;
+        }
+
+        .setting-label input[type="checkbox"]:checked + .checkmark::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .setting-item .btn {
+            margin-top: 5px;
+            font-size: 0.9rem;
+            padding: 10px 15px;
+        }
+
+        /* Modal Animation */
+        .modal-content {
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .modal-content.modal-enter {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* Light mode styles */
+        .light-mode {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        }
+
+        .light-mode .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+
+        .light-mode .logo {
+            color: white;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+        }
+
+        /* No animations class */
+        .no-animations * {
+            animation-duration: 0s !important;
+            transition-duration: 0s !important;
+        }
+
+        /* Mobile Responsive for Modals */
+        @media (max-width: 768px) {
+            .large-modal {
+                max-width: 95vw;
+                max-height: 90vh;
+                margin: 20px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .rule-step {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .step-number {
+                align-self: flex-start;
+            }
+
+            .game-modes,
+            .categories-info {
+                gap: 10px;
+            }
+
+            .mode-item,
+            .category-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+
+            .quick-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .game-description p {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Enhanced Privacy Notice */
+        .privacy-notice {
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .privacy-notice.show {
+            animation: slideUpIn 0.4s ease-out;
+        }
+
+        @keyframes slideUpIn {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        /* Enhanced Button Styles */
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn.btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Improved Focus Styles */
+        .btn:focus,
+        .setting-label:focus {
+            outline: 2px solid #4facfe;
+            outline-offset: 2px;
+        }
+
+        /* Loading Animation Enhancement */
+        .loading.show {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Custom Scrollbar for Modals */
+        .large-modal::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .large-modal::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .large-modal::-webkit-scrollbar-thumb {
+            background: rgba(79, 172, 254, 0.6);
+            border-radius: 3px;
+        }
+
+        .large-modal::-webkit-scrollbar-thumb:hover {
+            background: rgba(79, 172, 254, 0.8);
+        }
+    </style>
 </body>
 </html>

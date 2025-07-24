@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Spiel beitreten</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="goBack()">← Zurück</button>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="content-area">
+                <h2 class="screen-title">Spiel beitreten</h2>
+                
+                <div class="glass-card">
+                    <div class="join-header">
+                        <div class="join-icon">🔗</div>
+                        <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 25px;">
+                            Tritt dem Spiel deiner Freunde bei
+                        </p>
+                    </div>
+
+                    <!-- Game ID Input -->
+                    <div class="game-id-section">
+                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">Game ID eingeben</h3>
+                        <div class="game-id-input-container">
+                            <input type="text" 
+                                   class="game-id-input" 
+                                   id="game-id-input" 
+                                   placeholder="ABC123" 
+                                   maxlength="6"
+                                   autocomplete="off"
+                                   onInput="formatGameId(this)"
+                                   onKeyPress="handleGameIdKeyPress(event)">
+                            <button class="paste-btn" onclick="pasteGameId()" title="Einfügen">📋</button>
+                        </div>
+                        <div class="input-hint">
+                            6-stelliger Code vom Gastgeber
+                        </div>
+                    </div>
+
+                    <!-- OR Divider -->
+                    <div class="divider">
+                        <span class="divider-text">ODER</span>
+                    </div>
+
+                    <!-- QR Code Scanner -->
+                    <div class="qr-scanner-section">
+                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">QR-Code scannen</h3>
+                        <button class="btn btn-secondary qr-scan-btn" onclick="startQRScanner()" id="qr-scan-btn">
+                            📷 QR-Code scannen
+                        </button>
+                        <div class="qr-scanner-container" id="qr-scanner" style="display: none;">
+                            <video id="qr-video" autoplay></video>
+                            <div class="qr-overlay">
+                                <div class="qr-frame"></div>
+                                <div class="qr-instruction">QR-Code in den Rahmen halten</div>
+                            </div>
+                            <button class="btn btn-outline" onclick="stopQRScanner()">
+                                ❌ Scanner schließen
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Player Name Input -->
+                    <div class="player-name-section" id="player-name-section" style="display: none;">
+                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">Dein Name</h3>
+                        <input type="text" 
+                               class="player-name-input" 
+                               id="player-name-input" 
+                               placeholder="Dein Spielername" 
+                               maxlength="20"
+                               onKeyPress="handleNameKeyPress(event)">
+                        <div class="input-hint">
+                            Wie sollen dich die anderen nennen?
+                        </div>
+                    </div>
+
+                    <!-- Game Info Preview -->
+                    <div class="game-info-preview" id="game-info-preview" style="display: none;">
+                        <h4 style="color: #4facfe; margin-bottom: 10px;">🎮 Spiel-Info</h4>
+                        <div class="game-info-grid">
+                            <div class="info-item">
+                                <span class="info-emoji">👑</span>
+                                <span class="info-text">
+                                    <strong>Gastgeber:</strong> <span id="game-host">Max</span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-emoji">👥</span>
+                                <span class="info-text">
+                                    <strong>Spieler:</strong> <span id="game-players">3/8</span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-emoji">📝</span>
+                                <span class="info-text">
+                                    <strong>Kategorien:</strong> <span id="game-categories">Party Time</span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-emoji">🍺</span>
+                                <span class="info-text">
+                                    <strong>Modus:</strong> <span id="game-difficulty">Standard</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Join Button -->
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
+                    <button class="btn join-game-btn" onclick="joinGame()" id="join-btn" disabled>
+                        🚀 Spiel beitreten
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal" id="error-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="error-icon">❌</div>
+            <h3 id="error-title">Fehler</h3>
+            <p id="error-message">Etwas ist schiefgelaufen.</p>
+            <button class="btn" onclick="closeErrorModal()">OK</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/gameState.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/privacy.js"></script>
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+            authDomain: "denkstduwebsite.firebaseapp.com",
+            projectId: "denkstduwebsite",
+            storageBucket: "denkstduwebsite.firebasestorage.app",
+            messagingSenderId: "27029260611",
+            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+            measurementId: "G-BNKNW95HK8"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        // Game variables
+        let currentGameData = null;
+        let qrScanner = null;
+
+        // Initialize join game page
+        function initJoinGame() {
+            // Check for Game ID in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameIdFromUrl = urlParams.get('gameId');
+            
+            if (gameIdFromUrl) {
+                document.getElementById('game-id-input').value = gameIdFromUrl.toUpperCase();
+                lookupGame(gameIdFromUrl);
+            }
+
+            // Check privacy consent
+            if (!localStorage.getItem('denkstdu_privacy_accepted')) {
+                showPrivacyNotice();
+                return;
+            }
+
+            // Initialize mobile optimizations
+            initMobileOptimizations();
+
+            // Add entrance animations
+            setTimeout(() => {
+                document.querySelector('.glass-card').style.opacity = '0';
+                document.querySelector('.glass-card').style.transform = 'translateY(20px)';
+                document.querySelector('.glass-card').style.transition = 'all 0.6s ease';
+                setTimeout(() => {
+                    document.querySelector('.glass-card').style.opacity = '1';
+                    document.querySelector('.glass-card').style.transform = 'translateY(0)';
+                }, 100);
+            }, 300);
+        }
+
+        // Format Game ID input
+        function formatGameId(input) {
+            let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            input.value = value;
+
+            if (value.length === 6) {
+                lookupGame(value);
+            } else {
+                // Hide game info if input is incomplete
+                document.getElementById('game-info-preview').style.display = 'none';
+                document.getElementById('player-name-section').style.display = 'none';
+                updateJoinButton();
+            }
+        }
+
+        // Handle Enter key in Game ID input
+        function handleGameIdKeyPress(event) {
+            if (event.key === 'Enter') {
+                const gameId = document.getElementById('game-id-input').value;
+                if (gameId.length === 6) {
+                    lookupGame(gameId);
+                }
+            }
+        }
+
+        // Handle Enter key in player name input
+        function handleNameKeyPress(event) {
+            if (event.key === 'Enter') {
+                joinGame();
+            }
+        }
+
+        // Paste Game ID from clipboard
+        async function pasteGameId() {
+            try {
+                if (navigator.clipboard) {
+                    const text = await navigator.clipboard.readText();
+                    const gameId = text.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+                    
+                    if (gameId.length === 6) {
+                        document.getElementById('game-id-input').value = gameId;
+                        lookupGame(gameId);
+                        showNotification('Game ID eingefügt!', 'success');
+                    } else {
+                        showErrorModal('Ungültige Game ID', 'Die Zwischenablage enthält keine gültige 6-stellige Game ID.');
+                    }
+                }
+            } catch (error) {
+                showNotification('Zwischenablage nicht verfügbar', 'warning');
+            }
+        }
+
+        // Start QR Code scanner
+        function startQRScanner() {
+            const scannerContainer = document.getElementById('qr-scanner');
+            const video = document.getElementById('qr-video');
+            
+            // Check if camera is available
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showErrorModal('Kamera nicht verfügbar', 'Dein Gerät unterstützt keinen Kamera-Zugriff. Bitte gib die Game ID manuell ein.');
+                return;
+            }
+
+            // Request camera permission
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    scannerContainer.style.display = 'block';
+                    
+                    // Hide scan button
+                    document.getElementById('qr-scan-btn').style.display = 'none';
+                    
+                    // Start QR scanning (simplified implementation)
+                    startQRDetection(video);
+                })
+                .catch(error => {
+                    console.error('Camera access denied:', error);
+                    showErrorModal('Kamera-Zugriff verweigert', 'Bitte erlaube den Kamera-Zugriff und versuche es erneut, oder gib die Game ID manuell ein.');
+                });
+        }
+
+        // Stop QR Code scanner
+        function stopQRScanner() {
+            const video = document.getElementById('qr-video');
+            const scannerContainer = document.getElementById('qr-scanner');
+            
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            scannerContainer.style.display = 'none';
+            document.getElementById('qr-scan-btn').style.display = 'block';
+        }
+
+        // Simplified QR detection (for demo purposes)
+        function startQRDetection(video) {
+            // In a real implementation, you would use a QR code library like jsQR
+            // For demo purposes, we'll simulate QR detection after 3 seconds
+            setTimeout(() => {
+                const demoGameId = 'DEMO12';
+                document.getElementById('game-id-input').value = demoGameId;
+                lookupGame(demoGameId);
+                stopQRScanner();
+                showNotification('QR-Code erkannt!', 'success');
+            }, 3000);
+        }
+
+        // Lookup game by ID
+        async function lookupGame(gameId) {
+            if (!gameId || gameId.length !== 6) return;
+
+            showLoading();
+
+            try {
+                // For demo purposes, simulate game lookup
+                setTimeout(() => {
+                    // Simulate successful game lookup
+                    currentGameData = {
+                        gameId: gameId,
+                        gameCreator: 'Max',
+                        players: {
+                            'Max': { name: 'Max', isReady: true },
+                            'Anna': { name: 'Anna', isReady: true },
+                            'Lisa': { name: 'Lisa', isReady: false }
+                        },
+                        categories: ['fsk16'],
+                        difficulty: 'medium',
+                        maxPlayers: 8,
+                        gameState: 'waiting'
+                    };
+
+                    hideLoading();
+                    displayGameInfo(currentGameData);
+                    showPlayerNameInput();
+                    showNotification('Spiel gefunden!', 'success');
+                }, 1000);
+
+            } catch (error) {
+                hideLoading();
+                console.error('Error looking up game:', error);
+                showErrorModal('Spiel nicht gefunden', `Das Spiel mit der ID "${gameId}" konnte nicht gefunden werden. Überprüfe die Game ID und versuche es erneut.`);
+            }
+        }
+
+        // Display game information
+        function displayGameInfo(gameData) {
+            const preview = document.getElementById('game-info-preview');
+            
+            // Update game info
+            document.getElementById('game-host').textContent = gameData.gameCreator;
+            
+            const playerCount = Object.keys(gameData.players || {}).length;
+            document.getElementById('game-players').textContent = `${playerCount}/${gameData.maxPlayers}`;
+            
+            const categoryNames = {
+                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
+                'fsk16': '🎉 Party Time',
+                'fsk18': '🔥 Heiß & Gewagt'
+            };
+            const categories = gameData.categories.map(cat => categoryNames[cat] || cat).join(', ');
+            document.getElementById('game-categories').textContent = categories;
+            
+            const difficultyNames = {
+                'easy': '🍺 Entspannt',
+                'medium': '🍺🍺 Standard',
+                'hard': '🍺🍺🍺 Hardcore'
+            };
+            document.getElementById('game-difficulty').textContent = difficultyNames[gameData.difficulty] || 'Standard';
+            
+            // Show preview with animation
+            preview.style.display = 'block';
+            preview.style.opacity = '0';
+            preview.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                preview.style.transition = 'all 0.4s ease';
+                preview.style.opacity = '1';
+                preview.style.transform = 'translateY(0)';
+            }, 100);
+        }
+
+        // Show player name input
+        function showPlayerNameInput() {
+            const nameSection = document.getElementById('player-name-section');
+            nameSection.style.display = 'block';
+            nameSection.style.opacity = '0';
+            nameSection.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                nameSection.style.transition = 'all 0.4s ease';
+                nameSection.style.opacity = '1';
+                nameSection.style.transform = 'translateY(0)';
+                
+                // Focus name input
+                document.getElementById('player-name-input').focus();
+            }, 200);
+
+            // Add input listener for join button
+            document.getElementById('player-name-input').addEventListener('input', updateJoinButton);
+            updateJoinButton();
+        }
+
+        // Update join button state
+        function updateJoinButton() {
+            const joinBtn = document.getElementById('join-btn');
+            const gameId = document.getElementById('game-id-input').value;
+            const playerName = document.getElementById('player-name-input').value.trim();
+            
+            const isValidGameId = gameId.length === 6;
+            const isValidName = playerName.length >= 2 && playerName.length <= 20;
+            const hasGameData = currentGameData !== null;
+            
+            const canJoin = isValidGameId && isValidName && hasGameData;
+            
+            joinBtn.disabled = !canJoin;
+            joinBtn.style.opacity = canJoin ? '1' : '0.5';
+            joinBtn.style.cursor = canJoin ? 'pointer' : 'not-allowed';
+        }
+
+        // Join the game
+        async function joinGame() {
+            const gameId = document.getElementById('game-id-input').value;
+            const playerName = document.getElementById('player-name-input').value.trim();
+
+            if (!currentGameData) {
+                showErrorModal('Spiel nicht verfügbar', 'Bitte lade das Spiel zuerst, bevor du beitrittst.');
+                return;
+            }
+
+            if (!playerName || playerName.length < 2) {
+                showErrorModal('Ungültiger Name', 'Bitte gib einen Namen mit mindestens 2 Zeichen ein.');
+                return;
+            }
+
+            // Check if name is already taken
+            const existingPlayers = Object.values(currentGameData.players || {});
+            if (existingPlayers.some(player => player.name.toLowerCase() === playerName.toLowerCase())) {
+                showErrorModal('Name bereits vergeben', 'Dieser Name wird bereits von einem anderen Spieler verwendet. Bitte wähle einen anderen Namen.');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                // For demo purposes, simulate joining
+                setTimeout(() => {
+                    // Save game data
+                    gameState.setGameId(gameId);
+                    gameState.setPlayerName(playerName);
+                    gameState.setDeviceMode('multi');
+                    
+                    // Store in localStorage
+                    localStorage.setItem('activeGameId', gameId);
+                    localStorage.setItem('playerName', playerName);
+                    
+                    hideLoading();
+                    showNotification('Erfolgreich beigetreten!', 'success');
+                    
+                    // Navigate to gameplay
+                    setTimeout(() => {
+                        window.location.href = 'gameplay.html';
+                    }, 1500);
+                }, 1500);
+
+            } catch (error) {
+                hideLoading();
+                console.error('Error joining game:', error);
+                showErrorModal('Beitritt fehlgeschlagen', 'Beim Beitreten ist ein Fehler aufgetreten. Versuche es erneut.');
+            }
+        }
+
+        // Show privacy notice
+        function showPrivacyNotice() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>🔒 Datenschutz-Zustimmung</h3>
+                    <p>Für den Online-Multiplayer benötigen wir deine Zustimmung zur Datenverarbeitung.</p>
+                    
+                    <div class="privacy-details">
+                        <h4>Was wird gespeichert?</h4>
+                        <ul>
+                            <li>✅ Nur Spielername und Spielantworten</li>
+                            <li>✅ Automatische Löschung nach 24h</li>
+                            <li>✅ Keine Werbung oder Tracking</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="modal-buttons">
+                        <button class="btn btn-outline" onclick="declinePrivacy()">Ablehnen</button>
+                        <button class="btn" onclick="acceptPrivacy()">Zustimmen</button>
+                    </div>
+                    
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="privacy.html" target="_blank" style="color: #4facfe; font-size: 0.9rem;">
+                            → Datenschutzerklärung
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 9999; padding: 20px;
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        // Accept privacy
+        function acceptPrivacy() {
+            localStorage.setItem('denkstdu_privacy_accepted', 'true');
+            localStorage.setItem('denkstdu_privacy_date', new Date().toISOString());
+            
+            const modal = document.querySelector('.modal');
+            if (modal) {
+                modal.remove();
+            }
+            
+            showNotification('Datenschutz akzeptiert', 'success');
+        }
+
+        // Decline privacy
+        function declinePrivacy() {
+            showNotification('Ohne Datenschutz-Zustimmung ist kein Online-Multiplayer möglich.', 'warning');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+
+        // Show error modal
+        function showErrorModal(title, message) {
+            document.getElementById('error-title').textContent = title;
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-modal').style.display = 'flex';
+        }
+
+        // Close error modal
+        function closeErrorModal() {
+            document.getElementById('error-modal').style.display = 'none';
+        }
+
+        // Go back to main menu
+        function goBack() {
+            // Clean up camera if active
+            stopQRScanner();
+            
+            // Navigate back
+            window.location.href = 'index.html';
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initJoinGame);
+    </script>
+
+    <style>
+        /* Join Game Specific Styles */
+        .join-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .join-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .game-id-section {
+            margin-bottom: 30px;
+        }
+
+        .game-id-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .game-id-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            backdrop-filter: blur(10px);
+        }
+
+        .game-id-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .game-id-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 400;
+        }
+
+        .paste-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            color: white;
+            min-width: 50px;
+        }
+
+        .paste-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #4facfe;
+            transform: scale(1.05);
+        }
+
+        .input-hint {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 30px 0;
+            opacity: 0.6;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .divider-text {
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .qr-scanner-section {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .qr-scan-btn {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .qr-scanner-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        #qr-video {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .qr-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .qr-frame {
+            width: 150px;
+            height: 150px;
+            border: 3px solid #4facfe;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .qr-frame::before,
+        .qr-frame::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #4facfe;
+        }
+
+        .qr-frame::before {
+            top: -3px;
+            left: -3px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .qr-frame::after {
+            bottom: -3px;
+            right: -3px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .qr-instruction {
+            color: white;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .player-name-section {
+            margin-bottom: 30px;
+        }
+
+        .player-name-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1.1rem;
+            color: white;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            margin-bottom: 10px;
+        }
+
+        .player-name-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .player-name-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .game-info-preview {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+
+        .game-info-grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-emoji {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .info-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            line-height: 1.3;
+        }
+
+        .join-game-btn {
+            font-size: 1.1rem;
+            padding: 18px;
+        }
+
+        /* Error Modal */
+        .error-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-content .error-icon {
+            color: #ff6b6b;
+        }
+
+        /* Privacy Modal Styles */
+        .privacy-details {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .privacy-details h4 {
+            color: #4facfe;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .privacy-details ul {
+            margin: 10px 0 0 20px;
+            padding: 0;
+        }
+
+        .privacy-details li {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .game-id-input {
+                font-size: 1.2rem;
+                padding: 12px;
+            }
+
+            .game-id-input-container {
+                flex-direction: column;
+            }
+
+            .paste-btn {
+                align-self: center;
+                min-width: 120px;
+            }
+
+            #qr-video {
+                height: 180px;
+            }
+
+            .qr-frame {
+                width: 120px;
+                height: 120px;
+            }
+
+            .game-info-grid {
+                gap: 8px;
+            }
+
+            .info-text {
+                font-size: 0.8rem;
+            }
+
+            .privacy-details {
+                text-align: center;
+            }
+
+            .privacy-details ul {
+                text-align: left;
+                margin-left: 15px;
+            }
+        }
+
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</body>
+</html>
