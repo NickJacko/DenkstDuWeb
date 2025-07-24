@@ -59,8 +59,14 @@
                             📱 QR-Code anzeigen
                         </button>
                         <div class="qr-code-container" id="qr-code-container" style="display: none;">
-                            <canvas id="qr-canvas" width="200" height="200"></canvas>
-                            <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-top: 10px;">
+                            <div class="qr-placeholder">
+                                <div style="width: 200px; height: 200px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                    <div style="color: #333; text-align: center; font-size: 0.9rem;">
+                                        QR-Code für<br><strong id="qr-game-id">ABC123</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-top: 10px; text-align: center;">
                                 Andere können diesen QR-Code scannen um beizutreten
                             </p>
                         </div>
@@ -70,7 +76,7 @@
                     <div class="players-section">
                         <h4 style="color: white; margin-bottom: 15px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px;">
                             <span>👥 Wartende Spieler</span>
-                            <span class="player-counter" id="player-counter">(0/8)</span>
+                            <span class="player-counter" id="player-counter">(1/8)</span>
                         </h4>
                         
                         <div id="waiting-players" class="player-list">
@@ -127,8 +133,6 @@
     <script>
         let gameId = null;
         let isHost = true;
-        let gameRef = null;
-        let playersRef = null;
         let connectedPlayers = [];
 
         // Initialize multiplayer lobby
@@ -143,7 +147,7 @@
             // Load game settings
             loadGameSettings();
 
-            // Create or join game
+            // Create game
             createGame();
 
             // Initialize mobile optimizations
@@ -182,28 +186,19 @@
                 // Generate game ID
                 gameId = gameState.generateGameId();
                 
-                // Create Firebase game
-                const gameData = await firebaseGameManager.createGame({
-                    creatorName: 'Host',
-                    categories: gameState.selectedCategories,
-                    difficulty: gameState.difficulty,
-                    maxPlayers: 8,
-                    roundsCount: 10
-                });
-
                 // Update UI
                 document.getElementById('game-id-text').textContent = gameId;
+                document.getElementById('qr-game-id').textContent = gameId;
                 document.getElementById('qr-section').style.display = 'block';
-                
-                // Generate QR Code
-                generateQRCode();
-
-                // Start listening for players
-                listenForPlayers();
 
                 hideLoading();
                 
                 showNotification('Lobby erstellt! Teile die Game ID mit deinen Freunden.', 'success');
+
+                // Start demo simulation
+                setTimeout(() => {
+                    simulatePlayersJoining();
+                }, 2000);
 
             } catch (error) {
                 console.error('Error creating game:', error);
@@ -212,52 +207,375 @@
             }
         }
 
-        // Listen for joining players
-        function listenForPlayers() {
-            if (!firebaseGameManager.currentGameRef) return;
+        // Simulate players joining (for demo)
+        function simulatePlayersJoining() {
+            const demoPlayers = [
+                { name: 'Anna', delay: 2000 },
+                { name: 'Max', delay: 4000 },
+                { name: 'Lisa', delay: 7000 }
+            ];
 
-            firebaseGameManager.onPlayersUpdate((players) => {
-                connectedPlayers = Object.entries(players || {});
-                updatePlayersList();
-                updateStartButton();
+            demoPlayers.forEach(player => {
+                setTimeout(() => {
+                    addPlayerToLobby(player.name);
+                }, player.delay);
             });
         }
 
-        // Update players list
-        function updatePlayersList() {
+        // Add player to lobby
+        function addPlayerToLobby(playerName) {
             const container = document.getElementById('waiting-players');
+            
+            const playerItem = document.createElement('div');
+            playerItem.className = 'player-item';
+            playerItem.innerHTML = `
+                <span class="player-emoji">👤</span>
+                <span class="player-name">${playerName}</span>
+                <span class="player-status ready">Bereit</span>
+            `;
+            
+            container.appendChild(playerItem);
+
+            // Add entrance animation
+            playerItem.style.opacity = '0';
+            playerItem.style.transform = 'translateX(-20px)';
+            setTimeout(() => {
+                playerItem.style.transition = 'all 0.3s ease';
+                playerItem.style.opacity = '1';
+                playerItem.style.transform = 'translateX(0)';
+            }, 10);
+
+            // Update counters
+            connectedPlayers.push({ name: playerName, isReady: true });
+            updatePlayerCounter();
+            updateStartButton();
+            
+            showNotification(`${playerName} ist beigetreten!`, 'info');
+        }
+
+        // Update player counter
+        function updatePlayerCounter() {
             const counter = document.getElementById('player-counter');
             const status = document.getElementById('lobby-status');
+            const totalPlayers = connectedPlayers.length + 1; // +1 for host
             
-            // Clear existing players (except host)
-            const hostPlayer = container.querySelector('.host-player');
-            container.innerHTML = '';
-            container.appendChild(hostPlayer);
+            counter.textContent = `(${totalPlayers}/8)`;
 
-            // Add connected players
-            connectedPlayers.forEach(([playerName, playerData]) => {
-                if (playerName !== 'Host') {
-                    const playerItem = document.createElement('div');
-                    playerItem.className = 'player-item';
-                    playerItem.innerHTML = `
-                        <span class="player-emoji">👤</span>
-                        <span class="player-name">${playerName}</span>
-                        <span class="player-status ${playerData.isReady ? 'ready' : 'waiting'}">
-                            ${playerData.isReady ? 'Bereit' : 'Wartet...'}
-                        </span>
-                    `;
-                    container.appendChild(playerItem);
+            // Update status
+            if (totalPlayers >= 2) {
+                status.innerHTML = `
+                    <div style="color: #4facfe; text-align: center; font-weight: 600;">
+                        ✅ Bereit zum Starten!
+                    </div>
+                `;
+            } else {
+                status.innerHTML = `
+                    <div style="color: rgba(255,255,255,0.7); text-align: center;">
+                        Warte auf weitere Spieler... (mindestens 2 benötigt)
+                    </div>
+                `;
+            }
+        }
 
-                    // Add entrance animation
-                    playerItem.style.opacity = '0';
-                    playerItem.style.transform = 'translateX(-20px)';
+        // Update start button
+        function updateStartButton() {
+            const startBtn = document.getElementById('start-multiplayer');
+            const counter = document.getElementById('start-counter');
+            const totalPlayers = connectedPlayers.length + 1;
+            
+            counter.textContent = `(${totalPlayers}/${totalPlayers >= 2 ? totalPlayers : 2})`;
+            
+            if (totalPlayers >= 2) {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+            } else {
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.5';
+            }
+        }
+
+        // Toggle QR Code display
+        function toggleQRCode() {
+            const container = document.getElementById('qr-code-container');
+            const button = document.getElementById('qr-toggle');
+            
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                button.textContent = '📱 QR-Code ausblenden';
+            } else {
+                container.style.display = 'none';
+                button.textContent = '📱 QR-Code anzeigen';
+            }
+        }
+
+        // Copy game ID
+        function copyGameId() {
+            const gameIdText = document.getElementById('game-id-text').textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(gameIdText).then(() => {
+                    showNotification('Game ID kopiert!', 'success');
+                    
+                    // Visual feedback
+                    const copyBtn = document.getElementById('copy-btn');
+                    copyBtn.textContent = '✅';
                     setTimeout(() => {
-                        playerItem.style.transition = 'all 0.3s ease';
-                        playerItem.style.opacity = '1';
-                        playerItem.style.transform = 'translateX(0)';
-                    }, 10);
-                }
+                        copyBtn.textContent = '📋';
+                    }, 2000);
+                });
+            } else {
+                showNotification('Game ID kopiert!', 'success');
+            }
+        }
+
+        // Share game
+        function shareGame() {
+            const gameUrl = `${window.location.origin}/join-game.html?gameId=${gameId}`;
+            const shareData = {
+                title: 'DenkstDu Spiel',
+                text: `Tritt meinem DenkstDu Spiel bei! Game ID: ${gameId}`,
+                url: gameUrl
+            };
+
+            if (navigator.share && navigator.canShare(shareData)) {
+                navigator.share(shareData).catch(err => {
+                    copyGameUrl(gameUrl);
+                });
+            } else {
+                copyGameUrl(gameUrl);
+            }
+        }
+
+        // Copy game URL
+        function copyGameUrl(url) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showNotification('Spiel-Link kopiert!', 'success');
+                });
+            }
+        }
+
+        // Start multiplayer game
+        async function startMultiplayerGame() {
+            const totalPlayers = connectedPlayers.length + 1;
+            
+            if (totalPlayers < 2) {
+                showNotification('Mindestens 2 Spieler benötigt!', 'warning');
+                return;
+            }
+
+            try {
+                showLoading();
+
+                // Prepare local game state
+                const allPlayers = ['Du', ...connectedPlayers.map(p => p.name)];
+                gameState.setPlayers(allPlayers);
+                gameState.initializeGame();
+
+                showNotification('Spiel wird gestartet...', 'success');
+
+                // Navigate to gameplay
+                setTimeout(() => {
+                    window.location.href = 'gameplay.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error starting game:', error);
+                hideLoading();
+                showNotification('Fehler beim Starten: ' + error.message, 'error');
+            }
+        }
+
+        // Leave lobby
+        function leaveLobby() {
+            if (confirm('Lobby wirklich verlassen? Das Spiel wird beendet.')) {
+                showLoading();
+                setTimeout(() => {
+                    window.location.href = 'difficulty-selection.html';
+                }, 300);
+            }
+        }
+
+        // Add connection listeners
+        function addConnectionListeners() {
+            window.addEventListener('online', () => {
+                showNotification('Verbindung wiederhergestellt', 'success');
             });
 
-            // Update counter
-            const totalPl
+            window.addEventListener('offline', () => {
+                showNotification('Verbindung verloren', 'warning');
+            });
+        }
+
+        // Go back to previous page
+        function goBack() {
+            leaveLobby();
+        }
+
+        // Start page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initMultiplayerLobby);
+    </script>
+
+    <style>
+        /* Multiplayer lobby specific styles */
+        .game-id-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .game-id-display {
+            background: rgba(79, 172, 254, 0.2);
+            border: 2px solid #4facfe;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        .game-id-text {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #4facfe;
+            letter-spacing: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .qr-section {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .qr-code-container {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .players-section {
+            margin-bottom: 25px;
+        }
+
+        .player-counter {
+            background: #4facfe;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .player-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+            border-left: 3px solid #4facfe;
+            transition: all 0.3s ease;
+        }
+
+        .player-item.host-player {
+            border-left-color: #FFD700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .player-emoji {
+            font-size: 1.5rem;
+        }
+
+        .player-name {
+            flex: 1;
+            font-weight: 600;
+        }
+
+        .player-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .player-status.ready {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+
+        .lobby-status {
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .game-settings {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .settings-grid {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .setting-label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .setting-value {
+            color: white;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .game-id-text {
+                font-size: 1.5rem;
+                letter-spacing: 2px;
+            }
+
+            .game-id-display {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+        }
+    </style>
+</body>
+</html>
