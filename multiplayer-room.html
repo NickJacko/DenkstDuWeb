@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Warte auf Spielstart</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="leaveGame()">← Spiel verlassen</button>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="content-area">
+                <h2 class="screen-title">Warte auf Spielstart</h2>
+                
+                <div class="glass-card">
+                    <!-- Connection Status -->
+                    <div class="connection-status" id="connection-status">
+                        <div class="status-indicator connected">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Verbunden</span>
+                        </div>
+                    </div>
+
+                    <!-- Game Info -->
+                    <div class="game-info-section">
+                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">
+                            🎮 Spiel: <span id="game-code-display">ABC123</span>
+                        </h3>
+                        
+                        <div class="player-info">
+                            <div class="player-card">
+                                <span class="player-avatar">👤</span>
+                                <div class="player-details">
+                                    <div class="player-name" id="player-name-display">Dein Name</div>
+                                    <div class="player-role">Mitspieler</div>
+                                </div>
+                                <div class="player-status ready">✅ Bereit</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Players -->
+                    <div class="players-section">
+                        <h4 style="color: white; margin-bottom: 15px; text-align: center;">
+                            👥 Alle Spieler <span class="player-counter" id="player-counter">(2/8)</span>
+                        </h4>
+                        
+                        <div id="all-players" class="player-list">
+                            <!-- Spieler werden hier dynamisch eingefügt -->
+                        </div>
+                    </div>
+
+                    <!-- Game Settings -->
+                    <div class="game-settings">
+                        <h4 style="color: #4facfe; margin-bottom: 10px;">⚙️ Spiel-Einstellungen</h4>
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <span class="setting-label">📝 Kategorien:</span>
+                                <span class="setting-value" id="categories-display">Party Time</span>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">🍺 Schlücke:</span>
+                                <span class="setting-value" id="difficulty-display">Standard</span>
+                            </div>
+                            <div class="setting-item">
+                                <span class="setting-label">🎯 Runden:</span>
+                                <span class="setting-value">10 Fragen</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Waiting Message -->
+                    <div class="waiting-message" id="waiting-message">
+                        <div class="waiting-animation">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                        <div class="waiting-text">
+                            Warte auf den Gastgeber...
+                        </div>
+                        <div class="waiting-subtext">
+                            Das Spiel startet automatisch, sobald der Gastgeber es beginnt.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="leaveGame()">Spiel verlassen</button>
+                    <button class="btn btn-secondary" onclick="toggleReady()" id="ready-btn">
+                        ✅ Bereit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Confirmation Modal -->
+    <div class="modal" id="leave-modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Spiel verlassen?</h3>
+            <p>Bist du sicher, dass du das Spiel verlassen möchtest?</p>
+            <div class="modal-buttons">
+                <button class="btn btn-outline" onclick="closeLeaveModal()">Abbrechen</button>
+                <button class="btn btn-danger" onclick="confirmLeaveGame()">Ja, verlassen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Game state from localStorage
+        let gameState = JSON.parse(localStorage.getItem('denkstdu_game_state') || '{}');
+        let isReady = true;
+        let allPlayers = [];
+
+        // Initialize waiting room
+        function initWaitingRoom() {
+            console.log('Initializing waiting room...');
+            console.log('Game State:', gameState);
+
+            // Load player info
+            loadPlayerInfo();
+            
+            // Load game settings
+            loadGameSettings();
+            
+            // Simulate other players
+            simulateOtherPlayers();
+            
+            // Simulate game start after some time
+            setTimeout(() => {
+                simulateGameStart();
+            }, 10000); // 10 seconds for demo
+        }
+
+        // Load player information
+        function loadPlayerInfo() {
+            document.getElementById('game-code-display').textContent = gameState.gameId || 'UNKNOWN';
+            document.getElementById('player-name-display').textContent = gameState.playerName || 'Unbekannt';
+        }
+
+        // Load game settings
+        function loadGameSettings() {
+            const categoryNames = {
+                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
+                'fsk16': '🎉 Party Time',
+                'fsk18': '🔥 Heiß & Gewagt'
+            };
+
+            const difficultyNames = {
+                'easy': '🍺 Entspannt',
+                'medium': '🍺🍺 Standard',
+                'hard': '🍺🍺🍺 Hardcore'
+            };
+
+            // Update categories
+            const categories = (gameState.selectedCategories || ['fsk16']).map(cat => categoryNames[cat] || cat).join(' • ');
+            document.getElementById('categories-display').textContent = categories;
+            
+            // Update difficulty
+            document.getElementById('difficulty-display').textContent = 
+                difficultyNames[gameState.difficulty] || 'Standard';
+        }
+
+        // Simulate other players in the game
+        function simulateOtherPlayers() {
+            allPlayers = [
+                { name: 'Max Mustermann', isHost: true, isReady: true },
+                { name: gameState.playerName || 'Du', isHost: false, isReady: true },
+                { name: 'Anna Schmidt', isHost: false, isReady: true },
+                { name: 'Lisa Weber', isHost: false, isReady: false }
+            ];
+
+            updatePlayersList();
+            updatePlayerCounter();
+
+            // Simulate Lisa getting ready after 5 seconds
+            setTimeout(() => {
+                const lisa = allPlayers.find(p => p.name === 'Lisa Weber');
+                if (lisa) {
+                    lisa.isReady = true;
+                    updatePlayersList();
+                    showNotification('Lisa Weber ist jetzt bereit!', 'info');
+                }
+            }, 5000);
+        }
+
+        // Update players list display
+        function updatePlayersList() {
+            const container = document.getElementById('all-players');
+            container.innerHTML = '';
+
+            allPlayers.forEach(player => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                if (player.isHost) playerItem.classList.add('host-player');
+                if (player.name === gameState.playerName) playerItem.classList.add('current-player');
+
+                playerItem.innerHTML = `
+                    <span class="player-emoji">${player.isHost ? '👑' : '👤'}</span>
+                    <span class="player-name">${player.name}${player.name === gameState.playerName ? ' (Du)' : ''}</span>
+                    <span class="player-status ${player.isReady ? 'ready' : 'waiting'}">
+                        ${player.isReady ? '✅ Bereit' : '⏳ Wartet'}
+                    </span>
+                `;
+
+                container.appendChild(playerItem);
+            });
+        }
+
+        // Update player counter
+        function updatePlayerCounter() {
+            const counter = document.getElementById('player-counter');
+            counter.textContent = `(${allPlayers.length}/8)`;
+        }
+
+        // Toggle ready status
+        function toggleReady() {
+            isReady = !isReady;
+            const readyBtn = document.getElementById('ready-btn');
+            
+            // Update local player status
+            const currentPlayer = allPlayers.find(p => p.name === gameState.playerName);
+            if (currentPlayer) {
+                currentPlayer.isReady = isReady;
+            }
+
+            // Update button
+            if (isReady) {
+                readyBtn.innerHTML = '✅ Bereit';
+                readyBtn.className = 'btn btn-secondary';
+                showNotification('Du bist bereit!', 'success');
+            } else {
+                readyBtn.innerHTML = '⏳ Nicht bereit';
+                readyBtn.className = 'btn btn-outline';
+                showNotification('Du bist nicht mehr bereit.', 'info');
+            }
+
+            updatePlayersList();
+        }
+
+        // Simulate game start
+        function simulateGameStart() {
+            // Update waiting message
+            const waitingMessage = document.getElementById('waiting-message');
+            waitingMessage.innerHTML = `
+                <div class="game-starting">
+                    <div class="start-icon">🚀</div>
+                    <div class="start-text">Spiel startet!</div>
+                    <div class="start-subtext">Bereite dich vor...</div>
+                </div>
+            `;
+
+            showNotification('Das Spiel wird gestartet!', 'success');
+            
+            // Prepare game state for gameplay
+            gameState.players = allPlayers.map(p => p.name);
+            gameState.isGameActive = true;
+            gameState.currentRound = 1;
+            gameState.totalRounds = 10;
+            
+            localStorage.setItem('denkstdu_game_state', JSON.stringify(gameState));
+
+            // Navigate to gameplay after countdown
+            let countdown = 3;
+            const countdownInterval = setInterval(() => {
+                waitingMessage.querySelector('.start-subtext').textContent = `Startet in ${countdown}...`;
+                countdown--;
+                
+                if (countdown < 0) {
+                    clearInterval(countdownInterval);
+                    showLoading();
+                    setTimeout(() => {
+                        window.location.href = 'gameplay.html';
+                    }, 1000);
+                }
+            }, 1000);
+        }
+
+        // Leave game
+        function leaveGame() {
+            document.getElementById('leave-modal').style.display = 'flex';
+        }
+
+        // Close leave modal
+        function closeLeaveModal() {
+            document.getElementById('leave-modal').style.display = 'none';
+        }
+
+        // Confirm leave game
+        function confirmLeaveGame() {
+            showLoading();
+            
+            // Clear game state
+            gameState.gameId = null;
+            gameState.playerName = null;
+            gameState.isGuest = false;
+            localStorage.setItem('denkstdu_game_state', JSON.stringify(gameState));
+            
+            showNotification('Du hast das Spiel verlassen.', 'info');
+            
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        }
+
+        // Utility Functions
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<span>${message}</span>`;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-size: 0.9rem;
+                z-index: 9999;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+            `;
+
+            const colors = {
+                'success': 'linear-gradient(135deg, #4CAF50, #45a049)',
+                'error': 'linear-gradient(135deg, #f44336, #da190b)',
+                'warning': 'linear-gradient(135deg, #FF9800, #F57C00)',
+                'info': 'linear-gradient(135deg, #4facfe, #00f2fe)'
+            };
+            notification.style.background = colors[type] || colors.info;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, duration);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initWaitingRoom);
+    </script>
+
+    <style>
+        /* DenkstDu - Waiting Room Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background Particles */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
+        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
+        }
+
+        /* Container */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+        }
+
+        .screen {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            width: 100%;
+        }
+
+        .screen-title {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Connection Status */
+        .connection-status {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-indicator.connected {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Game Info */
+        .game-info-section {
+            margin-bottom: 25px;
+        }
+
+        .player-info {
+            margin-top: 15px;
+        }
+
+        .player-card {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid #FFD700;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .player-avatar {
+            font-size: 1.5rem;
+        }
+
+        .player-details {
+            flex: 1;
+        }
+
+        .player-name {
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .player-role {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+        }
+
+        .player-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .player-status.ready {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+
+        .player-status.waiting {
+            background: rgba(255, 152, 0, 0.3);
+            color: #FF9800;
+            border: 1px solid #FF9800;
+        }
+
+        /* Players Section */
+        .players-section {
+            margin-bottom: 25px;
+        }
+
+        .player-counter {
+            background: #4facfe;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .player-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            border-left: 3px solid #4facfe;
+            transition: all 0.3s ease;
+        }
+
+        .player-item.host-player {
+            border-left-color: #FFD700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .player-item.current-player {
+            border-left-color: #4facfe;
+            background: rgba(79, 172, 254, 0.2);
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
+        }
+
+        .player-item .player-name {
+            flex: 1;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        /* Game Settings */
+        .game-settings {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .settings-grid {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .setting-label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .setting-value {
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Waiting Message */
+        .waiting-message {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .waiting-animation {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 15px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4facfe;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { 
+                transform: scale(0);
+            } 40% { 
+                transform: scale(1);
+            }
+        }
+
+        .waiting-text {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .waiting-subtext {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Game Starting */
+        .game-starting {
+            text-align: center;
+        }
+
+        .start-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            animation: rocket 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes rocket {
+            from { transform: translateY(0px); }
+            to { transform: translateY(-10px); }
+        }
+
+        .start-text {
+            color: #4CAF50;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .start-subtext {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(238, 90, 82, 0.6);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336, #da190b);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.6);
+        }
+
+        /* Navigation */
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            width: 100%;
+        }
+
+        .nav-buttons .btn {
+            flex: 1;
+        }
+
+        /* Back Button */
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-2px);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            color: white;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .modal-content p {
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.4;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+            padding: 15px 20px;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+            }
+
+            .glass-card {
+                padding: 25px 20px;
+            }
+
+            .player-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+            }
+
+            .nav-buttons .btn {
+                width: 100%;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+
+            .back-button {
+                top: 15px;
+                left: 15px;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</body>
+</html>
+            <!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DenkstDu - Warte auf Spielstart</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Particles -->

@@ -87,27 +87,19 @@
     </div>
 
     <!-- Scripts -->
-    <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/gameState.js"></script>
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/privacy.js"></script>
     <script>
+        // Game State aus localStorage laden
+        let gameState = JSON.parse(localStorage.getItem('denkstdu_game_state') || '{}');
         let selectedDifficulty = null;
 
         // Initialize difficulty selection page
         function initDifficultySelection() {
-            // Initialize Firebase
-            initFirebase();
-
             // Load previously selected difficulty
             selectedDifficulty = gameState.difficulty;
             if (selectedDifficulty) {
                 updateSelectedDifficulty();
                 updateContinueButton();
             }
-
-            // Initialize mobile optimizations
-            initMobileOptimizations();
 
             // Add entrance animations
             setTimeout(() => {
@@ -130,7 +122,8 @@
             selectedDifficulty = element.dataset.difficulty;
 
             // Update game state
-            gameState.setDifficulty(selectedDifficulty);
+            gameState.difficulty = selectedDifficulty;
+            localStorage.setItem('denkstdu_game_state', JSON.stringify(gameState));
 
             // Visual feedback
             document.querySelectorAll('.difficulty-card').forEach(card => {
@@ -194,17 +187,21 @@
             }
         }
 
-        // Proceed with selected difficulty
+        // Proceed with selected difficulty - HIER IST DIE KORREKTUR!
         function proceedWithDifficulty() {
             if (selectedDifficulty) {
                 showLoading();
                 
-                // Check if multiplayer mode
+                // Check device mode to determine next step
+                console.log('Device Mode:', gameState.deviceMode);
+                
                 if (gameState.deviceMode === 'multi') {
+                    // Online Multiplayer - go to lobby creation
                     setTimeout(() => {
                         window.location.href = 'multiplayer-lobby.html';
                     }, 500);
                 } else {
+                    // Single device - go to player setup
                     setTimeout(() => {
                         window.location.href = 'player-setup.html';
                     }, 500);
@@ -222,43 +219,270 @@
             }, 300);
         }
 
+        // Utility Functions
+        function showLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.add('show');
+            }
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.remove('show');
+            }
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-text">${message}</span>
+                </div>
+            `;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-size: 0.9rem;
+                z-index: 9999;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+                background: linear-gradient(135deg, #4facfe, #00f2fe);
+            `;
+            
+            if (type === 'warning') {
+                notification.style.background = 'linear-gradient(135deg, #FF9800, #F57C00)';
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto hide
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+
         // Start page when DOM is loaded
         document.addEventListener('DOMContentLoaded', initDifficultySelection);
     </script>
 
     <style>
-        /* Additional styles for difficulty page */
-        .difficulty-description {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.8rem;
-            margin-top: 10px;
-            line-height: 1.3;
+        /* DenkstDu - Haupt Stylesheet */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .info-box h4 {
-            color: #4facfe;
-            margin-bottom: 10px;
-            font-size: 1rem;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
         }
 
-        .info-box ul {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            line-height: 1.4;
-            margin-left: 20px;
+        /* Animated Background Particles */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
         }
 
-        .info-box li {
-            margin-bottom: 5px;
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
         }
 
-        .sips-indicator {
-            font-size: 2rem;
-            margin: 10px 0;
-            height: 50px;
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
+        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
+        }
+
+        /* Container System */
+        .app-container {
+            min-height: 100vh;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+        }
+
+        .screen-title {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.4);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(238, 90, 82, 0.6);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-2px);
+        }
+
+        /* Difficulty Selection (Schlücke) */
+        .difficulty-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            width: 100%;
+            margin: 30px 0;
+        }
+
+        .difficulty-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .difficulty-card.easy { border-left: 4px solid #4CAF50; }
+        .difficulty-card.medium { border-left: 4px solid #FF9800; }
+        .difficulty-card.hard { border-left: 4px solid #F44336; }
+
+        .difficulty-card.selected {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .difficulty-card.easy.selected {
@@ -276,19 +500,107 @@
             box-shadow: 0 0 20px rgba(244, 67, 54, 0.3);
         }
 
-        /* Mobile improvements */
+        .difficulty-title {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .sips-indicator {
+            font-size: 2rem;
+            margin: 10px 0;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .category-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Navigation */
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            width: 100%;
+        }
+
+        .nav-buttons .btn {
+            flex: 1;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Responsive */
         @media (max-width: 768px) {
+            .screen {
+                padding: 15px;
+            }
+
+            .glass-card {
+                padding: 25px 20px;
+            }
+
             .difficulty-grid {
-                grid-template-columns: 1fr;
                 gap: 20px;
             }
             
-            .info-box {
-                font-size: 0.85rem;
+            .nav-buttons {
+                flex-direction: column;
             }
-            
-            .info-box ul {
-                margin-left: 15px;
+
+            .nav-buttons .btn {
+                width: 100%;
+            }
+
+            .back-button {
+                top: 15px;
+                left: 15px;
+                padding: 8px 12px;
+                font-size: 0.9rem;
             }
         }
 
