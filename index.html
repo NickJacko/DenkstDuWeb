@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>DenkstDu - Das ultimative Schätzspiel</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -73,8 +72,8 @@
 
                 <!-- Footer Links -->
                 <div class="footer-links">
-                    <a href="privacy.html" class="footer-link">Datenschutz</a>
-                    <a href="imprint.html" class="footer-link">Impressum</a>
+                    <a href="#" onclick="showPrivacyInfo()" class="footer-link">Datenschutz</a>
+                    <a href="#" onclick="showImprint()" class="footer-link">Impressum</a>
                     <a href="https://github.com/nickjacklin/denkstdu" target="_blank" class="footer-link">GitHub</a>
                 </div>
             </div>
@@ -86,7 +85,7 @@
         <div class="modal-content large-modal">
             <div class="modal-header">
                 <h3>📖 Spielregeln</h3>
-                <button class="close-btn" onclick="closeRulesModal()">✕</button>
+                <button class="close-btn" onclick="closeModal('rules-modal')">✕</button>
             </div>
             
             <div class="rules-content">
@@ -109,7 +108,7 @@
                             <span class="step-number">2</span>
                             <div class="step-content">
                                 <h5>Jeder antwortet anonym</h5>
-                                <p>Alle Spieler tippen <strong>"Ja" oder "Nein"</strong> auf ihrem Gerät - ohne dass die anderen es sehen.</p>
+                                <p>Alle Spieler tippen <strong>"Ja" oder "Nein"</strong> - ohne dass die anderen es sehen.</p>
                             </div>
                         </div>
                         <div class="rule-step">
@@ -124,13 +123,6 @@
                             <div class="step-content">
                                 <h5>Auflösung & Schlücke</h5>
                                 <p>Die tatsächliche Anzahl wird aufgelöst. Wer falsch lag, muss trinken - je <strong>weiter daneben</strong>, desto <strong>mehr Schlücke</strong>!</p>
-                            </div>
-                        </div>
-                        <div class="rule-step">
-                            <span class="step-number">5</span>
-                            <div class="step-content">
-                                <h5>Neue Runde</h5>
-                                <p>Der Ablauf startet von vorn mit einer neuen Frage.</p>
                             </div>
                         </div>
                     </div>
@@ -151,63 +143,12 @@
                             <span class="sips-icon">📐</span>
                             <span class="sips-text"><strong>2 daneben</strong> = Basis + 2 Schlücke</span>
                         </div>
-                        <div class="sips-rule">
-                            <span class="sips-icon">📊</span>
-                            <span class="sips-text"><strong>usw.</strong> (je nach Schwierigkeitsgrad)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rule-section">
-                    <h4>🎮 Spielmodi</h4>
-                    <div class="game-modes">
-                        <div class="mode-item">
-                            <span class="mode-icon">📱</span>
-                            <div class="mode-info">
-                                <h5>Ein Gerät</h5>
-                                <p>Alle spielen auf einem Handy - perfekt für kleine Runden</p>
-                            </div>
-                        </div>
-                        <div class="mode-item">
-                            <span class="mode-icon">🌐</span>
-                            <div class="mode-info">
-                                <h5>Online Multiplayer</h5>
-                                <p>Jeder nutzt sein eigenes Gerät - ideal für größere Gruppen</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rule-section">
-                    <h4>📝 Kategorien</h4>
-                    <div class="categories-info">
-                        <div class="category-info">
-                            <span class="category-icon">👨‍👩‍👧‍👦</span>
-                            <div class="category-details">
-                                <h5>Familie & Freunde (FSK 0)</h5>
-                                <p>Harmlose Fragen für alle Altersgruppen</p>
-                            </div>
-                        </div>
-                        <div class="category-info">
-                            <span class="category-icon">🎉</span>
-                            <div class="category-details">
-                                <h5>Party Time (FSK 16)</h5>
-                                <p>Unterhaltsame und lustige Fragen</p>
-                            </div>
-                        </div>
-                        <div class="category-info">
-                            <span class="category-icon">🔥</span>
-                            <div class="category-details">
-                                <h5>Heiß & Gewagt (FSK 18)</h5>
-                                <p>Nur für Erwachsene</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button class="btn" onclick="closeRulesModal()">Verstanden!</button>
+                <button class="btn" onclick="closeModal('rules-modal')">Verstanden!</button>
             </div>
         </div>
     </div>
@@ -217,7 +158,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>⚙️ Einstellungen</h3>
-                <button class="close-btn" onclick="closeSettingsModal()">✕</button>
+                <button class="close-btn" onclick="closeModal('settings-modal')">✕</button>
             </div>
             
             <div class="settings-content">
@@ -228,31 +169,6 @@
                             <input type="checkbox" id="sound-effects" checked>
                             <span class="checkmark"></span>
                             Sound-Effekte
-                        </label>
-                    </div>
-                    <div class="setting-item">
-                        <label class="setting-label">
-                            <input type="checkbox" id="notification-sounds" checked>
-                            <span class="checkmark"></span>
-                            Benachrichtigungstöne
-                        </label>
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <h4>📱 Interface</h4>
-                    <div class="setting-item">
-                        <label class="setting-label">
-                            <input type="checkbox" id="dark-mode" checked>
-                            <span class="checkmark"></span>
-                            Dark Mode
-                        </label>
-                    </div>
-                    <div class="setting-item">
-                        <label class="setting-label">
-                            <input type="checkbox" id="animations" checked>
-                            <span class="checkmark"></span>
-                            Animationen
                         </label>
                     </div>
                 </div>
@@ -278,36 +194,125 @@
         </div>
     </div>
 
-    <!-- Privacy Notice -->
-    <div class="privacy-notice" id="privacy-notice">
-        <div class="privacy-text">
-            <strong>🍪 Datenschutz & Cookies</strong><br>
-            Wir verwenden nur technisch notwendige Daten für das Multiplayer-Spiel. 
-            Keine Werbung, kein Tracking. Alle Daten werden nach 24h automatisch gelöscht.
-            <br><br>
-            <a href="privacy.html" style="color: #4facfe;">→ Vollständige Datenschutzerklärung</a>
-        </div>
-        <div class="privacy-buttons">
-            <button class="btn btn-outline" onclick="declinePrivacy()">Ablehnen</button>
-            <button class="btn" onclick="acceptPrivacy()">Akzeptieren</button>
-        </div>
-    </div>
-
     <!-- Scripts -->
-    <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/gameState.js"></script>
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/privacy.js"></script>
     <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+            authDomain: "denkstduwebsite.firebaseapp.com",
+            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "denkstduwebsite",
+            storageBucket: "denkstduwebsite.firebasestorage.app",
+            messagingSenderId: "27029260611",
+            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6"
+        };
+
+        // Initialize Firebase
+        let firebaseApp, database;
+        
+        function initFirebase() {
+            try {
+                if (!firebaseApp) {
+                    firebaseApp = firebase.initializeApp(firebaseConfig);
+                    database = firebase.database();
+                    console.log('Firebase initialized successfully');
+                    return true;
+                }
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+                return false;
+            }
+        }
+
+        // Game State Management
+        class GameState {
+            constructor() {
+                this.reset();
+                this.loadFromStorage();
+            }
+
+            reset() {
+                this.deviceMode = null; // 'single' or 'multi'
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.currentRound = 1;
+                this.totalRounds = 10;
+                this.gameState = 'setup'; // setup, waiting, playing, finished
+            }
+
+            saveToStorage() {
+                try {
+                    const state = {
+                        deviceMode: this.deviceMode,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        currentRound: this.currentRound,
+                        totalRounds: this.totalRounds,
+                        gameState: this.gameState,
+                        timestamp: Date.now(),
+                        version: 1
+                    };
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                    return true;
+                } catch (error) {
+                    console.error('Could not save game state:', error);
+                    return false;
+                }
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem('denkstdu_game_state');
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        // Check if state is not too old (24 hours)
+                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                            Object.assign(this, state);
+                            return true;
+                        } else {
+                            this.clearStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Could not load game state:', error);
+                    this.clearStorage();
+                }
+                return false;
+            }
+
+            clearStorage() {
+                localStorage.removeItem('denkstdu_game_state');
+            }
+        }
+
+        // Global game state instance
+        const gameState = new GameState();
+
         // Initialize main menu
         function initMainMenu() {
+            console.log('Initializing DenkstDu...');
+            
             // Initialize Firebase
-            initFirebase();
+            const firebaseReady = initFirebase();
+            if (!firebaseReady) {
+                console.warn('Firebase not available - multiplayer features disabled');
+            }
 
-            // Check for game ID in URL (deep linking)
+            // Check for deep link (game ID in URL)
             const urlParams = new URLSearchParams(window.location.search);
             const gameIdFromUrl = urlParams.get('gameId');
             if (gameIdFromUrl) {
+                // Redirect to join game with ID
                 localStorage.setItem('pendingGameId', gameIdFromUrl);
                 joinExistingGame();
                 return;
@@ -316,26 +321,17 @@
             // Load user statistics
             loadUserStats();
 
-            // Check privacy consent
-            checkPrivacyConsent();
-
-            // Initialize mobile optimizations
-            initMobileOptimizations();
-
             // Add entrance animations
             addEntranceAnimations();
-
-            // Initialize settings
-            loadSettings();
         }
 
         // Start new game - navigate to device selection
         function startNewGame() {
-            // Clear any previous game data
-            gameState.reset();
+            console.log('Starting new game...');
             
-            // Add click animation
-            animateButtonClick(event.target);
+            // Reset game state
+            gameState.reset();
+            gameState.saveToStorage();
             
             // Show loading and navigate
             showLoading();
@@ -346,17 +342,14 @@
 
         // Join existing game
         function joinExistingGame() {
+            console.log('Joining existing game...');
+            
             // Check if there's a pending game ID from URL
             const pendingGameId = localStorage.getItem('pendingGameId');
             if (pendingGameId) {
                 localStorage.removeItem('pendingGameId');
                 window.location.href = `join-game.html?gameId=${pendingGameId}`;
                 return;
-            }
-
-            // Add click animation
-            if (event && event.target) {
-                animateButtonClick(event.target);
             }
             
             // Navigate to join game page
@@ -368,47 +361,81 @@
 
         // Show game rules modal
         function showGameRules() {
-            const modal = document.getElementById('rules-modal');
-            modal.style.display = 'flex';
-            
-            // Animate in
-            setTimeout(() => {
-                modal.querySelector('.modal-content').classList.add('modal-enter');
-            }, 10);
-        }
-
-        // Close game rules modal
-        function closeRulesModal() {
-            const modal = document.getElementById('rules-modal');
-            modal.querySelector('.modal-content').classList.remove('modal-enter');
-            
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
+            document.getElementById('rules-modal').style.display = 'flex';
+            // Trap focus in modal
+            trapFocus(document.getElementById('rules-modal'));
         }
 
         // Show settings modal
         function showSettings() {
-            const modal = document.getElementById('settings-modal');
-            modal.style.display = 'flex';
-            
-            // Load current settings
             loadCurrentSettings();
-            
-            // Animate in
-            setTimeout(() => {
-                modal.querySelector('.modal-content').classList.add('modal-enter');
-            }, 10);
+            document.getElementById('settings-modal').style.display = 'flex';
+            trapFocus(document.getElementById('settings-modal'));
         }
 
-        // Close settings modal
-        function closeSettingsModal() {
-            const modal = document.getElementById('settings-modal');
-            modal.querySelector('.modal-content').classList.remove('modal-enter');
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Load current settings
+        function loadCurrentSettings() {
+            const settings = JSON.parse(localStorage.getItem('denkstdu_settings') || '{}');
+            document.getElementById('sound-effects').checked = settings.soundEffects !== false;
+        }
+
+        // Save settings
+        function saveSettings() {
+            const settings = {
+                soundEffects: document.getElementById('sound-effects').checked,
+                savedAt: new Date().toISOString()
+            };
             
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
+            localStorage.setItem('denkstdu_settings', JSON.stringify(settings));
+            showNotification('Einstellungen gespeichert!', 'success');
+            closeModal('settings-modal');
+        }
+
+        // Clear all user data
+        function clearAllData() {
+            if (confirm('Wirklich alle Daten löschen? Dies kann nicht rückgängig gemacht werden.')) {
+                // Clear all DenkstDu related localStorage
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('denkstdu_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                gameState.reset();
+                showNotification('Alle Daten wurden gelöscht!', 'success');
+                closeModal('settings-modal');
+                
+                // Reload page
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
+        }
+
+        // Export user data (GDPR compliance)
+        function exportUserData() {
+            const userData = {
+                settings: JSON.parse(localStorage.getItem('denkstdu_settings') || '{}'),
+                stats: JSON.parse(localStorage.getItem('denkstdu_user_stats') || '{}'),
+                gameState: gameState,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(userData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `denkstdu-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Daten wurden exportiert!', 'success');
         }
 
         // Load user statistics
@@ -419,28 +446,6 @@
                 document.getElementById('games-played').textContent = stats.gamesPlayed || 0;
                 document.getElementById('best-streak').textContent = stats.bestStreak || 0;
                 document.getElementById('quick-stats').style.display = 'flex';
-            }
-        }
-
-        // Check privacy consent
-        function checkPrivacyConsent() {
-            const privacyAccepted = localStorage.getItem('denkstdu_privacy_accepted');
-            const consentDate = localStorage.getItem('denkstdu_privacy_date');
-            
-            // Check if consent is expired (1 year)
-            if (privacyAccepted && consentDate) {
-                const daysSinceConsent = (Date.now() - new Date(consentDate).getTime()) / (24 * 60 * 60 * 1000);
-                if (daysSinceConsent > 365) {
-                    // Consent expired
-                    localStorage.removeItem('denkstdu_privacy_accepted');
-                    localStorage.removeItem('denkstdu_privacy_date');
-                }
-            }
-
-            if (!localStorage.getItem('denkstdu_privacy_accepted')) {
-                setTimeout(() => {
-                    showPrivacyInfo();
-                }, 2000);
             }
         }
 
@@ -461,131 +466,107 @@
             }, 500);
         }
 
-        // Animate button click
-        function animateButtonClick(button) {
-            button.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                button.style.transform = '';
-            }, 150);
-        }
-
-        // Load and apply settings
-        function loadSettings() {
-            const settings = JSON.parse(localStorage.getItem('denkstdu_settings') || '{}');
-            
-            // Apply sound settings
-            if (settings.soundEffects === false) {
-                // Disable sound effects
-            }
-            
-            // Apply theme settings
-            if (settings.darkMode === false) {
-                document.body.classList.add('light-mode');
-            }
-            
-            // Apply animation settings
-            if (settings.animations === false) {
-                document.body.classList.add('no-animations');
-            }
-        }
-
-        // Load current settings into modal
-        function loadCurrentSettings() {
-            const settings = JSON.parse(localStorage.getItem('denkstdu_settings') || '{}');
-            
-            document.getElementById('sound-effects').checked = settings.soundEffects !== false;
-            document.getElementById('notification-sounds').checked = settings.notificationSounds !== false;
-            document.getElementById('dark-mode').checked = settings.darkMode !== false;
-            document.getElementById('animations').checked = settings.animations !== false;
-        }
-
-        // Save settings
-        function saveSettings() {
-            const settings = {
-                soundEffects: document.getElementById('sound-effects').checked,
-                notificationSounds: document.getElementById('notification-sounds').checked,
-                darkMode: document.getElementById('dark-mode').checked,
-                animations: document.getElementById('animations').checked,
-                savedAt: new Date().toISOString()
-            };
-            
-            localStorage.setItem('denkstdu_settings', JSON.stringify(settings));
-            
-            // Apply settings immediately
-            loadSettings();
-            
-            showNotification('Einstellungen gespeichert!', 'success');
-            closeSettingsModal();
-        }
-
-        // Clear all user data
-        function clearAllData() {
-            if (confirm('Wirklich alle Daten löschen? Dies kann nicht rückgängig gemacht werden.')) {
-                // Clear all DenkstDu related localStorage
-                Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith('denkstdu_')) {
-                        localStorage.removeItem(key);
-                    }
-                });
-                
-                // Reset game state
-                gameState.reset();
-                
-                showNotification('Alle Daten wurden gelöscht!', 'success');
-                closeSettingsModal();
-                
-                // Reload page to reset everything
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            }
-        }
-
-        // Export user data (GDPR compliance)
-        function exportUserData() {
-            const userData = {
-                settings: JSON.parse(localStorage.getItem('denkstdu_settings') || '{}'),
-                stats: JSON.parse(localStorage.getItem('denkstdu_user_stats') || '{}'),
-                gameState: gameState.exportGameData(),
-                exportDate: new Date().toISOString(),
-                version: '1.0'
-            };
-            
-            const dataStr = JSON.stringify(userData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `denkstdu-data-${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            showNotification('Daten wurden exportiert!', 'success');
-        }
-
-        // Privacy functions
+        // Show privacy info
         function showPrivacyInfo() {
-            const notice = document.getElementById('privacy-notice');
-            notice.classList.add('show');
+            alert('Datenschutzerklärung:\n\nWir verwenden nur technisch notwendige Daten für das Multiplayer-Spiel. Keine Werbung, kein Tracking. Alle Daten werden nach 24h automatisch gelöscht.');
         }
 
-        function acceptPrivacy() {
-            localStorage.setItem('denkstdu_privacy_accepted', 'true');
-            localStorage.setItem('denkstdu_privacy_date', new Date().toISOString());
-            
-            const notice = document.getElementById('privacy-notice');
-            notice.classList.remove('show');
-            
-            showNotification('Datenschutz akzeptiert!', 'success');
+        // Show imprint
+        function showImprint() {
+            alert('Impressum:\n\nNick-Mark Jacklin\nOsnabrücker Landstraße 2-8\n33335 Gütersloh\nDeutschland\n\nE-Mail: Nickjacklin99@web.de');
         }
 
-        function declinePrivacy() {
-            const notice = document.getElementById('privacy-notice');
-            notice.classList.remove('show');
-            
-            showNotification('Ohne Datenschutz-Zustimmung sind nur lokale Spiele möglich.', 'warning');
+        // Utility Functions
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
         }
 
-        // Start app when DOM is loaded
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<span>${message}</span>`;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-size: 0.9rem;
+                z-index: 9999;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+            `;
+
+            // Set background color based on type
+            const colors = {
+                'success': 'linear-gradient(135deg, #4CAF50, #45a049)',
+                'error': 'linear-gradient(135deg, #f44336, #da190b)',
+                'warning': 'linear-gradient(135deg, #FF9800, #F57C00)',
+                'info': 'linear-gradient(135deg, #4facfe, #00f2fe)'
+            };
+            notification.style.background = colors[type] || colors.info;
+            
+            document.body.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+            
+            // Auto hide
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, duration);
+        }
+
+        // Focus trap for modals (accessibility)
+        function trapFocus(element) {
+            const focusableElements = element.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            
+            const firstFocusable = focusableElements[0];
+            const lastFocusable = focusableElements[focusableElements.length - 1];
+            
+            element.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstFocusable) {
+                            lastFocusable.focus();
+                            e.preventDefault();
+                        }
+                    } else {
+                        if (document.activeElement === lastFocusable) {
+                            firstFocusable.focus();
+                            e.preventDefault();
+                        }
+                    }
+                }
+                
+                if (e.key === 'Escape') {
+                    // Find modal ID and close it
+                    if (element.id) {
+                        closeModal(element.id);
+                    }
+                }
+            });
+            
+            // Focus first element
+            if (firstFocusable) {
+                firstFocusable.focus();
+            }
+        }
+
+        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', initMainMenu);
 
         // Handle app lifecycle
@@ -596,25 +577,118 @@
             localStorage.setItem('denkstdu_user_stats', JSON.stringify(stats));
         });
 
-        // Handle service worker registration (PWA)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                        console.log('ServiceWorker registration successful');
-                    })
-                    .catch(function(err) {
-                        console.log('ServiceWorker registration failed');
-                    });
-            });
-        }
+        // Handle clicks outside modals to close them
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target.id);
+            }
+        });
     </script>
 
     <style>
-        /* Enhanced Main Menu Styles */
+        /* DenkstDu - Main Stylesheet */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background Particles */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
+        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
+        }
+
+        /* Container System */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Main Menu */
+        .main-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
         .logo-section {
             text-align: center;
             margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 800;
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            animation: logoGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes logoGlow {
+            from { text-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
+            to { text-shadow: 2px 2px 20px rgba(255,255,255,0.4); }
+        }
+
+        .tagline {
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+            font-weight: 300;
         }
 
         .game-description {
@@ -631,11 +705,88 @@
             line-height: 1.4;
         }
 
+        /* Buttons */
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.4);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(238, 90, 82, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, #4facfe, #00f2fe);
             box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-            position: relative;
-            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
         }
 
         .pulse-animation {
@@ -655,6 +806,7 @@
             }
         }
 
+        /* Quick Stats */
         .quick-stats {
             display: flex;
             justify-content: center;
@@ -686,11 +838,62 @@
             margin-top: 4px;
         }
 
-        /* Large Modal Styles */
+        /* Footer Links */
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .footer-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .footer-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            color: white;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
         .large-modal {
             max-width: 600px;
             max-height: 80vh;
-            overflow-y: auto;
         }
 
         .modal-header {
@@ -736,7 +939,7 @@
             text-align: center;
         }
 
-        /* Rules Modal Styles */
+        /* Rules Content */
         .rules-content {
             color: rgba(255, 255, 255, 0.9);
             line-height: 1.6;
@@ -817,70 +1020,7 @@
             font-size: 0.9rem;
         }
 
-        .game-modes {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .mode-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            border-left: 4px solid #4facfe;
-        }
-
-        .mode-icon {
-            font-size: 1.8rem;
-        }
-
-        .mode-info h5 {
-            color: white;
-            font-size: 1rem;
-            margin-bottom: 4px;
-        }
-
-        .mode-info p {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.85rem;
-            margin: 0;
-        }
-
-        .categories-info {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .category-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .category-icon {
-            font-size: 1.5rem;
-        }
-
-        .category-details h5 {
-            color: white;
-            font-size: 0.95rem;
-            margin-bottom: 2px;
-        }
-
-        .category-details p {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-            margin: 0;
-        }
-
-        /* Settings Modal Styles */
+        /* Settings Content */
         .settings-content {
             color: rgba(255, 255, 255, 0.9);
         }
@@ -951,49 +1091,46 @@
             padding: 10px 15px;
         }
 
-        /* Modal Animation */
-        .modal-content {
-            transform: scale(0.9);
-            opacity: 0;
-            transition: all 0.3s ease;
+        /* Loading Animation */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
         }
 
-        .modal-content.modal-enter {
-            transform: scale(1);
-            opacity: 1;
+        .loading.show {
+            display: block;
         }
 
-        /* Light mode styles */
-        .light-mode {
-            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .light-mode .glass-card {
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .light-mode .logo {
-            color: white;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
-        }
-
-        /* No animations class */
-        .no-animations * {
-            animation-duration: 0s !important;
-            transition-duration: 0s !important;
-        }
-
-        /* Mobile Responsive for Modals */
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .large-modal {
-                max-width: 95vw;
-                max-height: 90vh;
-                margin: 20px;
+            .main-menu {
+                padding: 15px;
             }
 
-            .modal-content {
-                padding: 20px;
+            .logo {
+                font-size: 3rem;
+            }
+
+            .game-description p {
+                font-size: 0.9rem;
             }
 
             .rule-step {
@@ -1005,85 +1142,66 @@
                 align-self: flex-start;
             }
 
-            .game-modes,
-            .categories-info {
-                gap: 10px;
-            }
-
-            .mode-item,
-            .category-info {
-                flex-direction: column;
-                text-align: center;
-                gap: 8px;
-            }
-
             .quick-stats {
                 flex-direction: column;
                 gap: 15px;
             }
 
-            .game-description p {
-                font-size: 0.9rem;
+            .footer-links {
+                gap: 15px;
+            }
+
+            .modal-content {
+                margin: 20px;
+                padding: 25px 20px;
+            }
+
+            .large-modal {
+                max-width: 95vw;
+                max-height: 90vh;
             }
         }
 
-        /* Enhanced Privacy Notice */
-        .privacy-notice {
-            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .privacy-notice.show {
-            animation: slideUpIn 0.4s ease-out;
-        }
-
-        @keyframes slideUpIn {
-            from {
-                transform: translateY(100%);
-            }
-            to {
-                transform: translateY(0);
-            }
-        }
-
-        /* Enhanced Button Styles */
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn.btn-primary:hover {
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
-            transform: translateY(-2px);
-        }
-
-        /* Improved Focus Styles */
+        /* Accessibility Improvements */
         .btn:focus,
-        .setting-label:focus {
+        .close-btn:focus,
+        .footer-link:focus {
             outline: 2px solid #4facfe;
             outline-offset: 2px;
         }
 
-        /* Loading Animation Enhancement */
-        .loading.show {
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .btn {
+                border: 2px solid currentColor;
+            }
         }
 
-        /* Custom Scrollbar for Modals */
-        .large-modal::-webkit-scrollbar {
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Custom Scrollbar for Modal */
+        .modal-content::-webkit-scrollbar {
             width: 6px;
         }
 
-        .large-modal::-webkit-scrollbar-track {
+        .modal-content::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
         }
 
-        .large-modal::-webkit-scrollbar-thumb {
+        .modal-content::-webkit-scrollbar-thumb {
             background: rgba(79, 172, 254, 0.6);
             border-radius: 3px;
         }
 
-        .large-modal::-webkit-scrollbar-thumb:hover {
+        .modal-content::-webkit-scrollbar-thumb:hover {
             background: rgba(79, 172, 254, 0.8);
         }
     </style>

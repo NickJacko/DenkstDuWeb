@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>DenkstDu - Spielmodus wählen</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <!-- Background Particles -->
@@ -38,11 +41,11 @@
                         Wie möchtet ihr spielen?
                     </p>
                     
-                    <div class="category-grid">
-                        <div class="category-card device-card" data-mode="single" onclick="selectDeviceMode('single')">
-                            <span class="category-emoji">📱</span>
-                            <h3 class="category-title">Ein Gerät</h3>
-                            <p class="category-subtitle">
+                    <div class="mode-grid">
+                        <div class="mode-card single-device" onclick="selectDeviceMode('single')">
+                            <span class="mode-emoji">📱</span>
+                            <h3 class="mode-title">Ein Gerät</h3>
+                            <p class="mode-subtitle">
                                 Alle Spieler nutzen dieses Gerät gemeinsam.<br>
                                 Das Handy wird herumgereicht.
                             </p>
@@ -50,26 +53,41 @@
                                 <div class="benefit">✅ Keine App-Installation nötig</div>
                                 <div class="benefit">✅ Funktioniert offline</div>
                                 <div class="benefit">✅ Sofort spielbereit</div>
+                                <div class="benefit">✅ Perfekt für kleine Runden</div>
+                            </div>
+                            <div class="mode-footer">
+                                <span class="recommended-badge">👥 2-6 Spieler</span>
                             </div>
                         </div>
                         
-                        <div class="category-card device-card" data-mode="multi" onclick="selectDeviceMode('multi')">
-                            <span class="category-emoji">🌐</span>
-                            <h3 class="category-title">Online Multiplayer</h3>
-                            <p class="category-subtitle">
+                        <div class="mode-card online-multiplayer" onclick="selectDeviceMode('multi')">
+                            <span class="mode-emoji">🌐</span>
+                            <h3 class="mode-title">Online Multiplayer</h3>
+                            <p class="mode-subtitle">
                                 Jeder Spieler nutzt sein eigenes Gerät.<br>
                                 Synchrones Spielen über das Internet.
                             </p>
                             <div class="mode-benefits">
                                 <div class="benefit">✅ Jeder auf seinem Handy</div>
                                 <div class="benefit">✅ Gleichzeitige Abstimmung</div>
-                                <div class="benefit">✅ Bis zu 8 Spieler</div>
+                                <div class="benefit">✅ Bis zu 12 Spieler</div>
+                                <div class="benefit">✅ Echtzeit-Synchronisation</div>
                             </div>
-                            <div class="privacy-note" id="privacy-note-multi" style="display: none;">
-                                <div style="color: #ff6b6b; font-size: 0.8rem; margin-top: 10px;">
-                                    🔒 Erfordert Datenschutz-Zustimmung
-                                </div>
+                            <div class="mode-footer">
+                                <span class="connection-status" id="connection-status">
+                                    <span class="status-dot"></span>
+                                    <span id="status-text">Verbindung prüfen...</span>
+                                </span>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div class="info-box">
+                        <h4>💡 Empfehlung</h4>
+                        <div class="info-content">
+                            <p><strong>Ein Gerät:</strong> Perfekt für gemütliche Runden zu Hause. Einfach und schnell.</p>
+                            <p><strong>Online Multiplayer:</strong> Ideal für größere Gruppen oder wenn jeder sein eigenes Handy nutzen möchte.</p>
                         </div>
                     </div>
                 </div>
@@ -81,26 +99,287 @@
         </div>
     </div>
 
+    <!-- Firebase Connection Error Modal -->
+    <div class="modal" id="firebase-error-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="error-header">
+                <span class="error-icon">⚠️</span>
+                <h3>Verbindungsproblem</h3>
+            </div>
+            <div class="error-content">
+                <p>Für den Online-Multiplayer wird eine Internetverbindung benötigt.</p>
+                <div class="error-details">
+                    <h4>Mögliche Lösungen:</h4>
+                    <ul>
+                        <li>📶 Internetverbindung prüfen</li>
+                        <li>🔄 Seite neu laden</li>
+                        <li>📱 "Ein Gerät" Modus verwenden</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-outline" onclick="closeFirebaseErrorModal()">OK</button>
+                <button class="btn btn-secondary" onclick="retryFirebaseConnection()">🔄 Erneut versuchen</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/gameState.js"></script>
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/privacy.js"></script>
     <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+            authDomain: "denkstduwebsite.firebaseapp.com",
+            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "denkstduwebsite",
+            storageBucket: "denkstduwebsite.firebasestorage.app",
+            messagingSenderId: "27029260611",
+            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6"
+        };
+
+        // Global variables
+        let firebaseApp, database;
+        let gameState = null;
+        let isFirebaseReady = false;
+
+        // Game State Management
+        class GameState {
+            constructor() {
+                this.reset();
+                this.loadFromStorage();
+            }
+
+            reset() {
+                this.deviceMode = null;
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.gameState = 'setup';
+            }
+
+            saveToStorage() {
+                try {
+                    const state = {
+                        deviceMode: this.deviceMode,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        gameState: this.gameState,
+                        timestamp: Date.now(),
+                        version: 1
+                    };
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                    return true;
+                } catch (error) {
+                    console.error('Could not save game state:', error);
+                    return false;
+                }
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem('denkstdu_game_state');
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                            Object.assign(this, state);
+                            return true;
+                        } else {
+                            this.clearStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Could not load game state:', error);
+                    this.clearStorage();
+                }
+                return false;
+            }
+
+            clearStorage() {
+                localStorage.removeItem('denkstdu_game_state');
+            }
+
+            setDeviceMode(mode) {
+                this.deviceMode = mode;
+                this.saveToStorage();
+                console.log('Device mode set to:', mode);
+            }
+        }
+
+        // Initialize Firebase
+        function initFirebase() {
+            return new Promise((resolve) => {
+                try {
+                    if (!firebaseApp) {
+                        firebaseApp = firebase.initializeApp(firebaseConfig);
+                        database = firebase.database();
+                        
+                        // Test connection
+                        const connectedRef = database.ref('.info/connected');
+                        connectedRef.on('value', (snapshot) => {
+                            if (snapshot.val() === true) {
+                                console.log('Firebase connected successfully');
+                                isFirebaseReady = true;
+                                updateConnectionStatus(true);
+                                resolve(true);
+                            } else {
+                                console.log('Firebase not connected');
+                                isFirebaseReady = false;
+                                updateConnectionStatus(false);
+                                resolve(false);
+                            }
+                        });
+
+                        // Set timeout for connection attempt
+                        setTimeout(() => {
+                            if (!isFirebaseReady) {
+                                console.log('Firebase connection timeout');
+                                updateConnectionStatus(false);
+                                resolve(false);
+                            }
+                        }, 5000);
+                    } else {
+                        resolve(isFirebaseReady);
+                    }
+                } catch (error) {
+                    console.error('Firebase initialization failed:', error);
+                    isFirebaseReady = false;
+                    updateConnectionStatus(false);
+                    resolve(false);
+                }
+            });
+        }
+
+        // Update connection status display
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('status-text');
+            const statusDot = document.querySelector('.status-dot');
+            const multiplayerCard = document.querySelector('.online-multiplayer');
+            
+            if (connected) {
+                statusElement.textContent = 'Verbunden';
+                statusDot.className = 'status-dot connected';
+                multiplayerCard.classList.remove('disabled');
+            } else {
+                statusElement.textContent = 'Nicht verfügbar';
+                statusDot.className = 'status-dot disconnected';
+                multiplayerCard.classList.add('disabled');
+            }
+        }
+
         // Initialize device selection page
-        function initDeviceSelection() {
+        async function initDeviceSelection() {
+            console.log('Initializing device selection...');
+            
+            // Initialize game state
+            gameState = new GameState();
+            
             // Initialize Firebase
-            initFirebase();
-
-            // Check privacy consent for multiplayer
-            checkPrivacyForMultiplayer();
-
-            // Initialize mobile optimizations
-            initMobileOptimizations();
-
+            showLoading();
+            await initFirebase();
+            hideLoading();
+            
             // Add entrance animations
+            addEntranceAnimations();
+        }
+
+        // Select device mode
+        function selectDeviceMode(mode) {
+            console.log('Selecting device mode:', mode);
+            
+            // Check if multiplayer is available
+            if (mode === 'multi' && !isFirebaseReady) {
+                showFirebaseErrorModal();
+                return;
+            }
+            
+            // Set device mode in game state
+            gameState.setDeviceMode(mode);
+            
+            // Visual feedback
+            document.querySelectorAll('.mode-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const selectedCard = document.querySelector(`.${mode === 'single' ? 'single-device' : 'online-multiplayer'}`);
+            selectedCard.classList.add('selected');
+            
+            // Add selection animation
+            selectedCard.style.transform = 'scale(1.05)';
+            
+            // Show appropriate message
+            const modeNames = {
+                single: 'Ein Gerät Modus',
+                multi: 'Online Multiplayer Modus'
+            };
+            showNotification(`${modeNames[mode]} ausgewählt!`, 'success');
+            
+            // Proceed after animation
             setTimeout(() => {
-                document.querySelectorAll('.device-card').forEach((card, index) => {
+                selectedCard.style.transform = 'scale(1.02)';
+                proceedToNextStep(mode);
+            }, 300);
+        }
+
+        // Proceed to next step based on selected mode
+        function proceedToNextStep(mode) {
+            showLoading();
+            
+            setTimeout(() => {
+                if (mode === 'single') {
+                    // Single device: go to category selection
+                    window.location.href = 'category-selection.html';
+                } else if (mode === 'multi') {
+                    // Multiplayer: go to category selection (host will create lobby later)
+                    window.location.href = 'category-selection.html';
+                }
+            }, 500);
+        }
+
+        // Show Firebase error modal
+        function showFirebaseErrorModal() {
+            document.getElementById('firebase-error-modal').style.display = 'flex';
+            trapFocus(document.getElementById('firebase-error-modal'));
+        }
+
+        // Close Firebase error modal
+        function closeFirebaseErrorModal() {
+            document.getElementById('firebase-error-modal').style.display = 'none';
+        }
+
+        // Retry Firebase connection
+        async function retryFirebaseConnection() {
+            closeFirebaseErrorModal();
+            showLoading();
+            
+            // Reset Firebase
+            isFirebaseReady = false;
+            firebaseApp = null;
+            database = null;
+            
+            // Try to reconnect
+            await initFirebase();
+            hideLoading();
+            
+            if (isFirebaseReady) {
+                showNotification('Verbindung erfolgreich!', 'success');
+            } else {
+                showNotification('Verbindung fehlgeschlagen. Versuche "Ein Gerät" Modus.', 'warning');
+            }
+        }
+
+        // Add entrance animations
+        function addEntranceAnimations() {
+            setTimeout(() => {
+                document.querySelectorAll('.mode-card').forEach((card, index) => {
                     setTimeout(() => {
                         card.style.opacity = '0';
                         card.style.transform = 'translateY(30px)';
@@ -114,173 +393,489 @@
             }, 300);
         }
 
-        // Check if user has privacy consent
-        function checkPrivacyForMultiplayer() {
-            const hasConsent = localStorage.getItem('denkstdu_privacy_accepted');
-            const multiCard = document.querySelector('[data-mode="multi"]');
-            const privacyNote = document.getElementById('privacy-note-multi');
-            
-            if (!hasConsent) {
-                // Show privacy warning
-                privacyNote.style.display = 'block';
-                // Don't disable the card, let user click and show privacy notice
-            }
-        }
-
-        // Select device mode
-        function selectDeviceMode(mode) {
-            // Check privacy for multiplayer
-            if (mode === 'multi' && !localStorage.getItem('denkstdu_privacy_accepted')) {
-                showPrivacyNotice();
-                return;
-            }
-
-            // Set in game state
-            gameState.setDeviceMode(mode);
-            
-            // Visual feedback
-            document.querySelectorAll('.device-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            document.querySelector(`[data-mode="${mode}"]`).classList.add('selected');
-
-            // Add selection animation
-            const selectedCard = document.querySelector(`[data-mode="${mode}"]`);
-            selectedCard.style.transform = 'scale(1.05)';
-            
-            // Show loading and proceed
-            setTimeout(() => {
-                selectedCard.style.transform = 'scale(1.02)';
-                showLoading();
-                
-                setTimeout(() => {
-                    window.location.href = 'category-selection.html';
-                }, 500);
-            }, 300);
-        }
-
-        // Show privacy notice
-        function showPrivacyNotice() {
-            const modal = document.createElement('div');
-            modal.className = 'privacy-modal';
-            modal.innerHTML = `
-                <div class="privacy-modal-content">
-                    <h3>🔒 Datenschutz-Zustimmung erforderlich</h3>
-                    <p>Für den Online-Multiplayer benötigen wir deine Zustimmung zur Datenverarbeitung.</p>
-                    
-                    <div class="privacy-info">
-                        <h4>Was passiert mit deinen Daten?</h4>
-                        <ul>
-                            <li>✅ Nur Spielername und Antworten werden gespeichert</li>
-                            <li>✅ Automatische Löschung nach 24 Stunden</li>
-                            <li>✅ Keine Werbung oder Tracking</li>
-                            <li>✅ Verschlüsselte Übertragung</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="privacy-buttons">
-                        <button class="btn btn-outline" onclick="closePrivacyModal()">Abbrechen</button>
-                        <button class="btn" onclick="acceptPrivacyAndContinue()">Zustimmen & Fortfahren</button>
-                    </div>
-                    
-                    <div style="margin-top: 15px;">
-                        <a href="privacy.html" target="_blank" style="color: #4facfe; font-size: 0.9rem;">
-                            → Vollständige Datenschutzerklärung
-                        </a>
-                    </div>
-                </div>
-            `;
-            
-            modal.style.cssText = `
-                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-                background: rgba(0,0,0,0.8); display: flex; align-items: center;
-                justify-content: center; z-index: 9999; padding: 20px;
-            `;
-            
-            document.body.appendChild(modal);
-
-            // Animate in
-            const content = modal.querySelector('.privacy-modal-content');
-            content.style.transform = 'scale(0.8)';
-            content.style.opacity = '0';
-            setTimeout(() => {
-                content.style.transition = 'all 0.3s ease';
-                content.style.transform = 'scale(1)';
-                content.style.opacity = '1';
-            }, 10);
-        }
-
-        // Accept privacy and continue
-        function acceptPrivacyAndContinue() {
-            localStorage.setItem('denkstdu_privacy_accepted', 'true');
-            localStorage.setItem('denkstdu_privacy_date', new Date().toISOString());
-            closePrivacyModal();
-            
-            setTimeout(() => {
-                selectDeviceMode('multi');
-            }, 300);
-        }
-
-        // Close privacy modal
-        function closePrivacyModal() {
-            const modal = document.querySelector('.privacy-modal');
-            if (modal) {
-                const content = modal.querySelector('.privacy-modal-content');
-                content.style.transform = 'scale(0.8)';
-                content.style.opacity = '0';
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            }
-        }
-
         // Go back to main menu
         function goBack() {
+            // Clear device mode selection
+            if (gameState) {
+                gameState.deviceMode = null;
+                gameState.saveToStorage();
+            }
+            
             showLoading();
             setTimeout(() => {
                 window.location.href = 'index.html';
             }, 300);
         }
 
-        // Start page when DOM is loaded
+        // Utility Functions
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<span>${message}</span>`;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-size: 0.9rem;
+                z-index: 9999;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+            `;
+
+            const colors = {
+                'success': 'linear-gradient(135deg, #4CAF50, #45a049)',
+                'error': 'linear-gradient(135deg, #f44336, #da190b)',
+                'warning': 'linear-gradient(135deg, #FF9800, #F57C00)',
+                'info': 'linear-gradient(135deg, #4facfe, #00f2fe)'
+            };
+            notification.style.background = colors[type] || colors.info;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, duration);
+        }
+
+        // Focus trap for modals (accessibility)
+        function trapFocus(element) {
+            const focusableElements = element.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            
+            const firstFocusable = focusableElements[0];
+            const lastFocusable = focusableElements[focusableElements.length - 1];
+            
+            element.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstFocusable) {
+                            lastFocusable.focus();
+                            e.preventDefault();
+                        }
+                    } else {
+                        if (document.activeElement === lastFocusable) {
+                            firstFocusable.focus();
+                            e.preventDefault();
+                        }
+                    }
+                }
+                
+                if (e.key === 'Escape') {
+                    if (element.id === 'firebase-error-modal') {
+                        closeFirebaseErrorModal();
+                    }
+                }
+            });
+            
+            if (firstFocusable) {
+                firstFocusable.focus();
+            }
+        }
+
+        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', initDeviceSelection);
+
+        // Handle clicks outside modals to close them
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                if (e.target.id === 'firebase-error-modal') {
+                    closeFirebaseErrorModal();
+                }
+            }
+        });
+
+        // Handle online/offline events
+        window.addEventListener('online', () => {
+            console.log('Back online - retrying Firebase connection');
+            retryFirebaseConnection();
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('Gone offline');
+            updateConnectionStatus(false);
+            showNotification('Keine Internetverbindung - Multiplayer nicht verfügbar', 'warning');
+        });
     </script>
 
     <style>
-        /* Device selection specific styles */
-        .device-card {
-            min-height: 300px;
-            position: relative;
-            padding: 30px 25px;
+        /* DenkstDu - Device Selection Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .device-card.selected {
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background Particles */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
+        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
+        }
+
+        /* Container System */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .screen-title {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Mode Grid */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            width: 100%;
+            margin: 30px 0;
+        }
+
+        .mode-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+        }
+
+        .mode-card.selected {
             border-color: #4facfe;
             background: rgba(79, 172, 254, 0.2);
             transform: scale(1.02);
-            box-shadow: 0 8px 32px rgba(79, 172, 254, 0.3);
+            box-shadow: 0 12px 40px rgba(79, 172, 254, 0.4);
+        }
+
+        .mode-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .mode-card.disabled:hover {
+            border-color: transparent;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+
+        .mode-emoji {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .mode-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .mode-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
         }
 
         .mode-benefits {
-            margin-top: 20px;
+            flex: 1;
+            margin-bottom: 20px;
         }
 
         .benefit {
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            margin: 8px 0;
+            padding: 4px 0;
+            text-align: left;
+        }
+
+        .mode-footer {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .recommended-badge {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+            padding: 8px 16px;
+            border-radius: 20px;
             font-size: 0.85rem;
-            margin: 5px 0;
-            padding: 2px 0;
+            font-weight: 600;
+            border: 1px solid #4CAF50;
         }
 
-        .privacy-note {
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(255, 107, 107, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 107, 107, 0.3);
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
         }
 
-        .privacy-modal-content {
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #4CAF50;
+        }
+
+        .status-dot.disconnected {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .connection-status:has(.connected) {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+
+        .connection-status:has(.disconnected) {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid #f44336;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+
+        .info-box h4 {
+            color: #4facfe;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-content p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(238, 90, 82, 0.6);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .nav-buttons .btn {
+            flex: 1;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-2px);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 20px;
             padding: 30px;
@@ -289,60 +884,198 @@
             color: white;
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
         }
 
-        .privacy-modal-content h3 {
+        .error-header {
+            margin-bottom: 20px;
+        }
+
+        .error-icon {
+            font-size: 3rem;
             margin-bottom: 15px;
-            font-size: 1.3rem;
+            color: #FF9800;
         }
 
-        .privacy-modal-content h4 {
-            margin: 20px 0 10px 0;
+        .error-header h3 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .error-content p {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .error-details {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .error-details h4 {
             color: #4facfe;
             font-size: 1rem;
+            margin-bottom: 10px;
         }
 
-        .privacy-info {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
+        .error-details ul {
+            list-style: none;
+            padding: 0;
         }
 
-        .privacy-info ul {
-            margin: 10px 0 0 20px;
-        }
-
-        .privacy-info li {
-            margin: 5px 0;
+        .error-details li {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 8px 0;
             font-size: 0.9rem;
-            line-height: 1.4;
         }
 
-        .privacy-buttons {
+        .modal-buttons {
             display: flex;
             gap: 15px;
             margin-top: 25px;
         }
 
-        .privacy-buttons .btn {
+        .modal-buttons .btn {
             flex: 1;
-            padding: 15px 25px;
+            padding: 15px 20px;
         }
 
+        /* Loading Animation */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .privacy-modal-content {
+            .screen {
+                padding: 15px;
+            }
+
+            .glass-card {
+                padding: 25px 20px;
+            }
+
+            .mode-grid {
+                gap: 20px;
+            }
+
+            .mode-card {
+                padding: 25px 20px;
+                min-height: 300px;
+            }
+
+            .mode-emoji {
+                font-size: 3rem;
+            }
+
+            .mode-title {
+                font-size: 1.3rem;
+            }
+
+            .benefit {
+                font-size: 0.85rem;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+            }
+
+            .nav-buttons .btn {
+                width: 100%;
+            }
+
+            .back-button {
+                top: 15px;
+                left: 15px;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+
+            .modal-content {
                 margin: 20px;
                 padding: 25px 20px;
             }
-            
-            .privacy-buttons {
+
+            .modal-buttons {
                 flex-direction: column;
             }
+        }
+
+        @media (min-width: 768px) {
+            .mode-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 30px;
+            }
+
+            .content-area {
+                max-width: 900px;
+            }
+        }
+
+        /* Accessibility Improvements */
+        .mode-card:focus,
+        .btn:focus,
+        .back-button:focus {
+            outline: 2px solid #4facfe;
+            outline-offset: 2px;
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .mode-card {
+                border: 2px solid white;
+            }
             
-            .device-card {
-                min-height: 250px;
-                padding: 25px 20px;
+            .btn {
+                border: 2px solid currentColor;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
