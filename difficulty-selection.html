@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Schlücke wählen</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <title>DenkstDu - Schwierigkeitsgrad</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -31,264 +30,130 @@
     <div class="app-container">
         <div class="screen active">
             <div class="content-area">
-                <h2 class="screen-title">Wie viele Schlücke?</h2>
+                <h2 class="screen-title">🍺 Wie hart soll's werden?</h2>
                 
                 <div class="glass-card">
-                    <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 20px;">
-                        Wähle die Basis-Schlückzahl für falsche Schätzungen
+                    <p class="selection-description">
+                        Wähle die Basis-Schlückzahl für falsche Schätzungen<br>
+                        <small>Je schlechter du schätzt, desto mehr musst du trinken!</small>
                     </p>
                     
                     <div class="difficulty-grid">
+                        <!-- Entspannt - 1 Schluck -->
                         <div class="difficulty-card easy" data-difficulty="easy" onclick="selectDifficulty(this)">
-                            <div class="sips-indicator">🍺</div>
-                            <h3 class="difficulty-title">Entspannt</h3>
-                            <p class="category-subtitle"><strong>1 Schluck</strong> + Abweichung</p>
-                            <div class="difficulty-description" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 10px;">
-                                Perfekt für gemütliche Runden
+                            <div class="difficulty-header">
+                                <div class="sips-indicator">🍺</div>
+                                <div class="difficulty-badge easy-badge">Entspannt</div>
+                            </div>
+                            <h3 class="difficulty-title">Gemütlicher Abend</h3>
+                            <div class="sips-explanation">
+                                <div class="base-sips">1 Basis-Schluck</div>
+                                <div class="sips-formula">+ Abweichung</div>
+                            </div>
+                            <div class="difficulty-description">
+                                Perfekt für gemütliche Runden und Einsteiger. 
+                                Weniger Alkohol, mehr Spaß am Raten!
+                            </div>
+                            <div class="difficulty-examples">
+                                <h4>📊 Beispiele:</h4>
+                                <div class="example">Richtig geschätzt: <strong>0 Schlücke</strong></div>
+                                <div class="example">1 daneben: <strong>2 Schlücke</strong></div>
+                                <div class="example">3 daneben: <strong>4 Schlücke</strong></div>
+                            </div>
+                            <div class="difficulty-footer">
+                                <span class="recommendation">👑 Empfohlen für Einsteiger</span>
                             </div>
                         </div>
-                        
+
+                        <!-- Normal - 2 Schlücke -->
                         <div class="difficulty-card medium" data-difficulty="medium" onclick="selectDifficulty(this)">
-                            <div class="sips-indicator">🍺🍺</div>
-                            <h3 class="difficulty-title">Standard</h3>
-                            <p class="category-subtitle"><strong>2 Schlücke</strong> + Abweichung</p>
-                            <div class="difficulty-description" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 10px;">
-                                Die klassische Party-Variante
+                            <div class="difficulty-header">
+                                <div class="sips-indicator">🍺🍺</div>
+                                <div class="difficulty-badge medium-badge">Normal</div>
+                            </div>
+                            <h3 class="difficulty-title">Klassische Party</h3>
+                            <div class="sips-explanation">
+                                <div class="base-sips">2 Basis-Schlücke</div>
+                                <div class="sips-formula">+ Abweichung</div>
+                            </div>
+                            <div class="difficulty-description">
+                                Die klassische Variante für echte Partygänger. 
+                                Ausgewogenes Verhältnis zwischen Spaß und Challenge.
+                            </div>
+                            <div class="difficulty-examples">
+                                <h4>📊 Beispiele:</h4>
+                                <div class="example">Richtig geschätzt: <strong>0 Schlücke</strong></div>
+                                <div class="example">1 daneben: <strong>3 Schlücke</strong></div>
+                                <div class="example">3 daneben: <strong>5 Schlücke</strong></div>
+                            </div>
+                            <div class="difficulty-footer">
+                                <span class="recommendation">🎉 Beliebteste Wahl</span>
                             </div>
                         </div>
-                        
+
+                        <!-- Hardcore - 3 Schlücke -->
                         <div class="difficulty-card hard" data-difficulty="hard" onclick="selectDifficulty(this)">
-                            <div class="sips-indicator">🍺🍺🍺</div>
-                            <h3 class="difficulty-title">Hardcore</h3>
-                            <p class="category-subtitle"><strong>3 Schlücke</strong> + Abweichung</p>
-                            <div class="difficulty-description" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 10px;">
-                                Nur für erfahrene Trinker!
+                            <div class="difficulty-header">
+                                <div class="sips-indicator">🍺🍺🍺</div>
+                                <div class="difficulty-badge hard-badge">Hardcore</div>
+                            </div>
+                            <h3 class="difficulty-title">Kein Pardon</h3>
+                            <div class="sips-explanation">
+                                <div class="base-sips">3 Basis-Schlücke</div>
+                                <div class="sips-formula">+ Abweichung</div>
+                            </div>
+                            <div class="difficulty-description">
+                                Nur für echte Profis und erfahrene Trinker! 
+                                Maximaler Alkoholpegel, maximaler Spaß.
+                            </div>
+                            <div class="difficulty-examples">
+                                <h4>📊 Beispiele:</h4>
+                                <div class="example">Richtig geschätzt: <strong>0 Schlücke</strong></div>
+                                <div class="example">1 daneben: <strong>4 Schlücke</strong></div>
+                                <div class="example">3 daneben: <strong>6 Schlücke</strong></div>
+                            </div>
+                            <div class="difficulty-footer">
+                                <span class="recommendation">⚠️ Nur für Experten</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Erklärungs-Box -->
-                    <div class="info-box" style="background: rgba(79, 172, 254, 0.2); border-radius: 12px; padding: 15px; margin-top: 20px;">
-                        <h4 style="color: #4facfe; margin-bottom: 10px;">📝 So funktioniert's:</h4>
-                        <ul style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.4; margin-left: 20px;">
-                            <li>Exakte Schätzung = <strong>0 Schlücke</strong> ✨</li>
-                            <li>Falsche Schätzung = <strong>Basis-Schlücke + Abweichung</strong></li>
-                            <li>Beispiel: Bei "Standard" und 2 Personen Abweichung = <strong>4 Schlücke</strong></li>
-                        </ul>
+                    <!-- Game Rules Explanation -->
+                    <div class="rules-explanation">
+                        <h4>🎯 So funktioniert die Punkteberechnung:</h4>
+                        <div class="rules-grid">
+                            <div class="rule-item">
+                                <span class="rule-icon">✅</span>
+                                <span class="rule-text"><strong>Exakte Schätzung:</strong> 0 Schlücke + Bonuspunkte</span>
+                            </div>
+                            <div class="rule-item">
+                                <span class="rule-icon">📏</span>
+                                <span class="rule-text"><strong>Abweichung:</strong> Basis-Schlücke + Anzahl daneben</span>
+                            </div>
+                            <div class="rule-item">
+                                <span class="rule-icon">🎯</span>
+                                <span class="rule-text"><strong>Beispiel:</strong> 2 Basis + 3 daneben = 5 Schlücke</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="nav-buttons">
-                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
-                    <button class="btn" onclick="proceedWithDifficulty()" id="continue-difficulty" disabled>Weiter</button>
+                    <!-- Continue Button -->
+                    <div class="continue-section">
+                        <button class="btn btn-primary btn-large" id="continue-btn" onclick="manualContinue()" disabled>
+                            Weiter zum Spiel-Setup
+                        </button>
+                        <p class="continue-hint">Wähle einen Schwierigkeitsgrad</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script>
-        // Game State aus localStorage laden
-        let gameState = JSON.parse(localStorage.getItem('denkstdu_game_state') || '{}');
-        let selectedDifficulty = null;
-
-        // Initialize difficulty selection page
-        function initDifficultySelection() {
-            // Load previously selected difficulty
-            selectedDifficulty = gameState.difficulty;
-            if (selectedDifficulty) {
-                updateSelectedDifficulty();
-                updateContinueButton();
-            }
-
-            // Add entrance animations
-            setTimeout(() => {
-                document.querySelectorAll('.difficulty-card').forEach((card, index) => {
-                    setTimeout(() => {
-                        card.style.opacity = '0';
-                        card.style.transform = 'translateY(20px)';
-                        card.style.transition = 'all 0.5s ease';
-                        setTimeout(() => {
-                            card.style.opacity = '1';
-                            card.style.transform = 'translateY(0)';
-                        }, 100);
-                    }, index * 150);
-                });
-            }, 300);
-        }
-
-        // Select difficulty
-        function selectDifficulty(element) {
-            selectedDifficulty = element.dataset.difficulty;
-
-            // Update game state
-            gameState.difficulty = selectedDifficulty;
-            localStorage.setItem('denkstdu_game_state', JSON.stringify(gameState));
-
-            // Visual feedback
-            document.querySelectorAll('.difficulty-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            element.classList.add('selected');
-
-            // Add selection animation
-            element.style.transform = 'scale(1.02)';
-            setTimeout(() => {
-                element.style.transform = '';
-            }, 200);
-
-            updateContinueButton();
-            showDifficultyInfo(selectedDifficulty);
-        }
-
-        // Update visual state of selected difficulty
-        function updateSelectedDifficulty() {
-            if (selectedDifficulty) {
-                const element = document.querySelector(`[data-difficulty="${selectedDifficulty}"]`);
-                if (element) {
-                    element.classList.add('selected');
-                }
-            }
-        }
-
-        // Update continue button state
-        function updateContinueButton() {
-            const continueBtn = document.getElementById('continue-difficulty');
-            const hasSelection = selectedDifficulty !== null;
-            
-            continueBtn.disabled = !hasSelection;
-            continueBtn.style.opacity = hasSelection ? '1' : '0.5';
-            continueBtn.style.cursor = hasSelection ? 'pointer' : 'not-allowed';
-        }
-
-        // Show difficulty information
-        function showDifficultyInfo(difficulty) {
-            const difficultyInfo = {
-                easy: {
-                    emoji: '🍺',
-                    title: 'Entspannt',
-                    description: 'Nur 1 Basis-Schluck + Abweichung. Perfekt für den lockeren Einstieg!'
-                },
-                medium: {
-                    emoji: '🍺🍺',
-                    title: 'Standard',  
-                    description: '2 Basis-Schlücke + Abweichung. Die klassische Party-Variante!'
-                },
-                hard: {
-                    emoji: '🍺🍺🍺',
-                    title: 'Hardcore',
-                    description: '3 Basis-Schlücke + Abweichung. Nur für echte Profis!'
-                }
-            };
-
-            const info = difficultyInfo[difficulty];
-            if (info) {
-                showNotification(`${info.emoji} ${info.title}: ${info.description}`, 'info', 4000);
-            }
-        }
-
-        // Proceed with selected difficulty - HIER IST DIE KORREKTUR!
-        function proceedWithDifficulty() {
-            if (selectedDifficulty) {
-                showLoading();
-                
-                // Check device mode to determine next step
-                console.log('Device Mode:', gameState.deviceMode);
-                
-                if (gameState.deviceMode === 'multi') {
-                    // Online Multiplayer - go to lobby creation
-                    setTimeout(() => {
-                        window.location.href = 'multiplayer-lobby.html';
-                    }, 500);
-                } else {
-                    // Single device - go to player setup
-                    setTimeout(() => {
-                        window.location.href = 'player-setup.html';
-                    }, 500);
-                }
-            } else {
-                showNotification('Bitte wähle eine Schlück-Einstellung aus', 'warning');
-            }
-        }
-
-        // Go back to previous page
-        function goBack() {
-            showLoading();
-            setTimeout(() => {
-                window.location.href = 'category-selection.html';
-            }, 300);
-        }
-
-        // Utility Functions
-        function showLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.classList.add('show');
-            }
-        }
-
-        function hideLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.classList.remove('show');
-            }
-        }
-
-        function showNotification(message, type = 'info', duration = 3000) {
-            // Remove existing notifications
-            document.querySelectorAll('.notification').forEach(n => n.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <div class="notification-content">
-                    <span class="notification-text">${message}</span>
-                </div>
-            `;
-            
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 10px;
-                color: white;
-                font-size: 0.9rem;
-                z-index: 9999;
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-                max-width: 300px;
-                background: linear-gradient(135deg, #4facfe, #00f2fe);
-            `;
-            
-            if (type === 'warning') {
-                notification.style.background = 'linear-gradient(135deg, #FF9800, #F57C00)';
-            }
-            
-            document.body.appendChild(notification);
-            
-            // Show notification
-            setTimeout(() => {
-                notification.style.transform = 'translateX(0)';
-            }, 100);
-            
-            // Auto hide
-            setTimeout(() => {
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 300);
-            }, duration);
-        }
-
-        // Start page when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initDifficultySelection);
-    </script>
+    <!-- Notification Container -->
+    <div class="notification-container" id="notification-container"></div>
 
     <style>
-        /* DenkstDu - Haupt Stylesheet */
+        /* Reset und Base Styles */
         * {
             margin: 0;
             padding: 0;
@@ -303,7 +168,7 @@
             position: relative;
         }
 
-        /* Animated Background Particles */
+        /* Animated Background */
         .background-particles {
             position: fixed;
             top: 0;
@@ -334,19 +199,19 @@
             75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
         }
 
-        /* Container System */
+        /* Layout */
         .app-container {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             position: relative;
             z-index: 1;
+            padding: 20px;
         }
 
         .screen {
             display: none;
             min-height: 100vh;
-            padding: 20px;
             animation: slideInUp 0.6s ease-out;
         }
 
@@ -355,263 +220,537 @@
             flex-direction: column;
         }
 
-        /* Glassmorphism Cards */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-            transition: all 0.3s ease;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
-        }
-
-        .screen-title {
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 30px;
-            text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
-        }
-
-        /* Buttons */
-        .btn {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-            color: white;
-            border: none;
-            padding: 18px 32px;
-            border-radius: 15px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.4);
-            position: relative;
-            overflow: hidden;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(238, 90, 82, 0.6);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            color: white;
-            box-shadow: none;
-        }
-
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: white;
-        }
-
         .content-area {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
-            max-width: 500px;
+            max-width: 1000px;
             margin: 0 auto;
             width: 100%;
+            padding-top: 2rem;
         }
 
+        /* Back Button */
         .back-button {
             position: fixed;
             top: 20px;
             left: 20px;
             background: rgba(255, 255, 255, 0.2);
-            color: white;
             border: none;
-            padding: 10px 15px;
-            border-radius: 10px;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 1rem;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
-            z-index: 100;
+            z-index: 1000;
         }
 
         .back-button:hover {
             background: rgba(255, 255, 255, 0.3);
-            transform: translateX(-2px);
+            transform: translateY(-2px);
         }
 
-        /* Difficulty Selection (Schlücke) */
+        /* Screen Title */
+        .screen-title {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .selection-description {
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .selection-description small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Difficulty Grid */
         .difficulty-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 15px;
-            width: 100%;
-            margin: 30px 0;
+            gap: 25px;
+            margin-bottom: 40px;
         }
 
+        @media (min-width: 768px) {
+            .difficulty-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 25px;
+            }
+        }
+
+        /* Difficulty Cards */
         .difficulty-card {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
             border-radius: 15px;
-            padding: 20px;
-            border: 2px solid transparent;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 25px;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-align: center;
+            position: relative;
+            overflow: hidden;
         }
 
-        .difficulty-card.easy { border-left: 4px solid #4CAF50; }
-        .difficulty-card.medium { border-left: 4px solid #FF9800; }
-        .difficulty-card.hard { border-left: 4px solid #F44336; }
+        .difficulty-card:hover {
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
 
         .difficulty-card.selected {
-            transform: scale(1.05);
-            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.03);
         }
 
         .difficulty-card.easy.selected {
             border-color: #4CAF50;
-            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+            background: rgba(76, 175, 80, 0.1);
         }
 
         .difficulty-card.medium.selected {
             border-color: #FF9800;
-            box-shadow: 0 0 20px rgba(255, 152, 0, 0.3);
+            background: rgba(255, 152, 0, 0.1);
         }
 
         .difficulty-card.hard.selected {
             border-color: #F44336;
-            box-shadow: 0 0 20px rgba(244, 67, 54, 0.3);
+            background: rgba(244, 67, 54, 0.1);
+        }
+
+        .difficulty-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .sips-indicator {
+            font-size: 2.5rem;
+            line-height: 1;
+        }
+
+        .difficulty-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .easy-badge {
+            background: #4CAF50;
+        }
+
+        .medium-badge {
+            background: #FF9800;
+        }
+
+        .hard-badge {
+            background: #F44336;
         }
 
         .difficulty-title {
             color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .sips-explanation {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .base-sips {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
             margin-bottom: 5px;
         }
 
-        .sips-indicator {
-            font-size: 2rem;
-            margin: 10px 0;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .sips-formula {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
         }
 
-        .category-subtitle {
-            color: rgba(255, 255, 255, 0.7);
+        .difficulty-description {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .difficulty-examples {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .difficulty-examples h4 {
+            color: white;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .example {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .example strong {
+            color: white;
+        }
+
+        .difficulty-footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .recommendation {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        /* Rules Explanation */
+        .rules-explanation {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .rules-explanation h4 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .rules-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .rules-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .rule-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .rule-text {
+            color: rgba(255, 255, 255, 0.9);
             font-size: 0.9rem;
             line-height: 1.4;
         }
 
-        /* Navigation */
-        .nav-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-            width: 100%;
+        /* Continue Section */
+        .continue-section {
+            text-align: center;
         }
 
-        .nav-buttons .btn {
-            flex: 1;
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        /* Loading Animation */
+        .btn-large {
+            padding: 18px 40px;
+            font-size: 1.2rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #81C784);
+            color: white;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+        }
+
+        .continue-hint {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+
+        /* Loading Spinner */
         .loading {
-            display: none;
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
         }
 
         .loading.show {
-            display: block;
+            display: flex;
         }
 
         .spinner {
             width: 50px;
             height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid white;
+            border: 4px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* Animations */
-        @keyframes slideInUp {
+        /* Notifications */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
+        }
+
+        .notification {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+        }
+
+        .notification.success {
+            border-left-color: #4CAF50;
+        }
+
+        .notification.warning {
+            border-left-color: #FFC107;
+        }
+
+        .notification.error {
+            border-left-color: #F44336;
+        }
+
+        .notification.info {
+            border-left-color: #2196F3;
+        }
+
+        .notification-text {
+            color: #333;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        @keyframes slideInRight {
             from {
+                transform: translateX(100%);
                 opacity: 0;
-                transform: translateY(30px);
             }
             to {
+                transform: translateX(0);
                 opacity: 1;
-                transform: translateY(0);
             }
         }
 
-        /* Mobile Responsive */
+        @keyframes slideInUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Mobile Optimizations */
         @media (max-width: 768px) {
-            .screen {
+            .app-container {
                 padding: 15px;
             }
 
+            .screen-title {
+                font-size: 2rem;
+                margin-bottom: 1.5rem;
+            }
+
             .glass-card {
-                padding: 25px 20px;
+                padding: 25px;
             }
 
-            .difficulty-grid {
-                gap: 20px;
-            }
-            
-            .nav-buttons {
-                flex-direction: column;
+            .difficulty-card {
+                padding: 20px;
             }
 
-            .nav-buttons .btn {
-                width: 100%;
+            .difficulty-title {
+                font-size: 1.2rem;
+            }
+
+            .sips-indicator {
+                font-size: 2rem;
             }
 
             .back-button {
-                top: 15px;
-                left: 15px;
-                padding: 8px 12px;
-                font-size: 0.9rem;
+                padding: 10px 15px;
+                font-size: 14px;
             }
-        }
 
-        @media (min-width: 769px) {
-            .difficulty-grid {
-                grid-template-columns: repeat(3, 1fr);
-                max-width: 900px;
-                margin: 30px auto;
-                gap: 25px;
+            .btn-large {
+                padding: 15px 25px;
+                font-size: 1.1rem;
+            }
+
+            .rule-item {
+                flex-direction: column;
+                text-align: center;
             }
         }
     </style>
-</body>
-</html>
+
+    <script>
+        // Global variables
+        let gameState = null;
+        let selectedDifficulty = null;
+
+        // Game State Management
+        class GameState {
+            constructor() {
+                this.reset();
+                this.loadFromStorage();
+            }
+
+            reset() {
+                this.deviceMode = null;
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.gameState = 'setup';
+            }
+
+            saveToStorage() {
+                try {
+                    const state = {
+                        deviceMode: this.deviceMode,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        gameState: this.gameState,
+                        timestamp: Date.now(),
+                        version: 1
+                    };
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                    return true;
+                } catch (error) {
+                    console.error('Could not save game state:', error);
+                    return false;
+                }
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem('denkstdu_game_state');
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                            Object.assign(this, state);
+                            return true;
+                        } else {
+                            this.clearStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Could not load game state:', error);
+                    this.clearStorage();
+                }
+                return false;
+            }
+
+            clear

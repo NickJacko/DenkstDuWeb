@@ -34,17 +34,19 @@
     <div class="app-container">
         <div class="screen active">
             <div class="content-area">
-                <h2 class="screen-title">Spielmodus wählen</h2>
+                <h2 class="screen-title">🎮 Spielmodus wählen</h2>
                 
                 <div class="glass-card">
-                    <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 30px;">
+                    <p class="selection-description">
                         Wie möchtet ihr spielen?
                     </p>
                     
                     <div class="mode-grid">
                         <div class="mode-card single-device" onclick="selectDeviceMode('single')">
-                            <span class="mode-emoji">📱</span>
-                            <h3 class="mode-title">Ein Gerät</h3>
+                            <div class="mode-header">
+                                <span class="mode-emoji">📱</span>
+                                <h3 class="mode-title">Ein Gerät</h3>
+                            </div>
                             <p class="mode-subtitle">
                                 Alle Spieler nutzen dieses Gerät gemeinsam.<br>
                                 Das Handy wird herumgereicht.
@@ -61,8 +63,10 @@
                         </div>
                         
                         <div class="mode-card online-multiplayer" onclick="selectDeviceMode('multi')">
-                            <span class="mode-emoji">🌐</span>
-                            <h3 class="mode-title">Online Multiplayer</h3>
+                            <div class="mode-header">
+                                <span class="mode-emoji">🌐</span>
+                                <h3 class="mode-title">Online Multiplayer</h3>
+                            </div>
                             <p class="mode-subtitle">
                                 Jeder Spieler nutzt sein eigenes Gerät.<br>
                                 Synchrones Spielen über das Internet.
@@ -86,45 +90,546 @@
                     <div class="info-box">
                         <h4>💡 Empfehlung</h4>
                         <div class="info-content">
-                            <p><strong>Ein Gerät:</strong> Perfekt für gemütliche Runden zu Hause. Einfach und schnell.</p>
-                            <p><strong>Online Multiplayer:</strong> Ideal für größere Gruppen oder wenn jeder sein eigenes Handy nutzen möchte.</p>
+                            <p><strong>Ein Gerät:</strong> Perfekt für gemütliche Runden zu Hause.</p>
+                            <p><strong>Online Multiplayer:</strong> Ideal für größere Gruppen und räumlich getrennte Freunde.</p>
                         </div>
                     </div>
                 </div>
-
-                <div class="nav-buttons">
-                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase Connection Error Modal -->
-    <div class="modal" id="firebase-error-modal" style="display: none;">
+    <!-- Firebase Error Modal -->
+    <div class="modal" id="firebase-error-modal">
         <div class="modal-content">
-            <div class="error-header">
-                <span class="error-icon">⚠️</span>
-                <h3>Verbindungsproblem</h3>
+            <div class="modal-header">
+                <h3>🔌 Verbindungsproblem</h3>
+                <button class="close-btn" onclick="closeFirebaseErrorModal()">✕</button>
             </div>
-            <div class="error-content">
-                <p>Für den Online-Multiplayer wird eine Internetverbindung benötigt.</p>
-                <div class="error-details">
-                    <h4>Mögliche Lösungen:</h4>
-                    <ul>
-                        <li>📶 Internetverbindung prüfen</li>
-                        <li>🔄 Seite neu laden</li>
-                        <li>📱 "Ein Gerät" Modus verwenden</li>
-                    </ul>
-                </div>
+            <div class="modal-body">
+                <p>Die Verbindung zum Server konnte nicht hergestellt werden.</p>
+                <p>Bitte überprüfe deine Internetverbindung oder wähle den <strong>"Ein Gerät"</strong> Modus.</p>
             </div>
-            <div class="modal-buttons">
-                <button class="btn btn-outline" onclick="closeFirebaseErrorModal()">OK</button>
-                <button class="btn btn-secondary" onclick="retryFirebaseConnection()">🔄 Erneut versuchen</button>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeFirebaseErrorModal()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="retryFirebaseConnection()">Erneut versuchen</button>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Notification Container -->
+    <div class="notification-container" id="notification-container"></div>
+
+    <style>
+        /* Reset und Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
+        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
+        }
+
+        /* Layout */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Back Button */
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Screen Title */
+        .screen-title {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .selection-description {
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* Mode Grid */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .mode-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+
+        /* Mode Cards */
+        .mode-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card:hover {
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .mode-card.selected {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            transform: scale(1.05);
+        }
+
+        .mode-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .mode-card.disabled:hover {
+            transform: none;
+        }
+
+        .mode-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .mode-emoji {
+            font-size: 3rem;
+        }
+
+        .mode-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .mode-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+
+        .mode-benefits {
+            margin-bottom: 20px;
+        }
+
+        .benefit {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            padding-left: 5px;
+        }
+
+        .mode-footer {
+            display: flex;
+            justify-content: center;
+        }
+
+        .recommended-badge {
+            background: rgba(76, 175, 80, 0.3);
+            color: #81C784;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #FFA726;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #4CAF50;
+            animation: none;
+        }
+
+        .status-dot.disconnected {
+            background: #F44336;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 4px solid #FFC107;
+        }
+
+        .info-box h4 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .info-content p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .info-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 0;
+            max-width: 400px;
+            width: 90%;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: rgba(244, 67, 54, 0.1);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header h3 {
+            color: #333;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Notifications */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
+        }
+
+        .notification {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+        }
+
+        .notification.success {
+            border-left-color: #4CAF50;
+        }
+
+        .notification.warning {
+            border-left-color: #FFC107;
+        }
+
+        .notification.error {
+            border-left-color: #F44336;
+        }
+
+        .notification.info {
+            border-left-color: #2196F3;
+        }
+
+        .notification-text {
+            color: #333;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 480px) {
+            .app-container {
+                padding: 15px;
+            }
+
+            .screen-title {
+                font-size: 2rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .glass-card {
+                padding: 25px;
+            }
+
+            .mode-card {
+                padding: 20px;
+            }
+
+            .mode-title {
+                font-size: 1.3rem;
+            }
+
+            .mode-emoji {
+                font-size: 2.5rem;
+            }
+
+            .back-button {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+
     <script>
         // Firebase Configuration
         const firebaseConfig = {
@@ -138,7 +643,8 @@
         };
 
         // Global variables
-        let firebaseApp, database;
+        let firebaseApp = null;
+        let database = null;
         let gameState = null;
         let isFirebaseReady = false;
 
@@ -286,9 +792,6 @@
             showLoading();
             await initFirebase();
             hideLoading();
-            
-            // Add entrance animations
-            addEntranceAnimations();
         }
 
         // Select device mode
@@ -347,7 +850,6 @@
         // Show Firebase error modal
         function showFirebaseErrorModal() {
             document.getElementById('firebase-error-modal').style.display = 'flex';
-            trapFocus(document.getElementById('firebase-error-modal'));
         }
 
         // Close Firebase error modal
@@ -372,35 +874,12 @@
             if (isFirebaseReady) {
                 showNotification('Verbindung erfolgreich!', 'success');
             } else {
-                showNotification('Verbindung fehlgeschlagen. Versuche "Ein Gerät" Modus.', 'warning');
+                showNotification('Verbindung fehlgeschlagen. Versuche "Ein Gerät" Modus.', 'error');
             }
         }
 
-        // Add entrance animations
-        function addEntranceAnimations() {
-            setTimeout(() => {
-                document.querySelectorAll('.mode-card').forEach((card, index) => {
-                    setTimeout(() => {
-                        card.style.opacity = '0';
-                        card.style.transform = 'translateY(30px)';
-                        card.style.transition = 'all 0.6s ease';
-                        setTimeout(() => {
-                            card.style.opacity = '1';
-                            card.style.transform = 'translateY(0)';
-                        }, 100);
-                    }, index * 200);
-                });
-            }, 300);
-        }
-
-        // Go back to main menu
+        // Go back to previous page
         function goBack() {
-            // Clear device mode selection
-            if (gameState) {
-                gameState.deviceMode = null;
-                gameState.saveToStorage();
-            }
-            
             showLoading();
             setTimeout(() => {
                 window.location.href = 'index.html';
@@ -409,103 +888,44 @@
 
         // Utility Functions
         function showLoading() {
-            document.getElementById('loading').classList.add('show');
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.add('show');
+            }
         }
 
         function hideLoading() {
-            document.getElementById('loading').classList.remove('show');
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.remove('show');
+            }
         }
 
         function showNotification(message, type = 'info', duration = 3000) {
+            // Remove existing notifications
             document.querySelectorAll('.notification').forEach(n => n.remove());
             
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
-            notification.innerHTML = `<span>${message}</span>`;
-            
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 10px;
-                color: white;
-                font-size: 0.9rem;
-                z-index: 9999;
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-                max-width: 300px;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-text">${message}</span>
+                </div>
             `;
-
-            const colors = {
-                'success': 'linear-gradient(135deg, #4CAF50, #45a049)',
-                'error': 'linear-gradient(135deg, #f44336, #da190b)',
-                'warning': 'linear-gradient(135deg, #FF9800, #F57C00)',
-                'info': 'linear-gradient(135deg, #4facfe, #00f2fe)'
-            };
-            notification.style.background = colors[type] || colors.info;
             
-            document.body.appendChild(notification);
+            document.getElementById('notification-container').appendChild(notification);
             
-            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+            // Auto remove
             setTimeout(() => {
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => notification.remove(), 300);
+                notification.remove();
             }, duration);
         }
 
-        // Focus trap for modals (accessibility)
-        function trapFocus(element) {
-            const focusableElements = element.querySelectorAll(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            
-            const firstFocusable = focusableElements[0];
-            const lastFocusable = focusableElements[focusableElements.length - 1];
-            
-            element.addEventListener('keydown', (e) => {
-                if (e.key === 'Tab') {
-                    if (e.shiftKey) {
-                        if (document.activeElement === firstFocusable) {
-                            lastFocusable.focus();
-                            e.preventDefault();
-                        }
-                    } else {
-                        if (document.activeElement === lastFocusable) {
-                            firstFocusable.focus();
-                            e.preventDefault();
-                        }
-                    }
-                }
-                
-                if (e.key === 'Escape') {
-                    if (element.id === 'firebase-error-modal') {
-                        closeFirebaseErrorModal();
-                    }
-                }
-            });
-            
-            if (firstFocusable) {
-                firstFocusable.focus();
-            }
-        }
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', initDeviceSelection);
-
-        // Handle clicks outside modals to close them
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal')) {
-                if (e.target.id === 'firebase-error-modal') {
-                    closeFirebaseErrorModal();
-                }
-            }
-        });
-
-        // Handle online/offline events
+        // Network status listeners
         window.addEventListener('online', () => {
-            console.log('Back online - retrying Firebase connection');
-            retryFirebaseConnection();
+            console.log('Back online');
+            initFirebase();
+            showNotification('Internetverbindung wiederhergestellt', 'success');
         });
 
         window.addEventListener('offline', () => {
@@ -513,571 +933,9 @@
             updateConnectionStatus(false);
             showNotification('Keine Internetverbindung - Multiplayer nicht verfügbar', 'warning');
         });
+
+        // Initialize page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initDeviceSelection);
     </script>
-
-    <style>
-        /* DenkstDu - Device Selection Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Animated Background Particles */
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
-        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
-        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
-        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
-            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
-            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
-        }
-
-        /* Container System */
-        .app-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1;
-        }
-
-        .screen {
-            display: none;
-            min-height: 100vh;
-            padding: 20px;
-            animation: slideInUp 0.6s ease-out;
-        }
-
-        .screen.active {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .content-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            max-width: 800px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Glassmorphism Cards */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-
-        .screen-title {
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 30px;
-            text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
-        }
-
-        /* Mode Grid */
-        .mode-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 25px;
-            width: 100%;
-            margin: 30px 0;
-        }
-
-        .mode-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 2px solid transparent;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            position: relative;
-            min-height: 350px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .mode-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
-        }
-
-        .mode-card.selected {
-            border-color: #4facfe;
-            background: rgba(79, 172, 254, 0.2);
-            transform: scale(1.02);
-            box-shadow: 0 12px 40px rgba(79, 172, 254, 0.4);
-        }
-
-        .mode-card.disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .mode-card.disabled:hover {
-            border-color: transparent;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-        }
-
-        .mode-emoji {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            display: block;
-        }
-
-        .mode-title {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-
-        .mode-subtitle {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1rem;
-            line-height: 1.5;
-            margin-bottom: 25px;
-        }
-
-        .mode-benefits {
-            flex: 1;
-            margin-bottom: 20px;
-        }
-
-        .benefit {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-            margin: 8px 0;
-            padding: 4px 0;
-            text-align: left;
-        }
-
-        .mode-footer {
-            margin-top: auto;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .recommended-badge {
-            background: rgba(76, 175, 80, 0.3);
-            color: #4CAF50;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            border: 1px solid #4CAF50;
-        }
-
-        .connection-status {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.connected {
-            background: #4CAF50;
-        }
-
-        .status-dot.disconnected {
-            background: #f44336;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .connection-status:has(.connected) {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4CAF50;
-            border: 1px solid #4CAF50;
-        }
-
-        .connection-status:has(.disconnected) {
-            background: rgba(244, 67, 54, 0.2);
-            color: #f44336;
-            border: 1px solid #f44336;
-        }
-
-        /* Info Box */
-        .info-box {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 25px;
-            border: 1px solid rgba(79, 172, 254, 0.3);
-        }
-
-        .info-box h4 {
-            color: #4facfe;
-            font-size: 1.1rem;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .info-content p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            line-height: 1.5;
-            margin-bottom: 8px;
-        }
-
-        /* Buttons */
-        .btn {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-            color: white;
-            border: none;
-            padding: 18px 32px;
-            border-radius: 15px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(238, 90, 82, 0.6);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            color: white;
-            box-shadow: none;
-        }
-
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: white;
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-        }
-
-        .btn-secondary:hover {
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .nav-buttons .btn {
-            flex: 1;
-        }
-
-        .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1rem;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            z-index: 100;
-        }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateX(-2px);
-        }
-
-        /* Modal Styles */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 500px;
-            width: 100%;
-            color: white;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-        }
-
-        .error-header {
-            margin-bottom: 20px;
-        }
-
-        .error-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #FF9800;
-        }
-
-        .error-header h3 {
-            font-size: 1.4rem;
-            margin-bottom: 10px;
-        }
-
-        .error-content p {
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.5;
-            margin-bottom: 20px;
-        }
-
-        .error-details {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: left;
-        }
-
-        .error-details h4 {
-            color: #4facfe;
-            font-size: 1rem;
-            margin-bottom: 10px;
-        }
-
-        .error-details ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .error-details li {
-            color: rgba(255, 255, 255, 0.8);
-            margin: 8px 0;
-            font-size: 0.9rem;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 25px;
-        }
-
-        .modal-buttons .btn {
-            flex: 1;
-            padding: 15px 20px;
-        }
-
-        /* Loading Animation */
-        .loading {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10000;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Animations */
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .screen {
-                padding: 15px;
-            }
-
-            .glass-card {
-                padding: 25px 20px;
-            }
-
-            .mode-grid {
-                gap: 20px;
-            }
-
-            .mode-card {
-                padding: 25px 20px;
-                min-height: 300px;
-            }
-
-            .mode-emoji {
-                font-size: 3rem;
-            }
-
-            .mode-title {
-                font-size: 1.3rem;
-            }
-
-            .benefit {
-                font-size: 0.85rem;
-            }
-
-            .nav-buttons {
-                flex-direction: column;
-            }
-
-            .nav-buttons .btn {
-                width: 100%;
-            }
-
-            .back-button {
-                top: 15px;
-                left: 15px;
-                padding: 8px 12px;
-                font-size: 0.9rem;
-            }
-
-            .modal-content {
-                margin: 20px;
-                padding: 25px 20px;
-            }
-
-            .modal-buttons {
-                flex-direction: column;
-            }
-        }
-
-        @media (min-width: 768px) {
-            .mode-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 30px;
-            }
-
-            .content-area {
-                max-width: 900px;
-            }
-        }
-
-        /* Accessibility Improvements */
-        .mode-card:focus,
-        .btn:focus,
-        .back-button:focus {
-            outline: 2px solid #4facfe;
-            outline-offset: 2px;
-        }
-
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-            .mode-card {
-                border: 2px solid white;
-            }
-            
-            .btn {
-                border: 2px solid currentColor;
-            }
-        }
-
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
-        }
-    </style>
 </body>
 </html>

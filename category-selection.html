@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>DenkstDu - Kategorien wählen</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -31,295 +30,926 @@
     <div class="app-container">
         <div class="screen active">
             <div class="content-area">
-                <h2 class="screen-title">Kategorien wählen</h2>
+                <h2 class="screen-title">🎯 Kategorien wählen</h2>
                 
                 <div class="glass-card">
-                    <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 25px;">
-                        Wähle eine oder mehrere Kategorien aus
+                    <p class="selection-description">
+                        Wähle eine oder mehrere Kategorien aus<br>
+                        <small>Du kannst sie später auch kombinieren!</small>
                     </p>
                     
                     <div class="category-grid">
-                        <div class="category-card" data-category="fsk0" onclick="toggleCategory(this)">
-                            <span class="category-emoji">👨‍👩‍👧‍👦</span>
+                        <!-- FSK 0 - Familie & Freunde -->
+                        <div class="category-card fsk0" data-category="fsk0" onclick="toggleCategory(this)">
+                            <div class="category-header">
+                                <div class="category-icon">👨‍👩‍👧‍👦</div>
+                                <div class="fsk-badge fsk0-badge">FSK 0</div>
+                            </div>
                             <h3 class="category-title">Familie & Freunde</h3>
-                            <p class="category-subtitle">FSK 0 - Harmlose Fragen für alle Altersgruppen</p>
+                            <p class="category-description">
+                                Harmlose und lustige Fragen für alle Altersgruppen. 
+                                Perfekt für Familienabende und gemischte Gruppen.
+                            </p>
                             <div class="category-examples">
-                                Beispiele: Tiere retten, Kinderserien schauen, mit Pflanzen reden
+                                <div class="example-questions">
+                                    <div class="example-question">"Warst du schon mal im Ausland?"</div>
+                                    <div class="example-question">"Hast du schon mal ein Buch zu Ende gelesen?"</div>
+                                    <div class="example-question">"Warst du schon mal auf einem Konzert?"</div>
+                                </div>
+                            </div>
+                            <div class="category-footer">
+                                <span class="age-range">Ab 0 Jahren</span>
+                                <span class="question-count">~200 Fragen</span>
                             </div>
                         </div>
-                        
-                        <div class="category-card" data-category="fsk16" onclick="toggleCategory(this)">
-                            <span class="category-emoji">🎉</span>
+
+                        <!-- FSK 16 - Party Time -->
+                        <div class="category-card fsk16" data-category="fsk16" onclick="toggleCategory(this)">
+                            <div class="category-header">
+                                <div class="category-icon">🎉</div>
+                                <div class="fsk-badge fsk16-badge">FSK 16</div>
+                            </div>
                             <h3 class="category-title">Party Time</h3>
-                            <p class="category-subtitle">FSK 16 - Unterhaltsame und lustige Fragen</p>
+                            <p class="category-description">
+                                Freche und unterhaltsame Fragen für Jugendliche und junge Erwachsene. 
+                                Ideal für WG-Partys und Studentenfeiern.
+                            </p>
                             <div class="category-examples">
-                                Beispiele: Promi-Crushes, peinliche Nachrichten, Dating-Fails
+                                <div class="example-questions">
+                                    <div class="example-question">"Warst du schon mal richtig betrunken?"</div>
+                                    <div class="example-question">"Hast du schon mal gelogen, um frei zu bekommen?"</div>
+                                    <div class="example-question">"Warst du schon mal heimlich verliebt?"</div>
+                                </div>
+                            </div>
+                            <div class="category-footer">
+                                <span class="age-range">Ab 16 Jahren</span>
+                                <span class="question-count">~300 Fragen</span>
                             </div>
                         </div>
-                        
-                        <div class="category-card premium-category" data-category="fsk18" onclick="toggleCategory(this)">
-                            <span class="category-emoji">🔥</span>
+
+                        <!-- FSK 18 - Heiß & Gewagt -->
+                        <div class="category-card fsk18" data-category="fsk18" onclick="toggleCategory(this)">
+                            <div class="category-header">
+                                <div class="category-icon">🔥</div>
+                                <div class="fsk-badge fsk18-badge">FSK 18</div>
+                            </div>
                             <h3 class="category-title">Heiß & Gewagt</h3>
-                            <p class="category-subtitle">FSK 18 - Nur für Erwachsene</p>
+                            <p class="category-description">
+                                Pikante und intime Fragen nur für Erwachsene. 
+                                Perfekt für enge Freundesgruppen und Paar-Abende.
+                            </p>
                             <div class="category-examples">
-                                Beispiele: One-Night-Stands, intime Fantasien, Tabus
+                                <div class="example-questions">
+                                    <div class="example-question">"Hattest du schon mal einen One-Night-Stand?"</div>
+                                    <div class="example-question">"Hast du schon mal etwas Illegales gemacht?"</div>
+                                    <div class="example-question">"Warst du schon mal in jemand anderem verliebt?"</div>
+                                </div>
                             </div>
-                            <div class="premium-badge">🔒 PREMIUM</div>
-                        </div>
-                    </div>
-
-                    <!-- Auswahl-Info -->
-                    <div class="selection-info" id="selection-info" style="display: none;">
-                        <div style="background: rgba(79, 172, 254, 0.2); border-radius: 12px; padding: 15px; margin-top: 20px;">
-                            <div style="color: #4facfe; font-weight: 600; margin-bottom: 8px;">
-                                📝 Deine Auswahl:
-                            </div>
-                            <div id="selected-categories-display" style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">
+                            <div class="category-footer">
+                                <span class="age-range">Nur Erwachsene</span>
+                                <span class="question-count">~250 Fragen</span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="nav-buttons">
-                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
-                    <button class="btn" onclick="proceedWithCategories()" id="continue-categories" disabled>
-                        Weiter (<span id="selected-count">0</span>)
-                    </button>
+                    <!-- Selection Summary -->
+                    <div class="selection-summary" id="selection-summary" style="display: none;">
+                        <div class="summary-header">
+                            <h4>✅ Ausgewählte Kategorien</h4>
+                        </div>
+                        <div class="selected-categories" id="selected-categories-list"></div>
+                        <div class="total-questions">
+                            Gesamt: <span id="total-questions">0</span> Fragen verfügbar
+                        </div>
+                    </div>
+
+                    <!-- Continue Button -->
+                    <div class="continue-section">
+                        <button class="btn btn-primary btn-large" id="continue-btn" onclick="proceedWithCategories()" disabled>
+                            Weiter zur Schwierigkeitsauswahl
+                        </button>
+                        <p class="continue-hint">Wähle mindestens eine Kategorie aus</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Premium Modal -->
-    <div class="premium-modal" id="premium-modal" style="display: none;">
-        <div class="premium-modal-content">
-            <div class="premium-header">
-                <span style="font-size: 2rem;">🔥</span>
-                <h3>Premium Kategorie</h3>
+    <!-- Age Verification Modal -->
+    <div class="modal" id="age-verification-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔞 Altersbestätigung</h3>
             </div>
-            
-            <p style="margin: 15px 0;">
-                Die "Heiß & Gewagt" Kategorie ist nur für Premium-Nutzer verfügbar.
-            </p>
-            
-            <div class="premium-features">
-                <h4>🌟 Premium Features:</h4>
-                <div class="feature-list">
-                    <div class="feature-item">✅ FSK18 Kategorien freischalten</div>
-                    <div class="feature-item">✅ Unbegrenzte Spieleranzahl</div>
-                    <div class="feature-item">✅ Eigene Fragen hinzufügen</div>
-                    <div class="feature-item">✅ Erweiterte Multiplayer-Features</div>
-                    <div class="feature-item">✅ Werbefreies Spielerlebnis</div>
-                    <div class="feature-item">✅ Exklusive Premium-Fragen</div>
+            <div class="modal-body">
+                <p>Du hast eine Kategorie für Erwachsene ausgewählt.</p>
+                <p><strong>Bist du 18 Jahre oder älter?</strong></p>
+                <div class="age-warning">
+                    <p><small>Diese Kategorie enthält Fragen zu intimen und erwachsenen Themen.</small></p>
                 </div>
             </div>
-            
-            <div class="premium-price">
-                <div style="text-align: center; margin: 20px 0;">
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #FFD700;">
-                        Nur 2,99€ einmalig
-                    </div>
-                    <div style="font-size: 0.8rem; opacity: 0.8;">
-                        Lebenslang Premium • Keine Abos
-                    </div>
-                </div>
-            </div>
-            
-            <div class="premium-buttons">
-                <button class="btn btn-outline" onclick="closePremiumModal()">Vielleicht später</button>
-                <button class="btn premium-btn" onclick="upgradeToPremium()">
-                    🔥 Premium freischalten
-                </button>
-            </div>
-            
-            <div style="text-align: center; margin-top: 15px;">
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">
-                    💡 Demo-Modus: Wird für Tests automatisch freigeschaltet
-                </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="cancelAgeVerification()">Unter 18</button>
+                <button class="btn btn-primary" onclick="confirmAgeVerification()">Ja, ich bin 18+</button>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/gameState.js"></script>
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/privacy.js"></script>
+    <!-- Notification Container -->
+    <div class="notification-container" id="notification-container"></div>
+
+    <style>
+        /* Reset und Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
+        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
+        }
+
+        /* Layout */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            padding-top: 2rem;
+        }
+
+        /* Back Button */
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Screen Title */
+        .screen-title {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .selection-description {
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .selection-description small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Category Grid */
+        .category-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .category-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 25px;
+            }
+        }
+
+        /* Category Cards */
+        .category-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card:hover {
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .category-card.selected {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            transform: scale(1.03);
+        }
+
+        .category-card.fsk0.selected {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .category-card.fsk16.selected {
+            border-color: #FF9800;
+            background: rgba(255, 152, 0, 0.1);
+        }
+
+        .category-card.fsk18.selected {
+            border-color: #F44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .category-icon {
+            font-size: 3rem;
+        }
+
+        .fsk-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .fsk0-badge {
+            background: #4CAF50;
+        }
+
+        .fsk16-badge {
+            background: #FF9800;
+        }
+
+        .fsk18-badge {
+            background: #F44336;
+        }
+
+        .category-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .category-description {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .category-examples {
+            margin-bottom: 20px;
+        }
+
+        .example-questions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .example-question {
+            background: rgba(0, 0, 0, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-style: italic;
+            border-left: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .category-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .age-range, .question-count {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Selection Summary */
+        .selection-summary {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .summary-header h4 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .selected-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .selected-category-tag {
+            background: rgba(76, 175, 80, 0.3);
+            color: #81C784;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .total-questions {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Continue Section */
+        .continue-section {
+            text-align: center;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-large {
+            padding: 18px 40px;
+            font-size: 1.2rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #81C784);
+            color: white;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+        }
+
+        .continue-hint {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 0;
+            max-width: 400px;
+            width: 90%;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: rgba(244, 67, 54, 0.1);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header h3 {
+            color: #333;
+            margin: 0;
+        }
+
+        .modal-body {
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .age-warning {
+            background: rgba(244, 67, 54, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 3px solid #F44336;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Notifications */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
+        }
+
+        .notification {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+        }
+
+        .notification.success {
+            border-left-color: #4CAF50;
+        }
+
+        .notification.warning {
+            border-left-color: #FFC107;
+        }
+
+        .notification.error {
+            border-left-color: #F44336;
+        }
+
+        .notification-text {
+            color: #333;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+            }
+
+            .screen-title {
+                font-size: 2rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .glass-card {
+                padding: 25px;
+            }
+
+            .category-card {
+                padding: 20px;
+            }
+
+            .category-title {
+                font-size: 1.3rem;
+            }
+
+            .category-icon {
+                font-size: 2.5rem;
+            }
+
+            .back-button {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+
+            .btn-large {
+                padding: 15px 25px;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+
     <script>
+        // Global variables
+        let gameState = null;
         let selectedCategories = [];
+        let pendingAgeVerification = null;
 
-        // Initialize category selection page
+        // Game State Management
+        class GameState {
+            constructor() {
+                this.reset();
+                this.loadFromStorage();
+            }
+
+            reset() {
+                this.deviceMode = null;
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.gameState = 'setup';
+            }
+
+            saveToStorage() {
+                try {
+                    const state = {
+                        deviceMode: this.deviceMode,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        gameState: this.gameState,
+                        timestamp: Date.now(),
+                        version: 1
+                    };
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                    return true;
+                } catch (error) {
+                    console.error('Could not save game state:', error);
+                    return false;
+                }
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem('denkstdu_game_state');
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                            Object.assign(this, state);
+                            return true;
+                        } else {
+                            this.clearStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Could not load game state:', error);
+                    this.clearStorage();
+                }
+                return false;
+            }
+
+            clearStorage() {
+                localStorage.removeItem('denkstdu_game_state');
+            }
+
+            setSelectedCategories(categories) {
+                this.selectedCategories = categories;
+                this.saveToStorage();
+                console.log('Categories set to:', categories);
+            }
+        }
+
+        // Category data with question counts
+        const categoryData = {
+            fsk0: {
+                name: 'Familie & Freunde',
+                icon: '👨‍👩‍👧‍👦',
+                questions: 200,
+                color: '#4CAF50'
+            },
+            fsk16: {
+                name: 'Party Time',
+                icon: '🎉',
+                questions: 300,
+                color: '#FF9800'
+            },
+            fsk18: {
+                name: 'Heiß & Gewagt',
+                icon: '🔥',
+                questions: 250,
+                color: '#F44336'
+            }
+        };
+
+        // Initialize page
         function initCategorySelection() {
-            // Initialize Firebase
-            initFirebase();
-
-            // Load previously selected categories
-            selectedCategories = [...(gameState.selectedCategories || [])];
-            updateSelectedCategories();
-            updateContinueButton();
-
-            // Initialize mobile optimizations
-            initMobileOptimizations();
-
-            // Add entrance animations
-            setTimeout(() => {
-                document.querySelectorAll('.category-card').forEach((card, index) => {
-                    setTimeout(() => {
-                        card.style.opacity = '0';
-                        card.style.transform = 'translateY(20px)';
-                        card.style.transition = 'all 0.5s ease';
-                        setTimeout(() => {
-                            card.style.opacity = '1';
-                            card.style.transform = 'translateY(0)';
-                        }, 100);
-                    }, index * 150);
+            console.log('Initializing category selection...');
+            
+            // Initialize game state
+            gameState = new GameState();
+            
+            // Load previously selected categories if any
+            if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
+                selectedCategories = [...gameState.selectedCategories];
+                selectedCategories.forEach(category => {
+                    const card = document.querySelector(`[data-category="${category}"]`);
+                    if (card) {
+                        card.classList.add('selected');
+                    }
                 });
-            }, 300);
+                updateSelectionSummary();
+            }
+            
+            console.log('Device mode:', gameState.deviceMode);
         }
 
         // Toggle category selection
         function toggleCategory(element) {
             const category = element.dataset.category;
-
-            // Check if premium category
-            if (category === 'fsk18' && !isPremiumUser()) {
-                showPremiumModal();
+            
+            // Check if it's FSK18 and needs age verification
+            if (category === 'fsk18' && !selectedCategories.includes(category)) {
+                pendingAgeVerification = element;
+                showAgeVerificationModal();
                 return;
             }
-
-            const index = selectedCategories.indexOf(category);
-
-            if (index === -1) {
+            
+            // Toggle selection
+            if (selectedCategories.includes(category)) {
+                // Remove category
+                selectedCategories = selectedCategories.filter(c => c !== category);
+                element.classList.remove('selected');
+                showNotification(`${categoryData[category].name} entfernt`, 'info');
+            } else {
+                // Add category
                 selectedCategories.push(category);
                 element.classList.add('selected');
-                
-                // Add selection animation
-                element.style.transform = 'scale(1.05)';
-                setTimeout(() => {
-                    element.style.transform = '';
-                }, 200);
+                showNotification(`${categoryData[category].name} ausgewählt!`, 'success');
+            }
+            
+            updateSelectionSummary();
+        }
+
+        // Show age verification modal
+        function showAgeVerificationModal() {
+            document.getElementById('age-verification-modal').style.display = 'flex';
+        }
+
+        // Confirm age verification
+        function confirmAgeVerification() {
+            if (pendingAgeVerification) {
+                const category = pendingAgeVerification.dataset.category;
+                selectedCategories.push(category);
+                pendingAgeVerification.classList.add('selected');
+                showNotification(`${categoryData[category].name} ausgewählt!`, 'success');
+                updateSelectionSummary();
+                pendingAgeVerification = null;
+            }
+            document.getElementById('age-verification-modal').style.display = 'none';
+        }
+
+        // Cancel age verification
+        function cancelAgeVerification() {
+            pendingAgeVerification = null;
+            document.getElementById('age-verification-modal').style.display = 'none';
+            showNotification('Du musst 18+ sein für diese Kategorie', 'warning');
+        }
+
+        // Update selection summary
+        function updateSelectionSummary() {
+            const summaryElement = document.getElementById('selection-summary');
+            const categoriesListElement = document.getElementById('selected-categories-list');
+            const totalQuestionsElement = document.getElementById('total-questions');
+            const continueBtn = document.getElementById('continue-btn');
+            const continueHint = document.querySelector('.continue-hint');
+
+            if (selectedCategories.length === 0) {
+                summaryElement.style.display = 'none';
+                continueBtn.disabled = true;
+                continueHint.textContent = 'Wähle mindestens eine Kategorie aus';
             } else {
-                selectedCategories.splice(index, 1);
-                element.classList.remove('selected');
+                summaryElement.style.display = 'block';
+                continueBtn.disabled = false;
+                continueHint.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''} ausgewählt`;
+
+                // Build category list
+                categoriesListElement.innerHTML = selectedCategories.map(category => {
+                    const data = categoryData[category];
+                    return `
+                        <div class="selected-category-tag">
+                            <span>${data.icon}</span>
+                            <span>${data.name}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                // Calculate total questions
+                const totalQuestions = selectedCategories.reduce((sum, category) => {
+                    return sum + categoryData[category].questions;
+                }, 0);
+                totalQuestionsElement.textContent = totalQuestions;
             }
 
-            // Update game state
-            gameState.selectedCategories = [...selectedCategories];
-            gameState.saveToStorage();
-
-            updateContinueButton();
-            updateSelectionDisplay();
-        }
-
-        // Update visual state of selected categories
-        function updateSelectedCategories() {
-            selectedCategories.forEach(category => {
-                const element = document.querySelector(`[data-category="${category}"]`);
-                if (element) {
-                    element.classList.add('selected');
-                }
-            });
-            updateSelectionDisplay();
-        }
-
-        // Update continue button state
-        function updateContinueButton() {
-            const continueBtn = document.getElementById('continue-categories');
-            const countSpan = document.getElementById('selected-count');
-            const hasSelection = selectedCategories.length > 0;
-            
-            continueBtn.disabled = !hasSelection;
-            continueBtn.style.opacity = hasSelection ? '1' : '0.5';
-            continueBtn.style.cursor = hasSelection ? 'pointer' : 'not-allowed';
-            countSpan.textContent = selectedCategories.length;
-        }
-
-        // Update selection display
-        function updateSelectionDisplay() {
-            const selectionInfo = document.getElementById('selection-info');
-            const display = document.getElementById('selected-categories-display');
-            
-            if (selectedCategories.length > 0) {
-                selectionInfo.style.display = 'block';
-                
-                const categoryNames = {
-                    'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
-                    'fsk16': '🎉 Party Time',
-                    'fsk18': '🔥 Heiß & Gewagt'
-                };
-                
-                const names = selectedCategories.map(cat => categoryNames[cat]).join(' • ');
-                display.textContent = names;
-            } else {
-                selectionInfo.style.display = 'none';
-            }
+            // Save to game state
+            gameState.setSelectedCategories(selectedCategories);
         }
 
         // Proceed with selected categories
         function proceedWithCategories() {
-            if (selectedCategories.length > 0) {
-                showLoading();
-                setTimeout(() => {
-                    window.location.href = 'difficulty-selection.html';
-                }, 500);
-            } else {
+            if (selectedCategories.length === 0) {
                 showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
+                return;
             }
-        }
 
-        // Show premium modal
-        function showPremiumModal() {
-            const modal = document.getElementById('premium-modal');
-            modal.style.display = 'flex';
+            showLoading();
             
-            // Animate in
-            const content = modal.querySelector('.premium-modal-content');
-            content.style.transform = 'scale(0.8)';
-            content.style.opacity = '0';
+            // Save categories to game state
+            gameState.setSelectedCategories(selectedCategories);
             
             setTimeout(() => {
-                content.style.transition = 'all 0.3s ease';
-                content.style.transform = 'scale(1)';
-                content.style.opacity = '1';
-            }, 10);
-        }
-
-        // Close premium modal
-        function closePremiumModal() {
-            const modal = document.getElementById('premium-modal');
-            const content = modal.querySelector('.premium-modal-content');
-            
-            content.style.transform = 'scale(0.8)';
-            content.style.opacity = '0';
-            
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
-        }
-
-        // Upgrade to premium (Demo)
-        function upgradeToPremium() {
-            showNotification('Premium-Features werden implementiert...', 'info');
-            
-            // For demo purposes, unlock premium
-            localStorage.setItem('denkstdu_premium', 'true');
-            localStorage.setItem('denkstdu_premium_date', new Date().toISOString());
-            
-            closePremiumModal();
-            
-            setTimeout(() => {
-                showNotification('🎉 Demo: Premium freigeschaltet!', 'success');
-            }, 1000);
-        }
-
-        // Check if user has premium
-        function isPremiumUser() {
-            // For demo purposes, check localStorage
-            const isPremium = localStorage.getItem('denkstdu_premium') === 'true';
-            const premiumDate = localStorage.getItem('denkstdu_premium_date');
-            
-            // Check if premium is still valid (for demo, always valid)
-            return isPremium && premiumDate;
+                window.location.href = 'difficulty-selection.html';
+            }, 500);
         }
 
         // Go back to previous page
@@ -330,114 +960,43 @@
             }, 300);
         }
 
-        // Start page when DOM is loaded
+        // Utility Functions
+        function showLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.add('show');
+            }
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.classList.remove('show');
+            }
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-text">${message}</span>
+                </div>
+            `;
+            
+            document.getElementById('notification-container').appendChild(notification);
+            
+            // Auto remove
+            setTimeout(() => {
+                notification.remove();
+            }, duration);
+        }
+
+        // Initialize page when DOM is loaded
         document.addEventListener('DOMContentLoaded', initCategorySelection);
     </script>
-
-    <style>
-        /* Category selection specific styles */
-        .category-card {
-            min-height: 250px;
-            padding: 25px;
-            position: relative;
-        }
-
-        .category-card.selected {
-            border-color: #4facfe;
-            background: rgba(79, 172, 254, 0.2);
-            transform: scale(1.02);
-            box-shadow: 0 8px 32px rgba(79, 172, 254, 0.3);
-        }
-
-        .category-examples {
-            margin-top: 15px;
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.6);
-            font-style: italic;
-            line-height: 1.3;
-        }
-
-        .premium-category {
-            position: relative;
-        }
-
-        .premium-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            color: #000;
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .selection-info {
-            animation: slideInUp 0.3s ease;
-        }
-
-        /* Premium Modal Styles */
-        .premium-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
-        }
-
-        .premium-modal-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 450px;
-            width: 100%;
-            color: white;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .premium-header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .premium-header h3 {
-            font-size: 1.4rem;
-            margin-top: 10px;
-        }
-
-        .premium-features h4 {
-            margin: 15px 0 10px 0;
-            color: #FFD700;
-            font-size: 1rem;
-        }
-
-        .feature-list {
-            display: grid;
-            gap: 5px;
-        }
-
-        .feature-item {
-            font-size: 0.85rem;
-            padding: 3px 0;
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .premium-price {
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            margin: 20px 0;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-
-        .premium
+</body>
+</html>
