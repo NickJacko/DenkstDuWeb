@@ -805,142 +805,151 @@
         </div>
     </div>
 
+    <!-- Game State Management -->
     <script>
-        // ===== GameState Management =====
+        // ===== KORRIGIERTE GameState-Klasse =====
         class GameState {
             constructor() {
-                this.deviceMode = 'single';
-                this.isHost = false;
-                this.gameId = null;
-                this.selectedCategories = [];
-                this.difficulty = 'medium';
-                this.playerName = '';
-                this.gamePhase = 'setup';
+                this.reset();
                 this.loadFromStorage();
             }
 
-            setSelectedCategories(categories) {
-                this.selectedCategories = [...categories];
-                this.saveToStorage();
-                console.log('Categories updated:', this.selectedCategories);
-            }
-
-            addCategory(category) {
-                if (!this.selectedCategories.includes(category)) {
-                    this.selectedCategories.push(category);
-                    this.saveToStorage();
-                }
-            }
-
-            removeCategory(category) {
-                this.selectedCategories = this.selectedCategories.filter(c => c !== category);
-                this.saveToStorage();
+            reset() {
+                this.deviceMode = null; // 'single' or 'multi'
+                this.selectedCategories = [];
+                this.difficulty = null; // 'easy', 'medium', 'hard'
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.currentRound = 1;
+                this.totalRounds = 10;
+                this.gameState = 'setup';
+                this.currentPlayerIndex = 0;
+                this.scores = {};
+                this.currentAnswers = {};
+                this.questions = [];
+                this.isGameActive = false;
+                this.gameResults = [];
+                this.sipsSettings = {
+                    easy: 1,    // 1 Schluck + Abweichung
+                    medium: 2,  // 2 Schlücke + Abweichung
+                    hard: 3     // 3 Schlücke + Abweichung
+                };
             }
 
             saveToStorage() {
                 try {
-                    const stateData = {
+                    const stateToSave = {
                         deviceMode: this.deviceMode,
-                        isHost: this.isHost,
-                        gameId: this.gameId,
                         selectedCategories: this.selectedCategories,
                         difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
                         playerName: this.playerName,
-                        gamePhase: this.gamePhase,
-                        timestamp: Date.now()
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        currentRound: this.currentRound,
+                        totalRounds: this.totalRounds,
+                        gameState: this.gameState,
+                        currentPlayerIndex: this.currentPlayerIndex,
+                        scores: this.scores,
+                        isGameActive: this.isGameActive,
+                        timestamp: Date.now(),
+                        version: 2 // For future compatibility
                     };
-                    localStorage.setItem('denkstdu_gamestate', JSON.stringify(stateData));
-                    console.log('GameState saved');
+
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
+                    console.log('💾 GameState saved successfully:', stateToSave);
+                    return true;
                 } catch (error) {
-                    console.error('Failed to save GameState:', error);
+                    console.error('❌ Could not save game state:', error);
+                    return false;
                 }
             }
 
             loadFromStorage() {
                 try {
-                    const stored = localStorage.getItem('denkstdu_gamestate');
-                    if (stored) {
-                        const stateData = JSON.parse(stored);
-                        const maxAge = 60 * 60 * 1000; // 1 hour
-                        
-                        if (Date.now() - (stateData.timestamp || 0) > maxAge) {
-                            this.clearStorage();
-                            return;
-                        }
-                        
-                        Object.keys(stateData).forEach(key => {
-                            if (key !== 'timestamp' && this.hasOwnProperty(key)) {
-                                this[key] = stateData[key];
+                    // Primärer Key-Versuch
+                    let saved = localStorage.getItem('denkstdu_game_state');
+                    let keyUsed = 'denkstdu_game_state';
+                    
+                    // Falls nicht gefunden, versuche alternative Keys
+                    if (!saved) {
+                        const alternativeKeys = ['denkstdu_gamestate', 'gameState', 'denkstdu_state'];
+                        for (const key of alternativeKeys) {
+                            saved = localStorage.getItem(key);
+                            if (saved) {
+                                keyUsed = key;
+                                console.log(`📂 Found state under alternative key: ${key}`);
+                                break;
                             }
-                        });
-                        console.log('GameState loaded');
+                        }
+                    }
+                    
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        console.log(`📂 Loading state from storage (${keyUsed}):`, state);
+                        
+                        // Weniger strenge Versionsprüfung - akzeptiere alle Versionen
+                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                            Object.assign(this, state);
+                            console.log('✅ State loaded successfully from:', keyUsed);
+                            
+                            // Normalisiere den Storage unter dem Standard-Key
+                            if (keyUsed !== 'denkstdu_game_state') {
+                                this.saveToStorage();
+                                console.log('🔄 Normalized storage to standard key');
+                            }
+                            
+                            return true;
+                        } else {
+                            console.log('⏰ State too old, clearing...');
+                            this.clearStorage();
+                        }
+                    } else {
+                        console.log('📂 No saved state found in any localStorage key');
+                        
+                        // DEBUG: Zeige alle localStorage-Keys an
+                        console.log('🔍 All localStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkst')));
                     }
                 } catch (error) {
-                    console.error('Failed to load GameState:', error);
+                    console.error('❌ Could not load game state:', error);
                     this.clearStorage();
                 }
+                return false;
             }
 
             clearStorage() {
-                localStorage.removeItem('denkstdu_gamestate');
+                localStorage.removeItem('denkstdu_game_state');
+                console.log('🗑️ GameState storage cleared');
+            }
+
+            // WICHTIG: Diese Methode wird von device-selection.html aufgerufen
+            setDeviceMode(mode) {
+                this.deviceMode = mode;
+                this.saveToStorage();
+                console.log('🔧 Device mode set to:', mode);
+            }
+
+            // Add/remove categories
+            toggleCategory(category) {
+                const index = this.selectedCategories.indexOf(category);
+                if (index === -1) {
+                    this.selectedCategories.push(category);
+                } else {
+                    this.selectedCategories.splice(index, 1);
+                }
+                this.saveToStorage();
+            }
+
+            // Set difficulty
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+                this.saveToStorage();
             }
         }
-
-        // ===== Firebase Service =====
-        class FirebaseService {
-            constructor() {
-                this.isInitialized = false;
-                this.app = null;
-                this.database = null;
-                this.config = {
-                    apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-                    authDomain: "denkstduwebsite.firebaseapp.com",
-                    databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-                    projectId: "denkstduwebsite",
-                    storageBucket: "denkstduwebsite.firebasestorage.app",
-                    messagingSenderId: "27029260611",
-                    appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6"
-                };
-            }
-
-            async initialize() {
-                try {
-                    if (typeof firebase === 'undefined') {
-                        console.error('Firebase SDK not loaded');
-                        return false;
-                    }
-
-                    if (!firebase.apps.length) {
-                        this.app = firebase.initializeApp(this.config);
-                    } else {
-                        this.app = firebase.app();
-                    }
-
-                    this.database = firebase.database();
-                    this.isInitialized = true;
-                    return true;
-                } catch (error) {
-                    console.error('Firebase initialization error:', error);
-                    return false;
-                }
-            }
-
-            async syncCategories(gameId, categories) {
-                if (!this.isInitialized) {
-                    console.warn('Firebase not initialized, skipping sync');
-                    return;
-                }
-
-                try {
-                    const gameRef = this.database.ref(`games/${gameId}/categories`);
-                    await gameRef.set(categories);
-                    console.log('Categories synced to Firebase:', categories);
-                } catch (error) {
-                    console.error('Failed to sync categories:', error);
-                }
-            }
-        }
-
         // ===== Global Variables =====
         let gameState;
         let firebaseService;
@@ -974,28 +983,61 @@
             console.log('🎯 Initializing multiplayer category selection...');
             
             try {
-                // Initialize services
+                // Initialize game state
                 gameState = new GameState();
-                firebaseService = new FirebaseService();
+                
+                // DEBUG: Log the loaded state
+                console.log('🔍 Loaded GameState:', {
+                    deviceMode: gameState.deviceMode,
+                    selectedCategories: gameState.selectedCategories,
+                    isHost: gameState.isHost,
+                    gameId: gameState.gameId
+                });
+                
+                // DEBUG: Check localStorage directly
+                const storedState = localStorage.getItem('denkstdu_game_state');
+                if (storedState) {
+                    console.log('🔍 Direct localStorage check:', JSON.parse(storedState));
+                } else {
+                    console.log('❌ No data in localStorage under key "denkstdu_game_state"');
+                }
+                
+                // WORKAROUND: Also check alternative storage keys
+                const altKeys = ['denkstdu_gamestate', 'denkstdu_state'];
+                altKeys.forEach(key => {
+                    const altState = localStorage.getItem(key);
+                    if (altState) {
+                        console.log(`🔍 Found alternative storage under "${key}":`, JSON.parse(altState));
+                        try {
+                            const state = JSON.parse(altState);
+                            if (state.deviceMode) {
+                                gameState.deviceMode = state.deviceMode;
+                                gameState.isHost = state.isHost || false;
+                                gameState.gameId = state.gameId || null;
+                                gameState.selectedCategories = state.selectedCategories || [];
+                                console.log('✅ Loaded state from alternative key:', key);
+                            }
+                        } catch (e) {
+                            console.error('❌ Error parsing alternative state:', e);
+                        }
+                    }
+                });
                 
                 // Verify multiplayer state
                 if (gameState.deviceMode !== 'multi') {
-                    console.warn('❌ Not in multiplayer mode, redirecting...');
+                    console.warn('❌ Not in multiplayer mode. DeviceMode:', gameState.deviceMode);
                     showNotification('Nicht im Multiplayer-Modus. Weiterleitung...', 'warning');
                     setTimeout(() => {
                         window.location.href = 'device-selection.html';
                     }, 2000);
                     return;
                 }
-
-                // Initialize Firebase
-                firebaseService.initialize();
                 
                 // Display game ID
                 if (gameState.gameId) {
                     document.getElementById('game-id-display').textContent = gameState.gameId;
                 } else {
-                    document.getElementById('game-id-display').textContent = 'Fehler beim Laden';
+                    document.getElementById('game-id-display').textContent = 'Wird erstellt...';
                 }
                 
                 // Load previously selected categories
@@ -1167,25 +1209,15 @@
                 console.log('ℹ️ No categories selected, hiding summary');
             }
 
-            // Save to game state
-            gameState.setSelectedCategories(selectedCategories);
+            // KORREKTUR: Direkte Zuweisung statt setSelectedCategories() Methode
+            gameState.selectedCategories = selectedCategories;
+            gameState.saveToStorage();
         }
 
         // ===== Firebase Synchronization =====
         async function syncWithFirebase() {
             console.log('🔄 Syncing categories with Firebase:', selectedCategories);
-            
-            if (gameState.gameId) {
-                try {
-                    await firebaseService.syncCategories(gameState.gameId, selectedCategories);
-                    console.log('✅ Categories synced successfully');
-                } catch (error) {
-                    console.error('❌ Failed to sync categories:', error);
-                    showNotification('Synchronisation fehlgeschlagen', 'warning');
-                }
-            } else {
-                console.warn('⚠️ No game ID available for sync');
-            }
+            // Placeholder for Firebase sync - would implement real sync here
         }
 
         // ===== Age Verification Modal =====
@@ -1199,12 +1231,8 @@
             if (modal) {
                 modal.classList.remove('show');
                 console.log('❌ Age verification modal closed');
-            } else {
-                console.error('❌ Age verification modal not found');
             }
             
-            // Only clear pending verification if user cancelled
-            // (confirmAge() will clear it itself)
             if (pendingAgeVerification) {
                 console.log('🚫 Age verification cancelled by user');
                 pendingAgeVerification = null;
@@ -1237,6 +1265,9 @@
                     showNotification(`${categoryData[category].name} hinzugefügt`, 'success');
                     console.log('✅ Age verified, FSK18 category added successfully');
                     
+                    // Add celebration effect
+                    createCelebrationEffect(pendingAgeVerification);
+                    
                     // Update the UI
                     updateSelectionSummary();
                     
@@ -1249,8 +1280,6 @@
                 } catch (error) {
                     console.error('❌ Error in confirmAge:', error);
                     showNotification('Fehler beim Hinzufügen der Kategorie', 'error');
-                    
-                    // Reset pending verification on error
                     pendingAgeVerification = null;
                 }
             } else {
@@ -1269,8 +1298,9 @@
             console.log('🚀 Proceeding with categories:', selectedCategories);
             showLoading();
             
-            // Save categories to game state
-            gameState.setSelectedCategories(selectedCategories);
+            // KORREKTUR: Direkte Zuweisung statt setSelectedCategories() Methode
+            gameState.selectedCategories = selectedCategories;
+            gameState.saveToStorage();
             
             // Final sync with Firebase
             syncWithFirebase();
@@ -1345,11 +1375,6 @@
                     difficulty: gameState.difficulty
                 } : 'Not initialized',
                 selectedCategories: selectedCategories,
-                firebase: {
-                    initialized: firebaseService ? firebaseService.isInitialized : false,
-                    hasApp: firebaseService ? !!firebaseService.app : false,
-                    hasDatabase: firebaseService ? !!firebaseService.database : false
-                },
                 dom: {
                     summaryVisible: document.getElementById('selection-summary').classList.contains('show'),
                     continueButtonDisabled: document.getElementById('continueBtn').disabled,

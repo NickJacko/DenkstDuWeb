@@ -626,12 +626,10 @@
                 };
             }
 
-            // Firebase initialisieren
             async initialize() {
                 try {
                     console.log('Starting Firebase initialization...');
                     
-                    // Prüfen ob Firebase SDK verfügbar ist
                     if (typeof firebase === 'undefined') {
                         console.error('Firebase SDK not loaded');
                         return false;
@@ -639,7 +637,6 @@
 
                     console.log('Firebase SDK detected');
 
-                    // Firebase App initialisieren (falls noch nicht geschehen)
                     if (!firebase.apps || firebase.apps.length === 0) {
                         console.log('Initializing Firebase app...');
                         this.app = firebase.initializeApp(this.config);
@@ -648,11 +645,9 @@
                         this.app = firebase.app();
                     }
 
-                    // Realtime Database Referenz erstellen
                     this.database = firebase.database();
                     console.log('Database reference created');
 
-                    // Verbindung testen
                     const connected = await this.testConnection();
                     this.isInitialized = connected;
                     
@@ -666,7 +661,6 @@
                 }
             }
 
-            // Verbindung testen
             async testConnection() {
                 try {
                     console.log('Testing Firebase connection...');
@@ -677,10 +671,8 @@
                             resolve(false);
                         }, 8000);
 
-                        // Mehrere Tests ausprobieren
                         const runTests = async () => {
                             try {
-                                // Test 1: .info/connected
                                 console.log('Test 1: .info/connected');
                                 const connectedRef = this.database.ref('.info/connected');
                                 connectedRef.once('value', (snapshot) => {
@@ -691,11 +683,9 @@
                                         resolve(true);
                                         return;
                                     }
-                                    // Falls Test 1 fehlschlägt, Test 2 probieren
                                     this.runTest2(resolve);
                                 }, (error) => {
                                     console.error('Test 1 failed:', error);
-                                    // Test 2 probieren
                                     this.runTest2(resolve);
                                 });
                             } catch (error) {
@@ -712,20 +702,16 @@
                 }
             }
 
-            // Test 2: Einfachen Read/Write Test
             runTest2(resolve) {
                 try {
                     console.log('Test 2: Simple read/write test');
                     const testRef = this.database.ref('connection_test');
                     
-                    // Versuche zu schreiben
                     testRef.set('test_' + Date.now()).then(() => {
                         console.log('Test 2: Write successful');
-                        // Versuche zu lesen
                         testRef.once('value', (snapshot) => {
                             console.log('Test 2: Read successful', snapshot.val());
                             resolve(true);
-                            // Cleanup
                             testRef.remove().catch(console.error);
                         }, (error) => {
                             console.error('Test 2: Read failed', error);
@@ -741,7 +727,6 @@
                 }
             }
 
-            // Test 3: Nur Database Referenz erstellen
             runTest3(resolve) {
                 try {
                     console.log('Test 3: Basic database reference test');
@@ -759,7 +744,6 @@
                 }
             }
 
-            // Verbindungsstatus prüfen
             isConnected() {
                 return this.isInitialized;
             }
@@ -767,18 +751,6 @@
 
         // Firebase Service Instanz erstellen
         const firebaseService = new FirebaseService();
-
-        // Firebase configuration (für Fallback)
-        const firebaseConfig = {
-            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-            authDomain: "denkstduwebsite.firebaseapp.com",
-            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "denkstduwebsite",
-            storageBucket: "denkstduwebsite.firebasestorage.app",
-            messagingSenderId: "27029260611",
-            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-            measurementId: "G-BNKNW95HK8"
-        };
 
         // Firebase state
         let firebaseApp = null;
@@ -848,7 +820,7 @@
             }, 500);
         }
 
-        // Select device mode
+        // Select device mode - KORRIGIERTE VERSION
         function selectDeviceMode(mode) {
             console.log('Selecting device mode:', mode);
             
@@ -858,14 +830,16 @@
                 return;
             }
             
-            // Set device mode in game state
-            gameState.setDeviceMode(mode);
+            // KORREKTUR: Direkte Zuweisung statt setDeviceMode() Methode
+            gameState.deviceMode = mode;
             
             // Mark as host if multiplayer
             if (mode === 'multi') {
                 gameState.isHost = true;
-                gameState.saveToStorage();
             }
+            
+            // Speichere den aktualisierten Zustand
+            gameState.saveToStorage();
             
             // Visual feedback
             document.querySelectorAll('.mode-card').forEach(card => {
@@ -925,11 +899,6 @@
             // Reset Firebase state
             isFirebaseReady = false;
             
-            // Add debug logging
-            console.log('Retrying Firebase connection...');
-            console.log('Firebase available:', typeof firebase !== 'undefined');
-            console.log('Firebase config:', firebaseConfig);
-            
             try {
                 // Clear any existing app instance
                 if (firebase.apps && firebase.apps.length > 0) {
@@ -946,13 +915,16 @@
                 
                 if (connected) {
                     showNotification('Verbindung erfolgreich hergestellt!', 'success');
+                    updateConnectionStatus(true);
                 } else {
                     showNotification('Verbindung fehlgeschlagen. Bitte versuche den "Ein Gerät" Modus.', 'error');
+                    updateConnectionStatus(false);
                 }
             } catch (error) {
                 console.error('Retry connection error:', error);
                 hideLoading();
                 showNotification('Verbindung konnte nicht hergestellt werden.', 'error');
+                updateConnectionStatus(false);
             }
         }
 
@@ -1010,8 +982,12 @@
         // Network status listeners
         window.addEventListener('online', () => {
             console.log('Back online');
-            initFirebase();
-            showNotification('Internetverbindung wiederhergestellt', 'success');
+            initFirebase().then(connected => {
+                updateConnectionStatus(connected);
+                if (connected) {
+                    showNotification('Internetverbindung wiederhergestellt', 'success');
+                }
+            });
         });
 
         window.addEventListener('offline', () => {
