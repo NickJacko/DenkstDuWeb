@@ -27,7 +27,7 @@
             position: relative;
         }
 
-        /* Background Particles */
+        /* Background Animation */
         .background-particles {
             position: fixed;
             top: 0;
@@ -58,38 +58,16 @@
             50% { transform: translateY(-20px); }
         }
 
-        /* Back Button */
-        .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateX(-5px);
-        }
-
-        /* Loading Spinner */
+        /* Loading Screen */
         .loading {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(102, 126, 234, 0.95);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
@@ -103,311 +81,452 @@
             visibility: visible;
         }
 
-        .spinner {
+        .loading-spinner {
             width: 50px;
             height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #fff;
+            border: 5px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* App Container */
-        .app-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .screen {
-            width: 100%;
-            max-width: 600px;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.5s ease;
-        }
-
-        .screen.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .content-area {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 40px 30px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .screen-title {
+        .loading-text {
             color: white;
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: 500;
         }
 
-        /* Host Badge */
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 20px 20px;
+            color: white;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            font-size: 0.9rem;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-2px);
+        }
+
         .host-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
             padding: 8px 16px;
             border-radius: 20px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            display: inline-block;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
         }
 
-        .selection-description {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
-            margin-bottom: 30px;
-            line-height: 1.6;
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .selection-description small {
-            color: rgba(255, 255, 255, 0.7);
+        .header p {
+            font-size: 1rem;
+            font-weight: 400;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+
+        .game-info {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin: 0 auto;
+            max-width: 300px;
             font-size: 0.9rem;
+            backdrop-filter: blur(10px);
         }
 
-        /* Category Grid */
-        .category-grid {
-            display: flex;
-            flex-direction: column;
+        /* Main Content */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        /* Category Cards */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 20px;
             margin-bottom: 30px;
         }
 
+        @media (min-width: 768px) {
+            .categories-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .categories-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
         .category-card {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 25px;
+            padding: 25px 20px;
+            text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            border: 3px solid transparent;
             position: relative;
             overflow: hidden;
-            text-align: left;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
         }
 
         .category-card:hover {
-            transform: scale(1.02);
-            border-color: rgba(255, 255, 255, 0.4);
-            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
         }
 
         .category-card.selected {
-            transform: scale(1.03);
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
-        }
-
-        .category-card.fsk0.selected {
             border-color: #4CAF50;
-            background: rgba(76, 175, 80, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(76, 175, 80, 0.4);
+            background: linear-gradient(145deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05));
+            position: relative;
+            animation: selectedPulse 2s ease-in-out infinite;
         }
 
-        .category-card.fsk16.selected {
-            border-color: #FF9800;
-            background: rgba(255, 152, 0, 0.2);
+        .category-card.selected::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #4CAF50, #45a049, #66BB6A, #4CAF50);
+            background-size: 400% 400%;
+            border-radius: 22px;
+            z-index: -1;
+            animation: gradientShift 3s ease infinite;
         }
 
-        .category-card.fsk18.selected {
-            border-color: #F44336;
-            background: rgba(244, 67, 54, 0.2);
+        @keyframes selectedPulse {
+            0%, 100% { 
+                transform: scale(1.05);
+                box-shadow: 0 20px 40px rgba(76, 175, 80, 0.4);
+            }
+            50% { 
+                transform: scale(1.08);
+                box-shadow: 0 25px 50px rgba(76, 175, 80, 0.6);
+            }
         }
 
-        .category-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 15px;
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .category-icon {
-            font-size: 2.5rem;
-            line-height: 1;
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
         }
 
-        .fsk-badge {
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
+        .category-name {
+            font-size: 1.3rem;
             font-weight: 700;
-            color: white;
-        }
-
-        .fsk0-badge { background: #4CAF50; }
-        .fsk16-badge { background: #FF9800; }
-        .fsk18-badge { background: #F44336; }
-
-        .category-title {
-            color: white;
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 10px;
+            color: #333;
+            margin-bottom: 8px;
         }
 
         .category-description {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1rem;
-            line-height: 1.5;
-            margin-bottom: 15px;
-        }
-
-        .category-examples {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .example-questions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .example-question {
-            color: rgba(255, 255, 255, 0.7);
+            color: #666;
             font-size: 0.9rem;
-            font-style: italic;
-            padding: 5px 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
+            line-height: 1.4;
+            margin-bottom: 15px;
+            flex-grow: 1;
         }
 
         .category-stats {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.85rem;
+            margin-top: auto;
         }
 
-        .question-count {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-        }
-
-        .selected-indicator {
+        .questions-count {
+            font-weight: 600;
             color: #4CAF50;
-            font-size: 1.2rem;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
 
-        .category-card.selected .selected-indicator {
+        .fsk-badge {
+            background: #e0e0e0;
+            color: #666;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .fsk-badge.fsk16 {
+            background: #FF9800;
+            color: white;
+        }
+
+        .fsk-badge.fsk18 {
+            background: #f44336;
+            color: white;
+        }
+
+        .selection-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            opacity: 0;
+            transform: scale(0) rotate(-180deg);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            border: 3px solid white;
+        }
+
+        .category-card.selected .selection-indicator {
             opacity: 1;
+            transform: scale(1) rotate(0deg);
+            animation: checkmarkBounce 0.6s ease-out 0.2s;
+        }
+
+        @keyframes checkmarkBounce {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.3) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .category-card.selected .category-name {
+            color: #2E7D32;
+            font-weight: 800;
+            text-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+        }
+
+        .category-card.selected .category-description {
+            color: #388E3C;
+        }
+
+        .category-card.selected .questions-count {
+            color: #2E7D32;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(76, 175, 80, 0.3);
+        }
+
+        /* Sparkle effect for selected cards */
+        .category-card.selected::after {
+            content: '✨';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5rem;
+            opacity: 0.8;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { 
+                opacity: 0.8;
+                transform: rotate(0deg) scale(1);
+            }
+            50% { 
+                opacity: 1;
+                transform: rotate(180deg) scale(1.2);
+            }
         }
 
         /* Selection Summary */
         .selection-summary {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .selection-summary.show {
+            display: block;
+        }
+
+        .summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
 
         .summary-title {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
         }
 
-        .selected-categories {
+        .summary-stats {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .selected-categories-list {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .selected-category-tag {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid rgba(76, 175, 80, 0.4);
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
-            padding: 6px 12px;
-            border-radius: 12px;
+            padding: 10px 16px;
+            border-radius: 20px;
             font-size: 0.9rem;
+            font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .total-questions {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
+        .selected-category-tag::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .selected-category-tag:hover::before {
+            left: 100%;
+        }
+
+        .selected-category-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
         }
 
         /* Sync Status */
         .sync-status {
-            background: rgba(33, 150, 243, 0.1);
-            border: 1px solid rgba(33, 150, 243, 0.3);
-            border-radius: 10px;
-            padding: 12px;
-            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
+            backdrop-filter: blur(10px);
         }
 
         .sync-icon {
             font-size: 1.2rem;
-            animation: spin 2s linear infinite;
+            animation: rotate 2s linear infinite;
         }
 
-        .sync-text {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* Control Buttons */
+        /* Controls */
         .controls {
             display: flex;
-            gap: 15px;
             justify-content: center;
-            margin-top: 30px;
+            gap: 15px;
+            flex-wrap: wrap;
         }
 
         .btn {
             padding: 15px 30px;
+            border-radius: 12px;
             border: none;
-            border-radius: 25px;
-            font-size: 1.1rem;
-            font-weight: 700;
+            font-family: inherit;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            min-width: 140px;
+            font-size: 1rem;
+            min-width: 150px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
-            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
         }
 
-        .btn-primary:disabled {
-            background: rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.5);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
         }
 
         /* Age Verification Modal */
@@ -417,11 +536,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 10000;
+            z-index: 1000;
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease;
@@ -433,111 +552,122 @@
         }
 
         .modal-content {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
+            background: white;
             border-radius: 20px;
-            padding: 30px;
-            max-width: 400px;
+            padding: 0;
+            max-width: 500px;
             width: 90%;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            padding: 20px;
             text-align: center;
         }
 
-        .modal-title {
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 30px 20px;
+            text-align: center;
             color: #333;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
         }
 
-        .modal-text {
-            color: #666;
-            font-size: 1rem;
-            line-height: 1.5;
-            margin-bottom: 25px;
+        .modal-body p {
+            margin-bottom: 20px;
+            line-height: 1.6;
         }
 
-        .modal-buttons {
+        .age-warning {
+            background: #fff3e0;
+            border: 1px solid #ffb74d;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #e65100;
+            font-weight: 500;
+        }
+
+        .modal-footer {
+            padding: 0 20px 20px;
             display: flex;
-            gap: 15px;
+            gap: 10px;
             justify-content: center;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #ccc;
-            color: #666;
-        }
-
-        .btn-outline:hover {
-            background: #f0f0f0;
-        }
-
-        .btn-danger {
-            background: #F44336;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #d32f2f;
         }
 
         /* Notification */
         .notification {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: white;
+            color: #333;
             padding: 15px 20px;
             border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            z-index: 1001;
-            transform: translateX(400px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
             transition: transform 0.3s ease;
+            font-weight: 500;
+            max-width: 90%;
         }
 
         .notification.show {
-            transform: translateX(0);
+            transform: translateX(-50%) translateY(0);
         }
 
-        .notification.success { background: #4CAF50; }
-        .notification.error { background: #F44336; }
-        .notification.warning { background: #FF9800; }
+        .notification.success {
+            border-left: 4px solid #4CAF50;
+        }
 
-        /* Mobile Responsiveness */
+        .notification.warning {
+            border-left: 4px solid #FF9800;
+        }
+
+        .notification.error {
+            border-left: 4px solid #f44336;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .app-container {
-                padding: 15px;
-            }
-
-            .content-area {
-                padding: 30px 25px;
-            }
-
-            .screen-title {
+            .header h1 {
                 font-size: 1.8rem;
             }
 
-            .category-header {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
+            .back-button, .host-badge {
+                position: static;
+                margin: 10px;
+                display: inline-block;
+            }
+
+            .header {
+                padding-top: 20px;
+            }
+
+            .category-card {
+                padding: 20px 15px;
+                min-height: 250px;
             }
 
             .category-icon {
-                font-size: 2rem;
+                font-size: 2.5rem;
             }
 
             .controls {
                 flex-direction: column;
-                gap: 15px;
+                align-items: center;
             }
 
             .btn {
                 width: 100%;
-            }
-
-            .selected-categories {
-                justify-content: center;
+                max-width: 300px;
             }
         }
     </style>
@@ -552,160 +682,277 @@
         <div class="particle"></div>
     </div>
 
-    <!-- Back Button -->
-    <button class="back-button" onclick="goBack()">← Zurück</button>
-
-    <!-- Loading Spinner -->
+    <!-- Loading Screen -->
     <div class="loading" id="loading">
-        <div class="spinner"></div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Kategorien werden synchronisiert...</div>
     </div>
 
     <!-- Notification -->
     <div class="notification" id="notification"></div>
 
+    <!-- Back Button -->
+    <button class="back-button" onclick="goBack()">← Zurück</button>
+
+    <!-- Host Badge -->
+    <div class="host-badge">👑 Host</div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>🎯 Kategorien auswählen</h1>
+        <p>Wähle die Kategorien für euer Spiel aus</p>
+        <div class="game-info">
+            <span>🎮 Spiel-ID: <strong id="game-id-display">Wird geladen...</strong></span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="content">
+            <!-- Categories Grid -->
+            <div class="categories-grid">
+                <div class="category-card" data-category="fsk0" onclick="toggleCategory(this)">
+                    <div class="selection-indicator">✓</div>
+                    <span class="category-icon">👨‍👩‍👧‍👦</span>
+                    <h3 class="category-name">Familie & Freunde</h3>
+                    <p class="category-description">
+                        Harmlose und lustige Fragen für die ganze Familie. 
+                        Perfekt für gemischte Gruppen jeden Alters.
+                    </p>
+                    <div class="category-stats">
+                        <span class="questions-count">350+ Fragen</span>
+                        <span class="fsk-badge">FSK 0</span>
+                    </div>
+                </div>
+
+                <div class="category-card" data-category="fsk16" onclick="toggleCategory(this)">
+                    <div class="selection-indicator">✓</div>
+                    <span class="category-icon">🎉</span>
+                    <h3 class="category-name">Party Time</h3>
+                    <p class="category-description">
+                        Freche und witzige Fragen für Jugendliche und junge Erwachsene. 
+                        Ideal für Partys und WG-Abende.
+                    </p>
+                    <div class="category-stats">
+                        <span class="questions-count">300+ Fragen</span>
+                        <span class="fsk-badge fsk16">FSK 16</span>
+                    </div>
+                </div>
+
+                <div class="category-card" data-category="fsk18" onclick="toggleCategory(this)">
+                    <div class="selection-indicator">✓</div>
+                    <span class="category-icon">🔥</span>
+                    <h3 class="category-name">Heiß & Gewagt</h3>
+                    <p class="category-description">
+                        Intime und tabulos Fragen nur für Erwachsene. 
+                        Nichts für schwache Nerven!
+                    </p>
+                    <div class="category-stats">
+                        <span class="questions-count">250+ Fragen</span>
+                        <span class="fsk-badge fsk18">FSK 18</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selection Summary -->
+            <div class="selection-summary" id="selection-summary">
+                <div class="summary-header">
+                    <h3 class="summary-title">📋 Deine Auswahl</h3>
+                    <div class="summary-stats">
+                        <span id="total-questions">0</span> Fragen verfügbar
+                    </div>
+                </div>
+                <div class="selected-categories-list" id="selected-categories-list">
+                    <!-- Selected categories will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Sync Status -->
+            <div class="sync-status">
+                <div class="sync-icon">🔄</div>
+                <div class="sync-text">Kategorien werden mit allen Spielern synchronisiert</div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="btn btn-outline" onclick="goBack()">← Zurück</button>
+                <button class="btn btn-primary" id="continueBtn" onclick="proceedWithCategories()" disabled>
+                    Mindestens eine Kategorie wählen
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Age Verification Modal -->
     <div class="modal" id="age-verification-modal">
         <div class="modal-content">
-            <h3 class="modal-title">🔞 Altersverifikation</h3>
-            <p class="modal-text">
-                Diese Kategorie enthält intime und gewagten Inhalte für Erwachsene.<br><br>
-                <strong>Bist du mindestens 18 Jahre alt?</strong>
-            </p>
-            <div class="modal-buttons">
-                <button class="btn btn-outline" onclick="closeAgeVerificationModal()">Nein, unter 18</button>
-                <button class="btn btn-danger" onclick="confirmAge()">Ja, über 18</button>
+            <div class="modal-header">
+                <h3>🔞 Altersverifikation</h3>
+            </div>
+            <div class="modal-body">
+                <p><strong>"Heiß & Gewagt"</strong> enthält intime und explizite Fragen, die nur für Erwachsene geeignet sind.</p>
+                
+                <div class="age-warning">
+                    <strong>⚠️ Warnung:</strong> Diese Kategorie enthält sexuelle Inhalte und ist nur für Personen ab 18 Jahren bestimmt.
+                </div>
+                
+                <p>Bestätigst du, dass alle Spieler mindestens 18 Jahre alt sind?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeAgeVerificationModal()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="confirmAge()">Ja, alle sind 18+</button>
             </div>
         </div>
     </div>
 
-    <!-- App Container -->
-    <div class="app-container">
-        <div class="screen active">
-            <div class="content-area">
-                <h2 class="screen-title">🎯 Kategorien wählen</h2>
-                
-                <div class="host-badge">
-                    👑 HOST - Du bestimmst die Spielregeln
-                </div>
-                
-                <p class="selection-description">
-                    Wähle eine oder mehrere Kategorien aus<br>
-                    <small>Deine Auswahl wird mit allen Spielern synchronisiert</small>
-                </p>
-                
-                <div class="category-grid">
-                    <!-- FSK 0 - Familie & Freunde -->
-                    <div class="category-card fsk0" data-category="fsk0" onclick="toggleCategory(this)">
-                        <div class="category-header">
-                            <div class="category-icon">👨‍👩‍👧‍👦</div>
-                            <div class="fsk-badge fsk0-badge">FSK 0</div>
-                        </div>
-                        <h3 class="category-title">Familie & Freunde</h3>
-                        <p class="category-description">
-                            Harmlose und lustige Fragen für alle Altersgruppen. 
-                            Perfekt für Familienabende und gemischte Gruppen.
-                        </p>
-                        <div class="category-examples">
-                            <div class="example-questions">
-                                <div class="example-question">"Warst du schon mal im Ausland?"</div>
-                                <div class="example-question">"Hast du schon mal ein Buch zu Ende gelesen?"</div>
-                                <div class="example-question">"Warst du schon mal auf einem Konzert?"</div>
-                            </div>
-                        </div>
-                        <div class="category-stats">
-                            <span class="question-count">📊 ~200 Fragen</span>
-                            <span class="selected-indicator">✓ Gewählt</span>
-                        </div>
-                    </div>
-
-                    <!-- FSK 16 - Party Time -->
-                    <div class="category-card fsk16" data-category="fsk16" onclick="toggleCategory(this)">
-                        <div class="category-header">
-                            <div class="category-icon">🎉</div>
-                            <div class="fsk-badge fsk16-badge">FSK 16</div>
-                        </div>
-                        <h3 class="category-title">Party Time</h3>
-                        <p class="category-description">
-                            Freche und witzige Fragen für Jugendliche und Erwachsene. 
-                            Ideal für Partys und lustige Abende.
-                        </p>
-                        <div class="category-examples">
-                            <div class="example-questions">
-                                <div class="example-question">"Warst du schon mal betrunken?"</div>
-                                <div class="example-question">"Hast du schon mal gelogen, um nicht zu arbeiten?"</div>
-                                <div class="example-question">"Warst du schon mal heimlich verliebt?"</div>
-                            </div>
-                        </div>
-                        <div class="category-stats">
-                            <span class="question-count">📊 ~300 Fragen</span>
-                            <span class="selected-indicator">✓ Gewählt</span>
-                        </div>
-                    </div>
-
-                    <!-- FSK 18 - Heiß & Gewagt -->
-                    <div class="category-card fsk18" data-category="fsk18" onclick="toggleCategory(this)">
-                        <div class="category-header">
-                            <div class="category-icon">🔥</div>
-                            <div class="fsk-badge fsk18-badge">FSK 18</div>
-                        </div>
-                        <h3 class="category-title">Heiß & Gewagt</h3>
-                        <p class="category-description">
-                            Intime und tabulos Fragen nur für Erwachsene. 
-                            Perfekt für vertraute Runden unter Freunden.
-                        </p>
-                        <div class="category-examples">
-                            <div class="example-questions">
-                                <div class="example-question">"Warst du schon mal in einer heißen Situation?"</div>
-                                <div class="example-question">"Hast du schon mal...?"</div>
-                                <div class="example-question">"Warst du schon mal richtig verführerisch?"</div>
-                            </div>
-                        </div>
-                        <div class="category-stats">
-                            <span class="question-count">📊 ~250 Fragen</span>
-                            <span class="selected-indicator">✓ Gewählt</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Selection Summary -->
-                <div class="selection-summary" id="selection-summary" style="display: none;">
-                    <div class="summary-title">📝 Deine Auswahl</div>
-                    <div class="selected-categories" id="selected-categories"></div>
-                    <div class="total-questions">
-                        Insgesamt: <span id="total-questions">0</span> verfügbare Fragen
-                    </div>
-                </div>
-
-                <!-- Sync Status -->
-                <div class="sync-status">
-                    <div class="sync-icon">🔄</div>
-                    <div class="sync-text">Einstellungen werden mit allen Spielern synchronisiert</div>
-                </div>
-
-                <div class="controls">
-                    <button class="btn btn-primary" id="continueBtn" onclick="proceedWithCategories()" disabled>
-                        Weiter zur Schwierigkeit
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Game State Management -->
-    <script src="assets/js/gameState.js"></script>
-    
     <script>
-        // Game state instance
+        // ===== GameState Management =====
+        class GameState {
+            constructor() {
+                this.deviceMode = 'single';
+                this.isHost = false;
+                this.gameId = null;
+                this.selectedCategories = [];
+                this.difficulty = 'medium';
+                this.playerName = '';
+                this.gamePhase = 'setup';
+                this.loadFromStorage();
+            }
+
+            setSelectedCategories(categories) {
+                this.selectedCategories = [...categories];
+                this.saveToStorage();
+                console.log('Categories updated:', this.selectedCategories);
+            }
+
+            addCategory(category) {
+                if (!this.selectedCategories.includes(category)) {
+                    this.selectedCategories.push(category);
+                    this.saveToStorage();
+                }
+            }
+
+            removeCategory(category) {
+                this.selectedCategories = this.selectedCategories.filter(c => c !== category);
+                this.saveToStorage();
+            }
+
+            saveToStorage() {
+                try {
+                    const stateData = {
+                        deviceMode: this.deviceMode,
+                        isHost: this.isHost,
+                        gameId: this.gameId,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        playerName: this.playerName,
+                        gamePhase: this.gamePhase,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('denkstdu_gamestate', JSON.stringify(stateData));
+                    console.log('GameState saved');
+                } catch (error) {
+                    console.error('Failed to save GameState:', error);
+                }
+            }
+
+            loadFromStorage() {
+                try {
+                    const stored = localStorage.getItem('denkstdu_gamestate');
+                    if (stored) {
+                        const stateData = JSON.parse(stored);
+                        const maxAge = 60 * 60 * 1000; // 1 hour
+                        
+                        if (Date.now() - (stateData.timestamp || 0) > maxAge) {
+                            this.clearStorage();
+                            return;
+                        }
+                        
+                        Object.keys(stateData).forEach(key => {
+                            if (key !== 'timestamp' && this.hasOwnProperty(key)) {
+                                this[key] = stateData[key];
+                            }
+                        });
+                        console.log('GameState loaded');
+                    }
+                } catch (error) {
+                    console.error('Failed to load GameState:', error);
+                    this.clearStorage();
+                }
+            }
+
+            clearStorage() {
+                localStorage.removeItem('denkstdu_gamestate');
+            }
+        }
+
+        // ===== Firebase Service =====
+        class FirebaseService {
+            constructor() {
+                this.isInitialized = false;
+                this.app = null;
+                this.database = null;
+                this.config = {
+                    apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+                    authDomain: "denkstduwebsite.firebaseapp.com",
+                    databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                    projectId: "denkstduwebsite",
+                    storageBucket: "denkstduwebsite.firebasestorage.app",
+                    messagingSenderId: "27029260611",
+                    appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6"
+                };
+            }
+
+            async initialize() {
+                try {
+                    if (typeof firebase === 'undefined') {
+                        console.error('Firebase SDK not loaded');
+                        return false;
+                    }
+
+                    if (!firebase.apps.length) {
+                        this.app = firebase.initializeApp(this.config);
+                    } else {
+                        this.app = firebase.app();
+                    }
+
+                    this.database = firebase.database();
+                    this.isInitialized = true;
+                    return true;
+                } catch (error) {
+                    console.error('Firebase initialization error:', error);
+                    return false;
+                }
+            }
+
+            async syncCategories(gameId, categories) {
+                if (!this.isInitialized) {
+                    console.warn('Firebase not initialized, skipping sync');
+                    return;
+                }
+
+                try {
+                    const gameRef = this.database.ref(`games/${gameId}/categories`);
+                    await gameRef.set(categories);
+                    console.log('Categories synced to Firebase:', categories);
+                } catch (error) {
+                    console.error('Failed to sync categories:', error);
+                }
+            }
+        }
+
+        // ===== Global Variables =====
         let gameState;
+        let firebaseService;
         let selectedCategories = [];
         let pendingAgeVerification = null;
 
-        // Category data with question counts
+        // Category data
         const categoryData = {
             fsk0: {
                 name: 'Familie & Freunde',
                 icon: '👨‍👩‍👧‍👦',
-                questions: 200,
+                questions: 350,
                 color: '#4CAF50'
             },
             fsk16: {
@@ -722,49 +969,84 @@
             }
         };
 
-        // Initialize page
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('Initializing multiplayer category selection...');
+        // ===== Page Initialization =====
+        function initPage() {
+            console.log('🎯 Initializing multiplayer category selection...');
             
-            // Initialize game state
-            gameState = new GameState();
-            
-            // Verify this is multiplayer host
-            if (gameState.deviceMode !== 'multi') {
-                console.warn('Not in multiplayer mode, redirecting...');
-                window.location.href = 'device-selection.html';
-                return;
-            }
-            
-            // Load previously selected categories if any
-            if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
-                selectedCategories = [...gameState.selectedCategories];
-                selectedCategories.forEach(category => {
-                    const card = document.querySelector(`[data-category="${category}"]`);
-                    if (card) {
-                        card.classList.add('selected');
-                    }
-                });
-                updateSelectionSummary();
-            }
-            
-            console.log('Multiplayer mode - Host setup:', {
-                deviceMode: gameState.deviceMode,
-                gameId: gameState.gameId,
-                categories: gameState.selectedCategories
-            });
-        });
+            try {
+                // Initialize services
+                gameState = new GameState();
+                firebaseService = new FirebaseService();
+                
+                // Verify multiplayer state
+                if (gameState.deviceMode !== 'multi') {
+                    console.warn('❌ Not in multiplayer mode, redirecting...');
+                    showNotification('Nicht im Multiplayer-Modus. Weiterleitung...', 'warning');
+                    setTimeout(() => {
+                        window.location.href = 'device-selection.html';
+                    }, 2000);
+                    return;
+                }
 
-        // Toggle category selection
+                // Initialize Firebase
+                firebaseService.initialize();
+                
+                // Display game ID
+                if (gameState.gameId) {
+                    document.getElementById('game-id-display').textContent = gameState.gameId;
+                } else {
+                    document.getElementById('game-id-display').textContent = 'Fehler beim Laden';
+                }
+                
+                // Load previously selected categories
+                if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
+                    selectedCategories = [...gameState.selectedCategories];
+                    
+                    // Update UI to reflect loaded categories
+                    selectedCategories.forEach(category => {
+                        const card = document.querySelector(`[data-category="${category}"]`);
+                        if (card) {
+                            card.classList.add('selected');
+                        }
+                    });
+                    
+                    updateSelectionSummary();
+                }
+                
+                console.log('✅ Multiplayer category selection initialized:', {
+                    deviceMode: gameState.deviceMode,
+                    gameId: gameState.gameId,
+                    categories: gameState.selectedCategories,
+                    isHost: gameState.isHost
+                });
+
+                hideLoading();
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize page:', error);
+                showNotification('Fehler beim Laden der Seite', 'error');
+                hideLoading();
+            }
+        }
+
+        // ===== Category Selection Logic =====
         function toggleCategory(element) {
             const category = element.dataset.category;
+            console.log('🔄 Toggling category:', category);
             
             // Check if it's FSK18 and needs age verification
             if (category === 'fsk18' && !selectedCategories.includes(category)) {
+                console.log('🔞 FSK18 category requires age verification');
                 pendingAgeVerification = element;
                 showAgeVerificationModal();
                 return;
             }
+            
+            // Add visual feedback immediately
+            element.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                element.style.transform = '';
+            }, 150);
             
             // Toggle selection
             if (selectedCategories.includes(category)) {
@@ -772,29 +1054,86 @@
                 selectedCategories = selectedCategories.filter(c => c !== category);
                 element.classList.remove('selected');
                 showNotification(`${categoryData[category].name} entfernt`, 'warning');
+                console.log('➖ Category removed:', category);
             } else {
                 // Add category
                 selectedCategories.push(category);
                 element.classList.add('selected');
                 showNotification(`${categoryData[category].name} hinzugefügt`, 'success');
+                console.log('➕ Category added:', category);
+                
+                // Add celebration effect
+                createCelebrationEffect(element);
             }
             
             updateSelectionSummary();
             syncWithFirebase();
         }
 
-        // Update selection summary
+        // Add celebration effect for newly selected categories
+        function createCelebrationEffect(element) {
+            // Create floating emojis
+            const emojis = ['🎉', '✨', '🌟', '💫'];
+            const rect = element.getBoundingClientRect();
+            
+            for (let i = 0; i < 4; i++) {
+                const emoji = document.createElement('div');
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.cssText = `
+                    position: fixed;
+                    left: ${rect.left + rect.width / 2}px;
+                    top: ${rect.top + rect.height / 2}px;
+                    font-size: 1.5rem;
+                    pointer-events: none;
+                    z-index: 10000;
+                    animation: celebrationFloat 1s ease-out forwards;
+                    animation-delay: ${i * 0.1}s;
+                `;
+                
+                document.body.appendChild(emoji);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (emoji.parentNode) {
+                        emoji.parentNode.removeChild(emoji);
+                    }
+                }, 1200);
+            }
+            
+            // Add CSS for celebration animation if not exists
+            if (!document.getElementById('celebration-style')) {
+                const style = document.createElement('style');
+                style.id = 'celebration-style';
+                style.textContent = `
+                    @keyframes celebrationFloat {
+                        0% {
+                            opacity: 1;
+                            transform: translate(0, 0) scale(1);
+                        }
+                        100% {
+                            opacity: 0;
+                            transform: translate(${Math.random() * 200 - 100}px, -100px) scale(1.5);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // ===== Update Selection Summary =====
         function updateSelectionSummary() {
             const summaryElement = document.getElementById('selection-summary');
-            const categoriesListElement = document.getElementById('selected-categories');
+            const categoriesListElement = document.getElementById('selected-categories-list');
             const totalQuestionsElement = document.getElementById('total-questions');
             const continueBtn = document.getElementById('continueBtn');
             
+            console.log('🔄 Updating selection summary for categories:', selectedCategories);
+            
             if (selectedCategories.length > 0) {
-                summaryElement.style.display = 'block';
+                summaryElement.classList.add('show');
                 
-                // Build category list
-                categoriesListElement.innerHTML = selectedCategories.map(category => {
+                // Build category list HTML
+                const categoryTags = selectedCategories.map(category => {
                     const data = categoryData[category];
                     return `
                         <div class="selected-category-tag">
@@ -803,67 +1142,131 @@
                         </div>
                     `;
                 }).join('');
+                
+                categoriesListElement.innerHTML = categoryTags;
 
                 // Calculate total questions
                 const totalQuestions = selectedCategories.reduce((sum, category) => {
                     return sum + categoryData[category].questions;
                 }, 0);
-                totalQuestionsElement.textContent = totalQuestions;
+                
+                totalQuestionsElement.textContent = totalQuestions.toLocaleString();
                 
                 // Enable continue button
                 continueBtn.disabled = false;
                 continueBtn.textContent = 'Weiter zur Schwierigkeit';
+                
+                console.log('✅ Summary updated:', {
+                    categories: selectedCategories,
+                    totalQuestions: totalQuestions
+                });
             } else {
-                summaryElement.style.display = 'none';
+                summaryElement.classList.remove('show');
                 continueBtn.disabled = true;
                 continueBtn.textContent = 'Mindestens eine Kategorie wählen';
+                console.log('ℹ️ No categories selected, hiding summary');
             }
 
             // Save to game state
             gameState.setSelectedCategories(selectedCategories);
         }
 
-        // Sync with Firebase (placeholder for real implementation)
-        function syncWithFirebase() {
+        // ===== Firebase Synchronization =====
+        async function syncWithFirebase() {
             console.log('🔄 Syncing categories with Firebase:', selectedCategories);
-            // Here you would sync the selected categories with Firebase
-            // so all connected players can see the host's choices
+            
+            if (gameState.gameId) {
+                try {
+                    await firebaseService.syncCategories(gameState.gameId, selectedCategories);
+                    console.log('✅ Categories synced successfully');
+                } catch (error) {
+                    console.error('❌ Failed to sync categories:', error);
+                    showNotification('Synchronisation fehlgeschlagen', 'warning');
+                }
+            } else {
+                console.warn('⚠️ No game ID available for sync');
+            }
         }
 
-        // Age verification modal functions
+        // ===== Age Verification Modal =====
         function showAgeVerificationModal() {
             document.getElementById('age-verification-modal').classList.add('show');
+            console.log('🔞 Age verification modal shown');
         }
 
         function closeAgeVerificationModal() {
-            document.getElementById('age-verification-modal').classList.remove('show');
-            pendingAgeVerification = null;
-        }
-
-        function confirmAge() {
+            const modal = document.getElementById('age-verification-modal');
+            if (modal) {
+                modal.classList.remove('show');
+                console.log('❌ Age verification modal closed');
+            } else {
+                console.error('❌ Age verification modal not found');
+            }
+            
+            // Only clear pending verification if user cancelled
+            // (confirmAge() will clear it itself)
             if (pendingAgeVerification) {
-                closeAgeVerificationModal();
-                
-                // Add the FSK18 category
-                const category = pendingAgeVerification.dataset.category;
-                selectedCategories.push(category);
-                pendingAgeVerification.classList.add('selected');
-                
-                showNotification(`${categoryData[category].name} hinzugefügt`, 'success');
-                updateSelectionSummary();
-                syncWithFirebase();
-                
+                console.log('🚫 Age verification cancelled by user');
                 pendingAgeVerification = null;
             }
         }
 
-        // Proceed with selected categories
+        function confirmAge() {
+            console.log('🔞 Age confirmation started');
+            
+            if (pendingAgeVerification) {
+                console.log('✅ Pending verification found:', pendingAgeVerification.dataset.category);
+                
+                try {
+                    // Close modal first
+                    closeAgeVerificationModal();
+                    
+                    // Get the category from the pending element
+                    const category = pendingAgeVerification.dataset.category;
+                    
+                    // Add category to selectedCategories array
+                    if (!selectedCategories.includes(category)) {
+                        selectedCategories.push(category);
+                        console.log('➕ Category added to array:', category);
+                    }
+                    
+                    // Add visual selection to the card
+                    pendingAgeVerification.classList.add('selected');
+                    
+                    // Show success notification
+                    showNotification(`${categoryData[category].name} hinzugefügt`, 'success');
+                    console.log('✅ Age verified, FSK18 category added successfully');
+                    
+                    // Update the UI
+                    updateSelectionSummary();
+                    
+                    // Sync with Firebase
+                    syncWithFirebase();
+                    
+                    // Clear the pending verification
+                    pendingAgeVerification = null;
+                    
+                } catch (error) {
+                    console.error('❌ Error in confirmAge:', error);
+                    showNotification('Fehler beim Hinzufügen der Kategorie', 'error');
+                    
+                    // Reset pending verification on error
+                    pendingAgeVerification = null;
+                }
+            } else {
+                console.warn('⚠️ No pending age verification found');
+                showNotification('Keine ausstehende Altersverifikation gefunden', 'warning');
+            }
+        }
+
+        // ===== Navigation Functions =====
         function proceedWithCategories() {
             if (selectedCategories.length === 0) {
                 showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
                 return;
             }
 
+            console.log('🚀 Proceeding with categories:', selectedCategories);
             showLoading();
             
             // Save categories to game state
@@ -877,15 +1280,16 @@
             }, 500);
         }
 
-        // Go back to multiplayer mode selection
         function goBack() {
+            console.log('⬅️ Going back to device selection');
             showLoading();
+            
             setTimeout(() => {
-                window.location.href = 'multiplayer-mode-selection.html';
+                window.location.href = 'device-selection.html';
             }, 300);
         }
 
-        // Utility Functions
+        // ===== Utility Functions =====
         function showLoading() {
             const loading = document.getElementById('loading');
             if (loading) {
@@ -900,7 +1304,7 @@
             }
         }
 
-        function showNotification(message, type = 'info') {
+        function showNotification(message, type = 'info', duration = 3000) {
             const notification = document.getElementById('notification');
             if (notification) {
                 notification.textContent = message;
@@ -908,14 +1312,56 @@
                 
                 setTimeout(() => {
                     notification.classList.remove('show');
-                }, 3000);
+                }, duration);
+                
+                console.log(`📢 Notification: ${message} (${type})`);
             }
         }
 
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            hideLoading();
+        // ===== Error Handling =====
+        window.addEventListener('error', function(event) {
+            console.error('💥 JavaScript Error:', event.error);
+            showNotification('Ein unerwarteter Fehler ist aufgetreten', 'error');
         });
+
+        // ===== Initialize on DOM Ready =====
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM loaded, initializing page...');
+            
+            // Small delay to ensure all resources are loaded
+            setTimeout(() => {
+                initPage();
+            }, 100);
+        });
+
+        // ===== Debugging Functions (for development) =====
+        window.debugInfo = function() {
+            console.log('🐛 Debug Info:', {
+                gameState: gameState ? {
+                    deviceMode: gameState.deviceMode,
+                    isHost: gameState.isHost,
+                    gameId: gameState.gameId,
+                    selectedCategories: gameState.selectedCategories,
+                    difficulty: gameState.difficulty
+                } : 'Not initialized',
+                selectedCategories: selectedCategories,
+                firebase: {
+                    initialized: firebaseService ? firebaseService.isInitialized : false,
+                    hasApp: firebaseService ? !!firebaseService.app : false,
+                    hasDatabase: firebaseService ? !!firebaseService.database : false
+                },
+                dom: {
+                    summaryVisible: document.getElementById('selection-summary').classList.contains('show'),
+                    continueButtonDisabled: document.getElementById('continueBtn').disabled,
+                    selectedCards: document.querySelectorAll('.category-card.selected').length
+                }
+            });
+        };
+
+        // Make debug function available globally for testing
+        if (typeof window !== 'undefined') {
+            window.denkstduDebug = window.debugInfo;
+        }
     </script>
 </body>
 </html>
