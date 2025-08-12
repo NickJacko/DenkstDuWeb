@@ -987,7 +987,7 @@
                         gamePhase: this.gamePhase,
                         timestamp: Date.now()
                     };
-                    localStorage.setItem('denkstdu_gamestate', JSON.stringify(stateData));
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(stateData));
                     console.log('GameState saved');
                 } catch (error) {
                     console.error('Failed to save GameState:', error);
@@ -996,7 +996,7 @@
 
             loadFromStorage() {
                 try {
-                    const stored = localStorage.getItem('denkstdu_gamestate');
+                    const stored = localStorage.getItem('denkstdu_game_state');
                     if (stored) {
                         const stateData = JSON.parse(stored);
                         const maxAge = 60 * 60 * 1000; // 1 hour
@@ -1020,7 +1020,7 @@
             }
 
             clearStorage() {
-                localStorage.removeItem('denkstdu_gamestate');
+                localStorage.removeItem('denkstdu_game_state');
             }
 
             isValidForMultiplayer() {

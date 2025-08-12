@@ -1,0 +1,24 @@
+{
+  "fsk0": [
+    {
+      "text": "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
+      "category": "Familie & Freunde"
+    },
+    {
+      "text": "Ich habe schon mal... Pizza zum Frühstück gegessen", 
+      "category": "Familie & Freunde"
+    }
+  ],
+  "fsk16": [
+    {
+      "text": "Ich habe schon mal... bei einer Prüfung geschummelt",
+      "category": "Party Time"
+    }
+  ],
+  "fsk18": [
+    {
+      "text": "Ich habe schon mal... Sex an einem öffentlichen Ort gehabt",
+      "category": "Heiß & Gewagt"
+    }
+  ]
+}
