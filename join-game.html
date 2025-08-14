@@ -7,6 +7,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
     <style>
         /* DenkstDu - Join Game Styles */
         * {
@@ -203,6 +208,12 @@
             color: #f44336;
         }
 
+        .game-code-status.offline {
+            background: rgba(158, 158, 158, 0.2);
+            border: 1px solid #9e9e9e;
+            color: #9e9e9e;
+        }
+
         /* Player Name Section */
         .player-name-section {
             margin-bottom: 30px;
@@ -278,6 +289,36 @@
             color: rgba(255, 255, 255, 0.9);
             font-size: 0.9rem;
             line-height: 1.3;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 10px 15px;
+            color: white;
+            font-size: 0.8rem;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.connected {
+            border: 1px solid #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .connection-status.disconnected {
+            border: 1px solid #f44336;
+            background: rgba(244, 67, 54, 0.2);
+        }
+
+        .connection-status.connecting {
+            border: 1px solid #ffc107;
+            background: rgba(255, 193, 7, 0.2);
         }
 
         /* Buttons */
@@ -483,6 +524,13 @@
                 padding: 8px 12px;
                 font-size: 0.9rem;
             }
+
+            .connection-status {
+                top: 15px;
+                right: 15px;
+                font-size: 0.7rem;
+                padding: 8px 12px;
+            }
         }
     </style>
 </head>
@@ -494,6 +542,11 @@
         <div class="particle"></div>
         <div class="particle"></div>
         <div class="particle"></div>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="connection-status connecting" id="connection-status">
+        🔄 Verbinde mit Firebase...
     </div>
 
     <!-- Back Button -->
@@ -564,25 +617,31 @@
                             <div class="info-item">
                                 <span class="info-emoji">👑</span>
                                 <span class="info-text">
-                                    <strong>Gastgeber:</strong> <span id="game-host">Max</span>
+                                    <strong>Gastgeber:</strong> <span id="game-host">-</span>
                                 </span>
                             </div>
                             <div class="info-item">
                                 <span class="info-emoji">👥</span>
                                 <span class="info-text">
-                                    <strong>Spieler:</strong> <span id="game-players">3/8</span>
+                                    <strong>Spieler:</strong> <span id="game-players">-/-</span>
                                 </span>
                             </div>
                             <div class="info-item">
                                 <span class="info-emoji">📝</span>
                                 <span class="info-text">
-                                    <strong>Kategorien:</strong> <span id="game-categories">Party Time</span>
+                                    <strong>Kategorien:</strong> <span id="game-categories">-</span>
                                 </span>
                             </div>
                             <div class="info-item">
                                 <span class="info-emoji">🍺</span>
                                 <span class="info-text">
-                                    <strong>Modus:</strong> <span id="game-difficulty">Standard</span>
+                                    <strong>Modus:</strong> <span id="game-difficulty">-</span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-emoji">🎯</span>
+                                <span class="info-text">
+                                    <strong>Status:</strong> <span id="game-status">-</span>
                                 </span>
                             </div>
                         </div>
@@ -601,23 +660,252 @@
     </div>
 
     <script>
+        // ===== FIREBASE INTEGRATION =====
+        class FirebaseGameService {
+            constructor() {
+                this.app = null;
+                this.database = null;
+                this.isInitialized = false;
+                this.isConnected = false;
+                this.gameRef = null;
+                this.playerRef = null;
+                
+                // Firebase Konfiguration
+                this.config = {
+                    apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+                    authDomain: "denkstduwebsite.firebaseapp.com",
+                    databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                    projectId: "denkstduwebsite",
+                    storageBucket: "denkstduwebsite.firebasestorage.app",
+                    messagingSenderId: "27029260611",
+                    appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+                    measurementId: "G-BNKNW95HK8"
+                };
+            }
+
+            // Firebase initialisieren
+            async initialize() {
+                try {
+                    console.log('🔥 Initializing Firebase...');
+                    
+                    // Prüfen ob Firebase SDK verfügbar ist
+                    if (typeof firebase === 'undefined') {
+                        throw new Error('Firebase SDK not loaded');
+                    }
+
+                    // Firebase App initialisieren
+                    if (!firebase.apps || firebase.apps.length === 0) {
+                        this.app = firebase.initializeApp(this.config);
+                    } else {
+                        this.app = firebase.app();
+                    }
+
+                    // Database Referenz erstellen
+                    this.database = firebase.database();
+
+                    // Connection Status überwachen
+                    this.setupConnectionMonitoring();
+
+                    // Verbindung testen
+                    const connected = await this.testConnection();
+                    this.isInitialized = connected;
+                    
+                    console.log('✅ Firebase initialized:', this.isInitialized);
+                    return this.isInitialized;
+
+                } catch (error) {
+                    console.error('❌ Firebase initialization failed:', error);
+                    this.updateConnectionStatus('disconnected');
+                    this.isInitialized = false;
+                    return false;
+                }
+            }
+
+            // Connection monitoring
+            setupConnectionMonitoring() {
+                const connectedRef = this.database.ref('.info/connected');
+                connectedRef.on('value', (snapshot) => {
+                    this.isConnected = snapshot.val() === true;
+                    this.updateConnectionStatus(this.isConnected ? 'connected' : 'disconnected');
+                });
+            }
+
+            // Verbindung testen
+            async testConnection() {
+                try {
+                    this.updateConnectionStatus('connecting');
+                    
+                    const testRef = this.database.ref('.info/connected');
+                    const snapshot = await testRef.once('value');
+                    const connected = snapshot.val() === true;
+                    
+                    this.updateConnectionStatus(connected ? 'connected' : 'disconnected');
+                    return connected;
+                    
+                } catch (error) {
+                    console.error('❌ Connection test failed:', error);
+                    this.updateConnectionStatus('disconnected');
+                    return false;
+                }
+            }
+
+            // Connection Status UI update
+            updateConnectionStatus(status) {
+                const statusEl = document.getElementById('connection-status');
+                if (!statusEl) return;
+
+                statusEl.className = `connection-status ${status}`;
+                
+                switch (status) {
+                    case 'connected':
+                        statusEl.innerHTML = '🟢 Online';
+                        break;
+                    case 'disconnected':
+                        statusEl.innerHTML = '🔴 Offline';
+                        break;
+                    case 'connecting':
+                        statusEl.innerHTML = '🔄 Verbinde...';
+                        break;
+                }
+            }
+
+            // Spiel suchen
+            async findGame(gameId) {
+                try {
+                    if (!this.isInitialized) {
+                        throw new Error('Firebase not initialized');
+                    }
+
+                    console.log(`🔍 Searching for game: ${gameId}`);
+                    
+                    const gameRef = this.database.ref(`games/${gameId}`);
+                    const snapshot = await gameRef.once('value');
+                    
+                    if (!snapshot.exists()) {
+                        console.log('❌ Game not found');
+                        return null;
+                    }
+
+                    const gameData = snapshot.val();
+                    console.log('✅ Game found:', gameData);
+                    
+                    return gameData;
+                    
+                } catch (error) {
+                    console.error('❌ Error finding game:', error);
+                    throw error;
+                }
+            }
+
+            // Spiel beitreten
+            async joinGame(gameId, playerData) {
+                try {
+                    if (!this.isInitialized) {
+                        throw new Error('Firebase not initialized');
+                    }
+
+                    console.log(`🎮 Joining game ${gameId} as ${playerData.name}`);
+
+                    // Game Referenz
+                    this.gameRef = this.database.ref(`games/${gameId}`);
+                    
+                    // Spiel erneut prüfen
+                    const gameSnapshot = await this.gameRef.once('value');
+                    if (!gameSnapshot.exists()) {
+                        throw new Error('Spiel nicht gefunden');
+                    }
+
+                    const gameData = gameSnapshot.val();
+                    
+                    // Spielstatus prüfen
+                    if (gameData.gameState === 'finished') {
+                        throw new Error('Spiel bereits beendet');
+                    }
+
+                    // Spieler-Limit prüfen
+                    const currentPlayers = Object.keys(gameData.players || {});
+                    if (currentPlayers.length >= (gameData.maxPlayers || 8)) {
+                        throw new Error('Spiel ist voll');
+                    }
+
+                    // Name-Duplikat prüfen
+                    const existingPlayers = Object.values(gameData.players || {});
+                    if (existingPlayers.some(p => p.name.toLowerCase() === playerData.name.toLowerCase())) {
+                        throw new Error('Name bereits vergeben');
+                    }
+
+                    // Player hinzufügen
+                    const playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    this.playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
+                    
+                    const playerObject = {
+                        id: playerId,
+                        name: playerData.name,
+                        isHost: false,
+                        isReady: false,
+                        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+                        isOnline: true
+                    };
+
+                    await this.playerRef.set(playerObject);
+
+                    // Player Online-Status überwachen
+                    this.playerRef.child('isOnline').onDisconnect().set(false);
+                    await this.playerRef.child('isOnline').set(true);
+
+                    console.log('✅ Successfully joined game');
+                    
+                    return {
+                        gameId: gameId,
+                        playerId: playerId,
+                        gameData: gameData,
+                        playerData: playerObject
+                    };
+
+                } catch (error) {
+                    console.error('❌ Error joining game:', error);
+                    throw error;
+                }
+            }
+
+            // Game Updates überwachen
+            listenToGameUpdates(gameId, callback) {
+                if (!this.isInitialized) return null;
+
+                const gameRef = this.database.ref(`games/${gameId}`);
+                gameRef.on('value', callback);
+                return gameRef;
+            }
+
+            // Cleanup
+            cleanup() {
+                if (this.gameRef) {
+                    this.gameRef.off();
+                }
+                if (this.playerRef) {
+                    this.playerRef.off();
+                }
+            }
+        }
+
         // ===== GAME STATE MANAGEMENT =====
         class GameState {
             constructor(playerKey = null) {
-                this.playerKey = playerKey; // Unique key for this player instance
+                this.playerKey = playerKey;
                 this.reset();
                 this.loadFromStorage();
             }
 
             reset() {
-                this.deviceMode = null;
+                this.deviceMode = 'multi';
                 this.selectedCategories = [];
                 this.difficulty = null;
                 this.players = [];
                 this.gameId = null;
+                this.playerId = null;
                 this.playerName = null;
                 this.isHost = false;
-                this.isGuest = false;
+                this.isGuest = true;
                 this.currentQuestionIndex = 0;
                 this.gamePhase = 'waiting';
                 this.timestamp = Date.now();
@@ -627,7 +915,7 @@
                 if (this.playerKey) {
                     return `denkstdu_game_state_${this.playerKey}`;
                 }
-                return 'denkstdu_game_state';
+                return 'denkstdu_game_state_guest';
             }
 
             saveToStorage() {
@@ -638,23 +926,19 @@
                         difficulty: this.difficulty,
                         players: this.players,
                         gameId: this.gameId,
+                        playerId: this.playerId,
                         playerName: this.playerName,
                         isHost: this.isHost,
                         isGuest: this.isGuest,
                         currentQuestionIndex: this.currentQuestionIndex,
                         gamePhase: this.gamePhase,
                         timestamp: Date.now(),
-                        version: 2,
+                        version: 3,
                         playerKey: this.playerKey
                     };
                     
                     localStorage.setItem(this.getStorageKey(), JSON.stringify(stateToSave));
-                    
-                    // Also save to main key if this is the host (for backward compatibility)
-                    if (this.isHost) {
-                        localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
-                    }
-                    
+                    console.log('💾 GameState saved:', this.getStorageKey());
                     return true;
                 } catch (error) {
                     console.error('❌ Failed to save GameState:', error);
@@ -667,13 +951,14 @@
                     const saved = localStorage.getItem(this.getStorageKey());
                     if (saved) {
                         const state = JSON.parse(saved);
-                        const maxAge = 24 * 60 * 60 * 1000;
+                        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
                         if (state.timestamp && (Date.now() - state.timestamp) < maxAge) {
                             Object.keys(state).forEach(key => {
-                                if (this.hasOwnProperty(key) || key === 'deviceMode' || key === 'playerKey') {
+                                if (this.hasOwnProperty(key) || key === 'deviceMode' || key === 'playerKey' || key === 'playerId') {
                                     this[key] = state[key];
                                 }
                             });
+                            console.log('📂 GameState loaded:', this.getStorageKey());
                             return true;
                         } else {
                             this.clearStorage();
@@ -688,25 +973,26 @@
 
             clearStorage() {
                 localStorage.removeItem(this.getStorageKey());
-                // Only clear main key if this player owns it
-                if (this.isHost) {
-                    localStorage.removeItem('denkstdu_game_state');
-                }
             }
         }
 
         // ===== GLOBAL VARIABLES =====
+        let firebaseService = new FirebaseGameService();
         let currentGameData = null;
-        let gameState = new GameState(); // Default instance
+        let gameState = null;
         let checkingGameCode = false;
+        let gameListener = null;
 
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
             initJoinGame();
         });
 
-        function initJoinGame() {
+        async function initJoinGame() {
             console.log('🔗 Initializing join game page...');
+            
+            // Initialize Firebase
+            await firebaseService.initialize();
             
             // Check for Game Code in URL
             const urlParams = new URLSearchParams(window.location.search);
@@ -719,12 +1005,13 @@
 
             // Add entrance animations
             setTimeout(() => {
-                document.querySelector('.glass-card').style.opacity = '0';
-                document.querySelector('.glass-card').style.transform = 'translateY(20px)';
-                document.querySelector('.glass-card').style.transition = 'all 0.6s ease';
+                const glassCard = document.querySelector('.glass-card');
+                glassCard.style.opacity = '0';
+                glassCard.style.transform = 'translateY(20px)';
+                glassCard.style.transition = 'all 0.6s ease';
                 setTimeout(() => {
-                    document.querySelector('.glass-card').style.opacity = '1';
-                    document.querySelector('.glass-card').style.transform = 'translateY(0)';
+                    glassCard.style.opacity = '1';
+                    glassCard.style.transform = 'translateY(0)';
                 }, 100);
             }, 300);
 
@@ -733,14 +1020,12 @@
 
         // ===== GAME CODE HANDLING =====
         function formatGameCode(input) {
-            // Only allow alphanumeric characters and convert to uppercase
             let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
             input.value = value;
 
             if (value.length === 6) {
                 lookupGame(value);
             } else {
-                // Hide sections if input is incomplete
                 hideGameInfo();
                 hideGameCodeStatus();
                 updateJoinButton();
@@ -758,7 +1043,7 @@
 
         function handleNameKeyPress(event) {
             if (event.key === 'Enter') {
-                joinGame();
+                joinGameAction();
             }
         }
 
@@ -792,22 +1077,18 @@
             showGameCodeStatus('checking', '🔍 Suche Spiel...');
 
             try {
-                // Simulate game lookup with timeout
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                if (!firebaseService.isInitialized) {
+                    showGameCodeStatus('offline', '⚠️ Keine Verbindung zu Firebase');
+                    return;
+                }
+
+                // Firebase Game Lookup
+                const gameData = await firebaseService.findGame(gameCode);
                 
-                // Check if game code exists (demo logic with more codes)
-                const validCodes = ['DEMO12', 'ABC123', 'TEST01', 'PARTY1', 'GAME42', 'FUN123'];
-                
-                // IMPORTANT: Check if there's a running game with this code in localStorage
-                // This simulates a real backend lookup
-                const runningGame = checkForRunningGame(gameCode);
-                
-                if (validCodes.includes(gameCode) || runningGame) {
-                    // Use running game data if available, otherwise generate demo data
-                    currentGameData = runningGame || generateDemoGameData(gameCode);
-                    
+                if (gameData) {
+                    currentGameData = gameData;
                     showGameCodeStatus('found', '✅ Spiel gefunden!');
-                    displayGameInfo(currentGameData);
+                    displayGameInfo(gameData);
                     showPlayerNameInput();
                     
                     // Focus on name input
@@ -822,7 +1103,7 @@
                 }
                 
             } catch (error) {
-                console.error('Error looking up game:', error);
+                console.error('❌ Error looking up game:', error);
                 showGameCodeStatus('not-found', '⚠️ Verbindungsfehler');
                 hideGameInfo();
                 currentGameData = null;
@@ -830,84 +1111,6 @@
                 checkingGameCode = false;
                 updateJoinButton();
             }
-        }
-
-        function checkForRunningGame(gameCode) {
-            // Check if there's a game with this code in localStorage
-            // This simulates checking against a real backend
-            try {
-                // Check all possible localStorage entries for running games
-                const keys = Object.keys(localStorage);
-                for (let key of keys) {
-                    if (key.startsWith('denkstdu_game_') || key === 'denkstdu_game_state') {
-                        const gameData = JSON.parse(localStorage.getItem(key));
-                        if (gameData && gameData.gameId === gameCode && gameData.deviceMode === 'multi') {
-                            // Determine current game state
-                            let currentGameState = 'waiting';
-                            if (gameData.gamePhase === 'lobby' || gameData.gamePhase === 'waiting') {
-                                currentGameState = 'lobby';
-                            } else if (gameData.gamePhase === 'playing' || gameData.gamePhase === 'question') {
-                                currentGameState = 'playing';
-                            } else {
-                                currentGameState = 'lobby';  // Default to lobby
-                            }
-                            
-                            // Found a running game with this code!
-                            return {
-                                gameId: gameCode,
-                                gameCreator: gameData.playerName || 'Host',
-                                players: {
-                                    [gameData.playerName || 'Host']: { 
-                                        name: gameData.playerName || 'Host', 
-                                        isReady: true,
-                                        isHost: true
-                                    }
-                                },
-                                categories: gameData.selectedCategories || ['fsk16'],
-                                difficulty: gameData.difficulty || 'medium',
-                                maxPlayers: 8,
-                                gameState: currentGameState,  // Important: correct state
-                                gamePhase: gameData.gamePhase || 'lobby'
-                            };
-                        }
-                    }
-                }
-                
-                // Also check for shared game codes (in a real app, this would be in a shared database)
-                // For demo purposes, we'll check a simulated "shared games" storage
-                const sharedGames = JSON.parse(localStorage.getItem('denkstdu_shared_games') || '{}');
-                if (sharedGames[gameCode]) {
-                    return sharedGames[gameCode];
-                }
-                
-            } catch (error) {
-                console.error('Error checking for running games:', error);
-            }
-            return null;
-        }
-
-        function generateDemoGameData(gameCode) {
-            const hosts = ['Max Mustermann', 'Anna Schmidt', 'Lisa Weber', 'Tom Müller'];
-            const categories = [['fsk16'], ['fsk0', 'fsk16'], ['fsk16', 'fsk18']];
-            const difficulties = ['easy', 'medium', 'hard'];
-            
-            const host = hosts[Math.floor(Math.random() * hosts.length)];
-            const selectedCategories = categories[Math.floor(Math.random() * categories.length)];
-            const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
-            
-            return {
-                gameId: gameCode,
-                gameCreator: host,
-                players: {
-                    [host]: { name: host, isReady: true },
-                    'Player 2': { name: 'Player 2', isReady: true },
-                    'Player 3': { name: 'Player 3', isReady: false }
-                },
-                categories: selectedCategories,
-                difficulty: difficulty,
-                maxPlayers: 8,
-                gameState: 'waiting'
-            };
         }
 
         // ===== UI UPDATES =====
@@ -926,25 +1129,36 @@
             const preview = document.getElementById('game-info-preview');
             
             // Update game info
-            document.getElementById('game-host').textContent = gameData.gameCreator;
+            document.getElementById('game-host').textContent = gameData.gameCreator || 'Unbekannt';
             
             const playerCount = Object.keys(gameData.players || {}).length;
-            document.getElementById('game-players').textContent = `${playerCount}/${gameData.maxPlayers}`;
+            document.getElementById('game-players').textContent = `${playerCount}/${gameData.maxPlayers || 8}`;
             
+            // Category names mapping
             const categoryNames = {
                 'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
                 'fsk16': '🎉 Party Time',
                 'fsk18': '🔥 Heiß & Gewagt'
             };
-            const categories = gameData.categories.map(cat => categoryNames[cat] || cat).join(', ');
-            document.getElementById('game-categories').textContent = categories;
+            const categories = (gameData.categories || []).map(cat => categoryNames[cat] || cat).join(', ');
+            document.getElementById('game-categories').textContent = categories || 'Nicht definiert';
             
+            // Difficulty names mapping
             const difficultyNames = {
                 'easy': '🍺 Entspannt',
                 'medium': '🍺🍺 Standard',
                 'hard': '🍺🍺🍺 Hardcore'
             };
             document.getElementById('game-difficulty').textContent = difficultyNames[gameData.difficulty] || 'Standard';
+            
+            // Game status
+            const statusNames = {
+                'waiting': '⏳ Wartet auf Spieler',
+                'lobby': '🏠 In der Lobby',
+                'playing': '🎮 Spiel läuft',
+                'finished': '🏁 Beendet'
+            };
+            document.getElementById('game-status').textContent = statusNames[gameData.gameState] || 'Unbekannt';
             
             // Show preview with animation
             preview.classList.add('visible');
@@ -969,8 +1183,9 @@
             const isValidName = playerName.length >= 2 && playerName.length <= 20;
             const hasGameData = currentGameData !== null;
             const notChecking = !checkingGameCode;
+            const isConnected = firebaseService.isConnected;
             
-            const canJoin = isValidGameCode && isValidName && hasGameData && notChecking;
+            const canJoin = isValidGameCode && isValidName && hasGameData && notChecking && isConnected;
             
             joinBtn.disabled = !canJoin;
             
@@ -981,6 +1196,10 @@
             } else if (checkingGameCode) {
                 joinBtn.textContent = '🔍 Suche Spiel...';
                 joinBtn.style.opacity = '0.7';
+                joinBtn.style.cursor = 'not-allowed';
+            } else if (!isConnected) {
+                joinBtn.textContent = '🔴 Keine Verbindung';
+                joinBtn.style.opacity = '0.5';
                 joinBtn.style.cursor = 'not-allowed';
             } else {
                 joinBtn.textContent = '🚀 Spiel beitreten';
@@ -1009,127 +1228,138 @@
                 return;
             }
 
-            // Check if name is already taken
-            const existingPlayers = Object.values(currentGameData.players || {});
-            if (existingPlayers.some(player => player.name.toLowerCase() === playerName.toLowerCase())) {
-                showNotification('Name bereits vergeben', 'error');
+            if (!firebaseService.isConnected) {
+                showNotification('Keine Verbindung zu Firebase', 'error');
                 return;
             }
 
             showLoading();
 
             try {
-                // Simulate joining process
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                // IMPORTANT: Create GUEST GameState with unique key to prevent overwriting host
+                // Firebase Join Game
+                const joinResult = await firebaseService.joinGame(gameCode, {
+                    name: playerName
+                });
+
+                // Create guest game state
                 const guestPlayerKey = `guest_${playerName}_${Date.now()}`;
-                const guestGameState = new GameState(guestPlayerKey);
+                gameState = new GameState(guestPlayerKey);
                 
-                // Set up as GUEST player
-                guestGameState.gameId = gameCode;
-                guestGameState.playerName = playerName;
-                guestGameState.deviceMode = 'multi';
-                guestGameState.isHost = false;      // NEVER host
-                guestGameState.isGuest = true;      // Always guest
-                guestGameState.playerKey = guestPlayerKey;
+                // Set up game state
+                gameState.gameId = gameCode;
+                gameState.playerId = joinResult.playerId;
+                gameState.playerName = playerName;
+                gameState.deviceMode = 'multi';
+                gameState.isHost = false;
+                gameState.isGuest = true;
+                gameState.playerKey = guestPlayerKey;
                 
-                // Copy game settings from host (but don't become host)
-                guestGameState.selectedCategories = currentGameData.categories;
-                guestGameState.difficulty = currentGameData.difficulty;
+                // Copy game settings
+                gameState.selectedCategories = joinResult.gameData.categories || [];
+                gameState.difficulty = joinResult.gameData.difficulty || 'medium';
                 
-                // Set correct game phase based on current game state
-                if (currentGameData.gameState === 'waiting' || currentGameData.gameState === 'lobby') {
-                    guestGameState.gamePhase = 'lobby';  // Go to lobby if game is still waiting
-                } else if (currentGameData.gameState === 'playing') {
-                    guestGameState.gamePhase = 'playing';  // Join ongoing game
+                // Set game phase based on current state
+                if (joinResult.gameData.gameState === 'waiting' || joinResult.gameData.gameState === 'lobby') {
+                    gameState.gamePhase = 'lobby';
+                } else if (joinResult.gameData.gameState === 'playing') {
+                    gameState.gamePhase = 'playing';
                 } else {
-                    guestGameState.gamePhase = 'lobby';  // Default to lobby
+                    gameState.gamePhase = 'lobby';
                 }
                 
-                // Save GUEST state to localStorage with unique key
-                guestGameState.saveToStorage();
-                
-                // Also add this player to the shared games list (simulate backend)
-                addPlayerToSharedGame(gameCode, playerName, guestPlayerKey);
+                // Save to localStorage
+                gameState.saveToStorage();
                 
                 hideLoading();
                 showNotification('Erfolgreich beigetreten! 🎉', 'success');
                 
                 console.log(`✅ Guest joined with key: ${guestPlayerKey}`);
                 console.log('🔍 Guest GameState:', {
-                    playerName: guestGameState.playerName,
-                    isHost: guestGameState.isHost,
-                    isGuest: guestGameState.isGuest,
-                    gameId: guestGameState.gameId,
-                    storageKey: guestGameState.getStorageKey()
+                    playerName: gameState.playerName,
+                    playerId: gameState.playerId,
+                    isHost: gameState.isHost,
+                    isGuest: gameState.isGuest,
+                    gameId: gameState.gameId,
+                    storageKey: gameState.getStorageKey()
                 });
+                
+                // Set up game listener before navigation
+                setupGameListener(gameCode);
                 
                 // Navigate based on game state
                 setTimeout(() => {
-                    if (guestGameState.gamePhase === 'lobby') {
-                        // Go to lobby if game hasn't started yet
+                    if (gameState.gamePhase === 'lobby') {
                         window.location.href = 'multiplayer-lobby.html';
                     } else {
-                        // Join ongoing gameplay
                         window.location.href = 'multiplayer-gameplay.html';
                     }
                 }, 1500);
 
             } catch (error) {
                 hideLoading();
-                console.error('Error joining game:', error);
-                showNotification('Beitritt fehlgeschlagen', 'error');
+                console.error('❌ Error joining game:', error);
+                
+                // User-friendly error messages
+                let errorMessage = 'Beitritt fehlgeschlagen';
+                if (error.message.includes('nicht gefunden')) {
+                    errorMessage = 'Spiel nicht gefunden';
+                } else if (error.message.includes('bereits vergeben')) {
+                    errorMessage = 'Name bereits vergeben';
+                } else if (error.message.includes('voll')) {
+                    errorMessage = 'Spiel ist voll';
+                } else if (error.message.includes('beendet')) {
+                    errorMessage = 'Spiel bereits beendet';
+                }
+                
+                showNotification(errorMessage, 'error');
             }
         }
 
-        // Helper function to add player to shared game
-        function addPlayerToSharedGame(gameCode, playerName, playerKey) {
-            try {
-                const sharedGames = JSON.parse(localStorage.getItem('denkstdu_shared_games') || '{}');
-                
-                if (!sharedGames[gameCode]) {
-                    sharedGames[gameCode] = {
-                        gameId: gameCode,
-                        players: {},
-                        joinedPlayers: []
-                    };
-                }
-                
-                // Add this player to the joined players list
-                if (!sharedGames[gameCode].joinedPlayers) {
-                    sharedGames[gameCode].joinedPlayers = [];
-                }
-                
-                const playerData = {
-                    name: playerName,
-                    isHost: false,
-                    isGuest: true,
-                    playerKey: playerKey,
-                    joinedAt: Date.now()
-                };
-                
-                // Remove if already exists (in case of rejoin)
-                sharedGames[gameCode].joinedPlayers = sharedGames[gameCode].joinedPlayers.filter(
-                    p => p.name.toLowerCase() !== playerName.toLowerCase()
-                );
-                
-                // Add the new player
-                sharedGames[gameCode].joinedPlayers.push(playerData);
-                
-                localStorage.setItem('denkstdu_shared_games', JSON.stringify(sharedGames));
-                
-                console.log(`✅ Player ${playerName} (${playerKey}) added to game ${gameCode}`);
-                
-            } catch (error) {
-                console.error('Error adding player to shared game:', error);
+        // Game Updates Listener
+        function setupGameListener(gameId) {
+            if (gameListener) {
+                gameListener.off();
             }
+            
+            gameListener = firebaseService.listenToGameUpdates(gameId, (snapshot) => {
+                if (snapshot.exists()) {
+                    const gameData = snapshot.val();
+                    console.log('🎮 Game update received:', gameData);
+                    
+                    // Update current game data
+                    currentGameData = gameData;
+                    
+                    // Update UI if still on join page
+                    if (document.getElementById('game-info-preview')) {
+                        displayGameInfo(gameData);
+                    }
+                }
+            });
+        }
+
+        // Alias for button onclick
+        function joinGameAction() {
+            joinGame();
         }
 
         // ===== NAVIGATION =====
         function goBack() {
+            // Cleanup listeners
+            if (gameListener) {
+                gameListener.off();
+            }
+            firebaseService.cleanup();
+            
             window.location.href = 'index.html';
         }
+
+        // ===== CLEANUP =====
+        window.addEventListener('beforeunload', function() {
+            if (gameListener) {
+                gameListener.off();
+            }
+            firebaseService.cleanup();
+        });
 
         // ===== UTILITY FUNCTIONS =====
         function showLoading() {
@@ -1180,94 +1410,63 @@
             updateJoinButton();
         };
 
-        window.demoQuickJoin = function() {
-            demoJoinWithCode('DEMO12');
-            setTimeout(() => {
-                demoFillName('TestUser');
-                setTimeout(() => {
-                    joinGame();
-                }, 500);
-            }, 1500);
-        };
-
-        window.demoJoinRunningGame = function() {
-            // Find any running game in localStorage
-            const keys = Object.keys(localStorage);
-            let foundGameId = null;
+        window.demoQuickJoin = async function() {
+            if (!firebaseService.isInitialized) {
+                await firebaseService.initialize();
+            }
             
-            for (let key of keys) {
-                try {
-                    if (key.startsWith('denkstdu_game_') || key === 'denkstdu_game_state') {
-                        const gameData = JSON.parse(localStorage.getItem(key));
-                        if (gameData && gameData.gameId && gameData.deviceMode === 'multi' && gameData.isHost) {
-                            foundGameId = gameData.gameId;
-                            break;
-                        }
+            // Try to find any existing game
+            try {
+                const gamesRef = firebaseService.database.ref('games');
+                const snapshot = await gamesRef.once('value');
+                const games = snapshot.val();
+                
+                if (games) {
+                    const gameIds = Object.keys(games);
+                    const activeGame = gameIds.find(id => 
+                        games[id].gameState === 'waiting' || games[id].gameState === 'lobby'
+                    );
+                    
+                    if (activeGame) {
+                        console.log(`🎮 Found active game: ${activeGame}`);
+                        demoJoinWithCode(activeGame);
+                        setTimeout(() => {
+                            demoFillName('TestUser');
+                        }, 1500);
+                        return;
                     }
-                } catch (e) {
-                    // Ignore parsing errors
                 }
-            }
-            
-            if (foundGameId) {
-                console.log(`🎮 Found running game with ID: ${foundGameId}`);
-                demoJoinWithCode(foundGameId);
-                setTimeout(() => {
-                    demoFillName('Player2');
-                }, 1500);
-            } else {
-                console.log('❌ No running multiplayer games found');
-                showNotification('Keine laufenden Spiele gefunden. Erstelle zuerst ein Spiel in der Multiplayer-Lobby.', 'warning');
-            }
-        };
-
-        // Helper function to check current player status
-        window.getPlayerStatus = function() {
-            try {
-                const currentState = JSON.parse(localStorage.getItem('denkstdu_game_state') || '{}');
-                return {
-                    playerName: currentState.playerName,
-                    gameId: currentState.gameId,
-                    isHost: currentState.isHost,
-                    isGuest: currentState.isGuest,
-                    deviceMode: currentState.deviceMode
-                };
+                
+                showNotification('Keine aktiven Spiele gefunden. Erstelle zuerst ein Spiel.', 'warning');
+                
             } catch (error) {
-                return { error: 'No game state found' };
+                console.error('Error finding games:', error);
+                showNotification('Fehler beim Suchen nach Spielen', 'error');
             }
         };
 
-        // Helper function to see all joined players for a game
-        window.getJoinedPlayers = function(gameCode) {
-            try {
-                const sharedGames = JSON.parse(localStorage.getItem('denkstdu_shared_games') || '{}');
-                if (sharedGames[gameCode] && sharedGames[gameCode].joinedPlayers) {
-                    return sharedGames[gameCode].joinedPlayers;
-                }
-                return [];
-            } catch (error) {
-                return [];
-            }
+        // Helper functions for debugging
+        window.getFirebaseStatus = function() {
+            return {
+                initialized: firebaseService.isInitialized,
+                connected: firebaseService.isConnected,
+                currentGame: currentGameData?.gameId || null
+            };
         };
 
-        // Helper function to register a game for joining
-        window.registerGameForJoining = function(gameData) {
-            // In a real app, this would send to a backend
-            // For demo, we store in localStorage
-            const sharedGames = JSON.parse(localStorage.getItem('denkstdu_shared_games') || '{}');
-            sharedGames[gameData.gameId] = gameData;
-            localStorage.setItem('denkstdu_shared_games', JSON.stringify(sharedGames));
-            console.log(`🎮 Game ${gameData.gameId} registered for joining`);
+        window.testFirebaseConnection = async function() {
+            const result = await firebaseService.testConnection();
+            console.log('Firebase connection test:', result);
+            return result;
         };
 
-        console.log('✅ Join Game system loaded successfully');
+        console.log('✅ Join Game with Firebase loaded successfully');
         console.log('🎮 Demo commands:');
-        console.log('- demoJoinWithCode("DEMO12") - Enter a game code');
+        console.log('- demoJoinWithCode("GAME123") - Enter a game code');
         console.log('- demoFillName("TestUser") - Fill in a name');
-        console.log('- demoQuickJoin() - Automatically join a demo game');
-        console.log('- demoJoinRunningGame() - Join any running multiplayer game');
-        console.log('💡 Valid demo codes: DEMO12, ABC123, TEST01, PARTY1, GAME42, FUN123');
-        console.log('🔥 To test: Open multiplayer lobby in another tab, then use demoJoinRunningGame()');
+        console.log('- demoQuickJoin() - Find and join any active game');
+        console.log('- getFirebaseStatus() - Check Firebase connection');
+        console.log('- testFirebaseConnection() - Test Firebase connection');
     </script>
 </body>
 </html>
