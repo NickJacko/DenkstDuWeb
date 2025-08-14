@@ -1,769 +1,9 @@
-<div class="slider-numbers" id="slider-numbers">
-                            <!-- Numbers will be generated dynamically -->
-                        </div>
-                    </div>
-                    
-                    <div class="estimation-display">
-                        <div class="estimation-value" id="estimation-value">2</div>
-                        <div class="estimation-label">von <span id="total-players">4</span> Spielern</div>
-                    </div>
-                    
-                    <div class="swipe-hint">
-                        ↕️ Swipe oder tippe auf Zahlen
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="submit-section">
-                    <button class="submit-btn" onclick="submitAnswers()" id="submit-btn">
-                        📤 Antworten absenden
-                    </button>
-                </div>
-            </div>
-
-            <!-- Waiting Phase -->
-            <div class="waiting-screen" id="waiting-screen">
-                <div class="waiting-spinner"></div>
-                <div class="waiting-title">⏳ Warten auf andere Spieler</div>
-                <div class="waiting-description">
-                    Deine Antworten wurden gesendet.<br>
-                    Warte, bis alle anderen geantwortet haben.
-                </div>
-            </div>
-
-            <!-- Results Phase -->
-            <div class="results-screen" id="results-screen">
-                <div class="results-header fadeInUp">
-                    <div class="results-title">📊 Ergebnis</div>
-                    <div class="results-summary" id="results-summary">
-                        3 von 4 Spielern haben mit "Ja" geantwortet
-                    </div>
-                </div>
-
-                <div class="results-grid fadeInUp" id="results-grid">
-                    <!-- Results will be populated dynamically -->
-                </div>
-
-                <!-- Host Controls (only visible for host) -->
-                <div class="host-controls fadeInUp" id="host-controls" style="display: none;">
-                    <div class="host-title">
-                        👑 Host-Kontrollen
-                    </div>
-                    <div class="nav-buttons">
-                        <button class="nav-btn primary" onclick="nextQuestion()">
-                            ➡️ Nächste Frage
-                        </button>
-                        <button class="nav-btn secondary" onclick="endGame()">
-                            🏁 Spiel beenden
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Player Controls (for non-hosts) -->
-                <div class="nav-buttons fadeInUp" id="player-controls">
-                    <button class="nav-btn secondary" onclick="waitForHost()">
-                        ⏳ Warten auf Host...
-                    </button>
-                </div>
-            </div>
-
-            <!-- Game Over Screen -->
-            <div class="game-over-screen" id="game-over-screen">
-                <div class="game-over-title fadeInUp">🎉 Spiel beendet!</div>
-                
-                <div class="final-stats fadeInUp">
-                    <div class="stat-item">
-                        <span>Gespielte Fragen:</span>
-                        <span id="total-questions-played">5</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Ehrlichste/r Spieler/in:</span>
-                        <span id="most-honest-player">Anna</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Meiste Schlücke:</span>
-                        <span id="most-sips-player">Max (12 🍺)</span>
-                    </div>
-                </div>
-
-                <div class="nav-buttons fadeInUp">
-                    <button class="nav-btn primary" onclick="newGame()">
-                        🔄 Neues Spiel
-                    </button>
-                    <button class="nav-btn secondary" onclick="backToMenu()">
-                        🏠 Hauptmenü
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // ===== GAME STATE MANAGEMENT =====
-        class GameState {
-            constructor() {
-                this.reset();
-                this.loadFromStorage();
-            }
-
-            reset() {
-                this.deviceMode = null;
-                this.selectedCategories = [];
-                this.difficulty = null;
-                this.players = [];
-                this.gameId = null;
-                this.playerName = null;
-                this.isHost = false;
-                this.currentQuestionIndex = 0;
-                this.gamePhase = 'question';
-                this.timestamp = Date.now();
-            }
-
-            saveToStorage() {
-                try {
-                    const stateToSave = {
-                        deviceMode: this.deviceMode,
-                        selectedCategories: this.selectedCategories,
-                        difficulty: this.difficulty,
-                        players: this.players,
-                        gameId: this.gameId,
-                        playerName: this.playerName,
-                        isHost: this.isHost,
-                        currentQuestionIndex: this.currentQuestionIndex,
-                        gamePhase: this.gamePhase,
-                        timestamp: Date.now(),
-                        version: 2
-                    };
-                    
-                    localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
-                    return true;
-                } catch (error) {
-                    console.error('❌ Failed to save GameState:', error);
-                    return false;
-                }
-            }
-
-            loadFromStorage() {
-                try {
-                    const saved = localStorage.getItem('denkstdu_game_state');
-                    if (saved) {
-                        const state = JSON.parse(saved);
-                        const maxAge = 24 * 60 * 60 * 1000;
-                        if (state.timestamp && (Date.now() - state.timestamp) < maxAge) {
-                            Object.keys(state).forEach(key => {
-                                if (this.hasOwnProperty(key) || key === 'deviceMode') {
-                                    this[key] = state[key];
-                                }
-                            });
-                            return true;
-                        } else {
-                            this.clearStorage();
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Failed to load GameState:', error);
-                    this.clearStorage();
-                }
-                return false;
-            }
-
-            clearStorage() {
-                localStorage.removeItem('denkstdu_game_state');
-            }
-        }
-
-        // ===== BEAUTIFUL QUESTIONS DATABASE =====
-        const questionsDatabase = {
-            fsk0: [
-                { text: "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... Pizza zum Frühstück gegessen", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... ein Instrument gespielt", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... einen Film dreimal hintereinander geschaut", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... einen Regenbogen fotografiert", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... mein Handy in die Toilette fallen lassen", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... beim Kochen das Essen anbrennen lassen", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... ein Tier gefüttert, obwohl es verboten war", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... in einem fremden Bett geschlafen", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... ein Selfie mit einem Prominenten gemacht", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... einen Brief per Post verschickt", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... in einem Zelt übernachtet", category: "Familie & Freunde" },
-                { text: "Ich habe schon mal... mein Alter gelogen", category: "Familie & Freunde" },
-                { text: "Ich wollte schon mal... Veganer werden", category: "Familie & Freunde" },
-                { text: "Ich wollte schon mal... meinen Job kündigen", category: "Familie & Freunde" },
-                { text: "Ich wollte schon mal... auswandern", category: "Familie & Freunde" },
-                { text: "Ich wollte schon mal... meine Haare komplett abrasieren", category: "Familie & Freunde" },
-                { text: "Ich wollte schon mal... ein Tattoo stechen lassen", category: "Familie & Freunde" }
-            ],
-            fsk16: [
-                { text: "Ich habe schon mal... heimlich das Handy meines Partners durchgeschaut", category: "Party Time" },
-                { text: "Ich habe schon mal... bei einer Prüfung geschummelt", category: "Party Time" },
-                { text: "Ich habe schon mal... mich krank gestellt, um nicht arbeiten zu müssen", category: "Party Time" },
-                { text: "Ich habe schon mal... einen One-Night-Stand gehabt", category: "Party Time" },
-                { text: "Ich habe schon mal... so viel getrunken, dass ich mich übergeben musste", category: "Party Time" },
-                { text: "Ich habe schon mal... jemanden geküsst, obwohl ich in einer Beziehung war", category: "Party Time" },
-                { text: "Ich habe schon mal... Geld beim Pokern verloren", category: "Party Time" },
-                { text: "Ich habe schon mal... etwas aus einem Laden gestohlen", category: "Party Time" },
-                { text: "Ich habe schon mal... gelogen, um aus einer Verabredung rauszukommen", category: "Party Time" },
-                { text: "Ich habe schon mal... Cannabis geraucht", category: "Party Time" },
-                { text: "Ich habe schon mal... jemanden nur wegen des Geldes gedatet", category: "Party Time" },
-                { text: "Ich habe schon mal... in der Öffentlichkeit geweint", category: "Party Time" },
-                { text: "Ich habe schon mal... jemanden beim Fremdgehen erwischt", category: "Party Time" },
-                { text: "Ich habe schon mal... betrunken eine Ex-Liebe angerufen", category: "Party Time" },
-                { text: "Ich habe schon mal... Alkohol getrunken, obwohl ich unter 18 war", category: "Party Time" },
-                { text: "Ich wollte schon mal... meinen Partner betrügen", category: "Party Time" },
-                { text: "Ich wollte schon mal... komplett besoffen einen Fremden küssen", category: "Party Time" },
-                { text: "Ich wollte schon mal... auf einer Party mit jemandem verschwinden", category: "Party Time" },
-                { text: "Ich wollte schon mal... meinen Boss anschreien", category: "Party Time" },
-                { text: "Ich wollte schon mal... alles hinschmeißen und Party machen", category: "Party Time" }
-            ],
-            fsk18: [
-                { text: "Ich habe schon mal... Sex an einem öffentlichen Ort gehabt", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... einen Dreier gehabt", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... beim Sex geweint", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... Sex mit jemandem gehabt, dessen Namen ich vergessen habe", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... Sexspielzeug benutzt", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... Nacktbilder verschickt", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... einen Orgasmus vorgetäuscht", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... Sex im Auto gehabt", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... während des Sex an jemand anderen gedacht", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... Sex mit jemandem über 40 gehabt", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... eine Sexhotline angerufen", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... Rollenspiele im Bett ausprobiert", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... Sex mit jemandem vom gleichen Geschlecht gehabt", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... für Sex bezahlt", category: "Heiß & Gewagt" },
-                { text: "Ich habe schon mal... Sex unter Drogeneinfluss gehabt", category: "Heiß & Gewagt" },
-                { text: "Ich wollte schon mal... eine Affäre mit einem verheirateten Menschen haben", category: "Heiß & Gewagt" },
-                { text: "Ich wollte schon mal... Sex mit meinem Chef haben", category: "Heiß & Gewagt" },
-                { text: "Ich wollte schon mal... einen Porno drehen", category: "Heiß & Gewagt" },
-                { text: "Ich wollte schon mal... in einem Swingerclub gehen", category: "Heiß & Gewagt" },
-                { text: "Ich wollte schon mal... meine Sexualität komplett neu entdecken", category: "Heiß & Gewagt" }
-            ]
-        };
-
-        // ===== GLOBAL VARIABLES =====
-        let gameState = null;
-        let currentQuestion = null;
-        let userAnswer = null;
-        let userEstimation = 2;
-        let totalPlayers = 4;
-        let connectedPlayers = [];
-        let currentPhase = 'question';
-        let gameQuestions = [];
-        let isDragging = false;
-
-        // ===== INITIALIZATION =====
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeGame();
-        });
-
-        function initializeGame() {
-            console.log('🎮 Initializing multiplayer gameplay...');
-            showLoading();
-
-            try {
-                gameState = new GameState();
-
-                if (gameState.deviceMode !== 'multi') {
-                    setupDemoState();
-                }
-
-                connectedPlayers = [
-                    { name: gameState.playerName || 'Du', isHost: gameState.isHost },
-                    { name: 'Anna', isHost: false },
-                    { name: 'Max', isHost: false },
-                    { name: 'Lisa', isHost: false }
-                ];
-
-                totalPlayers = connectedPlayers.length;
-                loadGameQuestions();
-                updateGameHeader();
-                createBeautifulSlider();
-                loadCurrentQuestion();
-                setupSliderInteraction();
-
-                if (gameState.isHost) {
-                    document.getElementById('host-controls').style.display = 'block';
-                    document.getElementById('player-controls').style.display = 'none';
-                } else {
-                    document.getElementById('host-controls').style.display = 'none';
-                    document.getElementById('player-controls').style.display = 'block';
-                }
-
-                setupMobileControls();
-                hideLoading();
-
-            } catch (error) {
-                console.error('❌ Failed to initialize gameplay:', error);
-                showNotification('Fehler beim Laden des Spiels', 'error');
-                hideLoading();
-            }
-        }
-
-        function setupDemoState() {
-            gameState.deviceMode = 'multi';
-            gameState.isHost = true;
-            gameState.selectedCategories = ['fsk0', 'fsk16'];
-            gameState.difficulty = 'medium';
-            gameState.playerName = 'Du';
-            gameState.gameId = 'ABC123';
-            gameState.saveToStorage();
-        }
-
-        // ===== QUESTIONS MANAGEMENT =====
-        function loadGameQuestions() {
-            gameQuestions = [];
-            const selectedCategories = gameState.selectedCategories || ['fsk0'];
-
-            selectedCategories.forEach(category => {
-                const categoryQuestions = questionsDatabase[category] || [];
-                gameQuestions = gameQuestions.concat(categoryQuestions);
-            });
-
-            gameQuestions = shuffleArray(gameQuestions);
-            console.log(`✅ Loaded ${gameQuestions.length} questions`);
-        }
-
-        function shuffleArray(array) {
-            const newArray = [...array];
-            for (let i = newArray.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-            }
-            return newArray;
-        }
-
-        function loadCurrentQuestion() {
-            if (gameState.currentQuestionIndex < gameQuestions.length) {
-                currentQuestion = gameQuestions[gameState.currentQuestionIndex];
-                
-                document.getElementById('question-text').textContent = currentQuestion.text;
-                document.getElementById('question-category').textContent = getCategoryIcon(currentQuestion.category) + ' ' + currentQuestion.category;
-                document.getElementById('question-number').textContent = gameState.currentQuestionIndex + 1;
-
-                userAnswer = null;
-                userEstimation = Math.floor(totalPlayers / 2);
-                updateEstimationDisplay();
-                updateSubmitButton();
-
-                document.querySelectorAll('.answer-btn').forEach(btn => {
-                    btn.classList.remove('selected');
-                });
-
-            } else {
-                endGame();
-            }
-        }
-
-        function getCategoryIcon(categoryName) {
-            const icons = {
-                'Familie & Freunde': '👨‍👩‍👧‍👦',
-                'Party Time': '🎉',
-                'Heiß & Gewagt': '🔥'
-            };
-            return icons[categoryName] || '❓';
-        }
-
-        // ===== BEAUTIFUL SLIDER IMPLEMENTATION =====
-        function createBeautifulSlider() {
-            const numbersContainer = document.getElementById('slider-numbers');
-            numbersContainer.innerHTML = '';
-
-            for (let i = 0; i <= totalPlayers; i++) {
-                const numberDiv = document.createElement('div');
-                numberDiv.className = 'slider-number';
-                numberDiv.textContent = i;
-                numberDiv.onclick = () => setEstimation(i);
-                numbersContainer.appendChild(numberDiv);
-            }
-            
-            updateSliderVisuals();
-        }
-
-        function setupSliderInteraction() {
-            const sliderTrack = document.getElementById('slider-track');
-            const sliderHandle = document.getElementById('slider-handle');
-            
-            // Touch events for mobile
-            sliderHandle.addEventListener('touchstart', handleSliderStart);
-            sliderTrack.addEventListener('touchstart', handleSliderStart);
-            document.addEventListener('touchmove', handleSliderMove);
-            document.addEventListener('touchend', handleSliderEnd);
-            
-            // Mouse events for desktop
-            sliderHandle.addEventListener('mousedown', handleSliderStart);
-            sliderTrack.addEventListener('mousedown', handleSliderStart);
-            document.addEventListener('mousemove', handleSliderMove);
-            document.addEventListener('mouseup', handleSliderEnd);
-        }
-
-        function handleSliderStart(e) {
-            e.preventDefault();
-            isDragging = true;
-            updateSliderFromEvent(e);
-        }
-
-        function handleSliderMove(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            updateSliderFromEvent(e);
-        }
-
-        function handleSliderEnd(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            isDragging = false;
-        }
-
-        function updateSliderFromEvent(e) {
-            const sliderTrack = document.getElementById('slider-track');
-            const rect = sliderTrack.getBoundingClientRect();
-            
-            let clientX;
-            if (e.touches) {
-                clientX = e.touches[0].clientX;
-            } else {
-                clientX = e.clientX;
-            }
-            
-            const x = clientX - rect.left;
-            const percentage = Math.max(0, Math.min(1, x / rect.width));
-            const value = Math.round(percentage * totalPlayers);
-            
-            setEstimation(value);
-        }
-
-        function setEstimation(value) {
-            if (value >= 0 && value <= totalPlayers) {
-                userEstimation = value;
-                updateEstimationDisplay();
-                updateSliderVisuals();
-            }
-        }
-
-        function updateSliderVisuals() {
-            const percentage = (userEstimation / totalPlayers) * 100;
-            const sliderTrack = document.getElementById('slider-track');
-            const sliderHandle = document.getElementById('slider-handle');
-            
-            sliderTrack.style.setProperty('--progress', percentage + '%');
-            sliderHandle.style.setProperty('--position', percentage + '%');
-            
-            // Update number indicators
-            document.querySelectorAll('.slider-number').forEach((el, index) => {
-                if (index === userEstimation) {
-                    el.classList.add('active');
-                } else {
-                    el.classList.remove('active');
-                }
-            });
-        }
-
-        function updateEstimationDisplay() {
-            document.getElementById('estimation-value').textContent = userEstimation;
-        }
-
-        // ===== UI MANAGEMENT =====
-        function updateGameHeader() {
-            document.getElementById('game-id-display').textContent = gameState.gameId || 'ABC123';
-            document.getElementById('players-count').textContent = `${totalPlayers} Spieler`;
-            document.getElementById('total-players').textContent = totalPlayers;
-        }
-
-        function updateSubmitButton() {
-            const submitBtn = document.getElementById('submit-btn');
-            if (userAnswer !== null) {
-                submitBtn.classList.add('enabled');
-                submitBtn.disabled = false;
-            } else {
-                submitBtn.classList.remove('enabled');
-                submitBtn.disabled = true;
-            }
-        }
-
-        // ===== GAME INTERACTIONS =====
-        function selectAnswer(answer) {
-            userAnswer = answer;
-            
-            document.querySelectorAll('.answer-btn').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            
-            const selectedBtn = answer ? document.getElementById('yes-btn') : document.getElementById('no-btn');
-            selectedBtn.classList.add('selected');
-            
-            updateSubmitButton();
-        }
-
-        function changeEstimation(delta) {
-            const newValue = userEstimation + delta;
-            if (newValue >= 0 && newValue <= totalPlayers) {
-                setEstimation(newValue);
-            }
-        }
-
-        function submitAnswers() {
-            if (userAnswer === null) {
-                showNotification('Bitte wähle eine Antwort aus!', 'warning');
-                return;
-            }
-
-            showPhase('waiting');
-            
-            setTimeout(() => {
-                showResults();
-            }, 2000 + Math.random() * 2000);
-        }
-
-        // ===== MOBILE CONTROLS =====
-        function setupMobileControls() {
-            let touchStartY = 0;
-
-            document.addEventListener('touchstart', function(e) {
-                if (isDragging) return;
-                touchStartY = e.touches[0].clientY;
-            });
-
-            document.addEventListener('touchend', function(e) {
-                if (currentPhase !== 'question' || isDragging) return;
-                
-                const touchEndY = e.changedTouches[0].clientY;
-                const deltaY = touchStartY - touchEndY;
-                
-                if (Math.abs(deltaY) > 50) {
-                    if (deltaY > 0) {
-                        changeEstimation(1);
-                    } else {
-                        changeEstimation(-1);
-                    }
-                }
-            });
-        }
-
-        // ===== PHASE MANAGEMENT =====
-        function showPhase(phase) {
-            document.getElementById('question-phase').style.display = 'none';
-            document.getElementById('waiting-screen').classList.remove('show');
-            document.getElementById('results-screen').classList.remove('show');
-            document.getElementById('game-over-screen').classList.remove('show');
-
-            currentPhase = phase;
-
-            switch (phase) {
-                case 'question':
-                    document.getElementById('question-phase').style.display = 'block';
-                    break;
-                case 'waiting':
-                    document.getElementById('waiting-screen').classList.add('show');
-                    break;
-                case 'results':
-                    document.getElementById('results-screen').classList.add('show');
-                    break;
-                case 'ended':
-                    document.getElementById('game-over-screen').classList.add('show');
-                    break;
-            }
-        }
-
-        function showResults() {
-            showPhase('results');
-            const results = generateDemoResults();
-            displayResults(results);
-        }
-
-        function generateDemoResults() {
-            const yesAnswers = Math.floor(Math.random() * (totalPlayers + 1));
-            const results = {
-                totalYes: yesAnswers,
-                totalNo: totalPlayers - yesAnswers,
-                players: []
-            };
-
-            connectedPlayers.forEach((player, index) => {
-                const playerAnswer = index < yesAnswers;
-                const playerEstimation = Math.floor(Math.random() * (totalPlayers + 1));
-                const isCorrect = playerEstimation === yesAnswers;
-                const sips = isCorrect ? 0 : Math.abs(playerEstimation - yesAnswers) + getSipsForDifficulty();
-
-                results.players.push({
-                    name: player.name,
-                    answer: playerAnswer,
-                    estimation: playerEstimation,
-                    isCorrect: isCorrect,
-                    sips: sips,
-                    isUser: player.name === (gameState.playerName || 'Du')
-                });
-            });
-
-            return results;
-        }
-
-        function getSipsForDifficulty() {
-            const sipsMap = { easy: 1, medium: 2, hard: 3 };
-            return sipsMap[gameState.difficulty] || 2;
-        }
-
-        function displayResults(results) {
-            document.getElementById('results-summary').textContent = 
-                `${results.totalYes} von ${totalPlayers} Spielern haben mit "Ja" geantwortet`;
-
-            const resultsGrid = document.getElementById('results-grid');
-            resultsGrid.innerHTML = '';
-
-            results.players.forEach(player => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'result-item';
-                
-                const avatar = player.name.substring(0, 2).toUpperCase();
-                const answerText = player.answer ? 'Ja' : 'Nein';
-                const sipsText = player.sips === 0 ? 'Perfekt!' : `${player.sips} 🍺`;
-                const sipsClass = player.sips === 0 ? 'none' : '';
-
-                resultItem.innerHTML = `
-                    <div class="player-result">
-                        <div class="player-avatar">${avatar}</div>
-                        <div class="player-info">
-                            <div class="player-name">${player.name}</div>
-                            <div class="player-answer">${answerText} • Tipp: ${player.estimation}</div>
-                        </div>
-                    </div>
-                    <div class="sips-penalty ${sipsClass}">${sipsText}</div>
-                `;
-
-                resultsGrid.appendChild(resultItem);
-            });
-        }
-
-        // ===== GAME FLOW CONTROLS =====
-        function nextQuestion() {
-            if (!gameState.isHost) {
-                showNotification('Nur der Host kann die nächste Frage starten!', 'warning');
-                return;
-            }
-
-            gameState.currentQuestionIndex++;
-            gameState.saveToStorage();
-
-            showLoading();
-            setTimeout(() => {
-                hideLoading();
-                showPhase('question');
-                loadCurrentQuestion();
-            }, 1000);
-        }
-
-        function endGame() {
-            showPhase('ended');
-            
-            const totalQuestions = gameState.currentQuestionIndex;
-            document.getElementById('total-questions-played').textContent = totalQuestions;
-            document.getElementById('most-honest-player').textContent = 'Anna';
-            document.getElementById('most-sips-player').textContent = 'Max (12 🍺)';
-        }
-
-        function waitForHost() {
-            showNotification('Warte auf den Host...', 'info');
-        }
-
-        function newGame() {
-            if (confirm('Möchtest du wirklich ein neues Spiel starten?')) {
-                gameState.currentQuestionIndex = 0;
-                gameState.gamePhase = 'question';
-                gameState.saveToStorage();
-                
-                loadGameQuestions();
-                showPhase('question');
-                loadCurrentQuestion();
-                
-                showNotification('Neues Spiel gestartet!', 'info');
-            }
-        }
-
-        function backToMenu() {
-            if (confirm('Möchtest du wirklich zum Hauptmenü zurückkehren?')) {
-                window.location.href = 'index.html';
-            }
-        }
-
-        // ===== UTILITY FUNCTIONS =====
-        function showLoading() {
-            document.getElementById('loading').classList.add('show');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading').classList.remove('show');
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type} show`;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        // ===== DEBUG FUNCTIONS =====
-        window.debugGame = function() {
-            console.log('🔍 Game Debug Info:');
-            console.log('GameState:', gameState);
-            console.log('Current Question:', currentQuestion);
-            console.log('User Answer:', userAnswer);
-            console.log('User Estimation:', userEstimation);
-        };
-
-        window.skipToResults = function() {
-            userAnswer = true;
-            userEstimation = 2;
-            showResults();
-        };
-
-        window.forceEndGame = function() {
-            endGame();
-        };
-
-        // ===== KEYBOARD SHORTCUTS (for testing) =====
-        document.addEventListener('keydown', function(e) {
-            if (currentPhase !== 'question') return;
-            
-            switch(e.key) {
-                case '1':
-                case 'y':
-                    selectAnswer(true);
-                    break;
-                case '2':
-                case 'n':
-                    selectAnswer(false);
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    changeEstimation(1);
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    changeEstimation(-1);
-                    break;
-                case 'Enter':
-                    e.preventDefault();
-                    if (userAnswer !== null) {
-                        submitAnswers();
-                    }
-                    break;
-            }
-        });
-
-        console.log('✅ Beautiful multiplayer gameplay loaded successfully');
-    </script>
-</body>
-</html>
-            <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Multiplayer Spiel</title>
+    <title>DenkstDu - Multiplayer Flow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -878,6 +118,15 @@
             50% { opacity: 0.7; transform: scale(1.2); }
         }
 
+        /* Game Phases */
+        .game-phase {
+            display: none;
+        }
+
+        .game-phase.active {
+            display: block;
+        }
+
         /* Question Card */
         .question-card {
             background: rgba(255, 255, 255, 0.12);
@@ -887,7 +136,7 @@
             padding: 35px 30px;
             margin-bottom: 30px;
             text-align: center;
-            min-height: 220px;
+            min-height: 180px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -922,13 +171,13 @@
             font-size: 0.9rem;
             font-weight: 700;
             display: inline-block;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             backdrop-filter: blur(10px);
         }
 
         .question-text {
             color: white;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: 700;
             line-height: 1.5;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
@@ -936,7 +185,7 @@
 
         /* Answer Section */
         .answer-section {
-            margin-bottom: 30px;
+            margin-bottom: 35px;
         }
 
         .answer-title {
@@ -974,23 +223,8 @@
             overflow: hidden;
         }
 
-        .answer-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transition: left 0.5s;
-        }
-
         .answer-btn:active {
             transform: scale(0.95);
-        }
-
-        .answer-btn:hover::before {
-            left: 100%;
         }
 
         .answer-btn.selected {
@@ -1014,7 +248,7 @@
             font-size: 2rem;
         }
 
-        /* Beautiful Estimation Slider */
+        /* Estimation Section */
         .estimation-section {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
@@ -1030,112 +264,75 @@
             font-size: 1.2rem;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
-        .slider-container {
-            position: relative;
-            margin: 30px 0;
+        /* Number Grid */
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-items: center;
         }
 
-        .slider-track {
-            height: 8px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .slider-track::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: var(--progress, 50%);
-            background: linear-gradient(90deg, #4CAF50, #2196F3);
-            border-radius: 10px;
-            transition: width 0.3s ease;
-            box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
-        }
-
-        .slider-handle {
-            position: absolute;
-            top: 50%;
-            left: var(--position, 50%);
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, #4CAF50, #2196F3);
-            border: 3px solid white;
+        .number-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: white;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
-        }
-
-        .slider-handle:active {
-            transform: translate(-50%, -50%) scale(1.2);
-            box-shadow: 0 8px 30px rgba(76, 175, 80, 0.6);
-        }
-
-        .slider-numbers {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-            padding: 0 5px;
-        }
-
-        .slider-number {
-            color: rgba(255, 255, 255, 0.7);
-            font-weight: 600;
-            font-size: 0.9rem;
-            width: 30px;
-            height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(20px);
         }
 
-        .slider-number.active {
+        .number-btn:active {
+            transform: scale(0.9);
+        }
+
+        .number-btn.selected {
             background: linear-gradient(135deg, #4CAF50, #2196F3);
-            color: white;
+            border-color: #4CAF50;
             transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-        }
-
-        .estimation-display {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .estimation-value {
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
             color: white;
-            font-size: 2rem;
+        }
+
+        /* Current Selection Display */
+        .current-selection {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .selection-display {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            display: inline-block;
+            min-width: 200px;
+        }
+
+        .selection-number {
+            color: white;
+            font-size: 2.5rem;
             font-weight: 800;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 5px;
         }
 
-        .estimation-label {
+        .selection-label {
             color: rgba(255, 255, 255, 0.8);
             font-size: 1rem;
-            font-weight: 500;
-            margin-top: 5px;
-        }
-
-        .swipe-hint {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.85rem;
-            margin-top: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            font-weight: 600;
         }
 
         /* Submit Button */
@@ -1157,19 +354,6 @@
             opacity: 0.4;
             transform: scale(0.95);
             box-shadow: 0 10px 30px rgba(76, 175, 80, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .submit-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.6s;
         }
 
         .submit-btn.enabled {
@@ -1178,27 +362,14 @@
             box-shadow: 0 15px 40px rgba(76, 175, 80, 0.4);
         }
 
-        .submit-btn.enabled:hover::before {
-            left: 100%;
-        }
-
         .submit-btn.enabled:active {
             transform: scale(0.98);
         }
 
-        .submit-btn:disabled {
-            cursor: not-allowed;
-        }
-
-        /* Waiting Screen */
+        /* Waiting Phase */
         .waiting-screen {
-            display: none;
             text-align: center;
-            padding: 80px 20px;
-        }
-
-        .waiting-screen.show {
-            display: block;
+            padding: 60px 20px;
         }
 
         .waiting-spinner {
@@ -1230,16 +401,50 @@
             font-size: 1.1rem;
             line-height: 1.6;
             font-weight: 500;
+            margin-bottom: 30px;
         }
 
-        /* Results Screen */
+        .players-status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .player-status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-indicator {
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-done {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .status-waiting {
+            background: rgba(255, 152, 0, 0.3);
+            border: 1px solid #ff9800;
+            color: #ff9800;
+        }
+
+        /* Results Phase */
         .results-screen {
-            display: none;
             padding: 20px 0;
-        }
-
-        .results-screen.show {
-            display: block;
         }
 
         .results-header {
@@ -1263,8 +468,19 @@
 
         .results-summary {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .correct-answer {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
+            border: 1px solid #4CAF50;
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
         }
 
         .results-grid {
@@ -1283,11 +499,6 @@
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .result-item:hover {
-            transform: translateY(-3px);
         }
 
         .player-result {
@@ -1382,11 +593,6 @@
             transform: scale(0.98);
         }
 
-        .nav-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-        }
-
         /* Host Controls */
         .host-controls {
             background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.15));
@@ -1408,117 +614,49 @@
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
-        /* Game Over Screen */
-        .game-over-screen {
-            display: none;
-            text-align: center;
-            padding: 50px 20px;
-        }
-
-        .game-over-screen.show {
-            display: block;
-        }
-
-        .game-over-title {
-            color: white;
-            font-size: 2.2rem;
-            font-weight: 800;
-            margin-bottom: 25px;
-            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .final-stats {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(30px);
-            border-radius: 25px;
-            padding: 30px;
-            margin-bottom: 35px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 15px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            font-weight: 600;
-        }
-
-        .stat-item:last-child {
-            border-bottom: none;
-        }
-
-        /* Loading overlay */
-        .loading {
+        /* Toast Notifications */
+        .toast-notification {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.4s ease;
-        }
-
-        .loading.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 6px solid rgba(255, 255, 255, 0.2);
-            border-top: 6px solid #4CAF50;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            box-shadow: 0 0 30px rgba(76, 175, 80, 0.4);
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 120px;
+            top: 20px;
             right: 20px;
-            background: #4CAF50;
-            color: white;
-            padding: 18px 28px;
-            border-radius: 15px;
-            font-weight: 700;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 20px;
             z-index: 10000;
             opacity: 0;
-            visibility: hidden;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transform: translateX(100%);
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
-            backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 350px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
         }
 
-        .notification.show {
+        .toast-notification.show {
             opacity: 1;
-            visibility: visible;
             transform: translateX(0);
         }
 
-        .notification.info { 
-            background: linear-gradient(135deg, #2196F3, #1976D2);
-            box-shadow: 0 10px 30px rgba(33, 150, 243, 0.3);
+        .toast-notification.success {
+            border-color: rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
         }
-        .notification.warning { 
-            background: linear-gradient(135deg, #ff9800, #f57c00);
-            box-shadow: 0 10px 30px rgba(255, 152, 0, 0.3);
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
         }
-        .notification.error { 
-            background: linear-gradient(135deg, #f44336, #d32f2f);
-            box-shadow: 0 10px 30px rgba(244, 67, 54, 0.3);
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-message {
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.4;
         }
 
         /* Responsive Design */
@@ -1531,17 +669,14 @@
                 font-size: 1.2rem;
             }
             
-            .answer-btn {
-                padding: 20px 15px;
-                font-size: 1rem;
-            }
-
-            .game-header {
-                padding: 15px 20px;
+            .number-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.1rem;
             }
         }
 
-        /* Premium animations */
+        /* Animations */
         .fadeInUp {
             animation: fadeInUp 0.6s ease-out;
         }
@@ -1567,21 +702,13 @@
         <div class="particle"></div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading" id="loading">
-        <div class="loading-spinner"></div>
-    </div>
-
-    <!-- Notification -->
-    <div class="notification" id="notification"></div>
-
     <!-- App Container -->
     <div class="app-container">
         <!-- Game Header -->
         <div class="game-header fadeInUp">
             <div class="game-info">
                 <div class="game-id">ID: <span id="game-id-display">ABC123</span></div>
-                <div class="question-counter">Frage <span id="question-number">1</span></div>
+                <div class="question-counter">Frage <span id="question-number">1</span> von 10</div>
             </div>
             <div class="players-online">
                 <div class="online-indicator"></div>
@@ -1589,43 +716,573 @@
             </div>
         </div>
 
-        <!-- Game Content -->
-        <div class="game-content">
-            <!-- Question Phase -->
-            <div class="question-phase fadeInUp" id="question-phase">
-                <!-- Question Card -->
-                <div class="question-card">
-                    <div class="question-category" id="question-category">
-                        👨‍👩‍👧‍👦 Familie & Freunde
-                    </div>
-                    <div class="question-text" id="question-text">
-                        Ich habe schon mal... ein Buch zu Ende gelesen.
+        <!-- PHASE 1: Question & Answer -->
+        <div class="game-phase active" id="question-phase">
+            <!-- Question Card -->
+            <div class="question-card fadeInUp">
+                <div class="question-category" id="question-category">
+                    👨‍👩‍👧‍👦 Familie & Freunde
+                </div>
+                <div class="question-text" id="question-text">
+                    Ich habe schon mal... ein ganzes Buch an einem Tag gelesen.
+                </div>
+            </div>
+
+            <!-- Answer Section -->
+            <div class="answer-section fadeInUp">
+                <div class="answer-title">🤔 Deine Antwort</div>
+                <div class="answer-buttons">
+                    <button class="answer-btn yes" onclick="selectAnswer(true)" id="yes-btn">
+                        <div class="answer-emoji">✅</div>
+                        <div>Ja, habe ich</div>
+                    </button>
+                    <button class="answer-btn no" onclick="selectAnswer(false)" id="no-btn">
+                        <div class="answer-emoji">❌</div>
+                        <div>Nein, noch nie</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Estimation Section -->
+            <div class="estimation-section fadeInUp">
+                <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
+                
+                <!-- Current Selection Display -->
+                <div class="current-selection">
+                    <div class="selection-display">
+                        <div class="selection-number" id="selected-number">2</div>
+                        <div class="selection-label">von <span id="total-players">4</span> Spielern</div>
                     </div>
                 </div>
 
-                <!-- Answer Section -->
-                <div class="answer-section">
-                    <div class="answer-title">🤔 Deine Antwort</div>
-                    <div class="answer-buttons">
-                        <button class="answer-btn yes" onclick="selectAnswer(true)" id="yes-btn">
-                            <div class="answer-emoji">✅</div>
-                            <div>Ja, habe ich</div>
+                <!-- Number Grid -->
+                <div class="number-grid" id="number-grid">
+                    <!-- Numbers will be generated dynamically -->
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="submit-section fadeInUp">
+                <button class="submit-btn" onclick="submitAnswers()" id="submit-btn">
+                    📤 Antworten absenden
+                </button>
+            </div>
+        </div>
+
+        <!-- PHASE 2: Waiting for Others -->
+        <div class="game-phase" id="waiting-phase">
+            <div class="waiting-screen">
+                <div class="waiting-spinner"></div>
+                <div class="waiting-title">⏳ Warten auf andere Spieler</div>
+                <div class="waiting-description">
+                    Deine Antworten wurden gesendet.<br>
+                    Warte, bis alle anderen geantwortet haben.
+                </div>
+
+                <div class="players-status" id="players-status">
+                    <!-- Player status will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- PHASE 3: Results -->
+        <div class="game-phase" id="results-phase">
+            <div class="results-screen">
+                <div class="results-header fadeInUp">
+                    <div class="results-title">📊 Ergebnis Runde <span id="results-round">1</span></div>
+                    <div class="results-summary" id="results-summary">
+                        3 von 4 Spielern haben mit "Ja" geantwortet
+                    </div>
+                    <div class="correct-answer">
+                        ✅ Korrekte Antwort: <span id="correct-count">3</span> Spieler
+                    </div>
+                </div>
+
+                <div class="results-grid fadeInUp" id="results-grid">
+                    <!-- Results will be populated dynamically -->
+                </div>
+
+                <!-- Host Controls (only visible for host) -->
+                <div class="host-controls fadeInUp" id="host-controls" style="display: none;">
+                    <div class="host-title">
+                        👑 Host-Kontrollen
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="nav-btn primary" onclick="nextQuestion()">
+                            ➡️ Nächste Frage
                         </button>
-                        <button class="answer-btn no" onclick="selectAnswer(false)" id="no-btn">
-                            <div class="answer-emoji">❌</div>
-                            <div>Nein, noch nie</div>
+                        <button class="nav-btn secondary" onclick="endGame()">
+                            🏁 Spiel beenden
                         </button>
                     </div>
                 </div>
 
-                <!-- Beautiful Estimation Slider -->
-                <div class="estimation-section">
-                    <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
+                <!-- Player Controls (for non-hosts) -->
+                <div class="nav-buttons fadeInUp" id="player-controls">
+                    <button class="nav-btn secondary" onclick="waitForHost()">
+                        ⏳ Warten auf Host...
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== GAME STATE =====
+        let userAnswer = null;
+        let userEstimation = 2;
+        let totalPlayers = 4;
+        let currentQuestionNumber = 1;
+        let isHost = true; // Demo: You are the host
+        let currentPhase = 'question'; // question, waiting, results
+
+        // Demo players for multiplayer simulation
+        let players = [
+            { name: 'Du', answer: null, estimation: null, isHost: true, hasAnswered: false },
+            { name: 'Anna', answer: null, estimation: null, isHost: false, hasAnswered: false },
+            { name: 'Max', answer: null, estimation: null, isHost: false, hasAnswered: false },
+            { name: 'Lisa', answer: null, estimation: null, isHost: false, hasAnswered: false }
+        ];
+
+        // Demo questions
+        const demoQuestions = [
+            { text: "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen", category: "👨‍👩‍👧‍👦 Familie & Freunde" },
+            { text: "Ich habe schon mal... Pizza zum Frühstück gegessen", category: "😄 Lustige Momente" },
+            { text: "Ich habe schon mal... mein Handy in die Toilette fallen lassen", category: "😄 Lustige Momente" },
+            { text: "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht", category: "👨‍👩‍👧‍👦 Familie & Freunde" },
+            { text: "Ich habe schon mal... beim Kochen das Essen anbrennen lassen", category: "😄 Lustige Momente" },
+            { text: "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen", category: "💤 Lifestyle" }
+        ];
+
+        let currentQuestion = demoQuestions[0];
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGame();
+        });
+
+        function initializeGame() {
+            console.log('🎮 Initializing multiplayer flow...');
+            
+            updateTotalPlayersDisplay();
+            createNumberGrid();
+            updateSelectedNumber(2); // Default selection
+            updateSubmitButton();
+            loadCurrentQuestion();
+            
+            // Show host controls if user is host
+            if (isHost) {
+                document.getElementById('host-controls').style.display = 'block';
+                document.getElementById('player-controls').style.display = 'none';
+            } else {
+                document.getElementById('host-controls').style.display = 'none';
+                document.getElementById('player-controls').style.display = 'block';
+            }
+        }
+
+        // ===== PHASE MANAGEMENT =====
+        function showPhase(phase) {
+            // Hide all phases
+            document.querySelectorAll('.game-phase').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // Show selected phase
+            document.getElementById(`${phase}-phase`).classList.add('active');
+            currentPhase = phase;
+            
+            console.log(`📍 Phase changed to: ${phase}`);
+        }
+
+        // ===== QUESTION MANAGEMENT =====
+        function loadCurrentQuestion() {
+            document.getElementById('question-text').textContent = currentQuestion.text;
+            document.getElementById('question-category').textContent = currentQuestion.category;
+            document.getElementById('question-number').textContent = currentQuestionNumber;
+        }
+
+        // ===== NUMBER GRID CREATION =====
+        function createNumberGrid() {
+            const numberGrid = document.getElementById('number-grid');
+            numberGrid.innerHTML = '';
+
+            for (let i = 0; i <= totalPlayers; i++) {
+                const numberBtn = document.createElement('button');
+                numberBtn.className = 'number-btn';
+                numberBtn.textContent = i;
+                numberBtn.onclick = () => selectNumber(i);
+                numberBtn.id = `number-btn-${i}`;
+                
+                numberGrid.appendChild(numberBtn);
+            }
+            
+            updateNumberSelection();
+        }
+
+        // ===== NUMBER SELECTION =====
+        function selectNumber(number) {
+            if (number >= 0 && number <= totalPlayers) {
+                userEstimation = number;
+                updateSelectedNumber(number);
+                updateNumberSelection();
+                updateSubmitButton();
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            }
+        }
+
+        function updateSelectedNumber(number) {
+            document.getElementById('selected-number').textContent = number;
+            
+            const selectionDisplay = document.querySelector('.selection-display');
+            selectionDisplay.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                selectionDisplay.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        function updateNumberSelection() {
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            const selectedBtn = document.getElementById(`number-btn-${userEstimation}`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('selected');
+            }
+        }
+
+        function updateTotalPlayersDisplay() {
+            document.getElementById('total-players').textContent = totalPlayers;
+        }
+
+        // ===== ANSWER SELECTION =====
+        function selectAnswer(answer) {
+            userAnswer = answer;
+            
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            const selectedBtn = answer ? document.getElementById('yes-btn') : document.getElementById('no-btn');
+            selectedBtn.classList.add('selected');
+            
+            updateSubmitButton();
+        }
+
+        // ===== SUBMIT HANDLING =====
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submit-btn');
+            if (userAnswer !== null) {
+                submitBtn.classList.add('enabled');
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.classList.remove('enabled');
+                submitBtn.disabled = true;
+            }
+        }
+
+        function submitAnswers() {
+            if (userAnswer === null) {
+                showNotification('Bitte wähle eine Antwort aus!', 'warning');
+                return;
+            }
+
+            console.log('📤 Submitting answers:', {
+                answer: userAnswer,
+                estimation: userEstimation
+            });
+
+            // Update user's data
+            players[0].answer = userAnswer;
+            players[0].estimation = userEstimation;
+            players[0].hasAnswered = true;
+
+            // Show success notification
+            showNotification(`Antworten gesendet! 🎯`, 'success');
+            
+            // Switch to waiting phase
+            showPhase('waiting');
+            updatePlayersStatus();
+            
+            // Simulate other players answering (for demo)
+            simulateOtherPlayersAnswering();
+        }
+
+        // ===== WAITING PHASE =====
+        function updatePlayersStatus() {
+            const statusContainer = document.getElementById('players-status');
+            statusContainer.innerHTML = '';
+
+            players.forEach(player => {
+                const statusItem = document.createElement('div');
+                statusItem.className = 'player-status-item';
+                
+                const statusIndicator = player.hasAnswered ? 
+                    '<span class="status-indicator status-done">✅ Fertig</span>' :
+                    '<span class="status-indicator status-waiting">⏳ Wartet...</span>';
+                
+                statusItem.innerHTML = `
+                    <span>${player.name}</span>
+                    ${statusIndicator}
+                `;
+                
+                statusContainer.appendChild(statusItem);
+            });
+        }
+
+        function simulateOtherPlayersAnswering() {
+            // Simulate other players answering over time (demo)
+            let answerDelay = 1000;
+            
+            players.slice(1).forEach((player, index) => {
+                setTimeout(() => {
+                    // Generate random answers for demo
+                    player.answer = Math.random() > 0.5;
+                    player.estimation = Math.floor(Math.random() * (totalPlayers + 1));
+                    player.hasAnswered = true;
                     
-                    <div class="slider-container">
-                        <div class="slider-track" id="slider-track">
-                            <div class="slider-handle" id="slider-handle"></div>
+                    updatePlayersStatus();
+                    
+                    // Check if all players have answered
+                    if (players.every(p => p.hasAnswered)) {
+                        setTimeout(() => {
+                            showResults();
+                        }, 500);
+                    }
+                }, answerDelay + (index * 800));
+            });
+        }
+
+        // ===== RESULTS PHASE =====
+        function showResults() {
+            showPhase('results');
+            
+            // Calculate actual results
+            const actualYesCount = players.filter(p => p.answer === true).length;
+            const results = calculateResults(actualYesCount);
+            
+            displayResults(results, actualYesCount);
+        }
+
+        function calculateResults(actualYesCount) {
+            return players.map(player => {
+                const difference = Math.abs(player.estimation - actualYesCount);
+                const isCorrect = difference === 0;
+                let sips = 0;
+                
+                if (!isCorrect) {
+                    // Base sips + difference
+                    sips = 1 + difference; // Simple calculation for demo
+                }
+                
+                return {
+                    name: player.name,
+                    answer: player.answer,
+                    estimation: player.estimation,
+                    isCorrect: isCorrect,
+                    sips: sips,
+                    difference: difference
+                };
+            });
+        }
+
+        function displayResults(results, actualYesCount) {
+            // Update summary
+            document.getElementById('results-round').textContent = currentQuestionNumber;
+            document.getElementById('results-summary').textContent = 
+                `${actualYesCount} von ${totalPlayers} Spielern haben mit "Ja" geantwortet`;
+            document.getElementById('correct-count').textContent = actualYesCount;
+
+            // Display individual results
+            const resultsGrid = document.getElementById('results-grid');
+            resultsGrid.innerHTML = '';
+
+            results.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                
+                const avatar = result.name.substring(0, 2).toUpperCase();
+                const answerText = result.answer ? 'Ja' : 'Nein';
+                const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
+                const sipsClass = result.sips === 0 ? 'none' : '';
+
+                resultItem.innerHTML = `
+                    <div class="player-result">
+                        <div class="player-avatar">${avatar}</div>
+                        <div class="player-info">
+                            <div class="player-name">${result.name}</div>
+                            <div class="player-answer">${answerText} • Tipp: ${result.estimation}</div>
                         </div>
-                        <div class="slider-numbers" id="slider-numbers">
-                            <!-- Numbers will be generated dynamically -->
-                        </div
+                    </div>
+                    <div class="sips-penalty ${sipsClass}">${sipsText}</div>
+                `;
+
+                resultsGrid.appendChild(resultItem);
+            });
+        }
+
+        // ===== GAME FLOW CONTROLS =====
+        function nextQuestion() {
+            if (!isHost) {
+                showNotification('Nur der Host kann die nächste Frage starten!', 'warning');
+                return;
+            }
+
+            // Reset for next question
+            currentQuestionNumber++;
+            
+            if (currentQuestionNumber <= demoQuestions.length) {
+                currentQuestion = demoQuestions[currentQuestionNumber - 1];
+                
+                // Reset player states
+                players.forEach(player => {
+                    player.answer = null;
+                    player.estimation = null;
+                    player.hasAnswered = false;
+                });
+                
+                // Reset user inputs
+                userAnswer = null;
+                userEstimation = Math.floor(totalPlayers / 2);
+                
+                // Update UI
+                document.querySelectorAll('.answer-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                
+                updateSelectedNumber(userEstimation);
+                updateNumberSelection();
+                updateSubmitButton();
+                loadCurrentQuestion();
+                
+                // Back to question phase
+                showPhase('question');
+                
+                showNotification('Neue Frage geladen! 🎮', 'success');
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            showNotification('Spiel beendet! 🎉', 'success');
+            
+            setTimeout(() => {
+                if (confirm('Spiel beendet! Möchtest du ein neues Spiel starten?')) {
+                    resetGame();
+                }
+            }, 1000);
+        }
+
+        function resetGame() {
+            currentQuestionNumber = 1;
+            currentQuestion = demoQuestions[0];
+            
+            players.forEach(player => {
+                player.answer = null;
+                player.estimation = null;
+                player.hasAnswered = false;
+            });
+            
+            userAnswer = null;
+            userEstimation = 2;
+            
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            updateSelectedNumber(userEstimation);
+            updateNumberSelection();
+            updateSubmitButton();
+            loadCurrentQuestion();
+            showPhase('question');
+            
+            showNotification('Neues Spiel gestartet! 🚀', 'success');
+        }
+
+        function waitForHost() {
+            showNotification('Warte auf den Host...', 'info');
+        }
+
+        // ===== NOTIFICATIONS =====
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `toast-notification ${type}`;
+            notification.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // ===== KEYBOARD SHORTCUTS =====
+        document.addEventListener('keydown', function(e) {
+            if (currentPhase !== 'question') return;
+            
+            // Number keys for estimation
+            if (e.key >= '0' && e.key <= '9') {
+                const number = parseInt(e.key);
+                if (number <= totalPlayers) {
+                    selectNumber(number);
+                }
+            }
+            
+            // Y/N for answers
+            if (e.key.toLowerCase() === 'y') {
+                selectAnswer(true);
+            } else if (e.key.toLowerCase() === 'n') {
+                selectAnswer(false);
+            }
+            
+            // Enter to submit
+            if (e.key === 'Enter' && userAnswer !== null) {
+                submitAnswers();
+            }
+        });
+
+        // ===== DEMO FUNCTIONS =====
+        window.demoSkipToResults = function() {
+            userAnswer = true;
+            userEstimation = 2;
+            players[0].answer = userAnswer;
+            players[0].estimation = userEstimation;
+            players[0].hasAnswered = true;
+            
+            // Set demo data for other players
+            players[1].answer = true; players[1].estimation = 3; players[1].hasAnswered = true;
+            players[2].answer = false; players[2].estimation = 1; players[2].hasAnswered = true;
+            players[3].answer = true; players[3].estimation = 2; players[3].hasAnswered = true;
+            
+            showResults();
+        };
+
+        window.demoSkipToWaiting = function() {
+            userAnswer = true;
+            userEstimation = 2;
+            submitAnswers();
+        };
+
+        console.log('✅ Multiplayer flow loaded successfully');
+        console.log('🎮 Demo commands:');
+        console.log('- demoSkipToWaiting() - Skip to waiting phase');
+        console.log('- demoSkipToResults() - Skip to results');
+    </script>
+</body>
+</html>

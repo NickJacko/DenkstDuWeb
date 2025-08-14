@@ -7,504 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-</head>
-<body>
-    <!-- Background Particles -->
-    <div class="background-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
-
-    <!-- Back Button -->
-    <button class="back-button" onclick="goBack()">← Zurück</button>
-
-    <!-- Loading Spinner -->
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- App Container -->
-    <div class="app-container">
-        <div class="screen active">
-            <div class="content-area">
-                <h2 class="screen-title">Spiel beitreten</h2>
-                
-                <div class="glass-card">
-                    <div class="join-header">
-                        <div class="join-icon">🔗</div>
-                        <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 25px;">
-                            Tritt dem Spiel deiner Freunde bei
-                        </p>
-                    </div>
-
-                    <!-- Game Code Input -->
-                    <div class="game-code-section">
-                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">Game Code eingeben</h3>
-                        <div class="game-code-input-container">
-                            <input type="text" 
-                                   class="game-code-input" 
-                                   id="game-code-input" 
-                                   placeholder="ABC123" 
-                                   maxlength="6"
-                                   autocomplete="off"
-                                   onInput="formatGameCode(this)"
-                                   onKeyPress="handleGameCodeKeyPress(event)">
-                            <button class="paste-btn" onclick="pasteGameCode()" title="Einfügen">📋</button>
-                        </div>
-                        <div class="input-hint">
-                            6-stelliger Code vom Gastgeber
-                        </div>
-                    </div>
-
-                    <!-- OR Divider -->
-                    <div class="divider">
-                        <span class="divider-text">ODER</span>
-                    </div>
-
-                    <!-- QR Code Scanner -->
-                    <div class="qr-scanner-section">
-                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">QR-Code scannen</h3>
-                        <button class="btn btn-secondary qr-scan-btn" onclick="startQRScanner()" id="qr-scan-btn">
-                            📷 QR-Code scannen
-                        </button>
-                        <div class="qr-scanner-container" id="qr-scanner" style="display: none;">
-                            <div class="qr-preview">
-                                <div class="qr-frame">
-                                    <div class="qr-corner tl"></div>
-                                    <div class="qr-corner tr"></div>
-                                    <div class="qr-corner bl"></div>
-                                    <div class="qr-corner br"></div>
-                                </div>
-                                <div class="qr-instruction">QR-Code hier positionieren</div>
-                            </div>
-                            <button class="btn btn-outline" onclick="stopQRScanner()">
-                                ❌ Scanner schließen
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Player Name Input -->
-                    <div class="player-name-section" id="player-name-section" style="display: none;">
-                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">Dein Name</h3>
-                        <input type="text" 
-                               class="player-name-input" 
-                               id="player-name-input" 
-                               placeholder="Dein Spielername" 
-                               maxlength="20"
-                               onKeyPress="handleNameKeyPress(event)"
-                               onInput="updateJoinButton()">
-                        <div class="input-hint">
-                            Wie sollen dich die anderen nennen?
-                        </div>
-                    </div>
-
-                    <!-- Game Info Preview -->
-                    <div class="game-info-preview" id="game-info-preview" style="display: none;">
-                        <h4 style="color: #4facfe; margin-bottom: 10px;">🎮 Spiel-Info</h4>
-                        <div class="game-info-grid">
-                            <div class="info-item">
-                                <span class="info-emoji">👑</span>
-                                <span class="info-text">
-                                    <strong>Gastgeber:</strong> <span id="game-host">Max</span>
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-emoji">👥</span>
-                                <span class="info-text">
-                                    <strong>Spieler:</strong> <span id="game-players">3/8</span>
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-emoji">📝</span>
-                                <span class="info-text">
-                                    <strong>Kategorien:</strong> <span id="game-categories">Party Time</span>
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-emoji">🍺</span>
-                                <span class="info-text">
-                                    <strong>Modus:</strong> <span id="game-difficulty">Standard</span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Join Button -->
-                <div class="nav-buttons">
-                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
-                    <button class="btn join-game-btn" onclick="joinGame()" id="join-btn" disabled>
-                        🚀 Spiel beitreten
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Error Modal -->
-    <div class="modal" id="error-modal" style="display: none;">
-        <div class="modal-content">
-            <div class="error-icon">❌</div>
-            <h3 id="error-title">Fehler</h3>
-            <p id="error-message">Etwas ist schiefgelaufen.</p>
-            <button class="btn" onclick="closeErrorModal()">OK</button>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script>
-        // Game variables
-        let currentGameData = null;
-        let gameState = JSON.parse(localStorage.getItem('denkstdu_game_state') || '{}');
-
-        // Initialize join game page
-        function initJoinGame() {
-            // Check for Game Code in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const gameCodeFromUrl = urlParams.get('gameId');
-            
-            if (gameCodeFromUrl) {
-                document.getElementById('game-code-input').value = gameCodeFromUrl.toUpperCase();
-                lookupGame(gameCodeFromUrl);
-            }
-
-            // Add entrance animations
-            setTimeout(() => {
-                document.querySelector('.glass-card').style.opacity = '0';
-                document.querySelector('.glass-card').style.transform = 'translateY(20px)';
-                document.querySelector('.glass-card').style.transition = 'all 0.6s ease';
-                setTimeout(() => {
-                    document.querySelector('.glass-card').style.opacity = '1';
-                    document.querySelector('.glass-card').style.transform = 'translateY(0)';
-                }, 100);
-            }, 300);
-        }
-
-        // Format Game Code input
-        function formatGameCode(input) {
-            let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-            input.value = value;
-
-            if (value.length === 6) {
-                lookupGame(value);
-            } else {
-                // Hide game info if input is incomplete
-                document.getElementById('game-info-preview').style.display = 'none';
-                document.getElementById('player-name-section').style.display = 'none';
-                updateJoinButton();
-            }
-        }
-
-        // Handle Enter key in Game Code input
-        function handleGameCodeKeyPress(event) {
-            if (event.key === 'Enter') {
-                const gameCode = document.getElementById('game-code-input').value;
-                if (gameCode.length === 6) {
-                    lookupGame(gameCode);
-                }
-            }
-        }
-
-        // Handle Enter key in player name input
-        function handleNameKeyPress(event) {
-            if (event.key === 'Enter') {
-                joinGame();
-            }
-        }
-
-        // Paste Game Code from clipboard
-        async function pasteGameCode() {
-            try {
-                if (navigator.clipboard) {
-                    const text = await navigator.clipboard.readText();
-                    const gameCode = text.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
-                    
-                    if (gameCode.length === 6) {
-                        document.getElementById('game-code-input').value = gameCode;
-                        lookupGame(gameCode);
-                        showNotification('Game Code eingefügt!', 'success');
-                    } else {
-                        showErrorModal('Ungültiger Game Code', 'Die Zwischenablage enthält keinen gültigen 6-stelligen Game Code.');
-                    }
-                }
-            } catch (error) {
-                showNotification('Zwischenablage nicht verfügbar', 'warning');
-            }
-        }
-
-        // Start QR Code scanner (Demo implementation)
-        function startQRScanner() {
-            const scannerContainer = document.getElementById('qr-scanner');
-            scannerContainer.style.display = 'block';
-            
-            // Hide scan button
-            document.getElementById('qr-scan-btn').style.display = 'none';
-            
-            // Simulate QR scanning after 3 seconds
-            setTimeout(() => {
-                const demoGameCode = 'DEMO12';
-                document.getElementById('game-code-input').value = demoGameCode;
-                lookupGame(demoGameCode);
-                stopQRScanner();
-                showNotification('QR-Code erkannt!', 'success');
-            }, 3000);
-        }
-
-        // Stop QR Code scanner
-        function stopQRScanner() {
-            const scannerContainer = document.getElementById('qr-scanner');
-            scannerContainer.style.display = 'none';
-            document.getElementById('qr-scan-btn').style.display = 'block';
-        }
-
-        // Lookup game by Code
-        async function lookupGame(gameCode) {
-            if (!gameCode || gameCode.length !== 6) return;
-
-            showLoading();
-
-            try {
-                // Simulate game lookup
-                setTimeout(() => {
-                    // Check if game code exists (demo logic)
-                    const validCodes = ['DEMO12', 'ABC123', 'TEST01'];
-                    
-                    if (validCodes.includes(gameCode)) {
-                        // Simulate successful game lookup
-                        currentGameData = {
-                            gameId: gameCode,
-                            gameCreator: 'Max Mustermann',
-                            players: {
-                                'Max Mustermann': { name: 'Max Mustermann', isReady: true },
-                                'Anna Schmidt': { name: 'Anna Schmidt', isReady: true },
-                                'Lisa Weber': { name: 'Lisa Weber', isReady: false }
-                            },
-                            categories: ['fsk16'],
-                            difficulty: 'medium',
-                            maxPlayers: 8,
-                            gameState: 'waiting'
-                        };
-
-                        hideLoading();
-                        displayGameInfo(currentGameData);
-                        showPlayerNameInput();
-                        showNotification('Spiel gefunden!', 'success');
-                    } else {
-                        hideLoading();
-                        showErrorModal('Spiel nicht gefunden', `Das Spiel mit dem Code "${gameCode}" konnte nicht gefunden werden. Überprüfe den Game Code und versuche es erneut.`);
-                    }
-                }, 1000);
-
-            } catch (error) {
-                hideLoading();
-                console.error('Error looking up game:', error);
-                showErrorModal('Verbindungsfehler', 'Es gab ein Problem beim Suchen des Spiels. Versuche es erneut.');
-            }
-        }
-
-        // Display game information
-        function displayGameInfo(gameData) {
-            const preview = document.getElementById('game-info-preview');
-            
-            // Update game info
-            document.getElementById('game-host').textContent = gameData.gameCreator;
-            
-            const playerCount = Object.keys(gameData.players || {}).length;
-            document.getElementById('game-players').textContent = `${playerCount}/${gameData.maxPlayers}`;
-            
-            const categoryNames = {
-                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
-                'fsk16': '🎉 Party Time',
-                'fsk18': '🔥 Heiß & Gewagt'
-            };
-            const categories = gameData.categories.map(cat => categoryNames[cat] || cat).join(', ');
-            document.getElementById('game-categories').textContent = categories;
-            
-            const difficultyNames = {
-                'easy': '🍺 Entspannt',
-                'medium': '🍺🍺 Standard',
-                'hard': '🍺🍺🍺 Hardcore'
-            };
-            document.getElementById('game-difficulty').textContent = difficultyNames[gameData.difficulty] || 'Standard';
-            
-            // Show preview with animation
-            preview.style.display = 'block';
-            preview.style.opacity = '0';
-            preview.style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                preview.style.transition = 'all 0.4s ease';
-                preview.style.opacity = '1';
-                preview.style.transform = 'translateY(0)';
-            }, 100);
-        }
-
-        // Show player name input
-        function showPlayerNameInput() {
-            const nameSection = document.getElementById('player-name-section');
-            nameSection.style.display = 'block';
-            nameSection.style.opacity = '0';
-            nameSection.style.transform = 'translateY(20px)';
-            
-            setTimeout(() => {
-                nameSection.style.transition = 'all 0.4s ease';
-                nameSection.style.opacity = '1';
-                nameSection.style.transform = 'translateY(0)';
-                
-                // Focus name input
-                document.getElementById('player-name-input').focus();
-            }, 200);
-
-            updateJoinButton();
-        }
-
-        // Update join button state
-        function updateJoinButton() {
-            const joinBtn = document.getElementById('join-btn');
-            const gameCode = document.getElementById('game-code-input').value;
-            const playerName = document.getElementById('player-name-input').value.trim();
-            
-            const isValidGameCode = gameCode.length === 6;
-            const isValidName = playerName.length >= 2 && playerName.length <= 20;
-            const hasGameData = currentGameData !== null;
-            
-            const canJoin = isValidGameCode && isValidName && hasGameData;
-            
-            joinBtn.disabled = !canJoin;
-            joinBtn.style.opacity = canJoin ? '1' : '0.5';
-            joinBtn.style.cursor = canJoin ? 'pointer' : 'not-allowed';
-        }
-
-        // Join the game
-        async function joinGame() {
-            const gameCode = document.getElementById('game-code-input').value;
-            const playerName = document.getElementById('player-name-input').value.trim();
-
-            if (!currentGameData) {
-                showErrorModal('Spiel nicht verfügbar', 'Bitte lade das Spiel zuerst, bevor du beitrittst.');
-                return;
-            }
-
-            if (!playerName || playerName.length < 2) {
-                showErrorModal('Ungültiger Name', 'Bitte gib einen Namen mit mindestens 2 Zeichen ein.');
-                return;
-            }
-
-            // Check if name is already taken
-            const existingPlayers = Object.values(currentGameData.players || {});
-            if (existingPlayers.some(player => player.name.toLowerCase() === playerName.toLowerCase())) {
-                showErrorModal('Name bereits vergeben', 'Dieser Name wird bereits von einem anderen Spieler verwendet. Bitte wähle einen anderen Namen.');
-                return;
-            }
-
-            showLoading();
-
-            try {
-                // Simulate joining process
-                setTimeout(() => {
-                    // Update game state for multiplayer
-                    gameState.gameId = gameCode;
-                    gameState.playerName = playerName;
-                    gameState.deviceMode = 'multi';
-                    gameState.isGuest = true;
-                    
-                    // Copy game settings from host
-                    gameState.selectedCategories = currentGameData.categories;
-                    gameState.difficulty = currentGameData.difficulty;
-                    
-                    // Save to localStorage
-                    localStorage.setItem('denkstdu_game_state', JSON.stringify(gameState));
-                    
-                    hideLoading();
-                    showNotification('Erfolgreich beigetreten!', 'success');
-                    
-                    // Navigate to waiting room / lobby as guest
-                    setTimeout(() => {
-                        window.location.href = 'multiplayer-waiting.html';
-                    }, 1500);
-                }, 1500);
-
-            } catch (error) {
-                hideLoading();
-                console.error('Error joining game:', error);
-                showErrorModal('Beitritt fehlgeschlagen', 'Beim Beitreten ist ein Fehler aufgetreten. Versuche es erneut.');
-            }
-        }
-
-        // Show error modal
-        function showErrorModal(title, message) {
-            document.getElementById('error-title').textContent = title;
-            document.getElementById('error-message').textContent = message;
-            document.getElementById('error-modal').style.display = 'flex';
-        }
-
-        // Close error modal
-        function closeErrorModal() {
-            document.getElementById('error-modal').style.display = 'none';
-        }
-
-        // Go back to main menu
-        function goBack() {
-            // Clean up scanner if active
-            stopQRScanner();
-            
-            // Navigate back
-            window.location.href = 'index.html';
-        }
-
-        // Utility Functions
-        function showLoading() {
-            document.getElementById('loading').classList.add('show');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading').classList.remove('show');
-        }
-
-        function showNotification(message, type = 'info', duration = 3000) {
-            document.querySelectorAll('.notification').forEach(n => n.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `<span>${message}</span>`;
-            
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 10px;
-                color: white;
-                font-size: 0.9rem;
-                z-index: 9999;
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-                max-width: 300px;
-            `;
-
-            const colors = {
-                'success': 'linear-gradient(135deg, #4CAF50, #45a049)',
-                'error': 'linear-gradient(135deg, #f44336, #da190b)',
-                'warning': 'linear-gradient(135deg, #FF9800, #F57C00)',
-                'info': 'linear-gradient(135deg, #4facfe, #00f2fe)'
-            };
-            notification.style.background = colors[type] || colors.info;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
-            setTimeout(() => {
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => notification.remove(), 300);
-            }, duration);
-        }
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', initJoinGame);
-    </script>
-
     <style>
         /* DenkstDu - Join Game Styles */
         * {
@@ -672,108 +174,46 @@
             font-style: italic;
         }
 
-        /* Divider */
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 30px 0;
-            opacity: 0.6;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .divider-text {
-            color: rgba(255, 255, 255, 0.7);
-            padding: 0 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        /* QR Scanner */
-        .qr-scanner-section {
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .qr-scanner-container {
+        /* Game Code Status */
+        .game-code-status {
             margin-top: 15px;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 15px;
-            padding: 20px;
-        }
-
-        .qr-preview {
-            position: relative;
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 20px;
-            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .qr-frame {
-            position: relative;
-            width: 150px;
-            height: 150px;
-        }
-
-        .qr-corner {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #4facfe;
-        }
-
-        .qr-corner.tl {
-            top: 0;
-            left: 0;
-            border-right: none;
-            border-bottom: none;
-        }
-
-        .qr-corner.tr {
-            top: 0;
-            right: 0;
-            border-left: none;
-            border-bottom: none;
-        }
-
-        .qr-corner.bl {
-            bottom: 0;
-            left: 0;
-            border-right: none;
-            border-top: none;
-        }
-
-        .qr-corner.br {
-            bottom: 0;
-            right: 0;
-            border-left: none;
-            border-top: none;
-        }
-
-        .qr-instruction {
-            color: white;
-            font-size: 0.9rem;
             text-align: center;
-            position: absolute;
-            bottom: -30px;
-            left: 50%;
-            transform: translateX(-50%);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .game-code-status.checking {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid #ffc107;
+            color: #ffc107;
+        }
+
+        .game-code-status.found {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+        }
+
+        .game-code-status.not-found {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
         }
 
         /* Player Name Section */
         .player-name-section {
             margin-bottom: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .player-name-section.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .player-name-input {
@@ -806,6 +246,14 @@
             padding: 20px;
             margin-top: 20px;
             border: 1px solid rgba(79, 172, 254, 0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .game-info-preview.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .game-info-grid {
@@ -860,6 +308,7 @@
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
+            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.2);
         }
 
         .btn-outline {
@@ -874,13 +323,18 @@
             border-color: white;
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
         }
 
-        .btn-secondary:hover {
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+
+        .btn-primary:disabled {
+            background: rgba(76, 175, 80, 0.3);
+            box-shadow: none;
         }
 
         /* Navigation */
@@ -917,50 +371,6 @@
             transform: translateX(-2px);
         }
 
-        /* Modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 400px;
-            width: 100%;
-            color: white;
-            text-align: center;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .error-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #ff6b6b;
-        }
-
-        .modal-content h3 {
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-
-        .modal-content p {
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.4;
-        }
-
         /* Loading */
         .loading {
             display: none;
@@ -989,6 +399,61 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 350px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-notification.success {
+            border-color: rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
+        }
+
+        .toast-notification.warning {
+            border-color: rgba(255, 152, 0, 0.5);
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
+        }
+
+        .toast-notification.error {
+            border-color: rgba(244, 67, 54, 0.5);
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-message {
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .app-container {
@@ -1002,25 +467,6 @@
             .game-code-input {
                 font-size: 1.2rem;
                 padding: 12px;
-            }
-
-            .game-code-input-container {
-                flex-direction: column;
-            }
-
-            .paste-btn {
-                align-self: center;
-                min-width: 120px;
-            }
-
-            .qr-preview {
-                width: 180px;
-                height: 180px;
-            }
-
-            .qr-frame {
-                width: 130px;
-                height: 130px;
             }
 
             .nav-buttons {
@@ -1039,3 +485,789 @@
             }
         }
     </style>
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-button" onclick="goBack()">← Zurück</button>
+
+    <!-- Loading Spinner -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="screen active">
+            <div class="content-area">
+                <h2 class="screen-title">Spiel beitreten</h2>
+                
+                <div class="glass-card">
+                    <div class="join-header">
+                        <div class="join-icon">🔗</div>
+                        <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 25px;">
+                            Tritt dem Spiel deiner Freunde bei
+                        </p>
+                    </div>
+
+                    <!-- Game Code Input -->
+                    <div class="game-code-section">
+                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">Game Code eingeben</h3>
+                        <div class="game-code-input-container">
+                            <input type="text" 
+                                   class="game-code-input" 
+                                   id="game-code-input" 
+                                   placeholder="ABC123" 
+                                   maxlength="6"
+                                   autocomplete="off"
+                                   onInput="formatGameCode(this)"
+                                   onKeyPress="handleGameCodeKeyPress(event)">
+                            <button class="paste-btn" onclick="pasteGameCode()" title="Einfügen">📋</button>
+                        </div>
+                        <div class="input-hint">
+                            6-stelliger Code vom Gastgeber
+                        </div>
+                        
+                        <!-- Game Code Status -->
+                        <div class="game-code-status" id="game-code-status" style="display: none;">
+                            <!-- Status will be updated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Player Name Input -->
+                    <div class="player-name-section" id="player-name-section">
+                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">Dein Name</h3>
+                        <input type="text" 
+                               class="player-name-input" 
+                               id="player-name-input" 
+                               placeholder="Dein Spielername" 
+                               maxlength="20"
+                               onKeyPress="handleNameKeyPress(event)"
+                               onInput="updateJoinButton()">
+                        <div class="input-hint">
+                            Wie sollen dich die anderen nennen?
+                        </div>
+                    </div>
+
+                    <!-- Game Info Preview -->
+                    <div class="game-info-preview" id="game-info-preview">
+                        <h4 style="color: #4facfe; margin-bottom: 10px;">🎮 Spiel-Info</h4>
+                        <div class="game-info-grid">
+                            <div class="info-item">
+                                <span class="info-emoji">👑</span>
+                                <span class="info-text">
+                                    <strong>Gastgeber:</strong> <span id="game-host">Max</span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-emoji">👥</span>
+                                <span class="info-text">
+                                    <strong>Spieler:</strong> <span id="game-players">3/8</span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-emoji">📝</span>
+                                <span class="info-text">
+                                    <strong>Kategorien:</strong> <span id="game-categories">Party Time</span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-emoji">🍺</span>
+                                <span class="info-text">
+                                    <strong>Modus:</strong> <span id="game-difficulty">Standard</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Join Button -->
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
+                    <button class="btn btn-primary" onclick="joinGame()" id="join-btn" disabled>
+                        🚀 Spiel beitreten
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== GAME STATE MANAGEMENT =====
+        class GameState {
+            constructor(playerKey = null) {
+                this.playerKey = playerKey; // Unique key for this player instance
+                this.reset();
+                this.loadFromStorage();
+            }
+
+            reset() {
+                this.deviceMode = null;
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.currentQuestionIndex = 0;
+                this.gamePhase = 'waiting';
+                this.timestamp = Date.now();
+            }
+
+            getStorageKey() {
+                if (this.playerKey) {
+                    return `denkstdu_game_state_${this.playerKey}`;
+                }
+                return 'denkstdu_game_state';
+            }
+
+            saveToStorage() {
+                try {
+                    const stateToSave = {
+                        deviceMode: this.deviceMode,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        currentQuestionIndex: this.currentQuestionIndex,
+                        gamePhase: this.gamePhase,
+                        timestamp: Date.now(),
+                        version: 2,
+                        playerKey: this.playerKey
+                    };
+                    
+                    localStorage.setItem(this.getStorageKey(), JSON.stringify(stateToSave));
+                    
+                    // Also save to main key if this is the host (for backward compatibility)
+                    if (this.isHost) {
+                        localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error('❌ Failed to save GameState:', error);
+                    return false;
+                }
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem(this.getStorageKey());
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        const maxAge = 24 * 60 * 60 * 1000;
+                        if (state.timestamp && (Date.now() - state.timestamp) < maxAge) {
+                            Object.keys(state).forEach(key => {
+                                if (this.hasOwnProperty(key) || key === 'deviceMode' || key === 'playerKey') {
+                                    this[key] = state[key];
+                                }
+                            });
+                            return true;
+                        } else {
+                            this.clearStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to load GameState:', error);
+                    this.clearStorage();
+                }
+                return false;
+            }
+
+            clearStorage() {
+                localStorage.removeItem(this.getStorageKey());
+                // Only clear main key if this player owns it
+                if (this.isHost) {
+                    localStorage.removeItem('denkstdu_game_state');
+                }
+            }
+        }
+
+        // ===== GLOBAL VARIABLES =====
+        let currentGameData = null;
+        let gameState = new GameState(); // Default instance
+        let checkingGameCode = false;
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            initJoinGame();
+        });
+
+        function initJoinGame() {
+            console.log('🔗 Initializing join game page...');
+            
+            // Check for Game Code in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameCodeFromUrl = urlParams.get('gameId');
+            
+            if (gameCodeFromUrl) {
+                document.getElementById('game-code-input').value = gameCodeFromUrl.toUpperCase();
+                lookupGame(gameCodeFromUrl);
+            }
+
+            // Add entrance animations
+            setTimeout(() => {
+                document.querySelector('.glass-card').style.opacity = '0';
+                document.querySelector('.glass-card').style.transform = 'translateY(20px)';
+                document.querySelector('.glass-card').style.transition = 'all 0.6s ease';
+                setTimeout(() => {
+                    document.querySelector('.glass-card').style.opacity = '1';
+                    document.querySelector('.glass-card').style.transform = 'translateY(0)';
+                }, 100);
+            }, 300);
+
+            updateJoinButton();
+        }
+
+        // ===== GAME CODE HANDLING =====
+        function formatGameCode(input) {
+            // Only allow alphanumeric characters and convert to uppercase
+            let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            input.value = value;
+
+            if (value.length === 6) {
+                lookupGame(value);
+            } else {
+                // Hide sections if input is incomplete
+                hideGameInfo();
+                hideGameCodeStatus();
+                updateJoinButton();
+            }
+        }
+
+        function handleGameCodeKeyPress(event) {
+            if (event.key === 'Enter') {
+                const gameCode = document.getElementById('game-code-input').value;
+                if (gameCode.length === 6) {
+                    lookupGame(gameCode);
+                }
+            }
+        }
+
+        function handleNameKeyPress(event) {
+            if (event.key === 'Enter') {
+                joinGame();
+            }
+        }
+
+        // ===== CLIPBOARD HANDLING =====
+        async function pasteGameCode() {
+            try {
+                if (navigator.clipboard) {
+                    const text = await navigator.clipboard.readText();
+                    const gameCode = text.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+                    
+                    if (gameCode.length === 6) {
+                        document.getElementById('game-code-input').value = gameCode;
+                        lookupGame(gameCode);
+                        showNotification('Game Code eingefügt!', 'success');
+                    } else {
+                        showNotification('Ungültiger Game Code in Zwischenablage', 'warning');
+                    }
+                } else {
+                    showNotification('Zwischenablage nicht verfügbar', 'warning');
+                }
+            } catch (error) {
+                showNotification('Zwischenablage nicht verfügbar', 'warning');
+            }
+        }
+
+        // ===== GAME LOOKUP =====
+        async function lookupGame(gameCode) {
+            if (!gameCode || gameCode.length !== 6 || checkingGameCode) return;
+
+            checkingGameCode = true;
+            showGameCodeStatus('checking', '🔍 Suche Spiel...');
+
+            try {
+                // Simulate game lookup with timeout
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Check if game code exists (demo logic with more codes)
+                const validCodes = ['DEMO12', 'ABC123', 'TEST01', 'PARTY1', 'GAME42', 'FUN123'];
+                
+                // IMPORTANT: Check if there's a running game with this code in localStorage
+                // This simulates a real backend lookup
+                const runningGame = checkForRunningGame(gameCode);
+                
+                if (validCodes.includes(gameCode) || runningGame) {
+                    // Use running game data if available, otherwise generate demo data
+                    currentGameData = runningGame || generateDemoGameData(gameCode);
+                    
+                    showGameCodeStatus('found', '✅ Spiel gefunden!');
+                    displayGameInfo(currentGameData);
+                    showPlayerNameInput();
+                    
+                    // Focus on name input
+                    setTimeout(() => {
+                        document.getElementById('player-name-input').focus();
+                    }, 500);
+                    
+                } else {
+                    showGameCodeStatus('not-found', '❌ Spiel nicht gefunden');
+                    hideGameInfo();
+                    currentGameData = null;
+                }
+                
+            } catch (error) {
+                console.error('Error looking up game:', error);
+                showGameCodeStatus('not-found', '⚠️ Verbindungsfehler');
+                hideGameInfo();
+                currentGameData = null;
+            } finally {
+                checkingGameCode = false;
+                updateJoinButton();
+            }
+        }
+
+        function checkForRunningGame(gameCode) {
+            // Check if there's a game with this code in localStorage
+            // This simulates checking against a real backend
+            try {
+                // Check all possible localStorage entries for running games
+                const keys = Object.keys(localStorage);
+                for (let key of keys) {
+                    if (key.startsWith('denkstdu_game_') || key === 'denkstdu_game_state') {
+                        const gameData = JSON.parse(localStorage.getItem(key));
+                        if (gameData && gameData.gameId === gameCode && gameData.deviceMode === 'multi') {
+                            // Determine current game state
+                            let currentGameState = 'waiting';
+                            if (gameData.gamePhase === 'lobby' || gameData.gamePhase === 'waiting') {
+                                currentGameState = 'lobby';
+                            } else if (gameData.gamePhase === 'playing' || gameData.gamePhase === 'question') {
+                                currentGameState = 'playing';
+                            } else {
+                                currentGameState = 'lobby';  // Default to lobby
+                            }
+                            
+                            // Found a running game with this code!
+                            return {
+                                gameId: gameCode,
+                                gameCreator: gameData.playerName || 'Host',
+                                players: {
+                                    [gameData.playerName || 'Host']: { 
+                                        name: gameData.playerName || 'Host', 
+                                        isReady: true,
+                                        isHost: true
+                                    }
+                                },
+                                categories: gameData.selectedCategories || ['fsk16'],
+                                difficulty: gameData.difficulty || 'medium',
+                                maxPlayers: 8,
+                                gameState: currentGameState,  // Important: correct state
+                                gamePhase: gameData.gamePhase || 'lobby'
+                            };
+                        }
+                    }
+                }
+                
+                // Also check for shared game codes (in a real app, this would be in a shared database)
+                // For demo purposes, we'll check a simulated "shared games" storage
+                const sharedGames = JSON.parse(localStorage.getItem('denkstdu_shared_games') || '{}');
+                if (sharedGames[gameCode]) {
+                    return sharedGames[gameCode];
+                }
+                
+            } catch (error) {
+                console.error('Error checking for running games:', error);
+            }
+            return null;
+        }
+
+        function generateDemoGameData(gameCode) {
+            const hosts = ['Max Mustermann', 'Anna Schmidt', 'Lisa Weber', 'Tom Müller'];
+            const categories = [['fsk16'], ['fsk0', 'fsk16'], ['fsk16', 'fsk18']];
+            const difficulties = ['easy', 'medium', 'hard'];
+            
+            const host = hosts[Math.floor(Math.random() * hosts.length)];
+            const selectedCategories = categories[Math.floor(Math.random() * categories.length)];
+            const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+            
+            return {
+                gameId: gameCode,
+                gameCreator: host,
+                players: {
+                    [host]: { name: host, isReady: true },
+                    'Player 2': { name: 'Player 2', isReady: true },
+                    'Player 3': { name: 'Player 3', isReady: false }
+                },
+                categories: selectedCategories,
+                difficulty: difficulty,
+                maxPlayers: 8,
+                gameState: 'waiting'
+            };
+        }
+
+        // ===== UI UPDATES =====
+        function showGameCodeStatus(type, message) {
+            const statusEl = document.getElementById('game-code-status');
+            statusEl.className = `game-code-status ${type}`;
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+        }
+
+        function hideGameCodeStatus() {
+            document.getElementById('game-code-status').style.display = 'none';
+        }
+
+        function displayGameInfo(gameData) {
+            const preview = document.getElementById('game-info-preview');
+            
+            // Update game info
+            document.getElementById('game-host').textContent = gameData.gameCreator;
+            
+            const playerCount = Object.keys(gameData.players || {}).length;
+            document.getElementById('game-players').textContent = `${playerCount}/${gameData.maxPlayers}`;
+            
+            const categoryNames = {
+                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
+                'fsk16': '🎉 Party Time',
+                'fsk18': '🔥 Heiß & Gewagt'
+            };
+            const categories = gameData.categories.map(cat => categoryNames[cat] || cat).join(', ');
+            document.getElementById('game-categories').textContent = categories;
+            
+            const difficultyNames = {
+                'easy': '🍺 Entspannt',
+                'medium': '🍺🍺 Standard',
+                'hard': '🍺🍺🍺 Hardcore'
+            };
+            document.getElementById('game-difficulty').textContent = difficultyNames[gameData.difficulty] || 'Standard';
+            
+            // Show preview with animation
+            preview.classList.add('visible');
+        }
+
+        function hideGameInfo() {
+            document.getElementById('game-info-preview').classList.remove('visible');
+        }
+
+        function showPlayerNameInput() {
+            const nameSection = document.getElementById('player-name-section');
+            nameSection.classList.add('visible');
+            updateJoinButton();
+        }
+
+        function updateJoinButton() {
+            const joinBtn = document.getElementById('join-btn');
+            const gameCode = document.getElementById('game-code-input').value;
+            const playerName = document.getElementById('player-name-input').value.trim();
+            
+            const isValidGameCode = gameCode.length === 6;
+            const isValidName = playerName.length >= 2 && playerName.length <= 20;
+            const hasGameData = currentGameData !== null;
+            const notChecking = !checkingGameCode;
+            
+            const canJoin = isValidGameCode && isValidName && hasGameData && notChecking;
+            
+            joinBtn.disabled = !canJoin;
+            
+            if (canJoin) {
+                joinBtn.textContent = '🚀 Spiel beitreten';
+                joinBtn.style.opacity = '1';
+                joinBtn.style.cursor = 'pointer';
+            } else if (checkingGameCode) {
+                joinBtn.textContent = '🔍 Suche Spiel...';
+                joinBtn.style.opacity = '0.7';
+                joinBtn.style.cursor = 'not-allowed';
+            } else {
+                joinBtn.textContent = '🚀 Spiel beitreten';
+                joinBtn.style.opacity = '0.5';
+                joinBtn.style.cursor = 'not-allowed';
+            }
+        }
+
+        // ===== JOIN GAME =====
+        async function joinGame() {
+            const gameCode = document.getElementById('game-code-input').value;
+            const playerName = document.getElementById('player-name-input').value.trim();
+
+            if (!currentGameData) {
+                showNotification('Spiel nicht verfügbar', 'error');
+                return;
+            }
+
+            if (!playerName || playerName.length < 2) {
+                showNotification('Name muss mindestens 2 Zeichen haben', 'warning');
+                return;
+            }
+
+            if (playerName.length > 20) {
+                showNotification('Name ist zu lang (max. 20 Zeichen)', 'warning');
+                return;
+            }
+
+            // Check if name is already taken
+            const existingPlayers = Object.values(currentGameData.players || {});
+            if (existingPlayers.some(player => player.name.toLowerCase() === playerName.toLowerCase())) {
+                showNotification('Name bereits vergeben', 'error');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                // Simulate joining process
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // IMPORTANT: Create GUEST GameState with unique key to prevent overwriting host
+                const guestPlayerKey = `guest_${playerName}_${Date.now()}`;
+                const guestGameState = new GameState(guestPlayerKey);
+                
+                // Set up as GUEST player
+                guestGameState.gameId = gameCode;
+                guestGameState.playerName = playerName;
+                guestGameState.deviceMode = 'multi';
+                guestGameState.isHost = false;      // NEVER host
+                guestGameState.isGuest = true;      // Always guest
+                guestGameState.playerKey = guestPlayerKey;
+                
+                // Copy game settings from host (but don't become host)
+                guestGameState.selectedCategories = currentGameData.categories;
+                guestGameState.difficulty = currentGameData.difficulty;
+                
+                // Set correct game phase based on current game state
+                if (currentGameData.gameState === 'waiting' || currentGameData.gameState === 'lobby') {
+                    guestGameState.gamePhase = 'lobby';  // Go to lobby if game is still waiting
+                } else if (currentGameData.gameState === 'playing') {
+                    guestGameState.gamePhase = 'playing';  // Join ongoing game
+                } else {
+                    guestGameState.gamePhase = 'lobby';  // Default to lobby
+                }
+                
+                // Save GUEST state to localStorage with unique key
+                guestGameState.saveToStorage();
+                
+                // Also add this player to the shared games list (simulate backend)
+                addPlayerToSharedGame(gameCode, playerName, guestPlayerKey);
+                
+                hideLoading();
+                showNotification('Erfolgreich beigetreten! 🎉', 'success');
+                
+                console.log(`✅ Guest joined with key: ${guestPlayerKey}`);
+                console.log('🔍 Guest GameState:', {
+                    playerName: guestGameState.playerName,
+                    isHost: guestGameState.isHost,
+                    isGuest: guestGameState.isGuest,
+                    gameId: guestGameState.gameId,
+                    storageKey: guestGameState.getStorageKey()
+                });
+                
+                // Navigate based on game state
+                setTimeout(() => {
+                    if (guestGameState.gamePhase === 'lobby') {
+                        // Go to lobby if game hasn't started yet
+                        window.location.href = 'multiplayer-lobby.html';
+                    } else {
+                        // Join ongoing gameplay
+                        window.location.href = 'multiplayer-gameplay.html';
+                    }
+                }, 1500);
+
+            } catch (error) {
+                hideLoading();
+                console.error('Error joining game:', error);
+                showNotification('Beitritt fehlgeschlagen', 'error');
+            }
+        }
+
+        // Helper function to add player to shared game
+        function addPlayerToSharedGame(gameCode, playerName, playerKey) {
+            try {
+                const sharedGames = JSON.parse(localStorage.getItem('denkstdu_shared_games') || '{}');
+                
+                if (!sharedGames[gameCode]) {
+                    sharedGames[gameCode] = {
+                        gameId: gameCode,
+                        players: {},
+                        joinedPlayers: []
+                    };
+                }
+                
+                // Add this player to the joined players list
+                if (!sharedGames[gameCode].joinedPlayers) {
+                    sharedGames[gameCode].joinedPlayers = [];
+                }
+                
+                const playerData = {
+                    name: playerName,
+                    isHost: false,
+                    isGuest: true,
+                    playerKey: playerKey,
+                    joinedAt: Date.now()
+                };
+                
+                // Remove if already exists (in case of rejoin)
+                sharedGames[gameCode].joinedPlayers = sharedGames[gameCode].joinedPlayers.filter(
+                    p => p.name.toLowerCase() !== playerName.toLowerCase()
+                );
+                
+                // Add the new player
+                sharedGames[gameCode].joinedPlayers.push(playerData);
+                
+                localStorage.setItem('denkstdu_shared_games', JSON.stringify(sharedGames));
+                
+                console.log(`✅ Player ${playerName} (${playerKey}) added to game ${gameCode}`);
+                
+            } catch (error) {
+                console.error('Error adding player to shared game:', error);
+            }
+        }
+
+        // ===== NAVIGATION =====
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        // ===== UTILITY FUNCTIONS =====
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            document.querySelectorAll('.toast-notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `toast-notification ${type}`;
+            notification.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // ===== DEMO FUNCTIONS =====
+        window.demoJoinWithCode = function(code = 'DEMO12') {
+            document.getElementById('game-code-input').value = code;
+            formatGameCode(document.getElementById('game-code-input'));
+        };
+
+        window.demoFillName = function(name = 'TestUser') {
+            document.getElementById('player-name-input').value = name;
+            updateJoinButton();
+        };
+
+        window.demoQuickJoin = function() {
+            demoJoinWithCode('DEMO12');
+            setTimeout(() => {
+                demoFillName('TestUser');
+                setTimeout(() => {
+                    joinGame();
+                }, 500);
+            }, 1500);
+        };
+
+        window.demoJoinRunningGame = function() {
+            // Find any running game in localStorage
+            const keys = Object.keys(localStorage);
+            let foundGameId = null;
+            
+            for (let key of keys) {
+                try {
+                    if (key.startsWith('denkstdu_game_') || key === 'denkstdu_game_state') {
+                        const gameData = JSON.parse(localStorage.getItem(key));
+                        if (gameData && gameData.gameId && gameData.deviceMode === 'multi' && gameData.isHost) {
+                            foundGameId = gameData.gameId;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    // Ignore parsing errors
+                }
+            }
+            
+            if (foundGameId) {
+                console.log(`🎮 Found running game with ID: ${foundGameId}`);
+                demoJoinWithCode(foundGameId);
+                setTimeout(() => {
+                    demoFillName('Player2');
+                }, 1500);
+            } else {
+                console.log('❌ No running multiplayer games found');
+                showNotification('Keine laufenden Spiele gefunden. Erstelle zuerst ein Spiel in der Multiplayer-Lobby.', 'warning');
+            }
+        };
+
+        // Helper function to check current player status
+        window.getPlayerStatus = function() {
+            try {
+                const currentState = JSON.parse(localStorage.getItem('denkstdu_game_state') || '{}');
+                return {
+                    playerName: currentState.playerName,
+                    gameId: currentState.gameId,
+                    isHost: currentState.isHost,
+                    isGuest: currentState.isGuest,
+                    deviceMode: currentState.deviceMode
+                };
+            } catch (error) {
+                return { error: 'No game state found' };
+            }
+        };
+
+        // Helper function to see all joined players for a game
+        window.getJoinedPlayers = function(gameCode) {
+            try {
+                const sharedGames = JSON.parse(localStorage.getItem('denkstdu_shared_games') || '{}');
+                if (sharedGames[gameCode] && sharedGames[gameCode].joinedPlayers) {
+                    return sharedGames[gameCode].joinedPlayers;
+                }
+                return [];
+            } catch (error) {
+                return [];
+            }
+        };
+
+        // Helper function to register a game for joining
+        window.registerGameForJoining = function(gameData) {
+            // In a real app, this would send to a backend
+            // For demo, we store in localStorage
+            const sharedGames = JSON.parse(localStorage.getItem('denkstdu_shared_games') || '{}');
+            sharedGames[gameData.gameId] = gameData;
+            localStorage.setItem('denkstdu_shared_games', JSON.stringify(sharedGames));
+            console.log(`🎮 Game ${gameData.gameId} registered for joining`);
+        };
+
+        console.log('✅ Join Game system loaded successfully');
+        console.log('🎮 Demo commands:');
+        console.log('- demoJoinWithCode("DEMO12") - Enter a game code');
+        console.log('- demoFillName("TestUser") - Fill in a name');
+        console.log('- demoQuickJoin() - Automatically join a demo game');
+        console.log('- demoJoinRunningGame() - Join any running multiplayer game');
+        console.log('💡 Valid demo codes: DEMO12, ABC123, TEST01, PARTY1, GAME42, FUN123');
+        console.log('🔥 To test: Open multiplayer lobby in another tab, then use demoJoinRunningGame()');
+    </script>
+</body>
+</html>
