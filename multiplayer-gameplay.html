@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Multiplayer Flow</title>
+    <title>DenkstDu - Multiplayer Gameplay</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -24,7 +29,7 @@
             position: relative;
         }
 
-        /* Animated Background */
+        /* Background Particles */
         .background-particles {
             position: fixed;
             top: 0;
@@ -52,6 +57,31 @@
             25% { transform: translateY(-30px) rotate(90deg); opacity: 0.6; }
             50% { transform: translateY(-60px) rotate(180deg); opacity: 0.3; }
             75% { transform: translateY(-30px) rotate(270deg); opacity: 0.6; }
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 10px 15px;
+            color: white;
+            font-size: 0.8rem;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.connected {
+            border: 1px solid #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .connection-status.disconnected {
+            border: 1px solid #f44336;
+            background: rgba(244, 67, 54, 0.2);
         }
 
         .app-container {
@@ -555,6 +585,147 @@
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
         }
 
+        /* Host Controls */
+        .host-controls {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.15));
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(20px);
+        }
+
+        .host-title {
+            color: #FFD700;
+            font-weight: 800;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Final Results Screen */
+        .final-results-screen {
+            padding: 20px 0;
+        }
+
+        .final-header {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            backdrop-filter: blur(30px);
+            border-radius: 25px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .final-title {
+            color: #FFD700;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .final-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .final-stats {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .leaderboard {
+            margin: 30px 0;
+        }
+
+        .leaderboard-title {
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .leaderboard-item {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .leaderboard-item.winner {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border-color: #FFD700;
+        }
+
+        .rank-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: white; }
+        .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: white; }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32, #B8860B); color: white; }
+        .rank-other { background: rgba(255, 255, 255, 0.2); color: white; }
+
+        .player-final-stats {
+            flex: 1;
+        }
+
+        .player-final-name {
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .player-final-details {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            display: flex;
+            gap: 15px;
+        }
+
         /* Navigation Buttons */
         .nav-buttons {
             display: grid;
@@ -589,29 +760,13 @@
             backdrop-filter: blur(20px);
         }
 
+        .nav-btn.danger {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+
         .nav-btn:active {
             transform: scale(0.98);
-        }
-
-        /* Host Controls */
-        .host-controls {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.15));
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 25px;
-            backdrop-filter: blur(20px);
-        }
-
-        .host-title {
-            color: #FFD700;
-            font-weight: 800;
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         /* Toast Notifications */
@@ -640,6 +795,16 @@
         .toast-notification.success {
             border-color: rgba(76, 175, 80, 0.5);
             background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
+        }
+
+        .toast-notification.warning {
+            border-color: rgba(255, 152, 0, 0.5);
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
+        }
+
+        .toast-notification.error {
+            border-color: rgba(244, 67, 54, 0.5);
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
         }
 
         .toast-content {
@@ -674,6 +839,23 @@
                 height: 50px;
                 font-size: 1.1rem;
             }
+
+            .final-stats {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .player-final-details {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .connection-status {
+                top: 15px;
+                right: 15px;
+                font-size: 0.7rem;
+                padding: 8px 12px;
+            }
         }
 
         /* Animations */
@@ -681,7 +863,7 @@
             animation: fadeInUp 0.6s ease-out;
         }
 
-        @keyframes fadeInUp {
+@keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(30px);
@@ -702,17 +884,22 @@
         <div class="particle"></div>
     </div>
 
+    <!-- Connection Status -->
+    <div class="connection-status connected" id="connection-status">
+        🟢 Online
+    </div>
+
     <!-- App Container -->
     <div class="app-container">
         <!-- Game Header -->
         <div class="game-header fadeInUp">
             <div class="game-info">
-                <div class="game-id">ID: <span id="game-id-display">ABC123</span></div>
-                <div class="question-counter">Frage <span id="question-number">1</span> von 10</div>
+                <div class="game-id">ID: <span id="game-id-display">LOADING</span></div>
+                <div class="question-counter">Frage <span id="question-number">1</span></div>
             </div>
             <div class="players-online">
                 <div class="online-indicator"></div>
-                <span id="players-count">4 Spieler</span>
+                <span id="players-count">0 Spieler</span>
             </div>
         </div>
 
@@ -721,10 +908,10 @@
             <!-- Question Card -->
             <div class="question-card fadeInUp">
                 <div class="question-category" id="question-category">
-                    👨‍👩‍👧‍👦 Familie & Freunde
+                    🎮 Loading...
                 </div>
                 <div class="question-text" id="question-text">
-                    Ich habe schon mal... ein ganzes Buch an einem Tag gelesen.
+                    Lade Frage...
                 </div>
             </div>
 
@@ -750,8 +937,8 @@
                 <!-- Current Selection Display -->
                 <div class="current-selection">
                     <div class="selection-display">
-                        <div class="selection-number" id="selected-number">2</div>
-                        <div class="selection-label">von <span id="total-players">4</span> Spielern</div>
+                        <div class="selection-number" id="selected-number">1</div>
+                        <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
                     </div>
                 </div>
 
@@ -785,16 +972,16 @@
             </div>
         </div>
 
-        <!-- PHASE 3: Results -->
+        <!-- PHASE 3: Round Results -->
         <div class="game-phase" id="results-phase">
             <div class="results-screen">
                 <div class="results-header fadeInUp">
-                    <div class="results-title">📊 Ergebnis Runde <span id="results-round">1</span></div>
+                    <div class="results-title">📊 Ergebnis Frage <span id="results-round">1</span></div>
                     <div class="results-summary" id="results-summary">
-                        3 von 4 Spielern haben mit "Ja" geantwortet
+                        Berechne Ergebnisse...
                     </div>
                     <div class="correct-answer">
-                        ✅ Korrekte Antwort: <span id="correct-count">3</span> Spieler
+                        ✅ Korrekte Antwort: <span id="correct-count">0</span> Spieler
                     </div>
                 </div>
 
@@ -811,7 +998,7 @@
                         <button class="nav-btn primary" onclick="nextQuestion()">
                             ➡️ Nächste Frage
                         </button>
-                        <button class="nav-btn secondary" onclick="endGame()">
+                        <button class="nav-btn danger" onclick="endGame()">
                             🏁 Spiel beenden
                         </button>
                     </div>
@@ -825,88 +1012,632 @@
                 </div>
             </div>
         </div>
+
+        <!-- PHASE 4: Final Results -->
+        <div class="game-phase" id="final-results-phase">
+            <div class="final-results-screen">
+                <div class="final-header fadeInUp">
+                    <div class="final-title">🏆 Spiel beendet!</div>
+                    <div class="final-subtitle">Hier sind die Gesamtergebnisse</div>
+                    
+                    <div class="final-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-questions">0</div>
+                            <div class="stat-label">Fragen gespielt</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-players-final">0</div>
+                            <div class="stat-label">Spieler</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="leaderboard fadeInUp">
+                    <div class="leaderboard-title">🏅 Bestenliste</div>
+                    <div id="leaderboard-list">
+                        <!-- Leaderboard will be populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="nav-buttons fadeInUp">
+                    <button class="nav-btn primary" onclick="playAgain()">
+                        🔄 Nochmal spielen
+                    </button>
+                    <button class="nav-btn secondary" onclick="goHome()">
+                        🏠 Zur Startseite
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // ===== GAME STATE =====
+        // ===== FIREBASE INTEGRATION =====
+        class FirebaseGameService {
+            constructor() {
+                this.app = null;
+                this.database = null;
+                this.isInitialized = false;
+                this.isConnected = false;
+                this.gameRef = null;
+                this.currentRoundRef = null;
+                
+                // Firebase Config
+                this.config = {
+                    apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+                    authDomain: "denkstduwebsite.firebaseapp.com",
+                    databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                    projectId: "denkstduwebsite",
+                    storageBucket: "denkstduwebsite.firebasestorage.app",
+                    messagingSenderId: "27029260611",
+                    appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+                    measurementId: "G-BNKNW95HK8"
+                };
+            }
+
+            async initialize() {
+                try {
+                    if (typeof firebase === 'undefined') {
+                        throw new Error('Firebase SDK not loaded');
+                    }
+
+                    if (!firebase.apps || firebase.apps.length === 0) {
+                        this.app = firebase.initializeApp(this.config);
+                    } else {
+                        this.app = firebase.app();
+                    }
+
+                    this.database = firebase.database();
+                    this.setupConnectionMonitoring();
+
+                    const connected = await this.testConnection();
+                    this.isInitialized = connected;
+                    
+                    return this.isInitialized;
+
+                } catch (error) {
+                    console.error('❌ Firebase initialization failed:', error);
+                    this.updateConnectionStatus('disconnected');
+                    return false;
+                }
+            }
+
+            setupConnectionMonitoring() {
+                const connectedRef = this.database.ref('.info/connected');
+                connectedRef.on('value', (snapshot) => {
+                    this.isConnected = snapshot.val() === true;
+                    this.updateConnectionStatus(this.isConnected ? 'connected' : 'disconnected');
+                });
+            }
+
+            async testConnection() {
+                try {
+                    this.updateConnectionStatus('connecting');
+                    
+                    const testRef = this.database.ref('.info/connected');
+                    const snapshot = await testRef.once('value');
+                    const connected = snapshot.val() === true;
+                    
+                    this.updateConnectionStatus(connected ? 'connected' : 'disconnected');
+                    return connected;
+                    
+                } catch (error) {
+                    console.error('❌ Connection test failed:', error);
+                    this.updateConnectionStatus('disconnected');
+                    return false;
+                }
+            }
+
+            updateConnectionStatus(status) {
+                const statusEl = document.getElementById('connection-status');
+                if (!statusEl) return;
+
+                statusEl.className = `connection-status ${status}`;
+                
+                switch (status) {
+                    case 'connected':
+                        statusEl.innerHTML = '🟢 Online';
+                        break;
+                    case 'disconnected':
+                        statusEl.innerHTML = '🔴 Offline';
+                        break;
+                    case 'connecting':
+                        statusEl.innerHTML = '🔄 Verbinde...';
+                        break;
+                }
+            }
+
+            // Setup game reference
+            setupGameRef(gameId) {
+                this.gameRef = this.database.ref(`games/${gameId}`);
+                return this.gameRef;
+            }
+
+            // Submit answer to Firebase
+            async submitAnswer(gameId, roundNumber, playerId, answerData) {
+                if (!this.isInitialized) throw new Error('Firebase not initialized');
+
+                try {
+                    const answerRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}/answers/${playerId}`);
+                    await answerRef.set({
+                        ...answerData,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    
+                    console.log('✅ Answer submitted to Firebase');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error submitting answer:', error);
+                    throw error;
+                }
+            }
+
+            // Start new round
+            async startNewRound(gameId, roundNumber, question) {
+                if (!this.isInitialized) throw new Error('Firebase not initialized');
+
+                try {
+                    const roundRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}`);
+                    await roundRef.set({
+                        roundNumber: roundNumber,
+                        question: question,
+                        answers: {},
+                        results: null,
+                        startedAt: firebase.database.ServerValue.TIMESTAMP,
+                        status: 'active'
+                    });
+
+                    // Update game current round
+                    await this.database.ref(`games/${gameId}/currentRound`).set(roundNumber);
+                    
+                    console.log(`✅ Round ${roundNumber} started in Firebase`);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error starting round:', error);
+                    throw error;
+                }
+            }
+
+            // End game
+            async endGame(gameId, finalResults) {
+                if (!this.isInitialized) throw new Error('Firebase not initialized');
+
+                try {
+                    await this.database.ref(`games/${gameId}`).update({
+                        gameState: 'finished',
+                        finishedAt: firebase.database.ServerValue.TIMESTAMP,
+                        finalResults: finalResults
+                    });
+                    
+                    console.log('✅ Game ended in Firebase');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error ending game:', error);
+                    throw error;
+                }
+            }
+
+            // Listen to game updates
+            listenToGame(gameId, callback) {
+                if (!this.isInitialized) return null;
+                
+                const gameRef = this.database.ref(`games/${gameId}`);
+                gameRef.on('value', callback);
+                return gameRef;
+            }
+
+            // Listen to round updates
+            listenToRound(gameId, roundNumber, callback) {
+                if (!this.isInitialized) return null;
+                
+                const roundRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}`);
+                roundRef.on('value', callback);
+                return roundRef;
+            }
+
+            // Cleanup
+            cleanup() {
+                if (this.gameRef) this.gameRef.off();
+                if (this.currentRoundRef) this.currentRoundRef.off();
+            }
+        }
+
+        // ===== GAME STATE MANAGEMENT =====
+        class GameState {
+            constructor(playerKey = null) {
+                this.playerKey = playerKey;
+                this.reset();
+                this.loadFromStorage();
+            }
+
+            reset() {
+                this.deviceMode = 'multi';
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.currentQuestionIndex = 0;
+                this.gamePhase = 'playing';
+                this.timestamp = Date.now();
+                this.totalQuestionsPlayed = 0;
+                this.gameStats = {
+                    totalSips: 0,
+                    correctGuesses: 0,
+                    totalGuesses: 0
+                };
+            }
+
+            getStorageKey() {
+                if (this.playerKey) {
+                    return `denkstdu_game_state_${this.playerKey}`;
+                }
+                return 'denkstdu_game_state';
+            }
+
+            saveToStorage() {
+                try {
+                    const stateToSave = {
+                        deviceMode: this.deviceMode,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
+                        playerId: this.playerId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        currentQuestionIndex: this.currentQuestionIndex,
+                        gamePhase: this.gamePhase,
+                        totalQuestionsPlayed: this.totalQuestionsPlayed,
+                        gameStats: this.gameStats,
+                        timestamp: Date.now(),
+                        version: 3,
+                        playerKey: this.playerKey
+                    };
+                    
+                    localStorage.setItem(this.getStorageKey(), JSON.stringify(stateToSave));
+                    return true;
+                } catch (error) {
+                    console.error('❌ Failed to save GameState:', error);
+                    return false;
+                }
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem(this.getStorageKey());
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+                        if (state.timestamp && (Date.now() - state.timestamp) < maxAge) {
+                            Object.keys(state).forEach(key => {
+                                if (this.hasOwnProperty(key) || ['deviceMode', 'playerKey', 'playerId', 'gameStats', 'totalQuestionsPlayed'].includes(key)) {
+                                    this[key] = state[key];
+                                }
+                            });
+                            return true;
+                        } else {
+                            this.clearStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to load GameState:', error);
+                    this.clearStorage();
+                }
+                return false;
+            }
+
+            clearStorage() {
+                localStorage.removeItem(this.getStorageKey());
+            }
+        }
+
+        // ===== GLOBAL VARIABLES =====
+        let firebaseService = new FirebaseGameService();
+        let gameState = null;
+        let gameListener = null;
+        let roundListener = null;
+        let currentGameData = null;
+        let currentRoundData = null;
+        let currentPlayers = {};
+        let currentQuestion = null;
         let userAnswer = null;
-        let userEstimation = 2;
-        let totalPlayers = 4;
+        let userEstimation = 1;
+        let totalPlayers = 0;
         let currentQuestionNumber = 1;
-        let isHost = true; // Demo: You are the host
-        let currentPhase = 'question'; // question, waiting, results
+        let currentPhase = 'question';
+        let allTimeStats = {
+            totalQuestionsPlayed: 0,
+            totalSips: 0,
+            correctGuesses: 0,
+            playerStats: {}
+        };
 
-        // Demo players for multiplayer simulation
-        let players = [
-            { name: 'Du', answer: null, estimation: null, isHost: true, hasAnswered: false },
-            { name: 'Anna', answer: null, estimation: null, isHost: false, hasAnswered: false },
-            { name: 'Max', answer: null, estimation: null, isHost: false, hasAnswered: false },
-            { name: 'Lisa', answer: null, estimation: null, isHost: false, hasAnswered: false }
-        ];
-
-        // Demo questions
-        const demoQuestions = [
-            { text: "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen", category: "👨‍👩‍👧‍👦 Familie & Freunde" },
-            { text: "Ich habe schon mal... Pizza zum Frühstück gegessen", category: "😄 Lustige Momente" },
-            { text: "Ich habe schon mal... mein Handy in die Toilette fallen lassen", category: "😄 Lustige Momente" },
-            { text: "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht", category: "👨‍👩‍👧‍👦 Familie & Freunde" },
-            { text: "Ich habe schon mal... beim Kochen das Essen anbrennen lassen", category: "😄 Lustige Momente" },
-            { text: "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen", category: "💤 Lifestyle" }
-        ];
-
-        let currentQuestion = demoQuestions[0];
+        // Questions Database
+        const questionsDatabase = {
+            fsk0: [
+                "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
+                "Ich habe schon mal... Pizza zum Frühstück gegessen",
+                "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen",
+                "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht",
+                "Ich habe schon mal... beim Kochen das Essen anbrennen lassen",
+                "Ich habe schon mal... mein Handy in die Toilette fallen lassen"
+            ],
+            fsk16: [
+                "Ich habe schon mal... heimlich Süßigkeiten vor dem Abendessen gegessen",
+                "Ich habe schon mal... so getan, als wäre ich krank, um nicht zur Schule zu müssen",
+                "Ich habe schon mal... bis 3 Uhr morgens Netflix geschaut",
+                "Ich habe schon mal... ein Lied so laut gesungen, dass die Nachbarn sich beschwert haben",
+                "Ich habe schon mal... vergessen, wo ich mein Auto geparkt habe"
+            ],
+            fsk18: [
+                "Ich habe schon mal... einen peinlichen Betrunkenheits-Text verschickt",
+                "Ich habe schon mal... mich in eine Person verliebt, die vergeben war",
+                "Ich habe schon mal... bei einem Date gelogen, um interessanter zu wirken",
+                "Ich habe schon mal... heimlich die Social Media Profile meines Ex gecheckt"
+            ]
+        };
 
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
-            initializeGame();
+            initializeGameplay();
         });
 
-        function initializeGame() {
-            console.log('🎮 Initializing multiplayer flow...');
+        async function initializeGameplay() {
+            console.log('🎮 Initializing multiplayer gameplay...');
             
-            updateTotalPlayersDisplay();
+            // Initialize Firebase
+            await firebaseService.initialize();
+            
+            // Find game state
+            gameState = findPlayerGameState();
+            
+            if (!gameState || !gameState.gameId) {
+                console.error('❌ No valid game state found');
+                showNotification('Kein gültiges Spiel gefunden. Zurück zur Lobby.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'multiplayer-lobby.html';
+                }, 2000);
+                return;
+            }
+
+            // Setup Firebase listeners
+            if (firebaseService.isInitialized) {
+                setupFirebaseListeners();
+            } else {
+                showNotification('Firebase-Verbindung fehlgeschlagen. Fallback auf lokalen Modus.', 'warning');
+                startLocalMode();
+            }
+
+            // Initialize UI
+            updateGameDisplay();
             createNumberGrid();
-            updateSelectedNumber(2); // Default selection
+            updateSelectedNumber(1);
             updateSubmitButton();
-            loadCurrentQuestion();
+            
+            // Load first question
+            loadNewQuestion();
             
             // Show host controls if user is host
-            if (isHost) {
+            if (gameState.isHost) {
                 document.getElementById('host-controls').style.display = 'block';
                 document.getElementById('player-controls').style.display = 'none';
             } else {
                 document.getElementById('host-controls').style.display = 'none';
                 document.getElementById('player-controls').style.display = 'block';
             }
-        }
-
-        // ===== PHASE MANAGEMENT =====
-        function showPhase(phase) {
-            // Hide all phases
-            document.querySelectorAll('.game-phase').forEach(p => {
-                p.classList.remove('active');
+            
+            console.log('✅ Gameplay initialized for:', {
+                playerName: gameState.playerName,
+                isHost: gameState.isHost,
+                gameId: gameState.gameId,
+                firebase: firebaseService.isInitialized
             });
-            
-            // Show selected phase
-            document.getElementById(`${phase}-phase`).classList.add('active');
-            currentPhase = phase;
-            
-            console.log(`📍 Phase changed to: ${phase}`);
         }
 
-        // ===== QUESTION MANAGEMENT =====
-        function loadCurrentQuestion() {
-            document.getElementById('question-text').textContent = currentQuestion.text;
-            document.getElementById('question-category').textContent = currentQuestion.category;
+        function findPlayerGameState() {
+            // Find the correct GameState instance (same logic as in lobby)
+            const keys = Object.keys(localStorage);
+            
+            // Try host first
+            try {
+                const mainState = localStorage.getItem('denkstdu_game_state');
+                if (mainState) {
+                    const state = JSON.parse(mainState);
+                    if (state.deviceMode === 'multi' && state.gameId) {
+                        return new GameState();
+                    }
+                }
+            } catch (e) {
+                // Ignore
+            }
+            
+            // Try guest states
+            for (let key of keys) {
+                if (key.startsWith('denkstdu_game_state_guest_')) {
+                    try {
+                        const guestState = JSON.parse(localStorage.getItem(key));
+                        if (guestState.deviceMode === 'multi' && guestState.gameId) {
+                            const playerKey = key.replace('denkstdu_game_state_', '');
+                            return new GameState(playerKey);
+                        }
+                    } catch (e) {
+                        // Ignore
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        // ===== FIREBASE LISTENERS =====
+        function setupFirebaseListeners() {
+            console.log('🎧 Setting up Firebase listeners...');
+            
+            // Setup game reference
+            firebaseService.setupGameRef(gameState.gameId);
+            
+            // Listen to game updates
+            gameListener = firebaseService.listenToGame(gameState.gameId, (snapshot) => {
+                if (snapshot.exists()) {
+                    currentGameData = snapshot.val();
+                    console.log('🎮 Game update received:', currentGameData);
+                    
+                    // Update players list
+                    currentPlayers = currentGameData.players || {};
+                    updatePlayersCount();
+                    
+                    // Check for game end
+                    if (currentGameData.gameState === 'finished') {
+                        handleGameFinished(currentGameData.finalResults);
+                    }
+                    
+                    // Check for new round
+                    if (currentGameData.currentRound && currentGameData.currentRound !== currentQuestionNumber) {
+                        handleNewRound(currentGameData.currentRound);
+                    }
+                }
+            });
+        }
+
+        function setupRoundListener(roundNumber) {
+            if (roundListener) {
+                roundListener.off();
+            }
+            
+            roundListener = firebaseService.listenToRound(gameState.gameId, roundNumber, (snapshot) => {
+                if (snapshot.exists()) {
+                    currentRoundData = snapshot.val();
+                    console.log(`📊 Round ${roundNumber} update:`, currentRoundData);
+                    
+                    // Check if all players answered
+                    const answers = currentRoundData.answers || {};
+                    const answerCount = Object.keys(answers).length;
+                    const playerCount = Object.keys(currentPlayers).length;
+                    
+                    if (answerCount === playerCount && currentPhase === 'waiting') {
+                        // All answered, calculate results
+                        calculateAndShowResults();
+                    }
+                    
+                    // Update waiting status
+                    if (currentPhase === 'waiting') {
+                        updateWaitingStatus(answers);
+                    }
+                }
+            });
+        }
+
+        function startLocalMode() {
+            console.log('🔄 Starting local mode fallback...');
+            // For demo purposes, we'll simulate multiplayer with localStorage
+            // In a real app, you'd have a different strategy
+        }
+
+        // ===== GAME FLOW =====
+        function updateGameDisplay() {
+            document.getElementById('game-id-display').textContent = gameState.gameId;
             document.getElementById('question-number').textContent = currentQuestionNumber;
         }
 
-        // ===== NUMBER GRID CREATION =====
+        function updatePlayersCount() {
+            totalPlayers = Object.keys(currentPlayers).length;
+            document.getElementById('players-count').textContent = `${totalPlayers} Spieler`;
+            document.getElementById('total-players').textContent = totalPlayers;
+            
+            // Recreate number grid with new player count
+            createNumberGrid();
+        }
+
+        function loadNewQuestion() {
+            // Get random question from selected categories
+            const availableQuestions = [];
+            gameState.selectedCategories.forEach(category => {
+                if (questionsDatabase[category]) {
+                    questionsDatabase[category].forEach(q => {
+                        availableQuestions.push({
+                            text: q,
+                            category: category
+                        });
+                    });
+                }
+            });
+            
+            if (availableQuestions.length === 0) {
+                // Fallback
+                currentQuestion = {
+                    text: "Ich habe schon mal... etwas Interessantes erlebt",
+                    category: "fsk0"
+                };
+            } else {
+                currentQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+            }
+            
+            // Update UI
+            const categoryNames = {
+                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
+                'fsk16': '🎉 Party Time',
+                'fsk18': '🔥 Heiß & Gewagt'
+            };
+            
+            document.getElementById('question-text').textContent = currentQuestion.text;
+            document.getElementById('question-category').textContent = categoryNames[currentQuestion.category] || '🎮 Spiel';
+            
+            console.log('📝 New question loaded:', currentQuestion);
+        }
+
+        function startNewRound() {
+            console.log(`🎲 Starting round ${currentQuestionNumber}`);
+            
+            // Load new question
+            loadNewQuestion();
+            
+            // Reset user inputs
+            userAnswer = null;
+            userEstimation = Math.min(1, totalPlayers || 1);
+            
+            // Reset UI
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            updateSelectedNumber(userEstimation);
+            updateNumberSelection();
+            updateSubmitButton();
+            
+            // Show question phase
+            showPhase('question');
+            
+            // If Firebase available and host, start round in Firebase
+            if (firebaseService.isInitialized && gameState.isHost) {
+                firebaseService.startNewRound(gameState.gameId, currentQuestionNumber, currentQuestion);
+            }
+            
+            // Setup round listener
+            if (firebaseService.isInitialized) {
+                setupRoundListener(currentQuestionNumber);
+            }
+        }
+
+        function handleNewRound(roundNumber) {
+            if (roundNumber > currentQuestionNumber) {
+                currentQuestionNumber = roundNumber;
+                updateGameDisplay();
+                startNewRound();
+                showNotification('Neue Frage gestartet! 🎮', 'success');
+            }
+        }
+
+        // ===== UI CONTROLS =====
         function createNumberGrid() {
             const numberGrid = document.getElementById('number-grid');
             numberGrid.innerHTML = '';
 
-            for (let i = 0; i <= totalPlayers; i++) {
+            const maxPlayers = totalPlayers || 8; // Fallback to 8 if no players yet
+            for (let i = 0; i <= maxPlayers; i++) {
                 const numberBtn = document.createElement('button');
                 numberBtn.className = 'number-btn';
                 numberBtn.textContent = i;
@@ -919,9 +1650,9 @@
             updateNumberSelection();
         }
 
-        // ===== NUMBER SELECTION =====
         function selectNumber(number) {
-            if (number >= 0 && number <= totalPlayers) {
+            const maxPlayers = totalPlayers || 8;
+            if (number >= 0 && number <= maxPlayers) {
                 userEstimation = number;
                 updateSelectedNumber(number);
                 updateNumberSelection();
@@ -954,11 +1685,6 @@
             }
         }
 
-        function updateTotalPlayersDisplay() {
-            document.getElementById('total-players').textContent = totalPlayers;
-        }
-
-        // ===== ANSWER SELECTION =====
         function selectAnswer(answer) {
             userAnswer = answer;
             
@@ -972,7 +1698,6 @@
             updateSubmitButton();
         }
 
-        // ===== SUBMIT HANDLING =====
         function updateSubmitButton() {
             const submitBtn = document.getElementById('submit-btn');
             if (userAnswer !== null) {
@@ -984,7 +1709,8 @@
             }
         }
 
-        function submitAnswers() {
+        // ===== GAME ACTIONS =====
+        async function submitAnswers() {
             if (userAnswer === null) {
                 showNotification('Bitte wähle eine Antwort aus!', 'warning');
                 return;
@@ -995,32 +1721,107 @@
                 estimation: userEstimation
             });
 
-            // Update user's data
-            players[0].answer = userAnswer;
-            players[0].estimation = userEstimation;
-            players[0].hasAnswered = true;
+            const answerData = {
+                playerId: gameState.playerId,
+                playerName: gameState.playerName,
+                answer: userAnswer,
+                estimation: userEstimation,
+                isHost: gameState.isHost
+            };
 
-            // Show success notification
-            showNotification(`Antworten gesendet! 🎯`, 'success');
+            try {
+                // Submit to Firebase if available
+// Submit to Firebase if available
+                if (firebaseService.isInitialized) {
+                    await firebaseService.submitAnswer(
+                        gameState.gameId, 
+                        currentQuestionNumber, 
+                        gameState.playerId, 
+                        answerData
+                    );
+                }
+
+                // Update local stats
+                gameState.gameStats.totalGuesses++;
+                gameState.saveToStorage();
+
+                showNotification('Antworten gesendet! 🎯', 'success');
+                
+                // Switch to waiting phase
+                showPhase('waiting');
+                setupRoundListener(currentQuestionNumber);
+                
+                // If no Firebase, simulate for demo
+                if (!firebaseService.isInitialized) {
+                    simulateOtherPlayersAnswering();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error submitting answers:', error);
+                showNotification('Fehler beim Senden der Antworten', 'error');
+            }
+        }
+
+        function simulateOtherPlayersAnswering() {
+            // Fallback simulation when Firebase not available
+            console.log('🎭 Simulating other players...');
             
-            // Switch to waiting phase
-            showPhase('waiting');
-            updatePlayersStatus();
+            setTimeout(() => {
+                const simulatedAnswers = {};
+                const playerNames = ['Host', 'Anna', 'Max', 'Lisa'];
+                
+                playerNames.forEach((name, index) => {
+                    if (name !== gameState.playerName) {
+                        simulatedAnswers[`player_${index}`] = {
+                            playerName: name,
+                            answer: Math.random() > 0.5,
+                            estimation: Math.floor(Math.random() * ((totalPlayers || 4) + 1)),
+                            isHost: index === 0
+                        };
+                    }
+                });
+                
+                // Add user's answer
+                simulatedAnswers[gameState.playerId || 'user'] = {
+                    playerName: gameState.playerName,
+                    answer: userAnswer,
+                    estimation: userEstimation,
+                    isHost: gameState.isHost
+                };
+                
+                currentRoundData = {
+                    answers: simulatedAnswers,
+                    question: currentQuestion
+                };
+                
+                calculateAndShowResults();
+            }, 2000);
+        }
+
+        // ===== PHASE MANAGEMENT =====
+        function showPhase(phase) {
+            document.querySelectorAll('.game-phase').forEach(p => {
+                p.classList.remove('active');
+            });
             
-            // Simulate other players answering (for demo)
-            simulateOtherPlayersAnswering();
+            document.getElementById(`${phase}-phase`).classList.add('active');
+            currentPhase = phase;
+            
+            console.log(`📍 Phase changed to: ${phase}`);
         }
 
         // ===== WAITING PHASE =====
-        function updatePlayersStatus() {
+        function updateWaitingStatus(answers = {}) {
             const statusContainer = document.getElementById('players-status');
             statusContainer.innerHTML = '';
 
-            players.forEach(player => {
+            Object.values(currentPlayers).forEach(player => {
+                const hasAnswered = Object.values(answers).some(a => a.playerName === player.name);
+                
                 const statusItem = document.createElement('div');
                 statusItem.className = 'player-status-item';
                 
-                const statusIndicator = player.hasAnswered ? 
+                const statusIndicator = hasAnswered ? 
                     '<span class="status-indicator status-done">✅ Fertig</span>' :
                     '<span class="status-indicator status-waiting">⏳ Wartet...</span>';
                 
@@ -1033,67 +1834,95 @@
             });
         }
 
-        function simulateOtherPlayersAnswering() {
-            // Simulate other players answering over time (demo)
-            let answerDelay = 1000;
-            
-            players.slice(1).forEach((player, index) => {
-                setTimeout(() => {
-                    // Generate random answers for demo
-                    player.answer = Math.random() > 0.5;
-                    player.estimation = Math.floor(Math.random() * (totalPlayers + 1));
-                    player.hasAnswered = true;
-                    
-                    updatePlayersStatus();
-                    
-                    // Check if all players have answered
-                    if (players.every(p => p.hasAnswered)) {
-                        setTimeout(() => {
-                            showResults();
-                        }, 500);
-                    }
-                }, answerDelay + (index * 800));
-            });
-        }
+        // ===== RESULTS CALCULATION =====
+        function calculateAndShowResults() {
+            if (!currentRoundData || !currentRoundData.answers) {
+                console.error('❌ No round data available for results');
+                return;
+            }
 
-        // ===== RESULTS PHASE =====
-        function showResults() {
-            showPhase('results');
+            const answers = currentRoundData.answers;
+            const actualYesCount = Object.values(answers).filter(a => a.answer === true).length;
             
-            // Calculate actual results
-            const actualYesCount = players.filter(p => p.answer === true).length;
-            const results = calculateResults(actualYesCount);
-            
-            displayResults(results, actualYesCount);
-        }
-
-        function calculateResults(actualYesCount) {
-            return players.map(player => {
-                const difference = Math.abs(player.estimation - actualYesCount);
+            // Calculate results for each player
+            const results = Object.values(answers).map(playerAnswer => {
+                const difference = Math.abs(playerAnswer.estimation - actualYesCount);
                 const isCorrect = difference === 0;
-                let sips = 0;
                 
+                // Calculate sips based on difficulty
+                let sips = 0;
                 if (!isCorrect) {
-                    // Base sips + difference
-                    sips = 1 + difference; // Simple calculation for demo
+                    const baseSips = getDifficultyMultiplier();
+                    sips = baseSips + Math.floor(difference / 2); // More difference = more sips
                 }
                 
                 return {
-                    name: player.name,
-                    answer: player.answer,
-                    estimation: player.estimation,
+                    playerName: playerAnswer.playerName,
+                    answer: playerAnswer.answer,
+                    estimation: playerAnswer.estimation,
+                    difference: difference,
                     isCorrect: isCorrect,
                     sips: sips,
-                    difference: difference
+                    isHost: playerAnswer.isHost || false
                 };
+            });
+            
+            // Update all-time stats
+            updateAllTimeStats(results, actualYesCount);
+            
+            // Display results
+            displayRoundResults(results, actualYesCount);
+            showPhase('results');
+            
+            console.log('📊 Results calculated:', results);
+        }
+
+        function getDifficultyMultiplier() {
+            switch (gameState.difficulty) {
+                case 'easy': return 1;
+                case 'hard': return 3;
+                default: return 2; // medium
+            }
+        }
+
+        function updateAllTimeStats(results, actualYesCount) {
+            allTimeStats.totalQuestionsPlayed++;
+            
+            results.forEach(result => {
+                // Initialize player stats if not exists
+                if (!allTimeStats.playerStats[result.playerName]) {
+                    allTimeStats.playerStats[result.playerName] = {
+                        totalSips: 0,
+                        correctGuesses: 0,
+                        totalGuesses: 0,
+                        isHost: result.isHost
+                    };
+                }
+                
+                const playerStats = allTimeStats.playerStats[result.playerName];
+                playerStats.totalSips += result.sips;
+                playerStats.totalGuesses++;
+                if (result.isCorrect) {
+                    playerStats.correctGuesses++;
+                }
+                
+                // Update current player's game state
+                if (result.playerName === gameState.playerName) {
+                    gameState.gameStats.totalSips += result.sips;
+                    gameState.totalQuestionsPlayed++;
+                    if (result.isCorrect) {
+                        gameState.gameStats.correctGuesses++;
+                    }
+                    gameState.saveToStorage();
+                }
             });
         }
 
-        function displayResults(results, actualYesCount) {
+        function displayRoundResults(results, actualYesCount) {
             // Update summary
             document.getElementById('results-round').textContent = currentQuestionNumber;
             document.getElementById('results-summary').textContent = 
-                `${actualYesCount} von ${totalPlayers} Spielern haben mit "Ja" geantwortet`;
+                `${actualYesCount} von ${totalPlayers || results.length} Spielern haben mit "Ja" geantwortet`;
             document.getElementById('correct-count').textContent = actualYesCount;
 
             // Display individual results
@@ -1104,7 +1933,7 @@
                 const resultItem = document.createElement('div');
                 resultItem.className = 'result-item';
                 
-                const avatar = result.name.substring(0, 2).toUpperCase();
+                const avatar = result.playerName.substring(0, 2).toUpperCase();
                 const answerText = result.answer ? 'Ja' : 'Nein';
                 const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
                 const sipsClass = result.sips === 0 ? 'none' : '';
@@ -1113,7 +1942,7 @@
                     <div class="player-result">
                         <div class="player-avatar">${avatar}</div>
                         <div class="player-info">
-                            <div class="player-name">${result.name}</div>
+                            <div class="player-name">${result.playerName}</div>
                             <div class="player-answer">${answerText} • Tipp: ${result.estimation}</div>
                         </div>
                     </div>
@@ -1124,72 +1953,21 @@
             });
         }
 
-        // ===== GAME FLOW CONTROLS =====
+        // ===== GAME CONTROLS =====
         function nextQuestion() {
-            if (!isHost) {
+            if (!gameState.isHost) {
                 showNotification('Nur der Host kann die nächste Frage starten!', 'warning');
                 return;
             }
 
-            // Reset for next question
+            // Increment question number
             currentQuestionNumber++;
             
-            if (currentQuestionNumber <= demoQuestions.length) {
-                currentQuestion = demoQuestions[currentQuestionNumber - 1];
-                
-                // Reset player states
-                players.forEach(player => {
-                    player.answer = null;
-                    player.estimation = null;
-                    player.hasAnswered = false;
-                });
-                
-                // Reset user inputs
-                userAnswer = null;
-                userEstimation = Math.floor(totalPlayers / 2);
-                
-                // Update UI
-                document.querySelectorAll('.answer-btn').forEach(btn => {
-                    btn.classList.remove('selected');
-                });
-                
-                updateSelectedNumber(userEstimation);
-                updateNumberSelection();
-                updateSubmitButton();
-                loadCurrentQuestion();
-                
-                // Back to question phase
-                showPhase('question');
-                
-                showNotification('Neue Frage geladen! 🎮', 'success');
-            } else {
-                endGame();
-            }
-        }
-
-        function endGame() {
-            showNotification('Spiel beendet! 🎉', 'success');
-            
-            setTimeout(() => {
-                if (confirm('Spiel beendet! Möchtest du ein neues Spiel starten?')) {
-                    resetGame();
-                }
-            }, 1000);
-        }
-
-        function resetGame() {
-            currentQuestionNumber = 1;
-            currentQuestion = demoQuestions[0];
-            
-            players.forEach(player => {
-                player.answer = null;
-                player.estimation = null;
-                player.hasAnswered = false;
-            });
-            
+            // Reset for next question
             userAnswer = null;
-            userEstimation = 2;
+            userEstimation = Math.min(1, totalPlayers || 1);
             
+            // Reset UI
             document.querySelectorAll('.answer-btn').forEach(btn => {
                 btn.classList.remove('selected');
             });
@@ -1197,31 +1975,174 @@
             updateSelectedNumber(userEstimation);
             updateNumberSelection();
             updateSubmitButton();
-            loadCurrentQuestion();
+            updateGameDisplay();
+            loadNewQuestion();
+            
+            // Back to question phase
             showPhase('question');
             
-            showNotification('Neues Spiel gestartet! 🚀', 'success');
+            // If Firebase and host, sync the new round
+            if (firebaseService.isInitialized && gameState.isHost) {
+                firebaseService.startNewRound(gameState.gameId, currentQuestionNumber, currentQuestion);
+            }
+            
+            showNotification('Neue Frage geladen! 🎮', 'success');
+        }
+
+        async function endGame() {
+            if (!gameState.isHost) {
+                showNotification('Nur der Host kann das Spiel beenden!', 'warning');
+                return;
+            }
+
+            console.log('🏁 Ending game...');
+            
+            // Calculate final results
+            const finalResults = calculateFinalResults();
+            
+            try {
+                // End game in Firebase if available
+                if (firebaseService.isInitialized) {
+                    await firebaseService.endGame(gameState.gameId, finalResults);
+                }
+                
+                // Show final results
+                showFinalResults(finalResults);
+                
+            } catch (error) {
+                console.error('❌ Error ending game:', error);
+                showNotification('Fehler beim Beenden des Spiels', 'error');
+            }
+        }
+
+        function calculateFinalResults() {
+            const playerStats = Object.keys(allTimeStats.playerStats).map(playerName => {
+                const stats = allTimeStats.playerStats[playerName];
+                const accuracy = stats.totalGuesses > 0 ? 
+                    Math.round((stats.correctGuesses / stats.totalGuesses) * 100) : 0;
+                
+                return {
+                    playerName: playerName,
+                    totalSips: stats.totalSips,
+                    correctGuesses: stats.correctGuesses,
+                    totalGuesses: stats.totalGuesses,
+                    accuracy: accuracy,
+                    score: stats.correctGuesses * 10 - stats.totalSips, // Simple scoring
+                    isHost: stats.isHost
+                };
+            });
+            
+            // Sort by score (higher is better)
+            return playerStats.sort((a, b) => b.score - a.score);
+        }
+
+        function showFinalResults(finalResults) {
+            // Update final stats
+            document.getElementById('total-questions').textContent = allTimeStats.totalQuestionsPlayed;
+            document.getElementById('total-players-final').textContent = finalResults.length;
+            
+            // Build leaderboard
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '';
+            
+            finalResults.forEach((player, index) => {
+                const leaderboardItem = document.createElement('div');
+                leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
+                
+                const rankClass = index === 0 ? 'rank-1' : 
+                                 index === 1 ? 'rank-2' : 
+                                 index === 2 ? 'rank-3' : 'rank-other';
+                
+                leaderboardItem.innerHTML = `
+                    <div class="rank-number ${rankClass}">${index + 1}</div>
+                    <div class="player-final-stats">
+                        <div class="player-final-name">${player.playerName}</div>
+                        <div class="player-final-details">
+                            <span>Schlücke: ${player.totalSips}</span>
+                            <span>Genauigkeit: ${player.accuracy}%</span>
+                            <span>Punkte: ${player.score}</span>
+                        </div>
+                    </div>
+                `;
+                
+                leaderboardList.appendChild(leaderboardItem);
+            });
+            
+            // Show final results phase
+            showPhase('final-results');
+            showNotification('Spiel beendet! 🏆', 'success');
+        }
+
+        function handleGameFinished(finalResults) {
+            if (finalResults) {
+                showFinalResults(finalResults);
+            } else {
+                showNotification('Spiel wurde beendet', 'info');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+            }
         }
 
         function waitForHost() {
             showNotification('Warte auf den Host...', 'info');
         }
 
-        // ===== NOTIFICATIONS =====
+        function playAgain() {
+            if (confirm('Möchtest du ein neues Spiel starten?')) {
+                // Reset all stats
+                allTimeStats = {
+                    totalQuestionsPlayed: 0,
+                    totalSips: 0,
+                    correctGuesses: 0,
+                    playerStats: {}
+                };
+                
+                currentQuestionNumber = 1;
+                
+                // Navigate back to lobby
+                window.location.href = 'multiplayer-lobby.html';
+            }
+        }
+
+        function goHome() {
+            if (confirm('Spiel wirklich verlassen?')) {
+                // Cleanup
+                if (gameListener) gameListener.off();
+                if (roundListener) roundListener.off();
+                firebaseService.cleanup();
+                
+                window.location.href = 'index.html';
+            }
+        }
+
+        // ===== CLEANUP =====
+        window.addEventListener('beforeunload', function() {
+            if (gameListener) gameListener.off();
+            if (roundListener) roundListener.off();
+            firebaseService.cleanup();
+        });
+
+        // ===== UTILITY FUNCTIONS =====
         function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            document.querySelectorAll('.toast-notification').forEach(n => n.remove());
+            
             const notification = document.createElement('div');
             notification.className = `toast-notification ${type}`;
             notification.innerHTML = `
                 <div class="toast-content">
-                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️'}</div>
+                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
                     <div class="toast-message">${message}</div>
                 </div>
             `;
             
             document.body.appendChild(notification);
             
+            // Animate in
             setTimeout(() => notification.classList.add('show'), 100);
             
+            // Remove after 4 seconds
             setTimeout(() => {
                 notification.classList.remove('show');
                 setTimeout(() => {
@@ -1229,60 +2150,41 @@
                         document.body.removeChild(notification);
                     }
                 }, 300);
-            }, 3000);
+            }, 4000);
         }
 
-        // ===== KEYBOARD SHORTCUTS =====
-        document.addEventListener('keydown', function(e) {
-            if (currentPhase !== 'question') return;
-            
-            // Number keys for estimation
-            if (e.key >= '0' && e.key <= '9') {
-                const number = parseInt(e.key);
-                if (number <= totalPlayers) {
-                    selectNumber(number);
-                }
-            }
-            
-            // Y/N for answers
-            if (e.key.toLowerCase() === 'y') {
-                selectAnswer(true);
-            } else if (e.key.toLowerCase() === 'n') {
-                selectAnswer(false);
-            }
-            
-            // Enter to submit
-            if (e.key === 'Enter' && userAnswer !== null) {
-                submitAnswers();
-            }
-        });
-
-        // ===== DEMO FUNCTIONS =====
-        window.demoSkipToResults = function() {
-            userAnswer = true;
-            userEstimation = 2;
-            players[0].answer = userAnswer;
-            players[0].estimation = userEstimation;
-            players[0].hasAnswered = true;
-            
-            // Set demo data for other players
-            players[1].answer = true; players[1].estimation = 3; players[1].hasAnswered = true;
-            players[2].answer = false; players[2].estimation = 1; players[2].hasAnswered = true;
-            players[3].answer = true; players[3].estimation = 2; players[3].hasAnswered = true;
-            
-            showResults();
+        // ===== DEBUG FUNCTIONS =====
+        window.debugGameplay = function() {
+            console.log('🔍 Gameplay Debug Info:');
+            console.log('GameState:', gameState);
+            console.log('Firebase Service:', {
+                initialized: firebaseService.isInitialized,
+                connected: firebaseService.isConnected
+            });
+            console.log('Current Game Data:', currentGameData);
+            console.log('Current Round Data:', currentRoundData);
+            console.log('All Time Stats:', allTimeStats);
         };
 
-        window.demoSkipToWaiting = function() {
-            userAnswer = true;
-            userEstimation = 2;
-            submitAnswers();
+        window.simulateEndGame = function() {
+            if (gameState.isHost) {
+                endGame();
+            } else {
+                console.log('Only host can end the game');
+            }
         };
 
-        console.log('✅ Multiplayer flow loaded successfully');
-        console.log('🎮 Demo commands:');
-        console.log('- demoSkipToWaiting() - Skip to waiting phase');
-        console.log('- demoSkipToResults() - Skip to results');
+        window.skipToResults = function() {
+            userAnswer = true;
+            userEstimation = 2;
+            simulateOtherPlayersAnswering();
+        };
+
+        console.log('✅ Multiplayer Gameplay with Firebase loaded');
+        console.log('🎮 Commands:');
+        console.log('- debugGameplay() - Show debug info');
+        console.log('- simulateEndGame() - End game (host only)');
+        console.log('- skipToResults() - Skip to results phase');
     </script>
 </body>
 </html>
