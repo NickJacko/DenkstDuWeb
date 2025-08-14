@@ -165,17 +165,90 @@
             padding: 0 20px 40px;
         }
 
-        /* Game Info Display - Only Game ID */
+        /* Game Info Display */
         .game-info {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            padding: 12px 20px;
+            padding: 15px 20px;
             margin-top: 30px;
+            margin-bottom: 30px;
             font-size: 0.9rem;
             text-align: center;
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: rgba(255, 255, 255, 0.9);
+        }
+
+        .game-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .game-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .game-info-label {
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .game-info-value {
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Selected Categories Display */
+        .selected-categories-display {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .categories-title {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .categories-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .category-display-tag {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .category-display-tag[data-category="fsk0"] {
+            border-left: 4px solid #4CAF50;
+        }
+
+        .category-display-tag[data-category="fsk16"] {
+            border-left: 4px solid #FF9800;
+        }
+
+        .category-display-tag[data-category="fsk18"] {
+            border-left: 4px solid #F44336;
         }
 
         /* Difficulty Cards */
@@ -556,8 +629,6 @@
             box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
         }
 
-        /* Remove Game Settings Summary - not needed */
-
         /* Controls */
         .controls {
             display: flex;
@@ -755,17 +826,6 @@
                 }
             }
 
-            .game-settings-summary {
-                padding: 20px 16px;
-                border-radius: 16px;
-                margin-bottom: 16px;
-            }
-
-            .settings-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
             .selected-categories-display {
                 padding: 16px;
                 border-radius: 16px;
@@ -797,9 +857,8 @@
             }
 
             .game-info {
-                max-width: 350px;
                 font-size: 0.85rem;
-                padding: 8px 16px;
+                padding: 12px 16px;
             }
 
             /* Touch feedback for mobile */
@@ -845,8 +904,7 @@
     <div class="background-particles">
         <div class="particle"></div>
         <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
+<div class="particle"></div>
         <div class="particle"></div>
     </div>
 
@@ -874,6 +932,26 @@
     <!-- Main Content -->
     <div class="container">
         <div class="content">
+            <!-- Game Info Display -->
+            <div class="game-info">
+                <div class="game-info-row">
+                    <span class="game-info-label">🎮 Spiel-ID:</span>
+                    <span class="game-info-value" id="game-id-display">Wird geladen...</span>
+                </div>
+                <div class="game-info-row">
+                    <span class="game-info-label">👥 Spieler:</span>
+                    <span class="game-info-value" id="player-count-display">1</span>
+                </div>
+            </div>
+
+            <!-- Selected Categories Display -->
+            <div class="selected-categories-display">
+                <div class="categories-title">📋 Ausgewählte Kategorien</div>
+                <div class="categories-list" id="categories-list">
+                    <!-- Categories will be inserted here -->
+                </div>
+            </div>
+
             <!-- Difficulty Grid -->
             <div class="difficulty-grid">
                 <div class="difficulty-card" data-difficulty="easy" onclick="selectDifficulty(this)">
@@ -941,21 +1019,143 @@
                     Schwierigkeit auswählen
                 </button>
             </div>
-
-            <!-- Selected Categories Display - Moved to bottom -->
-            <div class="selected-categories-display">
-                <div class="categories-title">📋 Ausgewählte Kategorien</div>
-                <div class="categories-list" id="categories-list">
-                    <!-- Categories will be inserted here -->
-                </div>
-                <div class="game-info">
-                    <span>🎮 Spiel-ID: <strong id="game-id-display">Wird geladen...</strong></span>
-                </div>
-            </div>
         </div>
     </div>
 
     <script>
+        // ===== Firebase & GameState Service =====
+        class FirebaseGameService {
+            constructor() {
+                this.isInitialized = false;
+                this.app = null;
+                this.database = null;
+                this.gameRef = null;
+                this.playersRef = null;
+                this.settingsRef = null;
+                this.currentGameId = null;
+                this.listeners = [];
+                
+                this.config = {
+                    apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+                    authDomain: "denkstduwebsite.firebaseapp.com",
+                    databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                    projectId: "denkstduwebsite",
+                    storageBucket: "denkstduwebsite.firebasestorage.app",
+                    messagingSenderId: "27029260611",
+                    appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6"
+                };
+            }
+
+            async initialize(gameId = null) {
+                try {
+                    if (typeof firebase === 'undefined') {
+                        throw new Error('Firebase SDK not loaded');
+                    }
+
+                    if (!firebase.apps.length) {
+                        this.app = firebase.initializeApp(this.config);
+                    } else {
+                        this.app = firebase.app();
+                    }
+
+                    this.database = firebase.database();
+                    this.isInitialized = true;
+
+                    if (gameId) {
+                        await this.connectToGame(gameId);
+                    }
+
+                    console.log('🔥 Firebase service initialized');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Firebase initialization failed:', error);
+                    return false;
+                }
+            }
+
+            async connectToGame(gameId) {
+                if (!this.isInitialized) return false;
+
+                try {
+                    this.currentGameId = gameId;
+                    this.gameRef = this.database.ref(`games/${gameId}`);
+                    this.playersRef = this.database.ref(`games/${gameId}/players`);
+                    this.settingsRef = this.database.ref(`games/${gameId}/settings`);
+
+                    // Setup real-time listeners
+                    this.setupListeners();
+
+                    console.log('🎮 Connected to game:', gameId);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Failed to connect to game:', error);
+                    return false;
+                }
+            }
+
+            setupListeners() {
+                // Listen for player count changes
+                const playersListener = this.playersRef.on('value', (snapshot) => {
+                    const players = snapshot.val() || {};
+                    const playerCount = Object.keys(players).length;
+                    updatePlayerCount(playerCount);
+                });
+                
+                this.listeners.push({ ref: this.playersRef, type: 'value', listener: playersListener });
+
+                // Listen for settings changes from other players
+                const settingsListener = this.settingsRef.on('value', (snapshot) => {
+                    const settings = snapshot.val();
+                    if (settings) {
+                        handleSettingsUpdate(settings);
+                    }
+                });
+                
+                this.listeners.push({ ref: this.settingsRef, type: 'value', listener: settingsListener });
+            }
+
+            async updateDifficulty(difficulty) {
+                if (!this.settingsRef) return false;
+
+                try {
+                    await this.settingsRef.child('difficulty').set(difficulty);
+                    console.log('🎯 Difficulty synced to Firebase:', difficulty);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Failed to sync difficulty:', error);
+                    return false;
+                }
+            }
+
+            async updateGameSettings(settings) {
+                if (!this.settingsRef) return false;
+
+                try {
+                    const updateData = {
+                        ...settings,
+                        lastUpdated: Date.now(),
+                        updatedBy: gameState.playerName || 'Host'
+                    };
+                    
+                    await this.settingsRef.update(updateData);
+                    console.log('⚙️ Game settings synced:', updateData);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Failed to sync game settings:', error);
+                    return false;
+                }
+            }
+
+            cleanup() {
+                // Remove all Firebase listeners
+                this.listeners.forEach(({ ref, type, listener }) => {
+                    ref.off(type, listener);
+                });
+                this.listeners = [];
+                console.log('🧹 Firebase listeners cleaned up');
+            }
+        }
+
         // ===== GameState Management =====
         class GameState {
             constructor() {
@@ -963,16 +1163,16 @@
                 this.isHost = false;
                 this.gameId = null;
                 this.selectedCategories = [];
-                this.difficulty = 'medium';
+                this.difficulty = null;
                 this.playerName = '';
-                this.gamePhase = 'setup';
+                this.gamePhase = 'difficulty-selection';
                 this.loadFromStorage();
             }
 
             setDifficulty(difficulty) {
                 this.difficulty = difficulty;
                 this.saveToStorage();
-                console.log('Difficulty updated:', this.difficulty);
+                console.log('🎯 Difficulty updated:', this.difficulty);
             }
 
             saveToStorage() {
@@ -988,9 +1188,8 @@
                         timestamp: Date.now()
                     };
                     localStorage.setItem('denkstdu_game_state', JSON.stringify(stateData));
-                    console.log('GameState saved');
                 } catch (error) {
-                    console.error('Failed to save GameState:', error);
+                    console.error('❌ Failed to save GameState:', error);
                 }
             }
 
@@ -1011,10 +1210,9 @@
                                 this[key] = stateData[key];
                             }
                         });
-                        console.log('GameState loaded');
                     }
                 } catch (error) {
-                    console.error('Failed to load GameState:', error);
+                    console.error('❌ Failed to load GameState:', error);
                     this.clearStorage();
                 }
             }
@@ -1026,78 +1224,20 @@
             isValidForMultiplayer() {
                 return this.deviceMode === 'multi' && 
                        this.gameId && 
-                       this.selectedCategories.length > 0 &&
-                       this.difficulty;
+                       this.selectedCategories.length > 0;
             }
-        }
 
-        // ===== Firebase Service =====
-        class FirebaseService {
-            constructor() {
-                this.isInitialized = false;
-                this.app = null;
-                this.database = null;
-                this.config = {
-                    apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-                    authDomain: "denkstduwebsite.firebaseapp.com",
-                    databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-                    projectId: "denkstduwebsite",
-                    storageBucket: "denkstduwebsite.firebasestorage.app",
-                    messagingSenderId: "27029260611",
-                    appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6"
+            getDebugInfo() {
+                return {
+                    deviceMode: this.deviceMode,
+                    isHost: this.isHost,
+                    gameId: this.gameId,
+                    categories: this.selectedCategories,
+                    difficulty: this.difficulty,
+                    playerName: this.playerName,
+                    gamePhase: this.gamePhase,
+                    isValid: this.isValidForMultiplayer()
                 };
-            }
-
-            async initialize() {
-                try {
-                    if (typeof firebase === 'undefined') {
-                        console.error('Firebase SDK not loaded');
-                        return false;
-                    }
-
-                    if (!firebase.apps.length) {
-                        this.app = firebase.initializeApp(this.config);
-                    } else {
-                        this.app = firebase.app();
-                    }
-
-                    this.database = firebase.database();
-                    this.isInitialized = true;
-                    return true;
-                } catch (error) {
-                    console.error('Firebase initialization error:', error);
-                    return false;
-                }
-            }
-
-            async syncDifficulty(gameId, difficulty) {
-                if (!this.isInitialized) {
-                    console.warn('Firebase not initialized, skipping sync');
-                    return;
-                }
-
-                try {
-                    const gameRef = this.database.ref(`games/${gameId}/difficulty`);
-                    await gameRef.set(difficulty);
-                    console.log('Difficulty synced to Firebase:', difficulty);
-                } catch (error) {
-                    console.error('Failed to sync difficulty:', error);
-                }
-            }
-
-            async syncGameSettings(gameId, settings) {
-                if (!this.isInitialized) {
-                    console.warn('Firebase not initialized, skipping sync');
-                    return;
-                }
-
-                try {
-                    const gameRef = this.database.ref(`games/${gameId}/settings`);
-                    await gameRef.set(settings);
-                    console.log('Game settings synced to Firebase:', settings);
-                } catch (error) {
-                    console.error('Failed to sync game settings:', error);
-                }
             }
         }
 
@@ -1150,65 +1290,38 @@
         };
 
         // ===== Page Initialization =====
-        function initPage() {
+        async function initPage() {
             console.log('⚡ Initializing multiplayer difficulty selection...');
             
             try {
+                showLoading();
+                
                 // Initialize services
                 gameState = new GameState();
-                firebaseService = new FirebaseService();
+                firebaseService = new FirebaseGameService();
                 
-                // Verify multiplayer state
-                if (gameState.deviceMode !== 'multi') {
-                    console.warn('❌ Not in multiplayer mode, redirecting...');
-                    showNotification('Nicht im Multiplayer-Modus. Weiterleitung...', 'warning');
-                    setTimeout(() => {
-                        window.location.href = 'device-selection.html';
-                    }, 2000);
+                // Validate multiplayer state
+                if (!validateMultiplayerState()) {
                     return;
                 }
 
-                // Verify categories were selected
-                if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-                    console.warn('❌ No categories selected, redirecting...');
-                    showNotification('Keine Kategorien ausgewählt. Zurück zur Kategorieauswahl...', 'warning');
-                    setTimeout(() => {
-                        window.location.href = 'multiplayer-category-selection.html';
-                    }, 2000);
+                // Initialize Firebase connection
+                const firebaseOk = await firebaseService.initialize(gameState.gameId);
+                if (!firebaseOk) {
+                    showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
                     return;
                 }
 
-                // Initialize Firebase
-                firebaseService.initialize();
-                
                 // Display game info
-                if (gameState.gameId) {
-                    document.getElementById('game-id-display').textContent = gameState.gameId;
-                } else {
-                    document.getElementById('game-id-display').textContent = 'Fehler beim Laden';
-                }
-
+                displayGameInfo();
+                
                 // Display selected categories
                 displaySelectedCategories();
                 
                 // Load previously selected difficulty if any
-                if (gameState.difficulty) {
-                    selectedDifficulty = gameState.difficulty;
-                    const card = document.querySelector(`[data-difficulty="${gameState.difficulty}"]`);
-                    if (card) {
-                        card.classList.add('selected');
-                        updateGameSettingsSummary();
-                    }
-                }
+                loadPreviousDifficulty();
                 
-                console.log('✅ Multiplayer difficulty selection initialized:', {
-                    deviceMode: gameState.deviceMode,
-                    gameId: gameState.gameId,
-                    categories: gameState.selectedCategories,
-                    difficulty: gameState.difficulty,
-                    isHost: gameState.isHost
-                });
-
+                console.log('✅ Multiplayer difficulty selection initialized:', gameState.getDebugInfo());
                 hideLoading();
                 
             } catch (error) {
@@ -1218,12 +1331,53 @@
             }
         }
 
-        // ===== Display Selected Categories =====
+        function validateMultiplayerState() {
+            // Check if in multiplayer mode
+            if (gameState.deviceMode !== 'multi') {
+                console.warn('❌ Not in multiplayer mode, redirecting...');
+                showNotification('Nicht im Multiplayer-Modus. Weiterleitung...', 'warning');
+                setTimeout(() => {
+                    window.location.href = 'device-selection.html';
+                }, 2000);
+                return false;
+            }
+
+            // Check if categories were selected
+            if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+                console.warn('❌ No categories selected, redirecting...');
+                showNotification('Keine Kategorien ausgewählt. Zurück zur Kategorieauswahl...', 'warning');
+                setTimeout(() => {
+                    window.location.href = 'multiplayer-category-selection.html';
+                }, 2000);
+                return false;
+            }
+
+            // Check if game ID exists
+            if (!gameState.gameId) {
+                console.warn('❌ No game ID found, redirecting...');
+                showNotification('Keine Spiel-ID gefunden. Spiel wird erstellt...', 'warning');
+                setTimeout(() => {
+                    window.location.href = 'multiplayer-create-game.html';
+                }, 2000);
+                return false;
+            }
+
+            return true;
+        }
+
+        function displayGameInfo() {
+            const gameIdElement = document.getElementById('game-id-display');
+            if (gameState.gameId) {
+                gameIdElement.textContent = gameState.gameId;
+            } else {
+                gameIdElement.textContent = 'Fehler beim Laden';
+            }
+        }
+
         function displaySelectedCategories() {
             const categoriesListElement = document.getElementById('categories-list');
             
             if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
-                // Build category display tags
                 const categoryTags = gameState.selectedCategories.map(category => {
                     const data = categoryData[category];
                     return `
@@ -1235,10 +1389,51 @@
                 }).join('');
                 
                 categoriesListElement.innerHTML = categoryTags;
-                
                 console.log('📋 Categories displayed:', gameState.selectedCategories);
             } else {
-                categoriesListElement.innerHTML = '<p>Keine Kategorien ausgewählt</p>';
+                categoriesListElement.innerHTML = '<p style="color: rgba(255,255,255,0.7); text-align: center;">Keine Kategorien ausgewählt</p>';
+            }
+        }
+
+        function loadPreviousDifficulty() {
+            if (gameState.difficulty) {
+                selectedDifficulty = gameState.difficulty;
+                const card = document.querySelector(`[data-difficulty="${gameState.difficulty}"]`);
+                if (card) {
+                    card.classList.add('selected');
+                    updateContinueButton();
+                }
+                console.log('🔄 Previous difficulty loaded:', gameState.difficulty);
+            }
+        }
+
+        // ===== Real-time Updates =====
+        function updatePlayerCount(count) {
+            const playerCountElement = document.getElementById('player-count-display');
+            if (playerCountElement) {
+                playerCountElement.textContent = count.toString();
+            }
+        }
+
+        function handleSettingsUpdate(settings) {
+            // Only update if not initiated by this client
+            if (settings.difficulty && settings.difficulty !== selectedDifficulty) {
+                console.log('🔄 Difficulty updated by another player:', settings.difficulty);
+                
+                // Update UI to reflect the change
+                document.querySelectorAll('.difficulty-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                const card = document.querySelector(`[data-difficulty="${settings.difficulty}"]`);
+                if (card) {
+                    card.classList.add('selected');
+                    selectedDifficulty = settings.difficulty;
+                    gameState.setDifficulty(settings.difficulty);
+                    updateContinueButton();
+                }
+                
+                showNotification(`Schwierigkeit zu "${difficultyData[settings.difficulty].name}" geändert`, 'info');
             }
         }
 
@@ -1267,8 +1462,7 @@
             
             // Show notification
             showNotification(`${difficultyData[difficulty].name} ausgewählt!`, 'success');
-            console.log('✅ Difficulty selected:', difficulty);
-
+            
             // Add celebration effect
             createCelebrationEffect(element);
             
@@ -1279,15 +1473,12 @@
             syncWithFirebase();
         }
 
-        // ===== Update Continue Button =====
         function updateContinueButton() {
             const continueBtn = document.getElementById('continueBtn');
             
             if (selectedDifficulty) {
-                // Enable continue button
                 continueBtn.disabled = false;
                 continueBtn.textContent = 'Zur Lobby';
-                
                 console.log('✅ Continue button enabled for difficulty:', selectedDifficulty);
             } else {
                 continueBtn.disabled = true;
@@ -1299,29 +1490,40 @@
         async function syncWithFirebase() {
             console.log('🔄 Syncing difficulty with Firebase:', selectedDifficulty);
             
-            if (gameState.gameId && selectedDifficulty) {
-                try {
-                    // Sync difficulty
-                    await firebaseService.syncDifficulty(gameState.gameId, selectedDifficulty);
-                    
-                    // Sync complete game settings
-                    const gameSettings = {
-                        categories: gameState.selectedCategories,
-                        difficulty: selectedDifficulty,
-                        gameId: gameState.gameId,
-                        isHost: gameState.isHost,
-                        updatedAt: Date.now()
-                    };
-                    
-                    await firebaseService.syncGameSettings(gameState.gameId, gameSettings);
-                    console.log('✅ Game settings synced successfully');
-                } catch (error) {
-                    console.error('❌ Failed to sync with Firebase:', error);
-                    showNotification('Synchronisation fehlgeschlagen', 'warning');
-                }
-            } else {
-                console.warn('⚠️ No game ID or difficulty available for sync');
+            if (!firebaseService.isInitialized || !selectedDifficulty) {
+                console.warn('⚠️ Cannot sync - Firebase not ready or no difficulty selected');
+                return;
             }
+
+            try {
+                // Sync difficulty
+                await firebaseService.updateDifficulty(selectedDifficulty);
+                
+                // Sync complete game settings
+                const gameSettings = {
+                    categories: gameState.selectedCategories,
+                    difficulty: selectedDifficulty,
+                    gameId: gameState.gameId,
+                    hostName: gameState.playerName || 'Host',
+                    deviceMode: gameState.deviceMode,
+                    gamePhase: gameState.gamePhase,
+                    totalQuestions: calculateTotalQuestions(),
+                    createdAt: Date.now()
+                };
+                
+                await firebaseService.updateGameSettings(gameSettings);
+                console.log('✅ Game settings synced successfully');
+                
+            } catch (error) {
+                console.error('❌ Failed to sync with Firebase:', error);
+                showNotification('Synchronisation fehlgeschlagen', 'warning');
+            }
+        }
+
+        function calculateTotalQuestions() {
+            return gameState.selectedCategories.reduce((total, category) => {
+                return total + (categoryData[category]?.questions || 0);
+            }, 0);
         }
 
         // ===== Celebration Effects =====
@@ -1329,7 +1531,6 @@
             const difficulty = element.dataset.difficulty;
             const rect = element.getBoundingClientRect();
             
-            // Difficulty-specific emojis and effects
             let emojis, colors;
             
             switch(difficulty) {
@@ -1350,7 +1551,6 @@
                     colors = ['#4CAF50'];
             }
             
-            // Create emojis
             const isMobile = window.innerWidth <= 768;
             const emojiCount = isMobile ? 4 : 8;
             
@@ -1379,7 +1579,6 @@
                 
                 document.body.appendChild(emoji);
                 
-                // Remove after animation
                 setTimeout(() => {
                     if (emoji.parentNode) {
                         emoji.parentNode.removeChild(emoji);
@@ -1408,7 +1607,7 @@
         }
 
         // ===== Navigation Functions =====
-        function proceedToLobby() {
+        async function proceedToLobby() {
             if (!selectedDifficulty) {
                 showNotification('Bitte wähle eine Schwierigkeit aus', 'warning');
                 return;
@@ -1419,28 +1618,37 @@
                 return;
             }
 
-            console.log('🚀 Proceeding to lobby with settings:', {
-                categories: gameState.selectedCategories,
-                difficulty: selectedDifficulty,
-                gameId: gameState.gameId
-            });
+            console.log('🚀 Proceeding to lobby with settings:', gameState.getDebugInfo());
 
             showLoading();
             
-            // Final sync with Firebase
-            syncWithFirebase();
-            
-            // Set game phase to lobby
-            gameState.gamePhase = 'lobby';
-            gameState.saveToStorage();
-            
-            setTimeout(() => {
-                window.location.href = 'multiplayer-lobby.html';
-            }, 500);
+            try {
+                // Final sync with Firebase
+                await syncWithFirebase();
+                
+                // Set game phase to lobby
+                gameState.gamePhase = 'lobby';
+                gameState.saveToStorage();
+                
+                setTimeout(() => {
+                    window.location.href = 'multiplayer-lobby.html';
+                }, 800);
+                
+            } catch (error) {
+                console.error('❌ Failed to proceed to lobby:', error);
+                showNotification('Fehler beim Fortfahren', 'error');
+                hideLoading();
+            }
         }
 
         function goBack() {
             console.log('⬅️ Going back to category selection');
+            
+            // Cleanup Firebase listeners
+            if (firebaseService) {
+                firebaseService.cleanup();
+            }
+            
             showLoading();
             
             setTimeout(() => {
@@ -1477,50 +1685,45 @@
             }
         }
 
-        // ===== Error Handling =====
+        // ===== Error Handling & Cleanup =====
         window.addEventListener('error', function(event) {
             console.error('💥 JavaScript Error:', event.error);
             showNotification('Ein unerwarteter Fehler ist aufgetreten', 'error');
+        });
+
+        window.addEventListener('beforeunload', function() {
+            if (firebaseService) {
+                firebaseService.cleanup();
+            }
         });
 
         // ===== Initialize on DOM Ready =====
         document.addEventListener('DOMContentLoaded', function() {
             console.log('📄 DOM loaded, initializing page...');
             
-            // Small delay to ensure all resources are loaded
             setTimeout(() => {
                 initPage();
             }, 100);
         });
 
         // ===== Debugging Functions =====
-        window.debugDifficultyInfo = function() {
-            console.log('🐛 Difficulty Debug Info:', {
-                gameState: gameState ? {
-                    deviceMode: gameState.deviceMode,
-                    isHost: gameState.isHost,
-                    gameId: gameState.gameId,
-                    selectedCategories: gameState.selectedCategories,
-                    difficulty: gameState.difficulty,
-                    isValid: gameState.isValidForMultiplayer()
-                } : 'Not initialized',
+        window.debugMultiplayerDifficulty = function() {
+            console.log('🐛 Multiplayer Difficulty Debug Info:', {
+                gameState: gameState ? gameState.getDebugInfo() : 'Not initialized',
                 selectedDifficulty: selectedDifficulty,
                 firebase: {
                     initialized: firebaseService ? firebaseService.isInitialized : false,
-                    hasApp: firebaseService ? !!firebaseService.app : false,
+                    gameId: firebaseService ? firebaseService.currentGameId : null,
                     hasDatabase: firebaseService ? !!firebaseService.database : false
                 },
                 dom: {
-                    continueButtonDisabled: document.getElementById('continueBtn').disabled,
-                    selectedCards: document.querySelectorAll('.difficulty-card.selected').length
+                    continueButtonDisabled: document.getElementById('continueBtn')?.disabled,
+                    selectedCards: document.querySelectorAll('.difficulty-card.selected').length,
+                    gameIdDisplay: document.getElementById('game-id-display')?.textContent,
+                    playerCountDisplay: document.getElementById('player-count-display')?.textContent
                 }
             });
         };
-
-        // Make debug function available globally
-        if (typeof window !== 'undefined') {
-            window.denkstduDifficultyDebug = window.debugDifficultyInfo;
-        }
     </script>
 </body>
 </html>
