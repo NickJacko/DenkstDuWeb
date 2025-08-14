@@ -150,10 +150,10 @@
             border-radius: 15px;
             background: rgba(255, 255, 255, 0.1);
             color: white;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 700;
             text-align: center;
-            letter-spacing: 8px;
+            letter-spacing: 4px;
             text-transform: uppercase;
             transition: all 0.3s ease;
             font-family: 'Courier New', monospace;
@@ -161,8 +161,8 @@
 
         .game-code-input::placeholder {
             color: rgba(255, 255, 255, 0.5);
-            letter-spacing: 4px;
-            font-size: 1.4rem;
+            letter-spacing: 3px;
+            font-size: 1.2rem;
         }
 
         .game-code-input:focus {
@@ -618,7 +618,7 @@
         <div class="glass-card">
             <div class="join-header">
                 <h1 class="join-title">🎮 Spiel beitreten</h1>
-                <p class="join-subtitle">Gib den 4-stelligen Spiel-Code ein</p>
+                <p class="join-subtitle">Gib den 6-stelligen Spiel-Code ein</p>
             </div>
 
             <!-- Game Code Input -->
@@ -629,8 +629,8 @@
                         type="text" 
                         id="game-code-input" 
                         class="game-code-input" 
-                        placeholder="ABCD" 
-                        maxlength="4"
+                        placeholder="ABC123" 
+                        maxlength="6"
                         autocomplete="off"
                         autocapitalize="characters"
                         oninput="handleGameCodeInput()"
@@ -1041,9 +1041,10 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
             try {
                 if (navigator.clipboard && navigator.clipboard.readText) {
                     const text = await navigator.clipboard.readText();
-                    const cleanText = text.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 4);
+                    // Allow letters and numbers, convert to uppercase
+                    const cleanText = text.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
                     
-                    if (cleanText.length === 4) {
+                    if (cleanText.length >= 4) {
                         const input = document.getElementById('game-code-input');
                         input.value = cleanText;
                         handleGameCodeInput();
@@ -1060,15 +1061,16 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
             }
         }
 
-        // ===== GAME CODE HANDLING - IMPROVED =====
+        // ===== GAME CODE HANDLING - FIXED FOR ALPHANUMERIC =====
         function handleGameCodeInput() {
             const input = document.getElementById('game-code-input');
             const statusIndicator = document.getElementById('status-indicator');
             
-            let value = input.value.toUpperCase().replace(/[^A-Z]/g, '');
+            // Allow letters AND numbers, convert to uppercase
+            let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
             
-            if (value.length > 4) {
-                value = value.substring(0, 4);
+            if (value.length > 6) {
+                value = value.substring(0, 6);
             }
             
             input.value = value;
@@ -1082,7 +1084,8 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
             input.classList.remove('valid', 'error');
             statusIndicator.style.display = 'none';
             
-            if (value.length === 4) {
+            // Check when we have 4-6 characters
+            if (value.length >= 4 && value.length <= 6) {
                 // Show checking indicator
                 statusIndicator.className = 'status-indicator checking';
                 statusIndicator.textContent = '🔍';
@@ -1140,15 +1143,18 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
                 statusIndicator.textContent = '❌';
                 input.classList.add('error');
                 
-                let errorMessage = 'Spiel nicht gefunden';
-                if (error.message.includes('beendet')) {
+                // User-friendly error messages
+                let errorMessage = 'Spiel-Check fehlgeschlagen';
+                if (error.message.includes('nicht gefunden') || error.message.includes('not found')) {
+                    errorMessage = 'Lobby nicht gefunden';
+                } else if (error.message.includes('beendet')) {
                     errorMessage = 'Spiel bereits beendet';
                 } else if (error.message.includes('voll')) {
                     errorMessage = 'Spiel ist voll';
                 } else if (error.message.includes('timeout')) {
                     errorMessage = 'Verbindung langsam';
-                } else if (error.message.includes('not connected')) {
-                    errorMessage = 'Keine Verbindung';
+                } else if (error.message.includes('not connected') || error.message.includes('not initialized')) {
+                    errorMessage = 'Firebase nicht verfügbar';
                 }
                 
                 showNotification(errorMessage, 'error');
@@ -1219,7 +1225,7 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
             const gameCode = document.getElementById('game-code-input').value;
             const playerName = document.getElementById('player-name-input').value.trim();
             
-            const isValidGameCode = gameCode.length === 4;
+            const isValidGameCode = gameCode.length >= 4 && gameCode.length <= 6;
             const isValidPlayerName = playerName.length >= 2;
             const hasGameInfo = document.getElementById('game-info-preview').classList.contains('visible');
             
@@ -1229,7 +1235,7 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
             } else {
                 joinBtn.disabled = true;
                 if (!isValidGameCode) {
-                    joinBtn.textContent = '⌨️ Code eingeben';
+                    joinBtn.textContent = '⌨️ Code eingeben (4-6 Zeichen)';
                 } else if (!hasGameInfo) {
                     joinBtn.textContent = '🔍 Spiel suchen...';
                 } else if (!isValidPlayerName) {
@@ -1245,8 +1251,8 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
             const gameCode = document.getElementById('game-code-input').value;
             const playerName = document.getElementById('player-name-input').value.trim();
 
-            if (gameCode.length !== 4) {
-                showNotification('Ungültiger Code (4 Zeichen)', 'warning');
+            if (gameCode.length < 4 || gameCode.length > 6) {
+                showNotification('Ungültiger Code (4-6 Zeichen)', 'warning');
                 return;
             }
 
@@ -1325,8 +1331,8 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
                 
                 // User-friendly error messages
                 let errorMessage = 'Beitritt fehlgeschlagen';
-                if (error.message.includes('nicht gefunden')) {
-                    errorMessage = 'Spiel nicht gefunden';
+                if (error.message.includes('nicht gefunden') || error.message.includes('not found')) {
+                    errorMessage = 'Lobby nicht gefunden';
                 } else if (error.message.includes('bereits vergeben')) {
                     errorMessage = 'Name bereits vergeben';
                 } else if (error.message.includes('voll')) {
@@ -1335,6 +1341,8 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
                     errorMessage = 'Spiel bereits beendet';
                 } else if (error.message.includes('timeout')) {
                     errorMessage = 'Verbindung zu langsam';
+                } else if (error.message.includes('not connected')) {
+                    errorMessage = 'Firebase nicht verfügbar';
                 }
                 
                 showNotification(errorMessage, 'error');
@@ -1487,8 +1495,37 @@ console.log(`🎮 Game update received: ${gameData.gameState}`);
             return result;
         };
 
-        console.log('✅ Enhanced Join Game with mobile design loaded');
-        console.log('🎮 Commands: debugJoinGame(), testFirebaseConnection()');
+        window.simulateGameStart = function() {
+            console.log('🧪 Simulating game start for testing...');
+            const testGameData = {
+                gameState: 'playing',
+                startedAt: Date.now(),
+                categories: ['fsk16'],
+                difficulty: 'medium'
+            };
+            handleGameStarted(testGameData);
+        };
+
+        window.resetNavigationState = function() {
+            isNavigating = false;
+            console.log('🔄 Navigation state reset');
+        };
+
+        // Test function for game code validation
+        window.testGameCode = function(code) {
+            console.log(`🧪 Testing game code: ${code}`);
+            const input = document.getElementById('game-code-input');
+            input.value = code;
+            handleGameCodeInput();
+        };
+
+        console.log('✅ Enhanced Join Game with mobile design and alphanumeric support loaded');
+        console.log('🎮 Commands:');
+        console.log('- debugJoinGame() - Show debug info');
+        console.log('- testFirebaseConnection() - Test Firebase connection');
+        console.log('- simulateGameStart() - Test game start flow');
+        console.log('- resetNavigationState() - Reset navigation lock');
+        console.log('- testGameCode("ABC123") - Test specific game code');
     </script>
 </body>
 </html>
