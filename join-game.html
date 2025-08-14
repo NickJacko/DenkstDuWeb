@@ -13,7 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
     <style>
-        /* DenkstDu Join Game Styles */
+        /* DenkstDu Join Game Styles - Mobile First */
         * {
             margin: 0;
             padding: 0;
@@ -29,9 +29,22 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             overscroll-behavior: none;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
-        /* Background Particles */
+        /* iOS Specific Fixes */
+        @supports (-webkit-appearance: none) {
+            body {
+                min-height: -webkit-fill-available;
+                background-attachment: fixed;
+            }
+            
+            html {
+                height: -webkit-fill-available;
+            }
+        }
+
+        /* Background Particles - Optimized */
         .background-particles {
             position: fixed;
             top: 0;
@@ -52,64 +65,68 @@
             transform: translateZ(0);
         }
 
-        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
-        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
-        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
-        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+        .particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 80px; height: 80px; left: 80%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 2s; }
 
         @keyframes float {
             0%, 100% { transform: translateY(0px) rotate(0deg) translateZ(0); opacity: 0.3; }
-            25% { transform: translateY(-20px) rotate(90deg) translateZ(0); opacity: 0.6; }
+            25% { transform: translateY(-15px) rotate(90deg) translateZ(0); opacity: 0.5; }
             50% { transform: translateY(0px) rotate(180deg) translateZ(0); opacity: 0.3; }
-            75% { transform: translateY(-10px) rotate(270deg) translateZ(0); opacity: 0.6; }
+            75% { transform: translateY(-8px) rotate(270deg) translateZ(0); opacity: 0.5; }
         }
 
-        /* Container */
+        /* Container - Mobile Optimized */
         .join-container {
-            max-width: 500px;
+            max-width: 100%;
+            width: 100%;
             margin: 0 auto;
-            padding: 20px;
+            padding: 15px;
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            align-items: center;
         }
 
-        /* Glass Card */
+        /* Glass Card - Compact for Mobile */
         .glass-card {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(20px);
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
+            padding: 25px 20px;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
             color: white;
             -webkit-backdrop-filter: blur(20px);
             transform: translateZ(0);
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
         }
 
         .join-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .join-title {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 800;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
         }
 
         .join-subtitle {
-            font-size: 1.1rem;
+            font-size: 1rem;
             opacity: 0.9;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
-        /* Form Styles */
+        /* Form Styles - Mobile Optimized */
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .form-label {
@@ -117,9 +134,90 @@
             font-weight: 600;
             margin-bottom: 8px;
             color: #e0e0e0;
+            font-size: 0.9rem;
         }
 
-        .form-input {
+        /* Game Code Input - Improved UX */
+        .game-code-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .game-code-input {
+            width: 100%;
+            padding: 18px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+
+        .game-code-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 4px;
+            font-size: 1.4rem;
+        }
+
+        .game-code-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 25px rgba(79, 172, 254, 0.4);
+            transform: scale(1.02);
+        }
+
+        .game-code-input.valid {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .game-code-input.error {
+            border-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Paste Button */
+        .paste-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .paste-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .paste-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        /* Player Name Input */
+        .player-name-input {
             width: 100%;
             padding: 15px 20px;
             border: 2px solid rgba(255, 255, 255, 0.2);
@@ -130,79 +228,28 @@
             font-weight: 500;
             transition: all 0.3s ease;
             text-align: center;
-            letter-spacing: 2px;
-            text-transform: uppercase;
         }
 
-        .form-input::placeholder {
+        .player-name-input::placeholder {
             color: rgba(255, 255, 255, 0.6);
-            letter-spacing: normal;
-            text-transform: none;
         }
 
-        .form-input:focus {
+        .player-name-input:focus {
             outline: none;
             border-color: #4facfe;
             background: rgba(255, 255, 255, 0.2);
             box-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
         }
 
-        .player-name-input {
-            text-transform: none;
-            letter-spacing: normal;
-        }
-
-        /* Button Styles */
-        .btn {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 18px 32px;
-            border-radius: 15px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            width: 100%;
-            -webkit-appearance: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
-        }
-
-.btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            box-shadow: none;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: white;
-        }
-
-        /* Game Info Preview */
+        /* Game Info Preview - Compact */
         .game-info-preview {
-            margin: 25px 0;
-            padding: 20px;
+            margin: 20px 0;
+            padding: 15px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(10px);
             transition: all 0.4s ease;
             max-height: 0;
             overflow: hidden;
@@ -211,29 +258,40 @@
         .game-info-preview.visible {
             opacity: 1;
             transform: translateY(0);
-            max-height: 300px;
+            max-height: 200px;
+        }
+
+        .info-header {
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: #4facfe;
+            font-weight: 600;
         }
 
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 10px;
         }
 
         .info-item {
             text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 8px;
         }
 
         .info-label {
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             opacity: 0.8;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .info-value {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.85rem;
         }
 
         /* Player Name Section */
@@ -247,8 +305,96 @@
 
         .player-name-section.visible {
             opacity: 1;
-            max-height: 150px;
+            max-height: 100px;
             transform: translateY(0);
+        }
+
+        /* Button Styles - Mobile Optimized */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex: 1;
+            -webkit-appearance: none;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 52px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            box-shadow: none;
+            flex: 0.8;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.checking {
+            background: #ffc107;
+        }
+
+        .status-indicator.found {
+            background: #4CAF50;
+        }
+
+        .status-indicator.error {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
 
         /* Loading Overlay */
@@ -292,28 +438,28 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Toast Notifications */
+        /* Toast Notifications - Mobile Optimized */
         .toast-notification {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 15px;
+            right: 15px;
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 15px;
+            padding: 15px;
             z-index: 10000;
             opacity: 0;
-            transform: translateX(100%);
+            transform: translateY(-50px);
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-width: 350px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             -webkit-backdrop-filter: blur(25px);
         }
 
         .toast-notification.show {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateY(0);
         }
 
         .toast-notification.success {
@@ -334,33 +480,119 @@
         .toast-content {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             color: white;
         }
 
         .toast-icon {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
         }
 
         .toast-message {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             line-height: 1.4;
+            flex: 1;
         }
 
-        /* Mobile Responsive */
+        /* Mobile Responsive Adjustments */
         @media (max-width: 768px) {
             .join-container {
-                padding: 15px;
+                padding: 10px;
+                justify-content: flex-start;
+                padding-top: 60px;
             }
 
             .glass-card {
-                padding: 25px 20px;
+                padding: 20px 15px;
+                margin-top: 0;
+            }
+
+            .join-title {
+                font-size: 1.8rem;
+            }
+
+            .game-code-input {
+                font-size: 1.6rem;
+                letter-spacing: 6px;
+                padding: 16px 18px;
+            }
+
+            .controls {
+                flex-direction: row;
+                gap: 10px;
+            }
+
+            .btn {
+                padding: 14px 20px;
+                font-size: 0.9rem;
             }
 
             .info-grid {
                 grid-template-columns: 1fr;
-                gap: 10px;
+                gap: 8px;
+            }
+        }
+
+        @media (max-height: 700px) {
+            .join-container {
+                justify-content: flex-start;
+                padding-top: 40px;
+            }
+
+            .glass-card {
+                margin-top: 0;
+            }
+
+            .join-header {
+                margin-bottom: 20px;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 320px) {
+            .glass-card {
+                padding: 15px 12px;
+            }
+
+            .game-code-input {
+                font-size: 1.4rem;
+                letter-spacing: 4px;
+                padding: 14px 16px;
+            }
+
+            .btn {
+                padding: 12px 16px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Landscape mode adjustments */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .join-container {
+                justify-content: center;
+                padding-top: 20px;
+            }
+
+            .join-header {
+                margin-bottom: 15px;
+            }
+
+            .join-title {
+                font-size: 1.6rem;
+            }
+
+            .join-subtitle {
+                font-size: 0.9rem;
+            }
+
+            .game-info-preview {
+                margin: 15px 0;
+                padding: 12px;
             }
         }
     </style>
@@ -368,8 +600,6 @@
 <body>
     <!-- Background Particles -->
     <div class="background-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
         <div class="particle"></div>
         <div class="particle"></div>
         <div class="particle"></div>
@@ -394,19 +624,25 @@
             <!-- Game Code Input -->
             <div class="form-group">
                 <label class="form-label" for="game-code-input">Spiel-Code</label>
-                <input 
-                    type="text" 
-                    id="game-code-input" 
-                    class="form-input" 
-                    placeholder="Z.B. ABCD" 
-                    maxlength="4"
-                    oninput="handleGameCodeInput()"
-                >
+                <div class="game-code-container">
+                    <input 
+                        type="text" 
+                        id="game-code-input" 
+                        class="game-code-input" 
+                        placeholder="ABCD" 
+                        maxlength="4"
+                        autocomplete="off"
+                        autocapitalize="characters"
+                        oninput="handleGameCodeInput()"
+                    >
+                    <button class="paste-btn" onclick="pasteFromClipboard()">📋</button>
+                    <div class="status-indicator" id="status-indicator" style="display: none;"></div>
+                </div>
             </div>
 
             <!-- Game Info Preview -->
             <div class="game-info-preview" id="game-info-preview">
-                <h4 style="text-align: center; margin-bottom: 15px; color: #4facfe;">🎯 Spiel-Info</h4>
+                <div class="info-header">🎯 Spiel-Info</div>
                 <div class="info-grid">
                     <div class="info-item">
                         <div class="info-label">Kategorien</div>
@@ -434,9 +670,10 @@
                     <input 
                         type="text" 
                         id="player-name-input" 
-                        class="form-input player-name-input" 
+                        class="player-name-input" 
                         placeholder="Dein Spielername" 
                         maxlength="20"
+                        autocomplete="name"
                         oninput="updateJoinButton()"
                     >
                 </div>
@@ -455,7 +692,7 @@
     </div>
 
     <script>
-        // ===== FIREBASE INTEGRATION =====
+        // ===== FIREBASE INTEGRATION - FIXED =====
         class FirebaseGameService {
             constructor() {
                 this.app = null;
@@ -464,6 +701,7 @@
                 this.isConnected = false;
                 this.gameRef = null;
                 this.playerRef = null;
+                this.initializationPromise = null;
                 
                 // Firebase Konfiguration
                 this.config = {
@@ -478,8 +716,17 @@
                 };
             }
 
-            // Firebase initialisieren
+            // Firebase initialisieren - FIXED VERSION
             async initialize() {
+                if (this.initializationPromise) {
+                    return this.initializationPromise;
+                }
+
+                this.initializationPromise = this._doInitialize();
+                return this.initializationPromise;
+            }
+
+            async _doInitialize() {
                 try {
                     console.log('🔥 Initializing Firebase...');
                     
@@ -495,11 +742,16 @@
 
                     this.database = firebase.database();
                     
-                    // Test connection
-                    const testRef = this.database.ref('.info/connected');
-                    const snapshot = await testRef.once('value');
-                    this.isConnected = snapshot.val() === true;
-                    this.isInitialized = this.isConnected;
+                    // Test connection with timeout
+                    const connected = await Promise.race([
+                        this.testConnection(),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Connection timeout')), 10000)
+                        )
+                    ]);
+                    
+                    this.isInitialized = connected;
+                    this.isConnected = connected;
                     
                     console.log('✅ Firebase initialized:', this.isInitialized);
                     return this.isInitialized;
@@ -507,25 +759,55 @@
                 } catch (error) {
                     console.error('❌ Firebase initialization failed:', error);
                     this.isInitialized = false;
+                    this.isConnected = false;
                     return false;
                 }
             }
 
-            // Spiel-Info abrufen
+            // Verbindung testen - IMPROVED
+            async testConnection() {
+                try {
+                    const testRef = this.database.ref('.info/connected');
+                    const snapshot = await testRef.once('value');
+                    const connected = snapshot.val() === true;
+                    
+                    if (connected) {
+                        // Additional test - try to read server timestamp
+                        const serverTimeRef = this.database.ref('.info/serverTimeOffset');
+                        await serverTimeRef.once('value');
+                    }
+                    
+                    return connected;
+                    
+                } catch (error) {
+                    console.error('❌ Connection test failed:', error);
+                    return false;
+                }
+            }
+
+            // Spiel-Info abrufen - IMPROVED ERROR HANDLING
             async getGameInfo(gameId) {
-                if (!this.isInitialized) {
-                    throw new Error('Firebase not initialized');
+                if (!this.isInitialized || !this.isConnected) {
+                    throw new Error('Firebase not connected');
                 }
 
                 try {
+                    console.log(`🔍 Getting game info for: ${gameId}`);
+                    
                     const gameRef = this.database.ref(`games/${gameId}`);
-                    const snapshot = await gameRef.once('value');
+                    const snapshot = await Promise.race([
+                        gameRef.once('value'),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Request timeout')), 8000)
+                        )
+                    ]);
                     
                     if (!snapshot.exists()) {
                         throw new Error('Spiel nicht gefunden');
                     }
 
                     const gameData = snapshot.val();
+                    console.log('✅ Game data received:', gameData);
                     
                     // Check if game is joinable
                     if (gameData.gameState === 'finished') {
@@ -540,13 +822,15 @@
                 }
             }
 
-            // Spiel beitreten
+            // Spiel beitreten - IMPROVED
             async joinGame(gameId, playerData) {
-                if (!this.isInitialized) {
-                    throw new Error('Firebase not initialized');
+                if (!this.isInitialized || !this.isConnected) {
+                    throw new Error('Firebase not connected');
                 }
 
                 try {
+                    console.log(`🚀 Joining game: ${gameId} as ${playerData.name}`);
+                    
                     // Get game data first
                     const gameData = await this.getGameInfo(gameId);
                     
@@ -598,32 +882,31 @@
                 }
             }
 
-            // Game Updates überwachen - VERBESSERT FÜR SYNCHRONEN SPIELSTART
+            // Game Updates überwachen - ENHANCED
             listenToGameUpdates(gameId, callback) {
                 if (!this.isInitialized) return null;
 
+                console.log(`🎧 Setting up game listener for: ${gameId}`);
                 const gameRef = this.database.ref(`games/${gameId}`);
                 
-                // Enhanced listener für sofortige gameState-Erkennung
                 gameRef.on('value', (snapshot) => {
                     if (snapshot.exists()) {
                         const gameData = snapshot.val();
+console.log(`🎮 Game update received: ${gameData.gameState}`);
                         
                         // Sofortige Reaktion auf gameState-Änderungen
-                        if (gameData.gameState) {
-                            console.log(`🎮 GameState detected: ${gameData.gameState}`);
-                            
-                            // Sofortige Navigation bei 'playing'
-                            if (gameData.gameState === 'playing') {
-                                console.log('🚀 Game started detected - immediate navigation');
-                                setTimeout(() => handleGameStarted(gameData), 100);
-                            }
+                        if (gameData.gameState === 'playing') {
+                            console.log('🚀 Game started detected - immediate navigation');
+                            setTimeout(() => handleGameStarted(gameData), 100);
                         }
                         
                         callback(snapshot);
                     } else {
+                        console.log('❌ Game no longer exists');
                         callback(snapshot);
                     }
+                }, (error) => {
+                    console.error('❌ Game listener error:', error);
                 });
                 
                 return gameRef;
@@ -733,7 +1016,8 @@
         let gameState = null;
         let gameListener = null;
         let currentGameData = null;
-        let isNavigating = false; // Prevent multiple navigation attempts
+        let isNavigating = false;
+        let checkTimeout = null;
 
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
@@ -743,19 +1027,44 @@
         async function initJoinGame() {
             console.log('🎮 Initializing join game...');
             
-            // Initialize Firebase
-            const firebaseReady = await firebaseService.initialize();
-            
-            if (!firebaseReady) {
-                showNotification('Firebase-Verbindung fehlgeschlagen. Offline-Modus aktiv.', 'warning');
-            }
+            // Initialize Firebase in background
+            setTimeout(async () => {
+                const firebaseReady = await firebaseService.initialize();
+                console.log(`🔥 Firebase ready: ${firebaseReady}`);
+            }, 100);
             
             console.log('✅ Join game initialized');
         }
 
-        // ===== GAME CODE HANDLING =====
+        // ===== CLIPBOARD FUNCTIONALITY =====
+        async function pasteFromClipboard() {
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const text = await navigator.clipboard.readText();
+                    const cleanText = text.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 4);
+                    
+                    if (cleanText.length === 4) {
+                        const input = document.getElementById('game-code-input');
+                        input.value = cleanText;
+                        handleGameCodeInput();
+                        showNotification('Code eingefügt! 📋', 'success');
+                    } else {
+                        showNotification('Ungültiger Code in Zwischenablage', 'warning');
+                    }
+                } else {
+                    showNotification('Zwischenablage nicht verfügbar', 'warning');
+                }
+            } catch (error) {
+                console.error('Clipboard error:', error);
+                showNotification('Zwischenablage-Zugriff fehlgeschlagen', 'error');
+            }
+        }
+
+        // ===== GAME CODE HANDLING - IMPROVED =====
         function handleGameCodeInput() {
             const input = document.getElementById('game-code-input');
+            const statusIndicator = document.getElementById('status-indicator');
+            
             let value = input.value.toUpperCase().replace(/[^A-Z]/g, '');
             
             if (value.length > 4) {
@@ -764,8 +1073,25 @@
             
             input.value = value;
             
+            // Clear previous timeout
+            if (checkTimeout) {
+                clearTimeout(checkTimeout);
+            }
+            
+            // Reset input styling
+            input.classList.remove('valid', 'error');
+            statusIndicator.style.display = 'none';
+            
             if (value.length === 4) {
-                checkGameExists(value);
+                // Show checking indicator
+                statusIndicator.className = 'status-indicator checking';
+                statusIndicator.textContent = '🔍';
+                statusIndicator.style.display = 'block';
+                
+                // Delay check to avoid too many requests
+                checkTimeout = setTimeout(() => {
+                    checkGameExists(value);
+                }, 500);
             } else {
                 hideGameInfo();
                 updateJoinButton();
@@ -773,32 +1099,56 @@
         }
 
         async function checkGameExists(gameCode) {
+            const input = document.getElementById('game-code-input');
+            const statusIndicator = document.getElementById('status-indicator');
+            
             if (!firebaseService.isInitialized) {
-                showNotification('Firebase nicht verfügbar', 'warning');
-                return;
+                // Try to initialize Firebase first
+                const initialized = await firebaseService.initialize();
+                if (!initialized) {
+                    statusIndicator.className = 'status-indicator error';
+                    statusIndicator.textContent = '❌';
+                    input.classList.add('error');
+                    showNotification('Firebase nicht verfügbar', 'error');
+                    return;
+                }
             }
 
             try {
-                showNotification('Spiel wird gesucht...', 'info');
+                console.log(`🔍 Checking game: ${gameCode}`);
                 
                 const gameData = await firebaseService.getGameInfo(gameCode);
                 
                 if (gameData) {
+                    // Success
+                    statusIndicator.className = 'status-indicator found';
+                    statusIndicator.textContent = '✅';
+                    input.classList.add('valid');
+                    
                     displayGameInfo(gameData);
                     showPlayerNameInput();
-                    
-                    // Setup game listener for this game
                     setupGameListener(gameCode);
+                    
+                    showNotification('Spiel gefunden! 🎉', 'success');
                 }
                 
             } catch (error) {
                 console.error('❌ Game check failed:', error);
+                
+                // Error
+                statusIndicator.className = 'status-indicator error';
+                statusIndicator.textContent = '❌';
+                input.classList.add('error');
                 
                 let errorMessage = 'Spiel nicht gefunden';
                 if (error.message.includes('beendet')) {
                     errorMessage = 'Spiel bereits beendet';
                 } else if (error.message.includes('voll')) {
                     errorMessage = 'Spiel ist voll';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Verbindung langsam';
+                } else if (error.message.includes('not connected')) {
+                    errorMessage = 'Keine Verbindung';
                 }
                 
                 showNotification(errorMessage, 'error');
@@ -811,12 +1161,12 @@
             
             // Category names mapping
             const categoryNames = {
-                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
-                'fsk16': '🎉 Party Time',
-                'fsk18': '🔥 Heiß & Gewagt'
+                'fsk0': '👨‍👩‍👧‍👦 Familie',
+                'fsk16': '🎉 Party',
+                'fsk18': '🔥 Erwachsene'
             };
             const categories = (gameData.categories || []).map(cat => categoryNames[cat] || cat).join(', ');
-            document.getElementById('game-categories').textContent = categories || 'Nicht definiert';
+            document.getElementById('game-categories').textContent = categories || 'Standard';
             
             // Difficulty names mapping
             const difficultyNames = {
@@ -828,9 +1178,9 @@
             
             // Game status
             const statusNames = {
-                'waiting': '⏳ Wartet auf Spieler',
-                'lobby': '🏠 In der Lobby',
-                'playing': '🎮 Spiel läuft',
+                'waiting': '⏳ Wartet',
+                'lobby': '🏠 Lobby',
+                'playing': '🎮 Läuft',
                 'finished': '🏁 Beendet'
             };
             document.getElementById('game-status').textContent = statusNames[gameData.gameState] || 'Unbekannt';
@@ -845,11 +1195,22 @@
 
         function hideGameInfo() {
             document.getElementById('game-info-preview').classList.remove('visible');
+            hidePlayerNameInput();
         }
 
         function showPlayerNameInput() {
             const nameSection = document.getElementById('player-name-section');
             nameSection.classList.add('visible');
+            updateJoinButton();
+            
+            // Focus name input after animation
+            setTimeout(() => {
+                document.getElementById('player-name-input').focus();
+            }, 300);
+        }
+
+        function hidePlayerNameInput() {
+            document.getElementById('player-name-section').classList.remove('visible');
             updateJoinButton();
         }
 
@@ -864,28 +1225,28 @@
             
             if (isValidGameCode && isValidPlayerName && hasGameInfo) {
                 joinBtn.disabled = false;
-                joinBtn.textContent = '🚀 Spiel beitreten';
+                joinBtn.textContent = '🚀 Beitreten';
             } else {
                 joinBtn.disabled = true;
                 if (!isValidGameCode) {
-                    joinBtn.textContent = '⌨️ Spiel-Code eingeben';
+                    joinBtn.textContent = '⌨️ Code eingeben';
                 } else if (!hasGameInfo) {
                     joinBtn.textContent = '🔍 Spiel suchen...';
                 } else if (!isValidPlayerName) {
                     joinBtn.textContent = '👤 Name eingeben';
                 } else {
-                    joinBtn.textContent = '🚀 Spiel beitreten';
+                    joinBtn.textContent = '🚀 Beitreten';
                 }
             }
         }
 
-        // ===== GAME JOINING - VERBESSERT FÜR SYNCHRONEN START =====
+        // ===== GAME JOINING - IMPROVED =====
         async function joinGame() {
             const gameCode = document.getElementById('game-code-input').value;
             const playerName = document.getElementById('player-name-input').value.trim();
 
             if (gameCode.length !== 4) {
-                showNotification('Ungültiger Spiel-Code (4 Zeichen)', 'warning');
+                showNotification('Ungültiger Code (4 Zeichen)', 'warning');
                 return;
             }
 
@@ -895,11 +1256,10 @@
             }
 
             if (!firebaseService.isConnected) {
-                showNotification('Keine Verbindung zu Firebase', 'error');
+                showNotification('Keine Firebase-Verbindung', 'error');
                 return;
             }
 
-            // Prevent multiple join attempts
             if (isNavigating) {
                 console.log('⚠️ Join already in progress');
                 return;
@@ -910,7 +1270,6 @@
             try {
                 console.log('🚀 Attempting to join game...');
                 
-                // Firebase Join Game
                 const joinResult = await firebaseService.joinGame(gameCode, {
                     name: playerName
                 });
@@ -933,9 +1292,7 @@
                 gameState.difficulty = joinResult.gameData.difficulty || 'medium';
                 
                 // Set game phase based on current state
-                if (joinResult.gameData.gameState === 'waiting' || joinResult.gameData.gameState === 'lobby') {
-                    gameState.gamePhase = 'lobby';
-                } else if (joinResult.gameData.gameState === 'playing') {
+                if (joinResult.gameData.gameState === 'playing') {
                     gameState.gamePhase = 'playing';
                 } else {
                     gameState.gamePhase = 'lobby';
@@ -948,15 +1305,6 @@
                 showNotification('Erfolgreich beigetreten! 🎉', 'success');
                 
                 console.log(`✅ Guest joined with key: ${guestPlayerKey}`);
-                console.log('🔍 Guest GameState:', {
-                    playerName: gameState.playerName,
-                    playerId: gameState.playerId,
-                    isHost: gameState.isHost,
-                    isGuest: gameState.isGuest,
-                    gameId: gameState.gameId,
-                    gamePhase: gameState.gamePhase,
-                    storageKey: gameState.getStorageKey()
-                });
                 
                 // Set up game listener for real-time updates
                 setupGameListener(gameCode);
@@ -985,13 +1333,15 @@
                     errorMessage = 'Spiel ist voll';
                 } else if (error.message.includes('beendet')) {
                     errorMessage = 'Spiel bereits beendet';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Verbindung zu langsam';
                 }
                 
                 showNotification(errorMessage, 'error');
             }
         }
 
-        // VERBESSERTE Game Updates Listener für synchronen Spielstart
+        // ===== GAME LISTENER - ENHANCED =====
         function setupGameListener(gameId) {
             if (gameListener) {
                 gameListener.off();
@@ -1003,27 +1353,27 @@
                     const oldGameState = currentGameData?.gameState;
                     const newGameState = newGameData.gameState;
                     
-                    console.log(`🎮 Game update received - State: ${oldGameState} → ${newGameState}`);
+                    console.log(`🎮 Game update: ${oldGameState} → ${newGameState}`);
                     currentGameData = newGameData;
                     
                     // Update UI if still on join page
-                    if (document.getElementById('game-info-preview')) {
+                    if (document.getElementById('game-info-preview').classList.contains('visible')) {
                         displayGameInfo(newGameData);
                     }
                     
-                    // KRITISCH: Sofortige Reaktion auf gameState = 'playing'
+                    // Handle game start
                     if (newGameState === 'playing' && oldGameState !== 'playing') {
-                        console.log('🚀 GAME STARTED DETECTED - Immediate navigation');
+                        console.log('🚀 GAME STARTED - Immediate navigation');
                         handleGameStarted(newGameData);
                     }
                 }
             });
         }
 
-        // NEUE VERBESSERTE handleGameStarted FUNKTION
+        // ===== GAME START HANDLER - ENHANCED =====
         function handleGameStarted(gameData = null) {
             if (isNavigating) {
-                console.log('⚠️ Navigation already in progress, skipping duplicate');
+                console.log('⚠️ Navigation already in progress');
                 return;
             }
             
@@ -1033,11 +1383,10 @@
             showNotification('Spiel wurde gestartet! 🎮', 'success');
             showLoading();
             
-            // Update local game state immediately
+            // Update local game state
             if (gameState) {
                 gameState.gamePhase = 'playing';
                 
-                // Copy any new game data
                 if (gameData) {
                     if (gameData.categories) gameState.selectedCategories = gameData.categories;
                     if (gameData.difficulty) gameState.difficulty = gameData.difficulty;
@@ -1048,113 +1397,98 @@
             
             console.log('📱 Navigating to gameplay in 1.5 seconds...');
             
-            // Navigate with short delay for user feedback
             setTimeout(() => {
                 navigateToGameplay();
             }, 1500);
         }
 
-function navigateToLobby() {
-           console.log('🎯 Navigating to multiplayer-lobby.html');
-           window.location.href = 'multiplayer-lobby.html';
-       }
+        function navigateToLobby() {
+            console.log('🎯 Navigating to multiplayer-lobby.html');
+            window.location.href = 'multiplayer-lobby.html';
+        }
 
-       function navigateToGameplay() {
-           console.log('🎯 Navigating to multiplayer-gameplay.html');
-           hideLoading();
-           window.location.href = 'multiplayer-gameplay.html';
-       }
+        function navigateToGameplay() {
+            console.log('🎯 Navigating to multiplayer-gameplay.html');
+            hideLoading();
+            window.location.href = 'multiplayer-gameplay.html';
+        }
 
-       function goBack() {
-           // Cleanup listeners
-           if (gameListener) {
-               gameListener.off();
-           }
-           firebaseService.cleanup();
+        function goBack() {
+            if (gameListener) {
+                gameListener.off();
+            }
+            firebaseService.cleanup();
 
-           window.location.href = 'index.html';
-       }
+            window.location.href = 'index.html';
+        }
 
-       // ===== CLEANUP =====
-       window.addEventListener('beforeunload', function() {
-           if (gameListener) {
-               gameListener.off();
-           }
-           firebaseService.cleanup();
-       });
+        // ===== CLEANUP =====
+        window.addEventListener('beforeunload', function() {
+            if (gameListener) {
+                gameListener.off();
+            }
+            firebaseService.cleanup();
+        });
 
-       // ===== UTILITY FUNCTIONS =====
-       function showLoading() {
-           document.getElementById('loading-overlay').classList.add('show');
-       }
+        // ===== UTILITY FUNCTIONS =====
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.add('show');
+        }
 
-       function hideLoading() {
-           document.getElementById('loading-overlay').classList.remove('show');
-       }
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.remove('show');
+        }
 
-       function showNotification(message, type = 'info') {
-           // Remove existing notifications
-           document.querySelectorAll('.toast-notification').forEach(n => n.remove());
-           
-           const notification = document.createElement('div');
-           notification.className = `toast-notification ${type}`;
-           notification.innerHTML = `
-               <div class="toast-content">
-                   <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
-                   <div class="toast-message">${message}</div>
-               </div>
-           `;
-           
-           document.body.appendChild(notification);
-           
-           // Animate in
-           setTimeout(() => notification.classList.add('show'), 100);
-           
-           // Remove after 4 seconds
-           setTimeout(() => {
-               notification.classList.remove('show');
-               setTimeout(() => {
-                   if (document.body.contains(notification)) {
-                       document.body.removeChild(notification);
-                   }
-               }, 300);
-           }, 4000);
-       }
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            document.querySelectorAll('.toast-notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `toast-notification ${type}`;
+            notification.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
 
-       // ===== DEBUG FUNCTIONS =====
-       window.debugJoinGame = function() {
-           console.log('🔍 Join Game Debug Info:');
-           console.log('GameState:', gameState);
-           console.log('Firebase Service:', {
-               initialized: firebaseService.isInitialized,
-               connected: firebaseService.isConnected
-           });
-           console.log('Current Game Data:', currentGameData);
-           console.log('localStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkstdu')));
-           console.log('Navigation state:', { isNavigating });
-       };
+        // ===== DEBUG FUNCTIONS =====
+        window.debugJoinGame = function() {
+            console.log('🔍 Join Game Debug Info:');
+            console.log('GameState:', gameState);
+            console.log('Firebase Service:', {
+                initialized: firebaseService.isInitialized,
+                connected: firebaseService.isConnected
+            });
+            console.log('Current Game Data:', currentGameData);
+            console.log('Navigation state:', { isNavigating });
+        };
 
-       window.simulateGameStart = function() {
-           console.log('🧪 Simulating game start for testing...');
-           const testGameData = {
-               gameState: 'playing',
-               startedAt: Date.now(),
-               categories: ['fsk16'],
-               difficulty: 'medium'
-           };
-           handleGameStarted(testGameData);
-       };
+        window.testFirebaseConnection = async function() {
+            const result = await firebaseService.initialize();
+            console.log('Firebase test result:', result);
+            showNotification(`Firebase: ${result ? 'Verbunden' : 'Getrennt'}`, result ? 'success' : 'error');
+            return result;
+        };
 
-       window.resetNavigationState = function() {
-           isNavigating = false;
-           console.log('🔄 Navigation state reset');
-       };
-
-       console.log('✅ Enhanced Join Game with synchronous game start loaded');
-       console.log('🎮 Enhanced Commands:');
-       console.log('- debugJoinGame() - Show debug info');
-       console.log('- simulateGameStart() - Test game start flow');
-       console.log('- resetNavigationState() - Reset navigation lock');
-   </script>
+        console.log('✅ Enhanced Join Game with mobile design loaded');
+        console.log('🎮 Commands: debugJoinGame(), testFirebaseConnection()');
+    </script>
 </body>
 </html>
