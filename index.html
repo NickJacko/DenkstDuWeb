@@ -3,21 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Das ultimative Schätzspiel | no-cap.app</title>
+    <title>No Cap - Das ultimative Schätzspiel | no-cap.app</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Meta tags -->
-    <meta name="description" content="DenkstDu - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
+    <meta name="description" content="No Cap - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
     <meta name="keywords" content="Party Spiel, Trinkspiel, Schätzspiel, Multiplayer, Online, no-cap.app">
     <meta name="author" content="Nick-Mark Jacklin">
     <meta name="theme-color" content="#667eea">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤔</text></svg>">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 </head>
 <body>
+    <!-- Age Verification Modal -->
+    <div class="age-modal" id="age-modal">
+        <div class="age-modal-content">
+            <div class="age-header">
+                <span class="age-icon">🛡️</span>
+                <h2>Jugendschutz & verantwortungsvoller Umgang</h2>
+            </div>
+            
+            <div class="age-warning">
+                <h3>⚠️ Hinweis: Jugendschutz & verantwortungsvoller Umgang mit Alkohol</h3>
+                <p>
+                    Dieses Spiel kann Aufgaben enthalten, die den Konsum alkoholischer Getränke erwähnen. 
+                    Alkoholische Spielvarianten richten sich <strong>ausschließlich an Volljährige (18+)</strong>. 
+                    Minderjährige oder Personen, die keinen Alkohol trinken möchten, nutzen bitte die 
+                    <strong>alkoholfreie Variante</strong>.
+                </p>
+                <p class="legal-note">
+                    Das Angebot verkauft oder schenkt keinen Alkohol aus. 
+                    (Vgl. Jugendschutzgesetz § 9 zur Abgabe von Alkohol an Minderjährige.)
+                </p>
+            </div>
+
+            <div class="age-verification">
+                <h4>Altersbestätigung (Pflicht)</h4>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="age-checkbox">
+                    <label for="age-checkbox">
+                        <strong>Ich bestätige, dass ich mindestens 18 Jahre alt bin.</strong>
+                    </label>
+                </div>
+                
+                <div class="age-buttons">
+                    <button class="btn-age primary" id="btn-18plus" disabled>
+                        🔞 Weiter (18+)
+                    </button>
+                    <div class="or-divider">— oder —</div>
+                    <button class="btn-age secondary" id="btn-alcohol-free">
+                        🚫🍺 Ohne Alkohol fortfahren
+                    </button>
+                </div>
+                
+                <p class="age-subtitle">
+                    <em>Für Minderjährige und alle, die ohne Alkohol spielen möchten.</em>
+                </p>
+            </div>
+
+            <div class="responsibility-info">
+                <h4>🚨 Verantwortungsvoller Umgang</h4>
+                <ul>
+                    <li><strong>Kein Alkohol</strong> bei Teilnahme am Straßenverkehr, in Schwangerschaft/Stillzeit, bei bestimmten Medikamenten oder gesundheitlichen Gründen.</li>
+                    <li><strong>Kein Druck auf andere</strong> und <strong>kein exzessiver Konsum.</strong></li>
+                    <li><strong>Beende das Spiel</strong> bei Unwohlsein.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h4>🆘 Hilfe & Beratung</h4>
+                <p>
+                    Brauchst du Hilfe oder Beratung? 
+                    <strong>Sucht & Drogen Hotline: 01806 313031</strong> 
+                    (täglich 24/7, anonym)
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <div class="footer-links-modal">
+                    <a href="#" onclick="showImprint()" class="modal-link">📋 Impressum</a>
+                    <a href="#" onclick="showPrivacy()" class="modal-link">🔒 Datenschutz</a>
+                    <a href="#" onclick="showYouthProtection()" class="modal-link">🛡️ Jugendschutz-Infos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Background Particles -->
     <div class="background-particles">
         <div class="particle"></div>
@@ -28,11 +102,12 @@
     </div>
 
     <!-- App Container -->
-    <div class="app-container">
+    <div class="app-container" id="main-app">
         <!-- Header -->
         <header class="site-header">
             <div class="site-logo">
-                <h1 class="logo">DenkstDu</h1>
+                <div class="logo-icon">🧢</div>
+                <h1 class="logo">No Cap</h1>
                 <p class="site-url">no-cap.app</p>
             </div>
         </header>
@@ -50,13 +125,19 @@
                         <span class="feature-text">Schätze, wie viele etwas gemacht haben</span>
                     </div>
                     <div class="feature">
-                        <span class="feature-icon">🍻</span>
-                        <span class="feature-text">Trinke, wenn du falsch liegst</span>
+                        <span class="feature-icon" id="drink-icon">🍻</span>
+                        <span class="feature-text" id="drink-text">Trinke, wenn du falsch liegst</span>
                     </div>
                     <div class="feature">
                         <span class="feature-icon">🎉</span>
                         <span class="feature-text">Lache über peinliche Geständnisse</span>
                     </div>
+                </div>
+
+                <!-- Scroll Indicator -->
+                <div class="scroll-indicator">
+                    <div class="scroll-text">Mehr erfahren</div>
+                    <div class="scroll-arrow">⬇️</div>
                 </div>
             </section>
 
@@ -66,7 +147,7 @@
                 
                 <div class="mode-cards">
                     <!-- Single Device Mode -->
-                    <div class="mode-card" onclick="window.location.href='device-selection.html'">
+                    <div class="mode-card" onclick="startSingleDevice()">
                         <div class="mode-header">
                             <span class="mode-icon">📱</span>
                             <h4 class="mode-title">Ein Gerät</h4>
@@ -85,7 +166,7 @@
                     </div>
 
                     <!-- Multiplayer Mode -->
-                    <div class="mode-card featured" onclick="window.location.href='device-selection.html'">
+                    <div class="mode-card featured" onclick="startMultiplayer()">
                         <div class="featured-badge">🔥 Beliebt</div>
                         <div class="mode-header">
                             <span class="mode-icon">🌐</span>
@@ -105,7 +186,7 @@
                     </div>
 
                     <!-- Join Game -->
-                    <div class="mode-card" onclick="window.location.href='join-game.html'">
+                    <div class="mode-card" onclick="joinGame()">
                         <div class="mode-header">
                             <span class="mode-icon">🔗</span>
                             <h4 class="mode-title">Spiel beitreten</h4>
@@ -154,8 +235,8 @@
                     <div class="step">
                         <div class="step-number">4</div>
                         <div class="step-content">
-                            <h5>Auflösung & Schlücke</h5>
-                            <p>Wer falsch lag, muss trinken!</p>
+                            <h5>Auflösung & Belohnung</h5>
+                            <p id="step4-text">Wer falsch lag, muss trinken!</p>
                         </div>
                     </div>
                 </div>
@@ -169,9 +250,10 @@
                     <a href="#" onclick="showRules()" class="footer-link">📖 Spielregeln</a>
                     <a href="#" onclick="showPrivacy()" class="footer-link">🔒 Datenschutz</a>
                     <a href="#" onclick="showImprint()" class="footer-link">📋 Impressum</a>
+                    <a href="#" onclick="showYouthProtection()" class="footer-link">🛡️ Jugendschutz</a>
                 </div>
                 <div class="footer-info">
-                    <p>&copy; 2024 DenkstDu - Made with ❤️ by Nick-Mark Jacklin</p>
+                    <p>&copy; 2024 No Cap - Made with ❤️ by Nick-Mark Jacklin</p>
                     <p class="website-badge">🌐 <strong>no-cap.app</strong></p>
                 </div>
             </div>
@@ -179,9 +261,144 @@
     </div>
 
     <script>
-        // Simple navigation functions
+        // Global variables
+        let ageVerified = false;
+        let alcoholMode = false;
+
+        // Check for existing age verification
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧢 No Cap Landing Page loaded');
+            console.log('🌐 Welcome to no-cap.app');
+            
+            const savedVerification = localStorage.getItem('nocap_age_verification');
+            if (savedVerification) {
+                const verification = JSON.parse(savedVerification);
+                const now = Date.now();
+                const oneDay = 24 * 60 * 60 * 1000;
+                
+                // Check if verification is still valid (24 hours)
+                if (now - verification.timestamp < oneDay) {
+                    ageVerified = verification.ageVerified;
+                    alcoholMode = verification.alcoholMode;
+                    
+                    updateUIForVerification();
+                    hideAgeModal();
+                    animateCards();
+                    return;
+                }
+            }
+            
+            // Show age modal
+            showAgeModal();
+        });
+
+        // Age verification functions
+        function showAgeModal() {
+            document.getElementById('age-modal').style.display = 'flex';
+            document.getElementById('main-app').style.filter = 'blur(5px)';
+            document.getElementById('main-app').style.pointerEvents = 'none';
+        }
+
+        function hideAgeModal() {
+            document.getElementById('age-modal').style.display = 'none';
+            document.getElementById('main-app').style.filter = 'none';
+            document.getElementById('main-app').style.pointerEvents = 'auto';
+        }
+
+        function saveVerification(isAdult, allowAlcohol) {
+            const verification = {
+                ageVerified: isAdult,
+                alcoholMode: allowAlcohol,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('nocap_age_verification', JSON.stringify(verification));
+            
+            ageVerified = isAdult;
+            alcoholMode = allowAlcohol;
+        }
+
+        function updateUIForVerification() {
+            if (!alcoholMode) {
+                // Update UI for alcohol-free mode
+                document.getElementById('drink-icon').textContent = '🎯';
+                document.getElementById('drink-text').textContent = 'Sammle Punkte bei falschen Schätzungen';
+                document.getElementById('step4-text').textContent = 'Wer falsch lag, bekommt Punkte!';
+            }
+        }
+
+        // Age checkbox handling
+        document.addEventListener('change', function(e) {
+            if (e.target.id === 'age-checkbox') {
+                const btn18Plus = document.getElementById('btn-18plus');
+                btn18Plus.disabled = !e.target.checked;
+                
+                if (e.target.checked) {
+                    btn18Plus.classList.add('enabled');
+                } else {
+                    btn18Plus.classList.remove('enabled');
+                }
+            }
+        });
+
+        // Age verification buttons
+        document.getElementById('btn-18plus').addEventListener('click', function() {
+            if (document.getElementById('age-checkbox').checked) {
+                saveVerification(true, true);
+                updateUIForVerification();
+                hideAgeModal();
+                animateCards();
+                showNotification('Spiel mit allen Inhalten verfügbar', 'success');
+            }
+        });
+
+        document.getElementById('btn-alcohol-free').addEventListener('click', function() {
+            saveVerification(false, false);
+            updateUIForVerification();
+            hideAgeModal();
+            animateCards();
+            showNotification('Alkoholfreie Version aktiviert', 'success');
+        });
+
+        // Game mode functions
+        function startSingleDevice() {
+            if (!ageVerified) {
+                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+                return;
+            }
+            
+            // Set device mode and redirect to category selection
+            localStorage.setItem('nocap_device_mode', 'single');
+            localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+            window.location.href = 'category-selection.html';
+        }
+
+        function startMultiplayer() {
+            if (!ageVerified) {
+                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+                return;
+            }
+            
+            // Set device mode and redirect to multiplayer category selection
+            localStorage.setItem('nocap_device_mode', 'multi');
+            localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+            window.location.href = 'multiplayer-category-selection.html';
+        }
+
+        function joinGame() {
+            if (!ageVerified) {
+                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+                return;
+            }
+            
+            // Set device mode and redirect to join game
+            localStorage.setItem('nocap_device_mode', 'multi');
+            localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+            window.location.href = 'join-game.html';
+        }
+
+        // Information functions
         function showRules() {
-            alert(`📖 Spielregeln - DenkstDu
+            alert(`📖 Spielregeln - No Cap
 
 🎯 Ziel: Schätze, wie viele Spieler etwas schon mal gemacht haben!
 
@@ -189,12 +406,15 @@
 1️⃣ Frage wird gestellt (z.B. "Hast du schon mal nackt gebadet?")
 2️⃣ Alle antworten geheim mit Ja/Nein
 3️⃣ Alle schätzen: Wie viele haben "Ja" gesagt?
-4️⃣ Auflösung: Wer falsch lag, trinkt!
+4️⃣ Auflösung: Wer falsch lag, ${alcoholMode ? 'trinkt' : 'bekommt Punkte'}!
 
-🍺 Schlücke-Regeln:
+${alcoholMode ? `🍺 Schlücke-Regeln:
 • Richtig geschätzt = 0 Schlücke 🎯
 • 1 daneben = Basis + 1 Schluck 📏
-• 2+ daneben = Basis + mehr Schlücke 📐
+• 2+ daneben = Basis + mehr Schlücke 📐` : `🎯 Punkte-System:
+• Richtig geschätzt = 0 Punkte 🎯
+• 1 daneben = 1 Punkt 📏
+• 2+ daneben = mehr Punkte 📐`}
 
 🎮 Modi:
 • Ein Gerät: Alle teilen sich ein Handy
@@ -209,6 +429,7 @@ Viel Spaß! 🎉`);
 📍 Was wir sammeln:
 • Spielernamen (nur während des Spiels)
 • Spieleinstellungen (lokal im Browser)
+• Altersverifikation (lokal gespeichert)
 • Grundlegende Nutzungsstatistiken
 
 🛡️ Was wir NICHT tun:
@@ -247,12 +468,38 @@ Gehostet über GitHub Pages
 DSGVO-konform, Server in Europa`);
         }
 
-        // Add entrance animations
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 DenkstDu Landing Page loaded');
-            console.log('🌐 Welcome to no-cap.app');
-            
-            // Animate mode cards
+        function showYouthProtection() {
+            alert(`🛡️ Jugendschutz-Informationen - no-cap.app
+
+⚖️ Rechtliche Grundlagen:
+• Jugendschutzgesetz (JuSchG) § 9 - Schutz vor Alkoholabgabe
+• Jugendmedienschutz-Staatsvertrag (JMStV)
+• Werberichtlinien des Deutschen Werberats
+
+🔞 Altersverifikation:
+• Obligatorische Bestätigung für alkoholbezogene Inhalte
+• Separate alkoholfreie Spielvariante verfügbar
+• Keine Ansprache von Minderjährigen für Alkoholkonsum
+
+🛡️ Schutzmaßnahmen:
+• Klare Kennzeichnung altersbeschränkter Inhalte
+• Verantwortungsvolle Darstellung von Alkoholkonsum
+• Kein Verkauf oder Ausschank von Alkohol
+• Hinweise auf Beratungsstellen
+
+📞 Hilfe & Beratung:
+• Sucht & Drogen Hotline: 01806 313031
+• Bundeszentrale für gesundheitliche Aufklärung
+• Örtliche Beratungsstellen
+
+🌐 Weitere Informationen:
+• kjm-online.de (Kommission für Jugendmedienschutz)
+• gesetze-im-internet.de (Jugendschutzgesetz)
+• bvlh.net (Bundesverband Liberaler Hilfen)`);
+        }
+
+        // Animation function
+        function animateCards() {
             setTimeout(() => {
                 document.querySelectorAll('.mode-card').forEach((card, index) => {
                     setTimeout(() => {
@@ -266,15 +513,59 @@ DSGVO-konform, Server in Europa`);
                     }, index * 200);
                 });
             }, 500);
-        });
+        }
+
+        // Notification function
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            document.querySelectorAll('.toast-notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `toast-notification ${type}`;
+            notification.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
 
         // Handle URL parameters for direct game joining
         const urlParams = new URLSearchParams(window.location.search);
         const gameId = urlParams.get('gameId');
         if (gameId) {
-            // Redirect to join game with ID
-            window.location.href = `join-game.html?gameId=${gameId}`;
+            // Wait for age verification, then redirect
+            const checkVerification = setInterval(() => {
+                if (ageVerified) {
+                    clearInterval(checkVerification);
+                    window.location.href = `join-game.html?gameId=${gameId}`;
+                }
+            }, 100);
         }
+
+        // Smooth scrolling for scroll indicator
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.scroll-indicator')) {
+                document.querySelector('.game-modes').scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        });
     </script>
 
     <style>
@@ -290,6 +581,227 @@ DSGVO-konform, Server in Europa`);
             min-height: 100vh;
             color: white;
             overflow-x: hidden;
+        }
+
+        /* Age Modal Styles */
+        .age-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        }
+
+        .age-modal-content {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .age-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .age-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .age-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .age-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .age-warning h3 {
+            color: #ffc107;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .age-warning p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .legal-note {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .age-verification {
+            margin-bottom: 25px;
+        }
+
+        .age-verification h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-container label {
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .age-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-age {
+            width: 100%;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .btn-age.primary {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            opacity: 0.5;
+        }
+
+        .btn-age.primary.enabled {
+            opacity: 1;
+        }
+
+        .btn-age.primary.enabled:hover {
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-age.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .btn-age.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .or-divider {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 10px 0;
+        }
+
+        .age-subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 10px;
+        }
+
+        .responsibility-info,
+        .help-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .responsibility-info h4,
+        .help-section h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .responsibility-info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .responsibility-info li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .responsibility-info li:last-child {
+            border-bottom: none;
+        }
+
+        .help-section p {
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        .footer-links-modal {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .modal-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .modal-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         /* Background Particles */
@@ -337,6 +849,19 @@ DSGVO-konform, Server in Europa`);
             margin-bottom: 40px;
         }
 
+        .site-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+        }
+
         .site-logo .logo {
             font-size: clamp(3rem, 8vw, 5rem);
             font-weight: 800;
@@ -344,7 +869,7 @@ DSGVO-konform, Server in Europa`);
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+            margin: 0;
             text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
         }
 
@@ -364,6 +889,10 @@ DSGVO-konform, Server in Europa`);
         .hero-section {
             text-align: center;
             margin-bottom: 60px;
+            min-height: 50vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .hero-title {
@@ -385,7 +914,7 @@ DSGVO-konform, Server in Europa`);
             flex-wrap: wrap;
             justify-content: center;
             gap: 30px;
-            margin-top: 40px;
+            margin: 40px 0;
         }
 
         .feature {
@@ -397,6 +926,12 @@ DSGVO-konform, Server in Europa`);
             border-radius: 25px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
         }
 
         .feature-icon {
@@ -406,6 +941,36 @@ DSGVO-konform, Server in Europa`);
         .feature-text {
             font-weight: 500;
             font-size: 0.95rem;
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            margin-top: 40px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .scroll-indicator:hover {
+            opacity: 1;
+            transform: translateY(-2px);
+        }
+
+        .scroll-text {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .scroll-arrow {
+            font-size: 1.5rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
         }
 
         /* Sections */
@@ -627,10 +1192,79 @@ DSGVO-konform, Server in Europa`);
             font-weight: 600;
         }
 
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 350px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-notification.success {
+            border-color: rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
+        }
+
+        .toast-notification.warning {
+            border-color: rgba(255, 152, 0, 0.5);
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
+        }
+
+        .toast-notification.error {
+            border-color: rgba(244, 67, 54, 0.5);
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-message {
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .app-container {
                 padding: 15px;
+            }
+
+            .age-modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .age-buttons {
+                gap: 10px;
+            }
+
+            .footer-links-modal {
+                flex-direction: column;
+                gap: 10px;
             }
 
             .game-features {
@@ -656,12 +1290,17 @@ DSGVO-konform, Server in Europa`);
                 flex-direction: column;
                 gap: 15px;
             }
+
+            .hero-section {
+                min-height: 40vh;
+            }
         }
 
         /* Accessibility */
         .mode-card:focus,
         .mode-btn:focus,
-        .footer-link:focus {
+        .footer-link:focus,
+        .btn-age:focus {
             outline: 2px solid #4facfe;
             outline-offset: 2px;
         }
@@ -672,6 +1311,10 @@ DSGVO-konform, Server in Europa`);
                 animation-duration: 0.01ms !important;
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
+            }
+            
+            .scroll-arrow {
+                animation: none;
             }
         }
     </style>
