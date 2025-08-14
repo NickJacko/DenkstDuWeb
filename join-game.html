@@ -532,6 +532,35 @@
                 padding: 8px 12px;
             }
         }
+
+        /* Debug Mode */
+        .debug-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .debug-panel.show {
+            display: block;
+        }
+
+        .debug-row {
+            margin: 3px 0;
+        }
+
+        .debug-label {
+            color: #4CAF50;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -555,6 +584,15 @@
     <!-- Loading Spinner -->
     <div class="loading" id="loading">
         <div class="spinner"></div>
+    </div>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel" id="debug-panel">
+        <div class="debug-row"><span class="debug-label">Firebase:</span> <span id="debug-firebase">-</span></div>
+        <div class="debug-row"><span class="debug-label">Connected:</span> <span id="debug-connected">-</span></div>
+        <div class="debug-row"><span class="debug-label">Game Code:</span> <span id="debug-gamecode">-</span></div>
+        <div class="debug-row"><span class="debug-label">Game Found:</span> <span id="debug-found">-</span></div>
+        <div class="debug-row"><span class="debug-label">Error:</span> <span id="debug-error">-</span></div>
     </div>
 
     <!-- App Container -->
@@ -660,6 +698,27 @@
     </div>
 
     <script>
+        // ===== DEBUG MODE =====
+        let debugMode = false;
+        let lastError = null;
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const panel = document.getElementById('debug-panel');
+            panel.classList.toggle('show', debugMode);
+            if (debugMode) updateDebugInfo();
+        }
+
+        function updateDebugInfo() {
+            if (!debugMode) return;
+            
+            document.getElementById('debug-firebase').textContent = firebaseService.isInitialized ? 'Yes' : 'No';
+            document.getElementById('debug-connected').textContent = firebaseService.isConnected ? 'Yes' : 'No';
+            document.getElementById('debug-gamecode').textContent = document.getElementById('game-code-input').value || '-';
+            document.getElementById('debug-found').textContent = currentGameData ? 'Yes' : 'No';
+            document.getElementById('debug-error').textContent = lastError || '-';
+        }
+
         // ===== FIREBASE INTEGRATION =====
         class FirebaseGameService {
             constructor() {
@@ -687,6 +746,7 @@
             async initialize() {
                 try {
                     console.log('🔥 Initializing Firebase...');
+                    lastError = null;
                     
                     // Prüfen ob Firebase SDK verfügbar ist
                     if (typeof firebase === 'undefined') {
@@ -706,17 +766,26 @@
                     // Connection Status überwachen
                     this.setupConnectionMonitoring();
 
-                    // Verbindung testen
-                    const connected = await this.testConnection();
+                    // Verbindung testen mit timeout
+                    const connected = await Promise.race([
+                        this.testConnection(),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Connection timeout')), 10000)
+                        )
+                    ]);
+                    
                     this.isInitialized = connected;
                     
                     console.log('✅ Firebase initialized:', this.isInitialized);
+                    updateDebugInfo();
                     return this.isInitialized;
 
                 } catch (error) {
                     console.error('❌ Firebase initialization failed:', error);
+                    lastError = error.message;
                     this.updateConnectionStatus('disconnected');
                     this.isInitialized = false;
+                    updateDebugInfo();
                     return false;
                 }
             }
@@ -727,6 +796,7 @@
                 connectedRef.on('value', (snapshot) => {
                     this.isConnected = snapshot.val() === true;
                     this.updateConnectionStatus(this.isConnected ? 'connected' : 'disconnected');
+                    updateDebugInfo();
                 });
             }
 
@@ -744,7 +814,9 @@
                     
                 } catch (error) {
                     console.error('❌ Connection test failed:', error);
+                    lastError = error.message;
                     this.updateConnectionStatus('disconnected');
+                    updateDebugInfo();
                     return false;
                 }
             }
@@ -769,17 +841,30 @@
                 }
             }
 
-            // Spiel suchen
+// Spiel suchen - FIXED VERSION
             async findGame(gameId) {
                 try {
+                    lastError = null;
+                    
                     if (!this.isInitialized) {
                         throw new Error('Firebase not initialized');
+                    }
+
+                    if (!this.isConnected) {
+                        throw new Error('No Firebase connection');
                     }
 
                     console.log(`🔍 Searching for game: ${gameId}`);
                     
                     const gameRef = this.database.ref(`games/${gameId}`);
-                    const snapshot = await gameRef.once('value');
+                    
+                    // Timeout für die Suche
+                    const searchPromise = gameRef.once('value');
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Search timeout')), 8000)
+                    );
+                    
+                    const snapshot = await Promise.race([searchPromise, timeoutPromise]);
                     
                     if (!snapshot.exists()) {
                         console.log('❌ Game not found');
@@ -789,19 +874,36 @@
                     const gameData = snapshot.val();
                     console.log('✅ Game found:', gameData);
                     
+                    updateDebugInfo();
                     return gameData;
                     
                 } catch (error) {
                     console.error('❌ Error finding game:', error);
-                    throw error;
+                    lastError = error.message;
+                    updateDebugInfo();
+                    
+                    // Re-throw nur bei echten Fehlern, nicht bei "not found"
+                    if (error.message.includes('timeout') || 
+                        error.message.includes('connection') || 
+                        error.message.includes('initialized')) {
+                        throw error;
+                    }
+                    
+                    return null;
                 }
             }
 
             // Spiel beitreten
             async joinGame(gameId, playerData) {
                 try {
+                    lastError = null;
+                    
                     if (!this.isInitialized) {
                         throw new Error('Firebase not initialized');
+                    }
+
+                    if (!this.isConnected) {
+                        throw new Error('No Firebase connection');
                     }
 
                     console.log(`🎮 Joining game ${gameId} as ${playerData.name}`);
@@ -864,6 +966,8 @@
 
                 } catch (error) {
                     console.error('❌ Error joining game:', error);
+                    lastError = error.message;
+                    updateDebugInfo();
                     throw error;
                 }
             }
@@ -992,13 +1096,18 @@
             console.log('🔗 Initializing join game page...');
             
             // Initialize Firebase
-            await firebaseService.initialize();
+            const firebaseReady = await firebaseService.initialize();
+            
+            if (!firebaseReady) {
+                showNotification('Firebase Verbindung fehlgeschlagen', 'error');
+                console.error('❌ Firebase initialization failed, but continuing...');
+            }
             
             // Check for Game Code in URL
             const urlParams = new URLSearchParams(window.location.search);
             const gameCodeFromUrl = urlParams.get('gameId');
             
-            if (gameCodeFromUrl) {
+            if (gameCodeFromUrl && firebaseReady) {
                 document.getElementById('game-code-input').value = gameCodeFromUrl.toUpperCase();
                 lookupGame(gameCodeFromUrl);
             }
@@ -1016,12 +1125,14 @@
             }, 300);
 
             updateJoinButton();
+            updateDebugInfo();
         }
 
         // ===== GAME CODE HANDLING =====
         function formatGameCode(input) {
             let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
             input.value = value;
+            updateDebugInfo();
 
             if (value.length === 6) {
                 lookupGame(value);
@@ -1078,6 +1189,10 @@
 
             try {
                 if (!firebaseService.isInitialized) {
+                    await firebaseService.initialize();
+                }
+
+                if (!firebaseService.isInitialized) {
                     showGameCodeStatus('offline', '⚠️ Keine Verbindung zu Firebase');
                     return;
                 }
@@ -1104,12 +1219,21 @@
                 
             } catch (error) {
                 console.error('❌ Error looking up game:', error);
-                showGameCodeStatus('not-found', '⚠️ Verbindungsfehler');
+                
+                if (error.message.includes('timeout')) {
+                    showGameCodeStatus('not-found', '⏱️ Zeitüberschreitung - erneut versuchen');
+                } else if (error.message.includes('connection')) {
+                    showGameCodeStatus('offline', '⚠️ Verbindungsfehler');
+                } else {
+                    showGameCodeStatus('not-found', '❌ Spiel nicht gefunden');
+                }
+                
                 hideGameInfo();
                 currentGameData = null;
             } finally {
                 checkingGameCode = false;
                 updateJoinButton();
+                updateDebugInfo();
             }
         }
 
@@ -1399,6 +1523,9 @@
             }, 4000);
         }
 
+        // ===== DEBUG FUNCTIONS =====
+        window.toggleDebug = toggleDebug;
+
         // ===== DEMO FUNCTIONS =====
         window.demoJoinWithCode = function(code = 'DEMO12') {
             document.getElementById('game-code-input').value = code;
@@ -1450,7 +1577,8 @@
             return {
                 initialized: firebaseService.isInitialized,
                 connected: firebaseService.isConnected,
-                currentGame: currentGameData?.gameId || null
+                currentGame: currentGameData?.gameId || null,
+                lastError: lastError
             };
         };
 
@@ -1460,6 +1588,28 @@
             return result;
         };
 
+        window.retryFirebaseInit = async function() {
+            console.log('🔄 Retrying Firebase initialization...');
+            const result = await firebaseService.initialize();
+            console.log('Firebase retry result:', result);
+            return result;
+        };
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+D für Debug Toggle
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                toggleDebug();
+            }
+            
+            // Ctrl+R für Firebase Retry
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                retryFirebaseInit();
+            }
+        });
+
         console.log('✅ Join Game with Firebase loaded successfully');
         console.log('🎮 Demo commands:');
         console.log('- demoJoinWithCode("GAME123") - Enter a game code');
@@ -1467,6 +1617,11 @@
         console.log('- demoQuickJoin() - Find and join any active game');
         console.log('- getFirebaseStatus() - Check Firebase connection');
         console.log('- testFirebaseConnection() - Test Firebase connection');
+        console.log('- retryFirebaseInit() - Retry Firebase initialization');
+        console.log('- toggleDebug() - Toggle debug panel (or Ctrl+D)');
+        console.log('🔧 Keyboard shortcuts:');
+        console.log('- Ctrl+D: Toggle debug panel');
+        console.log('- Ctrl+R: Retry Firebase connection');
     </script>
 </body>
 </html>
