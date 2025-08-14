@@ -777,12 +777,37 @@
                 }
             }
 
-            // Game Updates überwachen
+            // Game Updates überwachen - VERBESSERT FÜR SYNCHRONEN SPIELSTART
             listenToGame(gameId, callback) {
                 if (!this.isInitialized) return null;
 
                 this.gameRef = this.database.ref(`games/${gameId}`);
-                this.gameRef.on('value', callback);
+                
+                // Enhanced listener that triggers immediately on gameState changes
+                this.gameRef.on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        const gameData = snapshot.val();
+                        
+                        // Sofortige Reaktion auf gameState-Änderungen
+                        if (gameData.gameState) {
+                            console.log(`🎮 GameState changed to: ${gameData.gameState}`);
+                            
+                            // Trigger callback immediately
+                            callback(snapshot);
+                            
+                            // Zusätzliche sofortige Navigation bei Playing
+                            if (gameData.gameState === 'playing') {
+                                console.log('🚀 Game started - immediate navigation trigger');
+                                setTimeout(() => handleGameStarted(gameData), 100);
+                            }
+                        } else {
+                            callback(snapshot);
+                        }
+                    } else {
+                        callback(snapshot);
+                    }
+                });
+                
                 return this.gameRef;
             }
 
@@ -813,14 +838,23 @@
                 }
             }
 
-            // Spiel starten
+            // Spiel starten - VERBESSERT MIT SOFORTIGER SYNCHRONISATION
             async startGame(gameId) {
                 if (!this.isInitialized) return false;
 
                 try {
+                    console.log('🚀 Starting game in Firebase...');
+                    
                     const gameRef = this.database.ref(`games/${gameId}`);
-                    await gameRef.child('gameState').set('playing');
-                    await gameRef.child('startedAt').set(firebase.database.ServerValue.TIMESTAMP);
+                    
+                    // Gleichzeitige Updates für sofortige Synchronisation
+                    const updates = {
+                        gameState: 'playing',
+                        startedAt: firebase.database.ServerValue.TIMESTAMP,
+                        lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    
+                    await gameRef.update(updates);
                     
                     console.log('✅ Game started in Firebase');
                     return true;
@@ -887,7 +921,7 @@
                         currentQuestionIndex: this.currentQuestionIndex,
                         gamePhase: this.gamePhase,
                         timestamp: Date.now(),
-version: 3,
+                        version: 3,
                         playerKey: this.playerKey
                     };
                     
@@ -938,6 +972,7 @@ version: 3,
         let currentGameData = null;
         let currentPlayers = {};
         let playersCache = new Map(); // Cache to prevent flicker
+        let isNavigating = false; // Prevent multiple navigation attempts
 
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
@@ -1028,20 +1063,26 @@ version: 3,
             return null;
         }
 
-        // ===== FIREBASE LISTENERS =====
+        // ===== FIREBASE LISTENERS - VERBESSERT FÜR SYNCHRONEN SPIELSTART =====
         function setupFirebaseListeners() {
             console.log('🎧 Setting up Firebase listeners...');
             
-            // Listen to game updates
+            // Listen to game updates - ENHANCED FOR IMMEDIATE GAME START DETECTION
             gameListener = firebaseService.listenToGame(gameState.gameId, (snapshot) => {
                 if (snapshot.exists()) {
-                    currentGameData = snapshot.val();
-                    console.log('🎮 Game update received:', currentGameData);
+                    const newGameData = snapshot.val();
+                    const oldGameState = currentGameData?.gameState;
+                    const newGameState = newGameData.gameState;
+                    
+                    console.log(`🎮 Game update received - State: ${oldGameState} → ${newGameState}`);
+                    
+                    currentGameData = newGameData;
                     updateGameInfo(currentGameData);
                     
-                    // Check if game started
-                    if (currentGameData.gameState === 'playing') {
-                        handleGameStarted();
+                    // KRITISCH: Sofortige Reaktion auf gameState = 'playing'
+                    if (newGameState === 'playing' && oldGameState !== 'playing') {
+                        console.log('🚀 GAME STARTED DETECTED - Immediate navigation');
+                        handleGameStarted(newGameData);
                     }
                 } else {
                     console.log('❌ Game not found in Firebase');
@@ -1281,7 +1322,7 @@ version: 3,
             }
         }
 
-        // ===== GAME CONTROLS =====
+        // ===== GAME CONTROLS - VERBESSERT FÜR SYNCHRONEN START =====
         async function startGame() {
             if (!gameState.isHost) {
                 showNotification('Nur der Host kann das Spiel starten!', 'warning');
@@ -1294,46 +1335,84 @@ version: 3,
                 return;
             }
 
+            // Prevent multiple start attempts
+            if (isNavigating) {
+                console.log('⚠️ Navigation already in progress');
+                return;
+            }
+
             showLoading();
             
             try {
+                console.log('🚀 Host initiating game start...');
+                
                 if (firebaseService.isInitialized) {
                     // Start game in Firebase
                     await firebaseService.startGame(gameState.gameId);
                     console.log('✅ Game started via Firebase');
+                    
+                    // Show notification but don't navigate yet - wait for Firebase listener
+                    showNotification('Spiel wird für alle Spieler gestartet...', 'success');
+                    
                 } else {
                     // Start game locally
+                    console.log('✅ Starting game locally (offline mode)');
                     gameState.gamePhase = 'playing';
                     gameState.saveToStorage();
-                    console.log('✅ Game started locally');
+                    
+                    showNotification('Spiel wird gestartet...', 'success');
+                    
+                    // Navigate immediately in offline mode
+                    setTimeout(() => {
+                        hideLoading();
+                        navigateToGameplay();
+                    }, 1500);
                 }
-
-                showNotification('Spiel wird gestartet...', 'success');
-                
-                // Navigate after delay
-                setTimeout(() => {
-                    hideLoading();
-                    window.location.href = 'multiplayer-gameplay.html';
-                }, 2000);
                 
             } catch (error) {
                 hideLoading();
                 console.error('❌ Error starting game:', error);
                 showNotification('Fehler beim Spielstart', 'error');
+                isNavigating = false;
             }
         }
 
-        function handleGameStarted() {
-            showNotification('Spiel wurde gestartet!', 'success');
+        // NEUE VERBESSERTE handleGameStarted FUNKTION
+        function handleGameStarted(gameData = null) {
+            if (isNavigating) {
+                console.log('⚠️ Navigation already in progress, skipping duplicate');
+                return;
+            }
+            
+            console.log('🚀 handleGameStarted triggered');
+            isNavigating = true;
+            
+            showNotification('Spiel wurde gestartet! 🎮', 'success');
             showLoading();
             
-            // Update local game state
+            // Update local game state immediately
             gameState.gamePhase = 'playing';
+            
+            // Copy any new game data
+            if (gameData) {
+                if (gameData.categories) gameState.selectedCategories = gameData.categories;
+                if (gameData.difficulty) gameState.difficulty = gameData.difficulty;
+            }
+            
             gameState.saveToStorage();
             
+            console.log('📱 Navigating to gameplay in 1.5 seconds...');
+            
+            // Navigate with short delay for user feedback
             setTimeout(() => {
-                window.location.href = 'multiplayer-gameplay.html';
-            }, 2000);
+                navigateToGameplay();
+            }, 1500);
+        }
+
+        function navigateToGameplay() {
+            console.log('🎯 Navigating to multiplayer-gameplay.html');
+            hideLoading();
+            window.location.href = 'multiplayer-gameplay.html';
         }
 
         function leaveLobby() {
@@ -1416,65 +1495,30 @@ version: 3,
             console.log('Current Game Data:', currentGameData);
             console.log('Current Players:', currentPlayers);
             console.log('localStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkstdu')));
+            console.log('Navigation state:', { isNavigating });
         };
 
-        window.simulateJoinPlayer = function(name = 'TestPlayer') {
-            if (firebaseService.isInitialized) {
-                // Simulate Firebase player join
-                const playerId = `test_${Date.now()}`;
-                const playerData = {
-                    name: name,
-                    isHost: false,
-                    isOnline: true,
-                    joinedAt: Date.now()
-                };
-                
-                // Add to current players (simulation)
-                currentPlayers[playerId] = playerData;
-                updatePlayersDisplay(currentPlayers);
-                showNotification(`${name} ist beigetreten! (Simulation)`, 'success');
-            } else {
-                // Simulate local player join
-                const playerKey = `guest_${name}_${Date.now()}`;
-                const guestState = new GameState(playerKey);
-                guestState.gameId = gameState.gameId;
-                guestState.playerName = name;
-                guestState.deviceMode = 'multi';
-                guestState.isHost = false;
-                guestState.isGuest = true;
-                guestState.gamePhase = 'lobby';
-                guestState.saveToStorage();
-                
-                loadLocalPlayers();
-                showNotification(`${name} ist beigetreten!`, 'success');
-            }
-        };
-
-        window.testFirebaseConnection = async function() {
-            const result = await firebaseService.testConnection();
-            console.log('Firebase connection test:', result);
-            showNotification(`Firebase: ${result ? 'Verbunden' : 'Getrennt'}`, result ? 'success' : 'error');
-            return result;
-        };
-
-        window.getGameStatus = function() {
-            return {
-                gameState: gameState,
-                firebase: {
-                    initialized: firebaseService.isInitialized,
-                    connected: firebaseService.isConnected
-                },
-                currentGame: currentGameData,
-                players: currentPlayers
+        window.simulateGameStart = function() {
+            console.log('🧪 Simulating game start for testing...');
+            const testGameData = {
+                gameState: 'playing',
+                startedAt: Date.now(),
+                categories: gameState.selectedCategories,
+                difficulty: gameState.difficulty
             };
+            handleGameStarted(testGameData);
         };
 
-        console.log('✅ Multiplayer Lobby with Firebase loaded');
-        console.log('🎮 Commands:');
+        window.resetNavigationState = function() {
+            isNavigating = false;
+            console.log('🔄 Navigation state reset');
+        };
+
+        console.log('✅ Enhanced Multiplayer Lobby with synchronous game start loaded');
+        console.log('🎮 Enhanced Commands:');
         console.log('- debugLobby() - Show debug info');
-        console.log('- simulateJoinPlayer("Name") - Simulate player join');
-        console.log('- testFirebaseConnection() - Test Firebase');
-        console.log('- getGameStatus() - Get complete status');
+        console.log('- simulateGameStart() - Test game start flow');
+        console.log('- resetNavigationState() - Reset navigation lock');
     </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No Cap - Spiel beitreten</title>
+    <title>DenkstDu - Spiel beitreten</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
     <style>
-        /* No Cap - Join Game Styles */
+        /* DenkstDu Join Game Styles */
         * {
             margin: 0;
             padding: 0;
@@ -26,22 +26,9 @@
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
-            /* iOS Fix */
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             overscroll-behavior: none;
-        }
-
-        /* iOS Specific Fixes */
-        @supports (-webkit-appearance: none) {
-            body {
-                min-height: -webkit-fill-available;
-                background-attachment: fixed;
-            }
-            
-            html {
-                height: -webkit-fill-available;
-            }
         }
 
         /* Background Particles */
@@ -79,32 +66,14 @@
         }
 
         /* Container */
-        .app-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1;
+        .join-container {
+            max-width: 500px;
+            margin: 0 auto;
             padding: 20px;
-            min-height: -webkit-fill-available;
-        }
-
-        .screen {
-            display: flex;
-            flex-direction: column;
             min-height: 100vh;
-            min-height: -webkit-fill-available;
-        }
-
-        .content-area {
-            flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            max-width: 500px;
-            margin: 0 auto;
-            width: 100%;
         }
 
         /* Glass Card */
@@ -115,245 +84,77 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 30px;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-            width: 100%;
+            color: white;
             -webkit-backdrop-filter: blur(20px);
             transform: translateZ(0);
         }
 
-        .screen-title {
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 30px;
-            text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
-        }
-
-        /* Join Header */
         .join-header {
             text-align: center;
             margin-bottom: 30px;
         }
 
-        .join-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-
-        /* Game Code Section */
-        .game-code-section {
-            margin-bottom: 30px;
-        }
-
-        .game-code-input-container {
-            display: flex;
-            gap: 10px;
+        .join-title {
+            font-size: 2.5rem;
+            font-weight: 800;
             margin-bottom: 10px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
         }
 
-        .game-code-input {
-            flex: 1;
+        .join-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
             background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 1.5rem;
-            font-weight: 700;
             color: white;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
             text-align: center;
             letter-spacing: 2px;
             text-transform: uppercase;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            -webkit-appearance: none;
         }
 
-        .game-code-input:focus {
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: normal;
+            text-transform: none;
+        }
+
+        .form-input:focus {
             outline: none;
             border-color: #4facfe;
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .game-code-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: 400;
-        }
-
-        .paste-btn {
             background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            padding: 15px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: all 0.2s ease;
-            color: white;
-            min-width: 50px;
-            -webkit-appearance: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .paste-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: #4facfe;
-            transform: scale(1.05);
-        }
-
-        .input-hint {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.8rem;
-            text-align: center;
-            font-style: italic;
-        }
-
-        /* Game Code Status */
-        .game-code-status {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .game-code-status.checking {
-            background: rgba(255, 193, 7, 0.2);
-            border: 1px solid #ffc107;
-            color: #ffc107;
-        }
-
-        .game-code-status.found {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
-            color: #4CAF50;
-        }
-
-        .game-code-status.not-found {
-            background: rgba(244, 67, 54, 0.2);
-            border: 1px solid #f44336;
-            color: #f44336;
-        }
-
-        .game-code-status.offline {
-            background: rgba(158, 158, 158, 0.2);
-            border: 1px solid #9e9e9e;
-            color: #9e9e9e;
-        }
-
-        /* Player Name Section */
-        .player-name-section {
-            margin-bottom: 30px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.4s ease;
-        }
-
-        .player-name-section.visible {
-            opacity: 1;
-            transform: translateY(0);
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
         }
 
         .player-name-input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 1.1rem;
-            color: white;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            margin-bottom: 10px;
-            -webkit-backdrop-filter: blur(10px);
-            -webkit-appearance: none;
+            text-transform: none;
+            letter-spacing: normal;
         }
 
-        .player-name-input:focus {
-            outline: none;
-            border-color: #4facfe;
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .player-name-input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        /* Game Info Preview */
-        .game-info-preview {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 1px solid rgba(79, 172, 254, 0.3);
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.4s ease;
-        }
-
-        .game-info-preview.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .game-info-grid {
-            display: grid;
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .info-emoji {
-            font-size: 1.2rem;
-            width: 24px;
-            text-align: center;
-        }
-
-        .info-text {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-            line-height: 1.3;
-        }
-
-        /* Connection Status */
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 10px 15px;
-            color: white;
-            font-size: 0.8rem;
-            z-index: 1000;
-            transition: all 0.3s ease;
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .connection-status.connected {
-            border: 1px solid #4CAF50;
-            background: rgba(76, 175, 80, 0.2);
-        }
-
-        .connection-status.disconnected {
-            border: 1px solid #f44336;
-            background: rgba(244, 67, 54, 0.2);
-        }
-
-        .connection-status.connecting {
-            border: 1px solid #ffc107;
-            background: rgba(255, 193, 7, 0.2);
-        }
-
-        /* Buttons */
+        /* Button Styles */
         .btn {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
             border: none;
             padding: 18px 32px;
@@ -362,103 +163,117 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.4);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
             text-transform: uppercase;
             letter-spacing: 1px;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
+            width: 100%;
             -webkit-appearance: none;
             -webkit-tap-highlight-color: transparent;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(238, 90, 82, 0.6);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: 0 4px 15px rgba(238, 90, 82, 0.2);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            color: white;
-            box-shadow: none;
-        }
-
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: white;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn-primary:hover {
             box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
         }
 
-        .btn-primary:disabled {
-            background: rgba(76, 175, 80, 0.3);
+.btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
             box-shadow: none;
         }
 
-        /* Navigation */
-        .nav-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-            width: 100%;
-        }
-
-        .nav-buttons .btn {
-            flex: 1;
-        }
-
-        /* Back Button */
-        .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1rem;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            z-index: 100;
-            -webkit-backdrop-filter: blur(10px);
-            -webkit-appearance: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .back-button:hover {
+        .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.3);
-            transform: translateX(-2px);
+            border-color: white;
         }
 
-        /* Loading */
-        .loading {
-            display: none;
+        /* Game Info Preview */
+        .game-info-preview {
+            margin: 25px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+
+        .game-info-preview.visible {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 300px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Player Name Section */
+        .player-name-section {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            transform: translateY(-10px);
+        }
+
+        .player-name-section.visible {
+            opacity: 1;
+            max-height: 150px;
+            transform: translateY(0);
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
         }
 
-        .loading.show {
-            display: block;
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
         }
 
         .spinner {
@@ -468,6 +283,7 @@
             border-top: 3px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
             will-change: transform;
         }
 
@@ -534,7 +350,7 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
-            .app-container {
+            .join-container {
                 padding: 15px;
             }
 
@@ -542,71 +358,10 @@
                 padding: 25px 20px;
             }
 
-            .game-code-input {
-                font-size: 1.2rem;
-                padding: 12px;
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
             }
-
-            .nav-buttons {
-                flex-direction: column;
-            }
-
-            .nav-buttons .btn {
-                width: 100%;
-            }
-
-            .back-button {
-                top: 15px;
-                left: 15px;
-                padding: 8px 12px;
-                font-size: 0.9rem;
-            }
-
-            .connection-status {
-                top: 15px;
-                right: 15px;
-                font-size: 0.7rem;
-                padding: 8px 12px;
-            }
-        }
-
-        /* iOS Safe Area */
-        @supports (padding: max(0px)) {
-            .app-container {
-                padding-top: max(20px, env(safe-area-inset-top));
-                padding-bottom: max(20px, env(safe-area-inset-bottom));
-                padding-left: max(20px, env(safe-area-inset-left));
-                padding-right: max(20px, env(safe-area-inset-right));
-            }
-        }
-
-        /* Debug Mode */
-        .debug-panel {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            max-width: 300px;
-            z-index: 1000;
-            display: none;
-        }
-
-        .debug-panel.show {
-            display: block;
-        }
-
-        .debug-row {
-            margin: 3px 0;
-        }
-
-        .debug-label {
-            color: #4CAF50;
-            font-weight: bold;
         }
     </style>
 </head>
@@ -620,154 +375,86 @@
         <div class="particle"></div>
     </div>
 
-    <!-- Connection Status -->
-    <div class="connection-status connecting" id="connection-status">
-        🔄 Verbinde...
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Trete Spiel bei...</p>
+        </div>
     </div>
 
-    <!-- Back Button -->
-    <button class="back-button" onclick="goBack()">← Zurück</button>
+    <!-- Join Container -->
+    <div class="join-container">
+        <div class="glass-card">
+            <div class="join-header">
+                <h1 class="join-title">🎮 Spiel beitreten</h1>
+                <p class="join-subtitle">Gib den 4-stelligen Spiel-Code ein</p>
+            </div>
 
-    <!-- Loading Spinner -->
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-    </div>
+            <!-- Game Code Input -->
+            <div class="form-group">
+                <label class="form-label" for="game-code-input">Spiel-Code</label>
+                <input 
+                    type="text" 
+                    id="game-code-input" 
+                    class="form-input" 
+                    placeholder="Z.B. ABCD" 
+                    maxlength="4"
+                    oninput="handleGameCodeInput()"
+                >
+            </div>
 
-    <!-- Debug Panel -->
-    <div class="debug-panel" id="debug-panel">
-        <div class="debug-row"><span class="debug-label">Firebase:</span> <span id="debug-firebase">-</span></div>
-        <div class="debug-row"><span class="debug-label">Connected:</span> <span id="debug-connected">-</span></div>
-        <div class="debug-row"><span class="debug-label">Game Code:</span> <span id="debug-gamecode">-</span></div>
-        <div class="debug-row"><span class="debug-label">Game Found:</span> <span id="debug-found">-</span></div>
-        <div class="debug-row"><span class="debug-label">Player ID:</span> <span id="debug-playerid">-</span></div>
-        <div class="debug-row"><span class="debug-label">Error:</span> <span id="debug-error">-</span></div>
-    </div>
-
-    <!-- App Container -->
-    <div class="app-container">
-        <div class="screen active">
-            <div class="content-area">
-                <h2 class="screen-title">Spiel beitreten</h2>
-                
-                <div class="glass-card">
-                    <div class="join-header">
-                        <div class="join-icon">🔗</div>
-                        <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 25px;">
-                            Tritt dem Spiel deiner Freunde bei
-                        </p>
+            <!-- Game Info Preview -->
+            <div class="game-info-preview" id="game-info-preview">
+                <h4 style="text-align: center; margin-bottom: 15px; color: #4facfe;">🎯 Spiel-Info</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Kategorien</div>
+                        <div class="info-value" id="game-categories">-</div>
                     </div>
-
-                    <!-- Game Code Input -->
-                    <div class="game-code-section">
-                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">Game Code eingeben</h3>
-                        <div class="game-code-input-container">
-                            <input type="text" 
-                                   class="game-code-input" 
-                                   id="game-code-input" 
-                                   placeholder="ABC123" 
-                                   maxlength="6"
-                                   autocomplete="off"
-                                   onInput="formatGameCode(this)"
-                                   onKeyPress="handleGameCodeKeyPress(event)">
-                            <button class="paste-btn" onclick="pasteGameCode()" title="Einfügen">📋</button>
-                        </div>
-                        <div class="input-hint">
-                            6-stelliger Code vom Gastgeber
-                        </div>
-                        
-                        <!-- Game Code Status -->
-                        <div class="game-code-status" id="game-code-status" style="display: none;">
-                            <!-- Status will be updated dynamically -->
-                        </div>
+                    <div class="info-item">
+                        <div class="info-label">Schwierigkeit</div>
+                        <div class="info-value" id="game-difficulty">-</div>
                     </div>
-
-                    <!-- Player Name Input -->
-                    <div class="player-name-section" id="player-name-section">
-                        <h3 style="color: white; margin-bottom: 15px; text-align: center;">Dein Name</h3>
-                        <input type="text" 
-                               class="player-name-input" 
-                               id="player-name-input" 
-                               placeholder="Dein Spielername" 
-                               maxlength="20"
-                               onKeyPress="handleNameKeyPress(event)"
-                               onInput="updateJoinButton()">
-                        <div class="input-hint">
-                            Wie sollen dich die anderen nennen?
-                        </div>
+                    <div class="info-item">
+                        <div class="info-label">Status</div>
+                        <div class="info-value" id="game-status">-</div>
                     </div>
-
-                    <!-- Game Info Preview -->
-                    <div class="game-info-preview" id="game-info-preview">
-                        <h4 style="color: #4facfe; margin-bottom: 10px;">🎮 Spiel-Info</h4>
-                        <div class="game-info-grid">
-                            <div class="info-item">
-                                <span class="info-emoji">👑</span>
-                                <span class="info-text">
-                                    <strong>Gastgeber:</strong> <span id="game-host">-</span>
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-emoji">👥</span>
-                                <span class="info-text">
-                                    <strong>Spieler:</strong> <span id="game-players">-/-</span>
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-emoji">📝</span>
-                                <span class="info-text">
-                                    <strong>Kategorien:</strong> <span id="game-categories">-</span>
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-emoji">🍺</span>
-                                <span class="info-text">
-                                    <strong>Modus:</strong> <span id="game-difficulty">-</span>
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-emoji">🎯</span>
-                                <span class="info-text">
-                                    <strong>Status:</strong> <span id="game-status">-</span>
-                                </span>
-                            </div>
-                        </div>
+                    <div class="info-item">
+                        <div class="info-label">Spieler</div>
+                        <div class="info-value" id="game-players">-</div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Join Button -->
-                <div class="nav-buttons">
-                    <button class="btn btn-outline" onclick="goBack()">Zurück</button>
-                    <button class="btn btn-primary" onclick="joinGame()" id="join-btn" disabled>
-                        🚀 Spiel beitreten
-                    </button>
+            <!-- Player Name Input -->
+            <div class="player-name-section" id="player-name-section">
+                <div class="form-group">
+                    <label class="form-label" for="player-name-input">Dein Name</label>
+                    <input 
+                        type="text" 
+                        id="player-name-input" 
+                        class="form-input player-name-input" 
+                        placeholder="Dein Spielername" 
+                        maxlength="20"
+                        oninput="updateJoinButton()"
+                    >
                 </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="btn btn-secondary" onclick="goBack()">
+                    🔙 Zurück
+                </button>
+                <button class="btn" onclick="joinGame()" id="join-btn" disabled>
+                    🚀 Beitreten
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        // ===== DEBUG MODE =====
-        let debugMode = false;
-        let lastError = null;
-
-        function toggleDebug() {
-            debugMode = !debugMode;
-            const panel = document.getElementById('debug-panel');
-            panel.classList.toggle('show', debugMode);
-            if (debugMode) updateDebugInfo();
-        }
-
-        function updateDebugInfo() {
-            if (!debugMode) return;
-            
-            document.getElementById('debug-firebase').textContent = firebaseService.isInitialized ? 'Yes' : 'No';
-            document.getElementById('debug-connected').textContent = firebaseService.isConnected ? 'Yes' : 'No';
-            document.getElementById('debug-gamecode').textContent = document.getElementById('game-code-input').value || '-';
-            document.getElementById('debug-found').textContent = currentGameData ? 'Yes' : 'No';
-            document.getElementById('debug-playerid').textContent = gameState ? gameState.playerId : '-';
-            document.getElementById('debug-error').textContent = lastError || '-';
-        }
-
         // ===== FIREBASE INTEGRATION =====
         class FirebaseGameService {
             constructor() {
@@ -777,7 +464,6 @@
                 this.isConnected = false;
                 this.gameRef = null;
                 this.playerRef = null;
-                this.initializationPromise = null;
                 
                 // Firebase Konfiguration
                 this.config = {
@@ -792,241 +478,109 @@
                 };
             }
 
-            // Firebase initialisieren - only once
+            // Firebase initialisieren
             async initialize() {
-                if (this.initializationPromise) {
-                    return this.initializationPromise;
-                }
-
-                this.initializationPromise = this._doInitialize();
-                return this.initializationPromise;
-            }
-
-            async _doInitialize() {
                 try {
                     console.log('🔥 Initializing Firebase...');
-                    lastError = null;
                     
-                    // Prüfen ob Firebase SDK verfügbar ist
                     if (typeof firebase === 'undefined') {
                         throw new Error('Firebase SDK not loaded');
                     }
 
-                    // Firebase App initialisieren
                     if (!firebase.apps || firebase.apps.length === 0) {
                         this.app = firebase.initializeApp(this.config);
                     } else {
                         this.app = firebase.app();
                     }
 
-                    // Database Referenz erstellen
                     this.database = firebase.database();
-
-                    // Setup connection monitoring first
-                    this.setupConnectionMonitoring();
-
-                    // Test connection with timeout
-                    const connected = await Promise.race([
-                        this.testConnection(),
-                        new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('Connection timeout')), 8000)
-                        )
-                    ]);
                     
-                    this.isInitialized = connected;
-                    
-                    console.log('✅ Firebase initialized:', this.isInitialized);
-                    updateDebugInfo();
-                    return this.isInitialized;
-
-} catch (error) {
-                    console.error('❌ Firebase initialization failed:', error);
-                    lastError = error.message;
-                    this.updateConnectionStatus('disconnected');
-                    this.isInitialized = false;
-                    updateDebugInfo();
-                    return false;
-                }
-            }
-
-            // Connection monitoring - don't show warning immediately
-            setupConnectionMonitoring() {
-                const connectedRef = this.database.ref('.info/connected');
-                let firstConnection = true;
-                
-                connectedRef.on('value', (snapshot) => {
-                    const wasConnected = this.isConnected;
-                    this.isConnected = snapshot.val() === true;
-                    
-                    if (firstConnection) {
-                        // First connection check - don't show warning
-                        firstConnection = false;
-                        this.updateConnectionStatus(this.isConnected ? 'connected' : 'connecting');
-                    } else {
-                        // Subsequent connection changes
-                        this.updateConnectionStatus(this.isConnected ? 'connected' : 'disconnected');
-                    }
-                    
-                    updateDebugInfo();
-                });
-            }
-
-            // Verbindung testen
-            async testConnection() {
-                try {
+                    // Test connection
                     const testRef = this.database.ref('.info/connected');
                     const snapshot = await testRef.once('value');
-                    const connected = snapshot.val() === true;
+                    this.isConnected = snapshot.val() === true;
+                    this.isInitialized = this.isConnected;
                     
-                    return connected;
-                    
+                    console.log('✅ Firebase initialized:', this.isInitialized);
+                    return this.isInitialized;
+
                 } catch (error) {
-                    console.error('❌ Connection test failed:', error);
-                    lastError = error.message;
-                    updateDebugInfo();
+                    console.error('❌ Firebase initialization failed:', error);
+                    this.isInitialized = false;
                     return false;
                 }
             }
 
-            // Connection Status UI update
-            updateConnectionStatus(status) {
-                const statusEl = document.getElementById('connection-status');
-                if (!statusEl) return;
-
-                statusEl.className = `connection-status ${status}`;
-                
-                switch (status) {
-                    case 'connected':
-                        statusEl.innerHTML = '🟢 Online';
-                        break;
-                    case 'disconnected':
-                        statusEl.innerHTML = '🔴 Offline';
-                        break;
-                    case 'connecting':
-                        statusEl.innerHTML = '🔄 Verbinde...';
-                        break;
+            // Spiel-Info abrufen
+            async getGameInfo(gameId) {
+                if (!this.isInitialized) {
+                    throw new Error('Firebase not initialized');
                 }
-            }
 
-            // Spiel suchen - FIXED VERSION
-            async findGame(gameId) {
                 try {
-                    lastError = null;
-                    
-                    if (!this.isInitialized) {
-                        throw new Error('Firebase not initialized');
-                    }
-
-                    if (!this.isConnected) {
-                        throw new Error('No Firebase connection');
-                    }
-
-                    console.log(`🔍 Searching for game: ${gameId}`);
-                    
                     const gameRef = this.database.ref(`games/${gameId}`);
-                    
-                    // Timeout für die Suche
-                    const searchPromise = gameRef.once('value');
-                    const timeoutPromise = new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Search timeout')), 8000)
-                    );
-                    
-                    const snapshot = await Promise.race([searchPromise, timeoutPromise]);
+                    const snapshot = await gameRef.once('value');
                     
                     if (!snapshot.exists()) {
-                        console.log('❌ Game not found');
-                        return null;
-                    }
-
-                    const gameData = snapshot.val();
-                    console.log('✅ Game found:', gameData);
-                    
-                    updateDebugInfo();
-                    return gameData;
-                    
-                } catch (error) {
-                    console.error('❌ Error finding game:', error);
-                    lastError = error.message;
-                    updateDebugInfo();
-                    
-                    // Re-throw nur bei echten Fehlern, nicht bei "not found"
-                    if (error.message.includes('timeout') || 
-                        error.message.includes('connection') || 
-                        error.message.includes('initialized')) {
-                        throw error;
-                    }
-                    
-                    return null;
-                }
-            }
-
-            // Spiel beitreten - FIXED VERSION
-            async joinGame(gameId, playerData) {
-                try {
-                    lastError = null;
-                    
-                    if (!this.isInitialized) {
-                        throw new Error('Firebase not initialized');
-                    }
-
-                    if (!this.isConnected) {
-                        throw new Error('No Firebase connection');
-                    }
-
-                    console.log(`🎮 Joining game ${gameId} as ${playerData.name}`);
-
-                    // Game Referenz
-                    this.gameRef = this.database.ref(`games/${gameId}`);
-                    
-                    // Spiel erneut prüfen
-                    const gameSnapshot = await this.gameRef.once('value');
-                    if (!gameSnapshot.exists()) {
                         throw new Error('Spiel nicht gefunden');
                     }
 
-                    const gameData = gameSnapshot.val();
+                    const gameData = snapshot.val();
                     
-                    // Spielstatus prüfen
+                    // Check if game is joinable
                     if (gameData.gameState === 'finished') {
                         throw new Error('Spiel bereits beendet');
                     }
 
-                    // Spieler-Limit prüfen
-                    const currentPlayers = Object.keys(gameData.players || {});
-                    if (currentPlayers.length >= (gameData.maxPlayers || 8)) {
+                    return gameData;
+
+                } catch (error) {
+                    console.error('❌ Error getting game info:', error);
+                    throw error;
+                }
+            }
+
+            // Spiel beitreten
+            async joinGame(gameId, playerData) {
+                if (!this.isInitialized) {
+                    throw new Error('Firebase not initialized');
+                }
+
+                try {
+                    // Get game data first
+                    const gameData = await this.getGameInfo(gameId);
+                    
+                    // Check player count
+                    const currentPlayers = gameData.players || {};
+                    if (Object.keys(currentPlayers).length >= 8) {
                         throw new Error('Spiel ist voll');
                     }
 
-                    // Name-Duplikat prüfen
-                    const existingPlayers = Object.values(gameData.players || {});
-                    if (existingPlayers.some(p => p.name.toLowerCase() === playerData.name.toLowerCase())) {
+                    // Check if name is already taken
+                    const existingNames = Object.values(currentPlayers).map(p => p.name.toLowerCase());
+                    if (existingNames.includes(playerData.name.toLowerCase())) {
                         throw new Error('Name bereits vergeben');
                     }
 
-                    // Player hinzufügen mit besserer ID-Generierung
-                    const timestamp = Date.now();
-                    const randomSuffix = Math.random().toString(36).substr(2, 9);
-                    const playerId = `guest_${timestamp}_${randomSuffix}`;
+                    // Create unique player ID
+                    const playerId = `guest_${playerData.name}_${Date.now()}`;
                     
-                    this.playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
-                    
+                    // Create player object
                     const playerObject = {
                         id: playerId,
                         name: playerData.name,
                         isHost: false,
-                        isGuest: true,
                         isReady: false,
                         joinedAt: firebase.database.ServerValue.TIMESTAMP,
-                        isOnline: true,
-                        lastSeen: firebase.database.ServerValue.TIMESTAMP
+                        isOnline: true
                     };
 
-                    console.log('🔧 Creating player object:', playerObject);
+                    // Add player to game
+                    this.playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
                     await this.playerRef.set(playerObject);
 
                     // Player Online-Status überwachen
                     this.playerRef.child('isOnline').onDisconnect().set(false);
-                    this.playerRef.child('lastSeen').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
                     await this.playerRef.child('isOnline').set(true);
 
                     console.log('✅ Successfully joined game');
@@ -1040,18 +594,38 @@
 
                 } catch (error) {
                     console.error('❌ Error joining game:', error);
-                    lastError = error.message;
-                    updateDebugInfo();
                     throw error;
                 }
             }
 
-            // Game Updates überwachen
+            // Game Updates überwachen - VERBESSERT FÜR SYNCHRONEN SPIELSTART
             listenToGameUpdates(gameId, callback) {
                 if (!this.isInitialized) return null;
 
                 const gameRef = this.database.ref(`games/${gameId}`);
-                gameRef.on('value', callback);
+                
+                // Enhanced listener für sofortige gameState-Erkennung
+                gameRef.on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        const gameData = snapshot.val();
+                        
+                        // Sofortige Reaktion auf gameState-Änderungen
+                        if (gameData.gameState) {
+                            console.log(`🎮 GameState detected: ${gameData.gameState}`);
+                            
+                            // Sofortige Navigation bei 'playing'
+                            if (gameData.gameState === 'playing') {
+                                console.log('🚀 Game started detected - immediate navigation');
+                                setTimeout(() => handleGameStarted(gameData), 100);
+                            }
+                        }
+                        
+                        callback(snapshot);
+                    } else {
+                        callback(snapshot);
+                    }
+                });
+                
                 return gameRef;
             }
 
@@ -1066,7 +640,7 @@
             }
         }
 
-        // ===== GAME STATE MANAGEMENT - FIXED VERSION =====
+        // ===== GAME STATE MANAGEMENT =====
         class GameState {
             constructor(playerKey = null) {
                 this.playerKey = playerKey;
@@ -1083,17 +657,17 @@
                 this.playerId = null;
                 this.playerName = null;
                 this.isHost = false;
-                this.isGuest = true;
+                this.isGuest = false;
                 this.currentQuestionIndex = 0;
-                this.gamePhase = 'waiting';
+                this.gamePhase = 'lobby';
                 this.timestamp = Date.now();
             }
 
             getStorageKey() {
                 if (this.playerKey) {
-                    return `nocap_game_state_${this.playerKey}`;
+                    return `denkstdu_game_state_${this.playerKey}`;
                 }
-                return 'nocap_game_state_guest';
+                return 'denkstdu_game_state';
             }
 
             saveToStorage() {
@@ -1111,13 +685,12 @@
                         currentQuestionIndex: this.currentQuestionIndex,
                         gamePhase: this.gamePhase,
                         timestamp: Date.now(),
-                        version: 4,
+                        version: 3,
                         playerKey: this.playerKey
                     };
                     
                     localStorage.setItem(this.getStorageKey(), JSON.stringify(stateToSave));
                     console.log('💾 GameState saved:', this.getStorageKey());
-                    console.log('💾 Saved data:', stateToSave);
                     return true;
                 } catch (error) {
                     console.error('❌ Failed to save GameState:', error);
@@ -1157,10 +730,10 @@
 
         // ===== GLOBAL VARIABLES =====
         let firebaseService = new FirebaseGameService();
-        let currentGameData = null;
         let gameState = null;
-        let checkingGameCode = false;
         let gameListener = null;
+        let currentGameData = null;
+        let isNavigating = false; // Prevent multiple navigation attempts
 
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
@@ -1168,179 +741,73 @@
         });
 
         async function initJoinGame() {
-            console.log('🔗 Initializing join game page...');
+            console.log('🎮 Initializing join game...');
             
-            // Start Firebase initialization in background - don't wait
-            setTimeout(async () => {
-                const firebaseReady = await firebaseService.initialize();
-                
-                if (!firebaseReady) {
-                    console.error('❌ Firebase initialization failed, but continuing...');
-                }
-            }, 100);
+            // Initialize Firebase
+            const firebaseReady = await firebaseService.initialize();
             
-            // Check for Game Code in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const gameCodeFromUrl = urlParams.get('gameId');
-            
-            if (gameCodeFromUrl) {
-                document.getElementById('game-code-input').value = gameCodeFromUrl.toUpperCase();
-                // Wait a bit for Firebase to be ready
-                setTimeout(() => {
-                    lookupGame(gameCodeFromUrl);
-                }, 1000);
+            if (!firebaseReady) {
+                showNotification('Firebase-Verbindung fehlgeschlagen. Offline-Modus aktiv.', 'warning');
             }
-
-            // Add entrance animations
-            setTimeout(() => {
-                const glassCard = document.querySelector('.glass-card');
-                glassCard.style.opacity = '0';
-                glassCard.style.transform = 'translateY(20px)';
-                glassCard.style.transition = 'all 0.6s ease';
-                setTimeout(() => {
-                    glassCard.style.opacity = '1';
-                    glassCard.style.transform = 'translateY(0)';
-                }, 100);
-            }, 300);
-
-            updateJoinButton();
-            updateDebugInfo();
+            
+            console.log('✅ Join game initialized');
         }
 
         // ===== GAME CODE HANDLING =====
-        function formatGameCode(input) {
-            let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        function handleGameCodeInput() {
+            const input = document.getElementById('game-code-input');
+            let value = input.value.toUpperCase().replace(/[^A-Z]/g, '');
+            
+            if (value.length > 4) {
+                value = value.substring(0, 4);
+            }
+            
             input.value = value;
-            updateDebugInfo();
-
-            if (value.length === 6) {
-                lookupGame(value);
+            
+            if (value.length === 4) {
+                checkGameExists(value);
             } else {
                 hideGameInfo();
-                hideGameCodeStatus();
                 updateJoinButton();
             }
         }
 
-        function handleGameCodeKeyPress(event) {
-            if (event.key === 'Enter') {
-                const gameCode = document.getElementById('game-code-input').value;
-                if (gameCode.length === 6) {
-                    lookupGame(gameCode);
-                }
+        async function checkGameExists(gameCode) {
+            if (!firebaseService.isInitialized) {
+                showNotification('Firebase nicht verfügbar', 'warning');
+                return;
             }
-        }
-
-        function handleNameKeyPress(event) {
-            if (event.key === 'Enter') {
-                joinGameAction();
-            }
-        }
-
-        // ===== CLIPBOARD HANDLING =====
-        async function pasteGameCode() {
-            try {
-                if (navigator.clipboard) {
-                    const text = await navigator.clipboard.readText();
-                    const gameCode = text.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
-                    
-                    if (gameCode.length === 6) {
-                        document.getElementById('game-code-input').value = gameCode;
-                        lookupGame(gameCode);
-                        showNotification('Game Code eingefügt!', 'success');
-                    } else {
-                        showNotification('Ungültiger Game Code in Zwischenablage', 'warning');
-                    }
-                } else {
-                    showNotification('Zwischenablage nicht verfügbar', 'warning');
-                }
-            } catch (error) {
-                showNotification('Zwischenablage nicht verfügbar', 'warning');
-            }
-        }
-
-        // ===== GAME LOOKUP =====
-        async function lookupGame(gameCode) {
-            if (!gameCode || gameCode.length !== 6 || checkingGameCode) return;
-
-            checkingGameCode = true;
-            showGameCodeStatus('checking', '🔍 Suche Spiel...');
 
             try {
-                // Wait for Firebase if not initialized
-                if (!firebaseService.isInitialized) {
-                    console.log('⏳ Waiting for Firebase...');
-                    await firebaseService.initialize();
-                    
-                    // Give it a moment more
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-
-                if (!firebaseService.isInitialized) {
-                    showGameCodeStatus('offline', '⚠️ Keine Verbindung zu Firebase');
-                    return;
-                }
-
-                // Firebase Game Lookup
-                const gameData = await firebaseService.findGame(gameCode);
+                showNotification('Spiel wird gesucht...', 'info');
+                
+                const gameData = await firebaseService.getGameInfo(gameCode);
                 
                 if (gameData) {
-                    currentGameData = gameData;
-                    showGameCodeStatus('found', '✅ Spiel gefunden!');
                     displayGameInfo(gameData);
                     showPlayerNameInput();
                     
-                    // Focus on name input
-                    setTimeout(() => {
-                        document.getElementById('player-name-input').focus();
-                    }, 500);
-                    
-                } else {
-                    showGameCodeStatus('not-found', '❌ Spiel nicht gefunden');
-                    hideGameInfo();
-                    currentGameData = null;
+                    // Setup game listener for this game
+                    setupGameListener(gameCode);
                 }
                 
             } catch (error) {
-                console.error('❌ Error looking up game:', error);
+                console.error('❌ Game check failed:', error);
                 
-                if (error.message.includes('timeout')) {
-                    showGameCodeStatus('not-found', '⏱️ Zeitüberschreitung - erneut versuchen');
-                } else if (error.message.includes('connection')) {
-                    showGameCodeStatus('offline', '⚠️ Verbindungsfehler');
-                } else {
-                    showGameCodeStatus('not-found', '❌ Spiel nicht gefunden');
+                let errorMessage = 'Spiel nicht gefunden';
+                if (error.message.includes('beendet')) {
+                    errorMessage = 'Spiel bereits beendet';
+                } else if (error.message.includes('voll')) {
+                    errorMessage = 'Spiel ist voll';
                 }
                 
+                showNotification(errorMessage, 'error');
                 hideGameInfo();
-                currentGameData = null;
-            } finally {
-                checkingGameCode = false;
-                updateJoinButton();
-                updateDebugInfo();
             }
-        }
-
-        // ===== UI UPDATES =====
-        function showGameCodeStatus(type, message) {
-            const statusEl = document.getElementById('game-code-status');
-            statusEl.className = `game-code-status ${type}`;
-            statusEl.textContent = message;
-            statusEl.style.display = 'block';
-        }
-
-        function hideGameCodeStatus() {
-            document.getElementById('game-code-status').style.display = 'none';
         }
 
         function displayGameInfo(gameData) {
             const preview = document.getElementById('game-info-preview');
-            
-            // Update game info
-            document.getElementById('game-host').textContent = gameData.gameCreator || 'Unbekannt';
-            
-            const playerCount = Object.keys(gameData.players || {}).length;
-            document.getElementById('game-players').textContent = `${playerCount}/${gameData.maxPlayers || 8}`;
             
             // Category names mapping
             const categoryNames = {
@@ -1368,6 +835,10 @@
             };
             document.getElementById('game-status').textContent = statusNames[gameData.gameState] || 'Unbekannt';
             
+            // Player count
+            const playerCount = gameData.players ? Object.keys(gameData.players).length : 0;
+            document.getElementById('game-players').textContent = `${playerCount}/8`;
+            
             // Show preview with animation
             preview.classList.add('visible');
         }
@@ -1387,52 +858,39 @@
             const gameCode = document.getElementById('game-code-input').value;
             const playerName = document.getElementById('player-name-input').value.trim();
             
-            const isValidGameCode = gameCode.length === 6;
-            const isValidName = playerName.length >= 2 && playerName.length <= 20;
-            const hasGameData = currentGameData !== null;
-            const notChecking = !checkingGameCode;
-            const isConnected = firebaseService.isConnected;
+            const isValidGameCode = gameCode.length === 4;
+            const isValidPlayerName = playerName.length >= 2;
+            const hasGameInfo = document.getElementById('game-info-preview').classList.contains('visible');
             
-            const canJoin = isValidGameCode && isValidName && hasGameData && notChecking && isConnected;
-            
-            joinBtn.disabled = !canJoin;
-            
-            if (canJoin) {
+            if (isValidGameCode && isValidPlayerName && hasGameInfo) {
+                joinBtn.disabled = false;
                 joinBtn.textContent = '🚀 Spiel beitreten';
-                joinBtn.style.opacity = '1';
-                joinBtn.style.cursor = 'pointer';
-            } else if (checkingGameCode) {
-                joinBtn.textContent = '🔍 Suche Spiel...';
-                joinBtn.style.opacity = '0.7';
-                joinBtn.style.cursor = 'not-allowed';
-            } else if (!isConnected) {
-                joinBtn.textContent = '🔴 Keine Verbindung';
-                joinBtn.style.opacity = '0.5';
-                joinBtn.style.cursor = 'not-allowed';
             } else {
-                joinBtn.textContent = '🚀 Spiel beitreten';
-                joinBtn.style.opacity = '0.5';
-                joinBtn.style.cursor = 'not-allowed';
+                joinBtn.disabled = true;
+                if (!isValidGameCode) {
+                    joinBtn.textContent = '⌨️ Spiel-Code eingeben';
+                } else if (!hasGameInfo) {
+                    joinBtn.textContent = '🔍 Spiel suchen...';
+                } else if (!isValidPlayerName) {
+                    joinBtn.textContent = '👤 Name eingeben';
+                } else {
+                    joinBtn.textContent = '🚀 Spiel beitreten';
+                }
             }
         }
 
-        // ===== JOIN GAME - FIXED VERSION =====
+        // ===== GAME JOINING - VERBESSERT FÜR SYNCHRONEN START =====
         async function joinGame() {
             const gameCode = document.getElementById('game-code-input').value;
             const playerName = document.getElementById('player-name-input').value.trim();
 
-            if (!currentGameData) {
-                showNotification('Spiel nicht verfügbar', 'error');
+            if (gameCode.length !== 4) {
+                showNotification('Ungültiger Spiel-Code (4 Zeichen)', 'warning');
                 return;
             }
 
-            if (!playerName || playerName.length < 2) {
-                showNotification('Name muss mindestens 2 Zeichen haben', 'warning');
-                return;
-            }
-
-            if (playerName.length > 20) {
-                showNotification('Name ist zu lang (max. 20 Zeichen)', 'warning');
+            if (playerName.length < 2) {
+                showNotification('Name zu kurz (min. 2 Zeichen)', 'warning');
                 return;
             }
 
@@ -1441,17 +899,24 @@
                 return;
             }
 
+            // Prevent multiple join attempts
+            if (isNavigating) {
+                console.log('⚠️ Join already in progress');
+                return;
+            }
+
             showLoading();
 
             try {
+                console.log('🚀 Attempting to join game...');
+                
                 // Firebase Join Game
                 const joinResult = await firebaseService.joinGame(gameCode, {
                     name: playerName
                 });
 
-                // Create guest game state with unique key
-                const timestamp = Date.now();
-                const guestPlayerKey = `guest_${playerName}_${timestamp}`;
+                // Create guest game state
+                const guestPlayerKey = `guest_${playerName}_${Date.now()}`;
                 gameState = new GameState(guestPlayerKey);
                 
                 // Set up game state
@@ -1489,23 +954,25 @@
                     isHost: gameState.isHost,
                     isGuest: gameState.isGuest,
                     gameId: gameState.gameId,
+                    gamePhase: gameState.gamePhase,
                     storageKey: gameState.getStorageKey()
                 });
                 
-                // Set up game listener before navigation
+                // Set up game listener for real-time updates
                 setupGameListener(gameCode);
                 
                 // Navigate based on game state
                 setTimeout(() => {
-                    if (gameState.gamePhase === 'lobby') {
-                        window.location.href = 'multiplayer-lobby.html';
+                    if (gameState.gamePhase === 'playing') {
+                        navigateToGameplay();
                     } else {
-                        window.location.href = 'multiplayer-gameplay.html';
+                        navigateToLobby();
                     }
                 }, 1500);
 
             } catch (error) {
                 hideLoading();
+                isNavigating = false;
                 console.error('❌ Error joining game:', error);
                 
                 // User-friendly error messages
@@ -1524,7 +991,7 @@
             }
         }
 
-        // Game Updates Listener
+        // VERBESSERTE Game Updates Listener für synchronen Spielstart
         function setupGameListener(gameId) {
             if (gameListener) {
                 gameListener.off();
@@ -1532,135 +999,162 @@
             
             gameListener = firebaseService.listenToGameUpdates(gameId, (snapshot) => {
                 if (snapshot.exists()) {
-                    const gameData = snapshot.val();
-                    console.log('🎮 Game update received:', gameData);
+                    const newGameData = snapshot.val();
+                    const oldGameState = currentGameData?.gameState;
+                    const newGameState = newGameData.gameState;
                     
-                    // Update current game data
-                    currentGameData = gameData;
+                    console.log(`🎮 Game update received - State: ${oldGameState} → ${newGameState}`);
+                    currentGameData = newGameData;
                     
                     // Update UI if still on join page
                     if (document.getElementById('game-info-preview')) {
-                        displayGameInfo(gameData);
+                        displayGameInfo(newGameData);
+                    }
+                    
+                    // KRITISCH: Sofortige Reaktion auf gameState = 'playing'
+                    if (newGameState === 'playing' && oldGameState !== 'playing') {
+                        console.log('🚀 GAME STARTED DETECTED - Immediate navigation');
+                        handleGameStarted(newGameData);
                     }
                 }
             });
         }
 
-        // Alias for button onclick
-        function joinGameAction() {
-            joinGame();
-        }
-
-        // ===== NAVIGATION =====
-        function goBack() {
-            // Cleanup listeners
-            if (gameListener) {
-                gameListener.off();
+        // NEUE VERBESSERTE handleGameStarted FUNKTION
+        function handleGameStarted(gameData = null) {
+            if (isNavigating) {
+                console.log('⚠️ Navigation already in progress, skipping duplicate');
+                return;
             }
-            firebaseService.cleanup();
             
-            window.location.href = 'index.html';
-        }
-
-        // ===== CLEANUP =====
-        window.addEventListener('beforeunload', function() {
-            if (gameListener) {
-                gameListener.off();
+            console.log('🚀 handleGameStarted triggered');
+            isNavigating = true;
+            
+            showNotification('Spiel wurde gestartet! 🎮', 'success');
+            showLoading();
+            
+            // Update local game state immediately
+            if (gameState) {
+                gameState.gamePhase = 'playing';
+                
+                // Copy any new game data
+                if (gameData) {
+                    if (gameData.categories) gameState.selectedCategories = gameData.categories;
+                    if (gameData.difficulty) gameState.difficulty = gameData.difficulty;
+                }
+                
+                gameState.saveToStorage();
             }
-            firebaseService.cleanup();
-        });
-
-        // ===== UTILITY FUNCTIONS =====
-        function showLoading() {
-            document.getElementById('loading').classList.add('show');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading').classList.remove('show');
-        }
-
-        function showNotification(message, type = 'info') {
-            // Remove existing notifications
-            document.querySelectorAll('.toast-notification').forEach(n => n.remove());
             
-            const notification = document.createElement('div');
-            notification.className = `toast-notification ${type}`;
-            notification.innerHTML = `
-                <div class="toast-content">
-                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
-                    <div class="toast-message">${message}</div>
-                </div>
-            `;
+            console.log('📱 Navigating to gameplay in 1.5 seconds...');
             
-            document.body.appendChild(notification);
-            
-            // Animate in
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            // Remove after 4 seconds
+            // Navigate with short delay for user feedback
             setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                        document.body.removeChild(notification);
-                    }
-                }, 300);
-            }, 4000);
+                navigateToGameplay();
+            }, 1500);
         }
 
-        // ===== DEBUG FUNCTIONS =====
-        window.toggleDebug = toggleDebug;
+function navigateToLobby() {
+           console.log('🎯 Navigating to multiplayer-lobby.html');
+           window.location.href = 'multiplayer-lobby.html';
+       }
 
-        // Helper functions for debugging
-        window.getFirebaseStatus = function() {
-            return {
-                initialized: firebaseService.isInitialized,
-                connected: firebaseService.isConnected,
-                currentGame: currentGameData?.gameId || null,
-                lastError: lastError,
-                gameState: gameState ? {
-                    playerId: gameState.playerId,
-                    playerName: gameState.playerName,
-                    isGuest: gameState.isGuest,
-                    storageKey: gameState.getStorageKey()
-                } : null
-            };
-        };
+       function navigateToGameplay() {
+           console.log('🎯 Navigating to multiplayer-gameplay.html');
+           hideLoading();
+           window.location.href = 'multiplayer-gameplay.html';
+       }
 
-        window.clearGameStates = function() {
-            const keys = Object.keys(localStorage);
-            keys.forEach(key => {
-                if (key.includes('nocap_game_state') || key.includes('denkstdu_game_state')) {
-                    localStorage.removeItem(key);
-                    console.log('🗑️ Removed:', key);
-                }
-            });
-            console.log('✅ All game states cleared');
-        };
+       function goBack() {
+           // Cleanup listeners
+           if (gameListener) {
+               gameListener.off();
+           }
+           firebaseService.cleanup();
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Ctrl+D für Debug Toggle
-            if (e.ctrlKey && e.key === 'd') {
-                e.preventDefault();
-                toggleDebug();
-            }
-            
-            // Ctrl+C für Clear States
-            if (e.ctrlKey && e.key === 'c') {
-                e.preventDefault();
-                clearGameStates();
-            }
-        });
+           window.location.href = 'index.html';
+       }
 
-        console.log('✅ Join Game with Mobile Fixes loaded successfully');
-        console.log('🎮 Debug commands:');
-        console.log('- getFirebaseStatus() - Check Firebase connection and game state');
-        console.log('- clearGameStates() - Clear all saved game states');
-        console.log('- toggleDebug() - Toggle debug panel (or Ctrl+D)');
-        console.log('🔧 Keyboard shortcuts:');
-        console.log('- Ctrl+D: Toggle debug panel');
-        console.log('- Ctrl+C: Clear all game states');
-    </script>
+       // ===== CLEANUP =====
+       window.addEventListener('beforeunload', function() {
+           if (gameListener) {
+               gameListener.off();
+           }
+           firebaseService.cleanup();
+       });
+
+       // ===== UTILITY FUNCTIONS =====
+       function showLoading() {
+           document.getElementById('loading-overlay').classList.add('show');
+       }
+
+       function hideLoading() {
+           document.getElementById('loading-overlay').classList.remove('show');
+       }
+
+       function showNotification(message, type = 'info') {
+           // Remove existing notifications
+           document.querySelectorAll('.toast-notification').forEach(n => n.remove());
+           
+           const notification = document.createElement('div');
+           notification.className = `toast-notification ${type}`;
+           notification.innerHTML = `
+               <div class="toast-content">
+                   <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
+                   <div class="toast-message">${message}</div>
+               </div>
+           `;
+           
+           document.body.appendChild(notification);
+           
+           // Animate in
+           setTimeout(() => notification.classList.add('show'), 100);
+           
+           // Remove after 4 seconds
+           setTimeout(() => {
+               notification.classList.remove('show');
+               setTimeout(() => {
+                   if (document.body.contains(notification)) {
+                       document.body.removeChild(notification);
+                   }
+               }, 300);
+           }, 4000);
+       }
+
+       // ===== DEBUG FUNCTIONS =====
+       window.debugJoinGame = function() {
+           console.log('🔍 Join Game Debug Info:');
+           console.log('GameState:', gameState);
+           console.log('Firebase Service:', {
+               initialized: firebaseService.isInitialized,
+               connected: firebaseService.isConnected
+           });
+           console.log('Current Game Data:', currentGameData);
+           console.log('localStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkstdu')));
+           console.log('Navigation state:', { isNavigating });
+       };
+
+       window.simulateGameStart = function() {
+           console.log('🧪 Simulating game start for testing...');
+           const testGameData = {
+               gameState: 'playing',
+               startedAt: Date.now(),
+               categories: ['fsk16'],
+               difficulty: 'medium'
+           };
+           handleGameStarted(testGameData);
+       };
+
+       window.resetNavigationState = function() {
+           isNavigating = false;
+           console.log('🔄 Navigation state reset');
+       };
+
+       console.log('✅ Enhanced Join Game with synchronous game start loaded');
+       console.log('🎮 Enhanced Commands:');
+       console.log('- debugJoinGame() - Show debug info');
+       console.log('- simulateGameStart() - Test game start flow');
+       console.log('- resetNavigationState() - Reset navigation lock');
+   </script>
 </body>
 </html>
