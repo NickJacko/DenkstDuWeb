@@ -13,7 +13,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
     <style>
-        /* DenkstDu - Multiplayer Lobby Styles */
         * {
             margin: 0;
             padding: 0;
@@ -26,27 +25,22 @@
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
-            /* iOS Fix */
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            /* Verhindert bounce scroll auf iOS */
             overscroll-behavior: none;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
-        /* iOS Specific Fixes */
         @supports (-webkit-appearance: none) {
             body {
-                /* iOS specific background fix */
                 min-height: -webkit-fill-available;
                 background-attachment: fixed;
             }
-            
             html {
                 height: -webkit-fill-available;
             }
         }
 
-        /* Background Particles */
         .background-particles {
             position: fixed;
             top: 0;
@@ -55,7 +49,6 @@
             height: 100%;
             overflow: hidden;
             z-index: -1;
-            /* iOS Fix */
             pointer-events: none;
         }
 
@@ -64,7 +57,6 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             animation: float 6s ease-in-out infinite;
-            /* iOS Performance Fix */
             will-change: transform;
             transform: translateZ(0);
         }
@@ -82,7 +74,6 @@
             75% { transform: translateY(-10px) rotate(270deg) translateZ(0); opacity: 0.6; }
         }
 
-        /* Connection Status */
         .connection-status {
             position: fixed;
             top: 20px;
@@ -95,7 +86,6 @@
             font-size: 0.8rem;
             z-index: 1000;
             transition: all 0.3s ease;
-            /* iOS Fix */
             -webkit-backdrop-filter: blur(10px);
         }
 
@@ -114,20 +104,17 @@
             background: rgba(255, 193, 7, 0.2);
         }
 
-        /* Container */
         .lobby-container {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            /* iOS Fix */
-            min-height: -webkit-fill-available;
         }
 
-        /* Glass Card */
         .glass-card {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(20px);
@@ -136,7 +123,6 @@
             padding: 30px;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
             color: white;
-            /* iOS Fix */
             -webkit-backdrop-filter: blur(20px);
             transform: translateZ(0);
         }
@@ -160,17 +146,16 @@
         }
 
         .game-id-display {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: bold;
             background: rgba(255, 255, 255, 0.2);
             padding: 15px;
             border-radius: 15px;
             margin: 20px 0;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             border: 2px solid rgba(79, 172, 254, 0.5);
             position: relative;
             overflow: hidden;
-            /* iOS Fix */
             transform: translateZ(0);
         }
 
@@ -183,7 +168,6 @@
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
             animation: shimmer 2s infinite;
-            /* iOS Fix */
             will-change: transform;
         }
 
@@ -202,15 +186,47 @@
         }
 
         .qr-placeholder {
-            width: 150px;
-            height: 150px;
+            width: 120px;
+            height: 120px;
             background: white;
             border-radius: 10px;
             margin: 0 auto 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
+            font-size: 2.5rem;
+        }
+
+        .game-settings {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .setting-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .setting-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .setting-value {
+            font-weight: 600;
+            font-size: 1rem;
         }
 
         .players-section {
@@ -240,7 +256,6 @@
         .players-list {
             max-height: 300px;
             overflow-y: auto;
-            /* iOS smooth scrolling */
             -webkit-overflow-scrolling: touch;
         }
 
@@ -253,21 +268,11 @@
             border-radius: 15px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
-            /* Disable animation on sync to prevent flicker */
-            opacity: 1;
-            transform: translateX(0);
-            /* iOS Fix */
-            will-change: auto;
         }
 
         .player-item:hover {
             background: rgba(255, 255, 255, 0.15);
             transform: translateX(5px);
-        }
-
-        /* Remove slide animation - causes flicker on sync */
-        .player-item.slide-in {
-            animation: none;
         }
 
         .player-avatar {
@@ -282,7 +287,6 @@
             margin-right: 15px;
             font-size: 1.2rem;
             box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-            /* iOS Fix */
             transform: translateZ(0);
         }
 
@@ -336,37 +340,6 @@
             color: #9e9e9e;
         }
 
-        /* Game Settings Preview */
-        .game-settings {
-            margin: 20px 0;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .setting-item {
-            text-align: center;
-        }
-
-        .setting-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
-
-        .setting-value {
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        /* Controls */
         .controls {
             text-align: center;
             margin-top: 30px;
@@ -388,7 +361,6 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             flex: 1;
-            /* iOS Fix */
             -webkit-appearance: none;
             -webkit-tap-highlight-color: transparent;
         }
@@ -416,7 +388,6 @@
             border-color: white;
         }
 
-        /* Loading Overlay */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -428,7 +399,6 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            /* iOS Fix */
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
         }
@@ -450,7 +420,6 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
-            /* iOS Fix */
             will-change: transform;
         }
 
@@ -459,29 +428,27 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Toast Notifications */
         .toast-notification {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 15px;
+            right: 15px;
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 15px;
+            padding: 15px;
             z-index: 10000;
             opacity: 0;
-            transform: translateX(100%);
+            transform: translateY(-50px);
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-width: 350px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-            /* iOS Fix */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             -webkit-backdrop-filter: blur(25px);
         }
 
         .toast-notification.show {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateY(0);
         }
 
         .toast-notification.success {
@@ -502,21 +469,21 @@
         .toast-content {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             color: white;
         }
 
         .toast-icon {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
         }
 
         .toast-message {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             line-height: 1.4;
+            flex: 1;
         }
 
-        /* Mobile Responsive */
         @media (max-width: 768px) {
             .lobby-container {
                 padding: 15px;
@@ -527,8 +494,8 @@
             }
 
             .game-id-display {
-                font-size: 1.5rem;
-                letter-spacing: 2px;
+                font-size: 1.4rem;
+                letter-spacing: 1px;
             }
 
             .controls {
@@ -546,9 +513,14 @@
                 font-size: 0.7rem;
                 padding: 8px 12px;
             }
+
+            .qr-placeholder {
+                width: 100px;
+                height: 100px;
+                font-size: 2rem;
+            }
         }
 
-        /* iOS Safe Area */
         @supports (padding: max(0px)) {
             .lobby-container {
                 padding-top: max(20px, env(safe-area-inset-top));
@@ -560,7 +532,6 @@
     </style>
 </head>
 <body>
-    <!-- Background Particles -->
     <div class="background-particles">
         <div class="particle"></div>
         <div class="particle"></div>
@@ -569,12 +540,10 @@
         <div class="particle"></div>
     </div>
 
-    <!-- Connection Status -->
     <div class="connection-status connecting" id="connection-status">
         🔄 Verbinde...
     </div>
 
-    <!-- Loading Overlay -->
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-content">
             <div class="spinner"></div>
@@ -582,7 +551,6 @@
         </div>
     </div>
 
-    <!-- Lobby Container -->
     <div class="lobby-container">
         <div class="glass-card">
             <div class="lobby-header">
@@ -593,7 +561,6 @@
                     LOADING...
                 </div>
 
-                <!-- QR Code Section -->
                 <div class="qr-section">
                     <div class="qr-placeholder">📱</div>
                     <p style="font-size: 0.9rem; opacity: 0.8;">
@@ -602,33 +569,32 @@
                 </div>
             </div>
 
-            <!-- Game Settings Preview -->
             <div class="game-settings">
                 <h4 style="text-align: center; margin-bottom: 15px; color: #4facfe;">⚙️ Spiel-Einstellungen</h4>
                 <div class="settings-grid">
                     <div class="setting-item">
                         <div class="setting-label">Kategorien</div>
-                        <div class="setting-value" id="game-categories">-</div>
+                        <div class="setting-value" id="game-categories">Wird geladen...</div>
                     </div>
                     <div class="setting-item">
                         <div class="setting-label">Schwierigkeit</div>
-                        <div class="setting-value" id="game-difficulty">-</div>
+                        <div class="setting-value" id="game-difficulty">Wird geladen...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Players Section -->
             <div class="players-section">
                 <div class="players-header">
                     <h3 class="players-title">👥 Spieler</h3>
                     <div class="player-count" id="player-count">(0/8)</div>
                 </div>
                 <div class="players-list" id="players-list">
-                    <!-- Players will be loaded here -->
+                    <div style="text-align: center; padding: 20px; opacity: 0.7;">
+                        Spieler werden geladen...
+                    </div>
                 </div>
             </div>
 
-            <!-- Controls -->
             <div class="controls">
                 <button class="btn btn-secondary" onclick="leaveLobby()">
                     🚪 Lobby verlassen
@@ -641,7 +607,7 @@
     </div>
 
     <script>
-        // ===== FIREBASE INTEGRATION =====
+        // ===== FIREBASE SERVICE - ROBUST =====
         class FirebaseGameService {
             constructor() {
                 this.app = null;
@@ -650,9 +616,7 @@
                 this.isConnected = false;
                 this.gameRef = null;
                 this.playersRef = null;
-                this.initializationPromise = null;
                 
-                // Firebase Konfiguration
                 this.config = {
                     apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
                     authDomain: "denkstduwebsite.firebaseapp.com",
@@ -665,22 +629,12 @@
                 };
             }
 
-            // Firebase initialisieren - only once
             async initialize() {
-                if (this.initializationPromise) {
-                    return this.initializationPromise;
-                }
-
-                this.initializationPromise = this._doInitialize();
-                return this.initializationPromise;
-            }
-
-            async _doInitialize() {
                 try {
-                    console.log('🔥 Initializing Firebase...');
+                    console.log('🔥 Firebase init...');
                     
                     if (typeof firebase === 'undefined') {
-                        throw new Error('Firebase SDK not loaded');
+                        throw new Error('Firebase SDK missing');
                     }
 
                     if (!firebase.apps || firebase.apps.length === 0) {
@@ -690,32 +644,29 @@
                     }
 
                     this.database = firebase.database();
-                    
-                    // Setup connection monitoring first
                     this.setupConnectionMonitoring();
-
-                    // Test connection with timeout
-                    const connected = await Promise.race([
-                        this.testConnection(),
-                        new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('Connection timeout')), 8000)
-                        )
+                    
+                    const testRef = this.database.ref('.info/connected');
+                    const snapshot = await Promise.race([
+                        testRef.once('value'),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
                     ]);
                     
-                    this.isInitialized = connected;
+                    this.isConnected = snapshot.val() === true;
+                    this.isInitialized = this.isConnected;
                     
-                    console.log('✅ Firebase initialized:', this.isInitialized);
-                    return this.isInitialized;
+                    console.log(`✅ Firebase: ${this.isConnected ? 'connected' : 'failed'}`);
+                    return this.isConnected;
 
                 } catch (error) {
-                    console.error('❌ Firebase initialization failed:', error);
-                    this.updateConnectionStatus('disconnected');
+                    console.error('❌ Firebase init failed:', error);
                     this.isInitialized = false;
+                    this.isConnected = false;
+                    this.updateConnectionStatus('disconnected');
                     return false;
                 }
             }
 
-            // Connection monitoring - don't show warning immediately
             setupConnectionMonitoring() {
                 const connectedRef = this.database.ref('.info/connected');
                 let firstConnection = true;
@@ -725,14 +676,11 @@
                     this.isConnected = snapshot.val() === true;
                     
                     if (firstConnection) {
-                        // First connection check - don't show warning
                         firstConnection = false;
                         this.updateConnectionStatus(this.isConnected ? 'connected' : 'connecting');
                     } else {
-                        // Subsequent connection changes
                         this.updateConnectionStatus(this.isConnected ? 'connected' : 'disconnected');
                         
-                        // Only show notification if we were previously connected
                         if (wasConnected && !this.isConnected) {
                             showNotification('Verbindung unterbrochen', 'warning');
                         } else if (!wasConnected && this.isConnected) {
@@ -742,22 +690,6 @@
                 });
             }
 
-            // Verbindung testen
-            async testConnection() {
-                try {
-                    const testRef = this.database.ref('.info/connected');
-                    const snapshot = await testRef.once('value');
-                    const connected = snapshot.val() === true;
-                    
-                    return connected;
-                    
-                } catch (error) {
-                    console.error('❌ Connection test failed:', error);
-                    return false;
-                }
-            }
-
-            // Connection Status UI update
             updateConnectionStatus(status) {
                 const statusEl = document.getElementById('connection-status');
                 if (!statusEl) return;
@@ -777,77 +709,71 @@
                 }
             }
 
-            // Game Updates überwachen - VERBESSERT FÜR SYNCHRONEN SPIELSTART
-            listenToGame(gameId, callback) {
-                if (!this.isInitialized) return null;
+            // Get complete game data
+            async getGameData(gameId) {
+                if (!this.isConnected) return null;
 
+                try {
+                    const gameRef = this.database.ref(`games/${gameId}`);
+                    const snapshot = await gameRef.once('value');
+                    return snapshot.exists() ? snapshot.val() : null;
+                } catch (error) {
+                    console.error('❌ Get game data failed:', error);
+                    return null;
+                }
+            }
+
+            // Listen to complete game (including players)
+            listenToGame(gameId, callback) {
+                if (!this.isConnected) return null;
+
+                console.log(`🎧 Listen to game: ${gameId}`);
                 this.gameRef = this.database.ref(`games/${gameId}`);
                 
-                // Enhanced listener that triggers immediately on gameState changes
                 this.gameRef.on('value', (snapshot) => {
                     if (snapshot.exists()) {
                         const gameData = snapshot.val();
+                        console.log('🎮 Game data update:', gameData);
                         
-                        // Sofortige Reaktion auf gameState-Änderungen
-                        if (gameData.gameState) {
-                            console.log(`🎮 GameState changed to: ${gameData.gameState}`);
-                            
-                            // Trigger callback immediately
-                            callback(snapshot);
-                            
-                            // Zusätzliche sofortige Navigation bei Playing
-                            if (gameData.gameState === 'playing') {
-                                console.log('🚀 Game started - immediate navigation trigger');
-                                setTimeout(() => handleGameStarted(gameData), 100);
-                            }
-                        } else {
-                            callback(snapshot);
+                        // Check for game start
+                        if (gameData.gameState === 'playing') {
+                            console.log('🚀 Game started!');
+                            setTimeout(() => handleGameStarted(gameData), 100);
                         }
+                        
+                        callback(gameData);
                     } else {
-                        callback(snapshot);
+                        console.log('❌ Game not found');
+                        callback(null);
                     }
                 });
                 
                 return this.gameRef;
             }
 
-            // Player Updates überwachen
-            listenToPlayers(gameId, callback) {
-                if (!this.isInitialized) return null;
-
-                this.playersRef = this.database.ref(`games/${gameId}/players`);
-                this.playersRef.on('value', callback);
-                return this.playersRef;
-            }
-
-            // Player online status setzen
             async setPlayerOnline(gameId, playerId) {
-                if (!this.isInitialized) return;
+                if (!this.isConnected) return;
 
                 try {
                     const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
                     await playerRef.child('isOnline').set(true);
                     await playerRef.child('lastSeen').set(firebase.database.ServerValue.TIMESTAMP);
                     
-                    // Set offline on disconnect
                     playerRef.child('isOnline').onDisconnect().set(false);
                     playerRef.child('lastSeen').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
                     
                 } catch (error) {
-                    console.error('❌ Error setting player online:', error);
+                    console.error('❌ Set player online failed:', error);
                 }
             }
 
-            // Spiel starten - VERBESSERT MIT SOFORTIGER SYNCHRONISATION
             async startGame(gameId) {
-                if (!this.isInitialized) return false;
+                if (!this.isConnected) return false;
 
                 try {
-                    console.log('🚀 Starting game in Firebase...');
+                    console.log('🚀 Starting game...');
                     
                     const gameRef = this.database.ref(`games/${gameId}`);
-                    
-                    // Gleichzeitige Updates für sofortige Synchronisation
                     const updates = {
                         gameState: 'playing',
                         startedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -856,27 +782,22 @@
                     
                     await gameRef.update(updates);
                     
-                    console.log('✅ Game started in Firebase');
+                    console.log('✅ Game started');
                     return true;
                     
                 } catch (error) {
-                    console.error('❌ Error starting game:', error);
+                    console.error('❌ Start game failed:', error);
                     throw error;
                 }
             }
 
-            // Cleanup
             cleanup() {
-                if (this.gameRef) {
-                    this.gameRef.off();
-                }
-                if (this.playersRef) {
-                    this.playersRef.off();
-                }
+                if (this.gameRef) this.gameRef.off();
+                if (this.playersRef) this.playersRef.off();
             }
         }
 
-        // ===== GAME STATE MANAGEMENT =====
+        // ===== GAME STATE =====
         class GameState {
             constructor(playerKey = null) {
                 this.playerKey = playerKey;
@@ -900,10 +821,7 @@
             }
 
             getStorageKey() {
-                if (this.playerKey) {
-                    return `denkstdu_game_state_${this.playerKey}`;
-                }
-                return 'denkstdu_game_state';
+                return this.playerKey ? `denkstdu_game_state_${this.playerKey}` : 'denkstdu_game_state';
             }
 
             saveToStorage() {
@@ -926,10 +844,10 @@
                     };
                     
                     localStorage.setItem(this.getStorageKey(), JSON.stringify(stateToSave));
-                    console.log('💾 GameState saved:', this.getStorageKey());
+                    console.log('💾 State saved');
                     return true;
                 } catch (error) {
-                    console.error('❌ Failed to save GameState:', error);
+                    console.error('❌ Save failed:', error);
                     return false;
                 }
             }
@@ -938,7 +856,7 @@
                 try {
                     const saved = localStorage.getItem(this.getStorageKey());
                     if (saved) {
-                        const state = JSON.parse(saved);
+const state = JSON.parse(saved);
                         const maxAge = 24 * 60 * 60 * 1000; // 24 hours
                         if (state.timestamp && (Date.now() - state.timestamp) < maxAge) {
                             Object.keys(state).forEach(key => {
@@ -946,14 +864,14 @@
                                     this[key] = state[key];
                                 }
                             });
-                            console.log('📂 GameState loaded:', this.getStorageKey());
+                            console.log('📂 State loaded');
                             return true;
                         } else {
                             this.clearStorage();
                         }
                     }
                 } catch (error) {
-                    console.error('❌ Failed to load GameState:', error);
+                    console.error('❌ Load failed:', error);
                     this.clearStorage();
                 }
                 return false;
@@ -968,11 +886,8 @@
         let firebaseService = new FirebaseGameService();
         let gameState = null;
         let gameListener = null;
-        let playersListener = null;
         let currentGameData = null;
-        let currentPlayers = {};
-        let playersCache = new Map(); // Cache to prevent flicker
-        let isNavigating = false; // Prevent multiple navigation attempts
+        let isNavigating = false;
 
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
@@ -980,170 +895,172 @@
         });
 
         async function initLobby() {
-            console.log('🌐 Initializing multiplayer lobby...');
+            console.log('🌐 Init lobby...');
             
-            // Find the correct GameState instance first
+            // Find game state
             gameState = findPlayerGameState();
             
             if (!gameState || !gameState.gameId) {
-                console.error('❌ No valid game state found');
-                showNotification('Kein gültiges Spiel gefunden. Zurück zum Hauptmenü.', 'error');
+                console.error('❌ No game state found');
+                showNotification('Kein gültiges Spiel gefunden', 'error');
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 2000);
                 return;
             }
 
-            // Update UI with game info immediately
+            console.log('✅ Game state found:', {
+                gameId: gameState.gameId,
+                playerName: gameState.playerName,
+                isHost: gameState.isHost,
+                isGuest: gameState.isGuest,
+                categories: gameState.selectedCategories,
+                difficulty: gameState.difficulty
+            });
+
+            // Update UI immediately with local data
             updateGameDisplay();
             
-            // Initialize Firebase in background - don't wait or show warnings
+            // Initialize Firebase
             setTimeout(async () => {
                 const firebaseReady = await firebaseService.initialize();
                 
                 if (firebaseReady) {
-                    console.log('✅ Firebase ready, setting up listeners...');
-                    setupFirebaseListeners();
+                    console.log('✅ Firebase ready');
+                    setupFirebaseListener();
                     
-                    // Set player online status
+                    // Set player online
                     if (gameState.playerId) {
                         await firebaseService.setPlayerOnline(gameState.gameId, gameState.playerId);
                     }
+                    
+                    // Load initial game data from Firebase
+                    loadFirebaseGameData();
                 } else {
                     console.log('⚠️ Firebase not available, using local sync');
                     startLocalSync();
                 }
             }, 100);
             
-            // Start with local data immediately
-            loadLocalPlayers();
-            
-            console.log('✅ Lobby initialized for:', {
-                playerName: gameState.playerName,
-                isHost: gameState.isHost,
-                gameId: gameState.gameId,
-                playerId: gameState.playerId
-            });
+            console.log('✅ Lobby initialized');
         }
 
         function findPlayerGameState() {
-            // Try to find the player's specific GameState
             const keys = Object.keys(localStorage);
             
-            // First try to load from main key (host)
+            // Try host state first
             try {
                 const mainState = localStorage.getItem('denkstdu_game_state');
                 if (mainState) {
                     const state = JSON.parse(mainState);
                     if (state.deviceMode === 'multi' && state.gameId) {
-                        console.log('📂 Found host game state');
-                        return new GameState(); // Load main state
+                        console.log('📂 Found host state');
+                        return new GameState();
                     }
                 }
-            } catch (e) {
-                // Ignore
-            }
+            } catch (e) {}
             
-            // Then try to find guest states
+            // Try guest states
             for (let key of keys) {
                 if (key.startsWith('denkstdu_game_state_guest_')) {
                     try {
                         const guestState = JSON.parse(localStorage.getItem(key));
                         if (guestState.deviceMode === 'multi' && guestState.gameId) {
                             const playerKey = key.replace('denkstdu_game_state_', '');
-                            console.log('📂 Found guest game state:', playerKey);
+                            console.log('📂 Found guest state:', playerKey);
                             return new GameState(playerKey);
                         }
-                    } catch (e) {
-                        // Ignore
-                    }
+                    } catch (e) {}
                 }
             }
             
             return null;
         }
 
-        // ===== FIREBASE LISTENERS - VERBESSERT FÜR SYNCHRONEN SPIELSTART =====
-        function setupFirebaseListeners() {
-            console.log('🎧 Setting up Firebase listeners...');
+        // ===== FIREBASE LISTENERS =====
+        function setupFirebaseListener() {
+            console.log('🎧 Setup Firebase listener');
             
-            // Listen to game updates - ENHANCED FOR IMMEDIATE GAME START DETECTION
-            gameListener = firebaseService.listenToGame(gameState.gameId, (snapshot) => {
-                if (snapshot.exists()) {
-                    const newGameData = snapshot.val();
-                    const oldGameState = currentGameData?.gameState;
-                    const newGameState = newGameData.gameState;
-                    
-                    console.log(`🎮 Game update received - State: ${oldGameState} → ${newGameState}`);
-                    
-                    currentGameData = newGameData;
-                    updateGameInfo(currentGameData);
-                    
-                    // KRITISCH: Sofortige Reaktion auf gameState = 'playing'
-                    if (newGameState === 'playing' && oldGameState !== 'playing') {
-                        console.log('🚀 GAME STARTED DETECTED - Immediate navigation');
-                        handleGameStarted(newGameData);
-                    }
+            gameListener = firebaseService.listenToGame(gameState.gameId, (gameData) => {
+                if (gameData) {
+                    console.log('🎮 Game data received:', gameData);
+                    currentGameData = gameData;
+                    updateFromFirebaseData(gameData);
                 } else {
-                    console.log('❌ Game not found in Firebase');
-                    showNotification('Spiel wurde beendet oder nicht gefunden', 'error');
-                }
-            });
-
-            // Listen to players updates with caching to prevent flicker
-            playersListener = firebaseService.listenToPlayers(gameState.gameId, (snapshot) => {
-                if (snapshot.exists()) {
-                    const newPlayers = snapshot.val();
-                    console.log('👥 Players update received:', newPlayers);
-                    
-                    // Only update if players actually changed
-                    if (!playersEqual(currentPlayers, newPlayers)) {
-                        currentPlayers = newPlayers;
-                        updatePlayersDisplay(currentPlayers);
-                    }
-                } else {
-                    console.log('👥 No players found');
-                    if (Object.keys(currentPlayers).length > 0) {
-                        currentPlayers = {};
-                        updatePlayersDisplay({});
-                    }
+                    console.log('❌ Game not found');
+                    showNotification('Spiel wurde beendet', 'error');
                 }
             });
         }
 
-        // Helper function to compare players objects
-        function playersEqual(players1, players2) {
-            const keys1 = Object.keys(players1 || {});
-            const keys2 = Object.keys(players2 || {});
+        async function loadFirebaseGameData() {
+            console.log('🔄 Loading initial Firebase data...');
             
-            if (keys1.length !== keys2.length) return false;
+            try {
+                const gameData = await firebaseService.getGameData(gameState.gameId);
+                if (gameData) {
+                    console.log('✅ Initial game data loaded:', gameData);
+                    currentGameData = gameData;
+                    updateFromFirebaseData(gameData);
+                } else {
+                    console.log('❌ No game data found');
+                    showNotification('Spiel nicht gefunden', 'warning');
+                }
+            } catch (error) {
+                console.error('❌ Load Firebase data failed:', error);
+                showNotification('Fehler beim Laden', 'error');
+            }
+        }
+
+        function updateFromFirebaseData(gameData) {
+            // Update categories and difficulty from Firebase
+            if (gameData.categories && gameData.categories.length > 0) {
+                gameState.selectedCategories = gameData.categories;
+                console.log('📝 Updated categories:', gameData.categories);
+            }
             
-            return keys1.every(key => {
-                const p1 = players1[key];
-                const p2 = players2[key];
-                return p1 && p2 && 
-                       p1.name === p2.name && 
-                       p1.isHost === p2.isHost && 
-                       p1.isOnline === p2.isOnline;
-            });
+            if (gameData.difficulty) {
+                gameState.difficulty = gameData.difficulty;
+                console.log('📝 Updated difficulty:', gameData.difficulty);
+            }
+            
+            // Save updated state
+            gameState.saveToStorage();
+            
+            // Update UI
+            updateGameSettings();
+            
+            // Update players
+            if (gameData.players) {
+                console.log('👥 Firebase players:', gameData.players);
+                updatePlayersDisplay(gameData.players);
+            } else {
+                console.log('👥 No players in Firebase, using local');
+                loadLocalPlayers();
+            }
         }
 
         // ===== LOCAL SYNC FALLBACK =====
         function startLocalSync() {
-            console.log('🔄 Starting local sync fallback...');
-            // Update every 3 seconds to reduce flicker
+            console.log('🔄 Starting local sync...');
+            loadLocalPlayers();
+            
+            // Update every 3 seconds
             setInterval(() => {
                 loadLocalPlayers();
             }, 3000);
         }
 
         function loadLocalPlayers() {
+            console.log('👥 Loading local players...');
+            
             const players = getAllLocalPlayers();
             const playersObj = {};
             
-            players.forEach((player, index) => {
-                const playerId = player.isHost ? 'host' : `guest_${player.name}`;
+            players.forEach(player => {
+                const playerId = player.isHost ? 'host' : `guest_${player.name}_${Date.now()}`;
                 playersObj[playerId] = {
+                    id: playerId,
                     name: player.name,
                     isHost: player.isHost,
                     isOnline: true,
@@ -1151,27 +1068,23 @@
                 };
             });
             
-            // Only update if different from current
-            if (!playersEqual(currentPlayers, playersObj)) {
-                currentPlayers = playersObj;
-                updatePlayersDisplay(playersObj);
-            }
+            console.log('👥 Local players loaded:', playersObj);
+            updatePlayersDisplay(playersObj);
         }
 
         function getAllLocalPlayers() {
             const players = [];
             const gameId = gameState.gameId;
             
-            // Get host player
+            // Get host
             try {
                 const hostState = localStorage.getItem('denkstdu_game_state');
                 if (hostState) {
                     const host = JSON.parse(hostState);
-                    if (host.gameId === gameId && host.isHost) {
+                    if (host.gameId === gameId && host.isHost && host.playerName) {
                         players.push({
-                            name: host.playerName || 'Host',
+                            name: host.playerName,
                             isHost: true,
-                            isGuest: false,
                             lastSeen: host.timestamp
                         });
                     }
@@ -1180,17 +1093,16 @@
                 console.error('Error loading host:', e);
             }
             
-            // Get guest players
+            // Get guests
             const keys = Object.keys(localStorage);
             for (let key of keys) {
                 if (key.startsWith('denkstdu_game_state_guest_')) {
                     try {
                         const guestState = JSON.parse(localStorage.getItem(key));
-                        if (guestState.gameId === gameId && guestState.isGuest) {
+                        if (guestState.gameId === gameId && guestState.isGuest && guestState.playerName) {
                             players.push({
                                 name: guestState.playerName,
                                 isHost: false,
-                                isGuest: true,
                                 lastSeen: guestState.timestamp
                             });
                         }
@@ -1205,27 +1117,28 @@
 
         // ===== UI UPDATES =====
         function updateGameDisplay() {
-            // Game ID anzeigen
+            // Show game ID
             document.getElementById('game-id-display').textContent = gameState.gameId;
             
-            // Game Settings anzeigen
+            // Show game settings
             updateGameSettings();
         }
 
         function updateGameSettings() {
-            // Category names mapping
             const categoryNames = {
                 'fsk0': '👨‍👩‍👧‍👦 Familie',
                 'fsk16': '🎉 Party',
                 'fsk18': '🔥 Erwachsene'
             };
             
-            const categories = gameState.selectedCategories
-                .map(cat => categoryNames[cat] || cat)
-                .join(', ') || 'Standard';
+            let categories = 'Standard';
+            if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
+                categories = gameState.selectedCategories
+                    .map(cat => categoryNames[cat] || cat)
+                    .join(', ');
+            }
             document.getElementById('game-categories').textContent = categories;
             
-            // Difficulty names mapping
             const difficultyNames = {
                 'easy': '🍺 Entspannt',
                 'medium': '🍺🍺 Standard',
@@ -1236,42 +1149,40 @@
             document.getElementById('game-difficulty').textContent = difficulty;
         }
 
-        function updateGameInfo(gameData) {
-            if (!gameData) return;
-            
-            // Update game settings if they changed
-            if (gameData.categories) {
-                gameState.selectedCategories = gameData.categories;
-                updateGameSettings();
-            }
-            
-            if (gameData.difficulty) {
-                gameState.difficulty = gameData.difficulty;
-                updateGameSettings();
-            }
-        }
-
         function updatePlayersDisplay(playersData) {
             const playersList = document.getElementById('players-list');
             
-            const players = Object.values(playersData || {});
+            // Convert to array
+            let players = [];
+            if (playersData && typeof playersData === 'object') {
+                players = Object.values(playersData);
+            }
             
-            // Sort players: Host first, then by join time
+            console.log('👥 Updating display with players:', players);
+            
+            // Sort: Host first, then by join time
             players.sort((a, b) => {
                 if (a.isHost && !b.isHost) return -1;
                 if (!a.isHost && b.isHost) return 1;
                 return (a.joinedAt || 0) - (b.joinedAt || 0);
             });
             
-            // Clear and rebuild to prevent accumulation
+            // Clear and rebuild
             playersList.innerHTML = '';
             
-            // Add each player to display without animation
-            players.forEach((player) => {
-                addPlayerToDisplay(player);
-            });
+            if (players.length === 0) {
+                playersList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; opacity: 0.7;">
+                        Keine Spieler gefunden
+                    </div>
+                `;
+            } else {
+                players.forEach(player => {
+                    addPlayerToDisplay(player);
+                });
+            }
             
-            // Update counter and controls
+            // Update counter and button
             updatePlayerCount(players.length);
             updateStartButton(players.length);
         }
@@ -1283,12 +1194,12 @@
             playerElement.className = `player-item ${player.isHost ? 'host-player' : 'guest-player'}`;
             
             const avatar = player.name ? player.name.substring(0, 2).toUpperCase() : '?';
-            const isOnline = player.isOnline !== false; // Default to online if not specified
+            const isOnline = player.isOnline !== false;
             
             playerElement.innerHTML = `
                 <div class="player-avatar">${avatar}</div>
                 <div class="player-info">
-                    <div class="player-name">${player.name || 'Unbekannter Spieler'}</div>
+                    <div class="player-name">${player.name || 'Unbekannt'}</div>
                     <div class="player-role">
                         ${player.isHost ? '👑 Host' : '🎮 Spieler'}
                     </div>
@@ -1322,47 +1233,40 @@
             }
         }
 
-        // ===== GAME CONTROLS - VERBESSERT FÜR SYNCHRONEN START =====
+        // ===== GAME CONTROLS =====
         async function startGame() {
             if (!gameState.isHost) {
                 showNotification('Nur der Host kann das Spiel starten!', 'warning');
                 return;
             }
 
-            const playerCount = Object.keys(currentPlayers).length;
+            const playerCount = document.querySelectorAll('.player-item').length;
             if (playerCount < 2) {
                 showNotification('Mindestens 2 Spieler benötigt!', 'warning');
                 return;
             }
 
-            // Prevent multiple start attempts
             if (isNavigating) {
-                console.log('⚠️ Navigation already in progress');
+                console.log('⚠️ Navigation in progress');
                 return;
             }
 
             showLoading();
             
             try {
-                console.log('🚀 Host initiating game start...');
+                console.log('🚀 Starting game...');
                 
-                if (firebaseService.isInitialized) {
-                    // Start game in Firebase
+                if (firebaseService.isConnected) {
                     await firebaseService.startGame(gameState.gameId);
                     console.log('✅ Game started via Firebase');
-                    
-                    // Show notification but don't navigate yet - wait for Firebase listener
-                    showNotification('Spiel wird für alle Spieler gestartet...', 'success');
-                    
+                    showNotification('Spiel wird gestartet...', 'success');
                 } else {
-                    // Start game locally
-                    console.log('✅ Starting game locally (offline mode)');
+                    console.log('✅ Starting game locally');
                     gameState.gamePhase = 'playing';
                     gameState.saveToStorage();
                     
                     showNotification('Spiel wird gestartet...', 'success');
                     
-                    // Navigate immediately in offline mode
                     setTimeout(() => {
                         hideLoading();
                         navigateToGameplay();
@@ -1371,29 +1275,27 @@
                 
             } catch (error) {
                 hideLoading();
-                console.error('❌ Error starting game:', error);
+                console.error('❌ Start game failed:', error);
                 showNotification('Fehler beim Spielstart', 'error');
                 isNavigating = false;
             }
         }
 
-        // NEUE VERBESSERTE handleGameStarted FUNKTION
         function handleGameStarted(gameData = null) {
             if (isNavigating) {
-                console.log('⚠️ Navigation already in progress, skipping duplicate');
+                console.log('⚠️ Navigation already in progress');
                 return;
             }
             
-            console.log('🚀 handleGameStarted triggered');
+            console.log('🚀 Game started!');
             isNavigating = true;
             
             showNotification('Spiel wurde gestartet! 🎮', 'success');
             showLoading();
             
-            // Update local game state immediately
+            // Update local state
             gameState.gamePhase = 'playing';
             
-            // Copy any new game data
             if (gameData) {
                 if (gameData.categories) gameState.selectedCategories = gameData.categories;
                 if (gameData.difficulty) gameState.difficulty = gameData.difficulty;
@@ -1401,27 +1303,21 @@
             
             gameState.saveToStorage();
             
-            console.log('📱 Navigating to gameplay in 1.5 seconds...');
-            
-            // Navigate with short delay for user feedback
             setTimeout(() => {
                 navigateToGameplay();
             }, 1500);
         }
 
         function navigateToGameplay() {
-            console.log('🎯 Navigating to multiplayer-gameplay.html');
+            console.log('🎯 → multiplayer-gameplay.html');
             hideLoading();
             window.location.href = 'multiplayer-gameplay.html';
         }
 
         function leaveLobby() {
-            // Cleanup listeners
+            // Cleanup
             if (gameListener) {
                 gameListener.off();
-            }
-            if (playersListener) {
-                playersListener.off();
             }
             firebaseService.cleanup();
 
@@ -1440,9 +1336,6 @@
             if (gameListener) {
                 gameListener.off();
             }
-            if (playersListener) {
-                playersListener.off();
-            }
             firebaseService.cleanup();
         });
 
@@ -1456,7 +1349,6 @@
         }
 
         function showNotification(message, type = 'info') {
-            // Remove existing notifications
             document.querySelectorAll('.toast-notification').forEach(n => n.remove());
             
             const notification = document.createElement('div');
@@ -1470,10 +1362,8 @@
             
             document.body.appendChild(notification);
             
-            // Animate in
             setTimeout(() => notification.classList.add('show'), 100);
             
-            // Remove after 4 seconds
             setTimeout(() => {
                 notification.classList.remove('show');
                 setTimeout(() => {
@@ -1486,20 +1376,18 @@
 
         // ===== DEBUG FUNCTIONS =====
         window.debugLobby = function() {
-            console.log('🔍 Lobby Debug Info:');
+            console.log('🔍 Lobby Debug:');
             console.log('GameState:', gameState);
-            console.log('Firebase Service:', {
+            console.log('Firebase:', {
                 initialized: firebaseService.isInitialized,
                 connected: firebaseService.isConnected
             });
             console.log('Current Game Data:', currentGameData);
-            console.log('Current Players:', currentPlayers);
-            console.log('localStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkstdu')));
-            console.log('Navigation state:', { isNavigating });
+            console.log('LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkstdu')));
         };
 
         window.simulateGameStart = function() {
-            console.log('🧪 Simulating game start for testing...');
+            console.log('🧪 Simulating game start...');
             const testGameData = {
                 gameState: 'playing',
                 startedAt: Date.now(),
@@ -1509,16 +1397,13 @@
             handleGameStarted(testGameData);
         };
 
-        window.resetNavigationState = function() {
-            isNavigating = false;
-            console.log('🔄 Navigation state reset');
+        window.refreshPlayers = function() {
+            console.log('🔄 Refreshing players...');
+            loadLocalPlayers();
         };
 
-        console.log('✅ Enhanced Multiplayer Lobby with synchronous game start loaded');
-        console.log('🎮 Enhanced Commands:');
-        console.log('- debugLobby() - Show debug info');
-        console.log('- simulateGameStart() - Test game start flow');
-        console.log('- resetNavigationState() - Reset navigation lock');
+        console.log('✅ Enhanced Multiplayer Lobby - Rebuilt & Ready');
+        console.log('🎮 Commands: debugLobby(), simulateGameStart(), refreshPlayers()');
     </script>
 </body>
 </html>
