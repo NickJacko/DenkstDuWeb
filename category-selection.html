@@ -728,14 +728,9 @@
         let selectedCategories = [];
         let pendingAgeVerification = null;
 
-        // Game State Management
+        // KONSISTENTE Game State Management Klasse
         class GameState {
             constructor() {
-                this.reset();
-                this.loadFromStorage();
-            }
-
-            reset() {
                 this.deviceMode = null;
                 this.selectedCategories = [];
                 this.difficulty = null;
@@ -745,6 +740,9 @@
                 this.isHost = false;
                 this.isGuest = false;
                 this.gameState = 'setup';
+                this.timestamp = Date.now();
+                
+                this.loadFromStorage();
             }
 
             saveToStorage() {
@@ -760,12 +758,13 @@
                         isGuest: this.isGuest,
                         gameState: this.gameState,
                         timestamp: Date.now(),
-                        version: 1
+                        version: 2
                     };
                     localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                    console.log('✅ GameState saved:', state);
                     return true;
                 } catch (error) {
-                    console.error('Could not save game state:', error);
+                    console.error('❌ Could not save game state:', error);
                     return false;
                 }
             }
@@ -776,14 +775,26 @@
                     if (saved) {
                         const state = JSON.parse(saved);
                         if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                            Object.assign(this, state);
+                            // Lade nur die relevanten Properties
+                            this.deviceMode = state.deviceMode || null;
+                            this.selectedCategories = state.selectedCategories || [];
+                            this.difficulty = state.difficulty || null;
+                            this.players = state.players || [];
+                            this.gameId = state.gameId || null;
+                            this.playerName = state.playerName || null;
+                            this.isHost = state.isHost || false;
+                            this.isGuest = state.isGuest || false;
+                            this.gameState = state.gameState || 'setup';
+                            
+                            console.log('✅ GameState loaded from storage:', this);
                             return true;
                         } else {
+                            console.log('⚠️ GameState expired, clearing storage');
                             this.clearStorage();
                         }
                     }
                 } catch (error) {
-                    console.error('Could not load game state:', error);
+                    console.error('❌ Could not load game state:', error);
                     this.clearStorage();
                 }
                 return false;
@@ -794,9 +805,27 @@
             }
 
             setSelectedCategories(categories) {
-                this.selectedCategories = categories;
+                this.selectedCategories = [...categories];
                 this.saveToStorage();
                 console.log('Categories set to:', categories);
+            }
+
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+                this.saveToStorage();
+                console.log('Difficulty set to:', difficulty);
+            }
+
+            setPlayers(players) {
+                this.players = [...players];
+                this.saveToStorage();
+                console.log('Players set to:', players);
+            }
+
+            setDeviceMode(mode) {
+                this.deviceMode = mode;
+                this.saveToStorage();
+                console.log('Device mode set to:', mode);
             }
         }
 
@@ -824,7 +853,7 @@
 
         // Initialize page
         function initCategorySelection() {
-            console.log('Initializing category selection...');
+            console.log('🎯 Initializing category selection...');
             
             // Initialize game state
             gameState = new GameState();
@@ -841,10 +870,14 @@
                 updateSelectionSummary();
             }
             
-            console.log('Device mode:', gameState.deviceMode);
+            console.log('📋 Current game state:', {
+                deviceMode: gameState.deviceMode,
+                selectedCategories: gameState.selectedCategories,
+                difficulty: gameState.difficulty
+            });
         }
 
-        // Toggle category selection
+// Toggle category selection
         function toggleCategory(element) {
             const category = element.dataset.category;
             

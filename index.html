@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No Cap - Das ultimative Schätzspiel | no-cap.app</title>
+    <title>DenkstDu - Das ultimative Schätzspiel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Meta tags -->
-    <meta name="description" content="No Cap - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
-    <meta name="keywords" content="Party Spiel, Trinkspiel, Schätzspiel, Multiplayer, Online, no-cap.app">
-    <meta name="author" content="Nick-Mark Jacklin">
+    <meta name="description" content="DenkstDu - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
+    <meta name="keywords" content="Party Spiel, Trinkspiel, Schätzspiel, Multiplayer, Online">
+    <meta name="author" content="DenkstDu Team">
     <meta name="theme-color" content="#667eea">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
 </head>
 <body>
     <!-- Age Verification Modal -->
@@ -106,9 +106,9 @@
         <!-- Header -->
         <header class="site-header">
             <div class="site-logo">
-                <div class="logo-icon">🧢</div>
-                <h1 class="logo">No Cap</h1>
-                <p class="site-url">no-cap.app</p>
+                <div class="logo-icon">🧠</div>
+                <h1 class="logo">DenkstDu</h1>
+                <p class="site-url">Das ultimative Schätzspiel</p>
             </div>
         </header>
 
@@ -253,8 +253,8 @@
                     <a href="#" onclick="showYouthProtection()" class="footer-link">🛡️ Jugendschutz</a>
                 </div>
                 <div class="footer-info">
-                    <p>&copy; 2024 No Cap - Made with ❤️ by Nick-Mark Jacklin</p>
-                    <p class="website-badge">🌐 <strong>no-cap.app</strong></p>
+                    <p>&copy; 2024 DenkstDu - Das ultimative Schätzspiel</p>
+                    <p class="website-badge">🧠 <strong>DenkstDu</strong></p>
                 </div>
             </div>
         </footer>
@@ -264,13 +264,117 @@
         // Global variables
         let ageVerified = false;
         let alcoholMode = false;
+        let gameState = null;
+
+        // KONSISTENTE Game State Management Klasse (gleich wie in den anderen Dateien)
+        class GameState {
+            constructor() {
+                this.deviceMode = null;
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.gameState = 'setup';
+                this.timestamp = Date.now();
+                
+                this.loadFromStorage();
+            }
+
+            saveToStorage() {
+                try {
+                    const state = {
+                        deviceMode: this.deviceMode,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        gameState: this.gameState,
+                        timestamp: Date.now(),
+                        version: 2
+                    };
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                    console.log('✅ GameState saved:', state);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Could not save game state:', error);
+                    return false;
+                }
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem('denkstdu_game_state');
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                            // Lade nur die relevanten Properties
+                            this.deviceMode = state.deviceMode || null;
+                            this.selectedCategories = state.selectedCategories || [];
+                            this.difficulty = state.difficulty || null;
+                            this.players = state.players || [];
+                            this.gameId = state.gameId || null;
+                            this.playerName = state.playerName || null;
+                            this.isHost = state.isHost || false;
+                            this.isGuest = state.isGuest || false;
+                            this.gameState = state.gameState || 'setup';
+                            
+                            console.log('✅ GameState loaded from storage:', this);
+                            return true;
+                        } else {
+                            console.log('⚠️ GameState expired, clearing storage');
+                            this.clearStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Could not load game state:', error);
+                    this.clearStorage();
+                }
+                return false;
+            }
+
+            clearStorage() {
+                localStorage.removeItem('denkstdu_game_state');
+            }
+
+            setSelectedCategories(categories) {
+                this.selectedCategories = [...categories];
+                this.saveToStorage();
+                console.log('Categories set to:', categories);
+            }
+
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+                this.saveToStorage();
+                console.log('Difficulty set to:', difficulty);
+            }
+
+            setPlayers(players) {
+                this.players = [...players];
+                this.saveToStorage();
+                console.log('Players set to:', players);
+            }
+
+            setDeviceMode(mode) {
+                this.deviceMode = mode;
+                this.saveToStorage();
+                console.log('Device mode set to:', mode);
+            }
+        }
 
         // Check for existing age verification
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🧢 No Cap Landing Page loaded');
-            console.log('🌐 Welcome to no-cap.app');
+            console.log('🧠 DenkstDu Landing Page loaded');
             
-            const savedVerification = localStorage.getItem('nocap_age_verification');
+            // Initialize GameState
+            gameState = new GameState();
+            
+            const savedVerification = localStorage.getItem('denkstdu_age_verification');
             if (savedVerification) {
                 const verification = JSON.parse(savedVerification);
                 const now = Date.now();
@@ -311,7 +415,7 @@
                 alcoholMode: allowAlcohol,
                 timestamp: Date.now()
             };
-            localStorage.setItem('nocap_age_verification', JSON.stringify(verification));
+            localStorage.setItem('denkstdu_age_verification', JSON.stringify(verification));
             
             ageVerified = isAdult;
             alcoholMode = allowAlcohol;
@@ -366,9 +470,13 @@
                 return;
             }
             
-            // Set device mode and redirect to category selection
-            localStorage.setItem('nocap_device_mode', 'single');
-            localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
+            gameState.setDeviceMode('single');
+            
+            // Store alcohol mode separately for reference
+            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
+            
+            console.log('🎮 Starting single device mode');
             window.location.href = 'category-selection.html';
         }
 
@@ -378,9 +486,13 @@
                 return;
             }
             
-            // Set device mode and redirect to multiplayer category selection
-            localStorage.setItem('nocap_device_mode', 'multi');
-            localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
+            gameState.setDeviceMode('multi');
+            
+            // Store alcohol mode separately for reference
+            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
+            
+            console.log('🌐 Starting multiplayer mode');
             window.location.href = 'multiplayer-category-selection.html';
         }
 
@@ -390,15 +502,19 @@
                 return;
             }
             
-            // Set device mode and redirect to join game
-            localStorage.setItem('nocap_device_mode', 'multi');
-            localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
+            gameState.setDeviceMode('multi');
+            
+            // Store alcohol mode separately for reference
+            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
+            
+            console.log('🔗 Joining multiplayer game');
             window.location.href = 'join-game.html';
         }
 
         // Information functions
         function showRules() {
-            alert(`📖 Spielregeln - No Cap
+            alert(`📖 Spielregeln - DenkstDu
 
 🎯 Ziel: Schätze, wie viele Spieler etwas schon mal gemacht haben!
 
@@ -424,7 +540,7 @@ Viel Spaß! 🎉`);
         }
 
         function showPrivacy() {
-            alert(`🔒 Datenschutz - no-cap.app
+            alert(`🔒 Datenschutz - DenkstDu
 
 📍 Was wir sammeln:
 • Spielernamen (nur während des Spiels)
@@ -444,32 +560,29 @@ Viel Spaß! 🎉`);
 
 🌐 Server: Europa (DSGVO-konform)
 
-Fragen? nickjacklin99@web.de`);
+Fragen? kontakt@denkstdu.app`);
         }
 
         function showImprint() {
-            alert(`📋 Impressum - no-cap.app
+            alert(`📋 Impressum - DenkstDu
 
 👤 Verantwortlich:
-Nick-Mark Jacklin
-Osnabrücker Landstraße 2-8
-33335 Gütersloh
+DenkstDu Team
 Deutschland
 
 📧 Kontakt:
-E-Mail: nickjacklin99@web.de
-Website: no-cap.app
+E-Mail: kontakt@denkstdu.app
+Website: denkstdu.app
 
 ⚖️ Rechtliches:
 Privates Projekt, alle Rechte vorbehalten.
 
 🛠️ Technologie:
-Gehostet über GitHub Pages
 DSGVO-konform, Server in Europa`);
         }
 
         function showYouthProtection() {
-            alert(`🛡️ Jugendschutz-Informationen - no-cap.app
+            alert(`🛡️ Jugendschutz-Informationen - DenkstDu
 
 ⚖️ Rechtliche Grundlagen:
 • Jugendschutzgesetz (JuSchG) § 9 - Schutz vor Alkoholabgabe
@@ -598,7 +711,7 @@ DSGVO-konform, Server in Europa`);
             backdrop-filter: blur(10px);
         }
 
-        .age-modal-content {
+.age-modal-content {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(25px);
             border-radius: 20px;

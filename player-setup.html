@@ -761,29 +761,21 @@
         const MAX_PLAYERS = 8;
         const MIN_PLAYERS = 2;
 
-        // Game State Management
+        // KONSISTENTE Game State Management Klasse (gleich wie in den anderen Dateien)
         class GameState {
             constructor() {
+                this.deviceMode = null;
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.gameState = 'setup';
+                this.timestamp = Date.now();
+                
                 this.loadFromStorage();
-            }
-
-            loadFromStorage() {
-                try {
-                    const saved = localStorage.getItem('denkstdu_game_state');
-                    if (saved) {
-                        const state = JSON.parse(saved);
-                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                            Object.assign(this, state);
-                            return true;
-                        } else {
-                            this.clearStorage();
-                        }
-                    }
-                } catch (error) {
-                    console.error('Could not load game state:', error);
-                    this.clearStorage();
-                }
-                return false;
             }
 
             saveToStorage() {
@@ -793,32 +785,107 @@
                         selectedCategories: this.selectedCategories,
                         difficulty: this.difficulty,
                         players: this.players,
+                        gameId: this.gameId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        gameState: this.gameState,
                         timestamp: Date.now(),
-                        version: 1
+                        version: 2
                     };
                     localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                    console.log('✅ GameState saved:', state);
                     return true;
                 } catch (error) {
-                    console.error('Could not save game state:', error);
+                    console.error('❌ Could not save game state:', error);
                     return false;
                 }
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem('denkstdu_game_state');
+                    if (saved) {
+                        const state = JSON.parse(saved);
+                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                            // Lade nur die relevanten Properties
+                            this.deviceMode = state.deviceMode || null;
+                            this.selectedCategories = state.selectedCategories || [];
+                            this.difficulty = state.difficulty || null;
+                            this.players = state.players || [];
+                            this.gameId = state.gameId || null;
+                            this.playerName = state.playerName || null;
+                            this.isHost = state.isHost || false;
+                            this.isGuest = state.isGuest || false;
+                            this.gameState = state.gameState || 'setup';
+                            
+                            console.log('✅ GameState loaded from storage:', this);
+                            return true;
+                        } else {
+                            console.log('⚠️ GameState expired, clearing storage');
+                            this.clearStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Could not load game state:', error);
+                    this.clearStorage();
+                }
+                return false;
             }
 
             clearStorage() {
                 localStorage.removeItem('denkstdu_game_state');
             }
 
-            setPlayers(players) {
-                this.players = players;
+            setSelectedCategories(categories) {
+                this.selectedCategories = [...categories];
                 this.saveToStorage();
+                console.log('Categories set to:', categories);
+            }
+
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+                this.saveToStorage();
+                console.log('Difficulty set to:', difficulty);
+            }
+
+            setPlayers(players) {
+                this.players = [...players];
+                this.saveToStorage();
+                console.log('Players set to:', players);
+            }
+
+            setDeviceMode(mode) {
+                this.deviceMode = mode;
+                this.saveToStorage();
+                console.log('Device mode set to:', mode);
             }
         }
-
+            
         // Initialize page
         function initPlayerSetup() {
-            console.log('Initializing player setup...');
+            console.log('👥 Initializing player setup...');
             
             gameState = new GameState();
+            
+            // Validation: Check if categories and difficulty are selected
+            if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+                console.error('❌ No categories selected!');
+                showNotification('Keine Kategorien ausgewählt! Weiterleitung...', 'error');
+                setTimeout(() => {
+                    window.location.href = 'category-selection.html';
+                }, 2000);
+                return;
+            }
+
+            if (!gameState.difficulty) {
+                console.error('❌ No difficulty selected!');
+                showNotification('Kein Schwierigkeitsgrad ausgewählt! Weiterleitung...', 'error');
+                setTimeout(() => {
+                    window.location.href = 'difficulty-selection.html';
+                }, 2000);
+                return;
+            }
             
             // Load previous players if available
             if (gameState.players && gameState.players.length > 0) {
@@ -829,7 +896,12 @@
             updateUI();
             setupEventListeners();
             
-            console.log('Game state:', gameState);
+            console.log('📋 Current game state:', {
+                deviceMode: gameState.deviceMode,
+                categories: gameState.selectedCategories,
+                difficulty: gameState.difficulty,
+                players: gameState.players
+            });
         }
 
         // Setup event listeners
@@ -1164,7 +1236,7 @@
                 return;
             }
             
-            // Check game state
+            // Final validation of game state
             if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
                 showNotification('Keine Kategorien ausgewählt!', 'error');
                 setTimeout(() => {
@@ -1187,6 +1259,13 @@
             gameState.setPlayers(playersList);
             
             showNotification('Spiel wird gestartet...', 'success');
+            
+            console.log('🚀 Starting game with state:', {
+                deviceMode: gameState.deviceMode,
+                categories: gameState.selectedCategories,
+                difficulty: gameState.difficulty,
+                players: gameState.players
+            });
             
             // Start game
             setTimeout(() => {

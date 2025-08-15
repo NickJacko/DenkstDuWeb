@@ -7,269 +7,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-</head>
-<body>
-    <!-- Background Particles -->
-    <div class="background-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
-
-    <!-- Loading Spinner -->
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- App Container -->
-    <div class="app-container">
-        
-        <!-- SCHRITT 1: Frage zeigen -->
-        <div class="screen active" id="question-screen">
-            <div class="content-area">
-                <!-- Header -->
-                <div class="game-header">
-                    <div class="round-info">Runde <span id="round-number">1</span> / 10</div>
-                    <div class="category-info" id="category-name">🎉 Party Time</div>
-                    <button class="menu-btn" onclick="showMenu()">⋮</button>
-                </div>
-
-                <!-- Frage Card -->
-                <div class="question-card">
-                    <h1 class="question-title">Ich habe noch nie...</h1>
-                    <div class="question-text" id="question-text">...nackt gebadet.</div>
-                </div>
-
-                <!-- Erklärung -->
-                <div class="instruction-card">
-                    <h3>📋 So geht's:</h3>
-                    <div class="steps">
-                        <div class="step">1. Jeder denkt: <strong>Habe ICH das schon mal gemacht?</strong></div>
-                        <div class="step">2. Alle stimmen geheim ab</div>
-                        <div class="step">3. Alle schätzen die Anzahl der "Ja"-Stimmen</div>
-                        <div class="step">4. Auflösung + wer trinken muss!</div>
-                    </div>
-                </div>
-
-                <!-- Start Button -->
-                <button class="btn-primary btn-large" onclick="startVoting()">
-                    Alle bereit? Abstimmung starten! 🗳️
-                </button>
-            </div>
-        </div>
-
-        <!-- SCHRITT 2: Abstimmung -->
-        <div class="screen" id="voting-screen">
-            <div class="content-area">
-                <!-- Header -->
-                <div class="game-header">
-                    <div class="round-info">Runde <span class="round-number">1</span> / 10</div>
-                    <div class="phase-info">Abstimmung</div>
-                    <button class="menu-btn" onclick="showMenu()">⋮</button>
-                </div>
-
-                <!-- Aktueller Spieler -->
-                <div class="player-card">
-                    <div class="player-avatar" id="voter-avatar">M</div>
-                    <div class="player-details">
-                        <div class="player-name" id="voter-name">Max</div>
-                        <div class="player-status">Du bist dran! <span id="voting-progress">(1/4)</span></div>
-                    </div>
-                </div>
-
-                <!-- Frage erinnern -->
-                <div class="question-reminder">
-                    <div class="reminder-label">Ich habe noch nie...</div>
-                    <div class="reminder-question" id="voting-question">nackt gebadet</div>
-                    <div class="reminder-ask"><strong>Hast DU das schon mal gemacht?</strong></div>
-                </div>
-
-                <!-- Abstimm-Buttons -->
-                <div class="voting-buttons">
-                    <button class="vote-btn vote-yes" onclick="vote(true)">
-                        <div class="vote-emoji">✅</div>
-                        <div class="vote-text">JA</div>
-                        <div class="vote-subtext">Hab ich gemacht</div>
-                    </button>
-                    <button class="vote-btn vote-no" onclick="vote(false)">
-                        <div class="vote-emoji">❌</div>
-                        <div class="vote-text">NEIN</div>
-                        <div class="vote-subtext">Hab ich nie gemacht</div>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- SCHRITT 3: Schätzen -->
-        <div class="screen" id="estimation-screen">
-            <div class="content-area">
-                <!-- Header -->
-                <div class="game-header">
-                    <div class="round-info">Runde <span class="round-number">1</span> / 10</div>
-                    <div class="phase-info">Schätzen</div>
-                    <button class="menu-btn" onclick="showMenu()">⋮</button>
-                </div>
-
-                <!-- Aktueller Spieler -->
-                <div class="player-card">
-                    <div class="player-avatar" id="estimator-avatar">M</div>
-                    <div class="player-details">
-                        <div class="player-name" id="estimator-name">Max</div>
-                        <div class="player-status">Deine Schätzung! <span id="estimation-progress">(1/4)</span></div>
-                    </div>
-                </div>
-
-                <!-- Frage erinnern -->
-                <div class="question-reminder">
-                    <div class="reminder-label">Ich habe noch nie...</div>
-                    <div class="reminder-question" id="estimation-question">nackt gebadet</div>
-                </div>
-
-                <!-- Schätz-Interface -->
-                <div class="estimation-card">
-                    <div class="estimation-question">
-                        Wie viele haben <strong>"JA"</strong> gesagt?
-                    </div>
-                    
-                    <!-- Zahl-Picker -->
-                    <div class="number-picker">
-                        <button class="picker-btn" onclick="changeEstimate(-1)" id="minus-btn">−</button>
-                        <div class="estimate-display">
-                            <div class="estimate-number" id="estimate">2</div>
-                            <div class="estimate-label">von <span id="total-players">4</span></div>
-                        </div>
-                        <button class="picker-btn" onclick="changeEstimate(1)" id="plus-btn">+</button>
-                    </div>
-
-                    <!-- Schnell-Buttons -->
-                    <div class="quick-picks" id="quick-picks">
-                        <!-- Dynamisch generiert -->
-                    </div>
-
-                    <!-- Bestätigen -->
-                    <button class="btn-primary" onclick="confirmEstimate()" id="confirm-estimate-btn">
-                        Schätzung bestätigen
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- SCHRITT 4: Ergebnisse -->
-        <div class="screen" id="results-screen">
-            <div class="content-area">
-                <!-- Header -->
-                <div class="game-header">
-                    <div class="round-info">Runde <span class="round-number">1</span> / 10</div>
-                    <div class="phase-info">Auflösung</div>
-                    <button class="menu-btn" onclick="showMenu()">⋮</button>
-                </div>
-
-                <!-- Frage erinnern -->
-                <div class="question-reminder">
-                    <div class="reminder-label">Ich habe noch nie...</div>
-                    <div class="reminder-question" id="results-question">nackt gebadet</div>
-                </div>
-
-                <!-- Hauptergebnis -->
-                <div class="result-main">
-                    <div class="result-icon">🎯</div>
-                    <div class="result-text">
-                        <div class="result-number" id="actual-count">2</div>
-                        <div class="result-label">haben "JA" gesagt!</div>
-                    </div>
-                </div>
-
-                <!-- Wer hat Ja gesagt -->
-                <div class="yes-voters-section" id="yes-voters-section">
-                    <h3>👀 Die haben's zugegeben:</h3>
-                    <div class="yes-voters" id="yes-voters">
-                        <!-- Dynamisch gefüllt -->
-                    </div>
-                </div>
-
-                <!-- Schätzungen & Strafen -->
-                <div class="results-section">
-                    <h3>🔮 Schätzungen & Strafen:</h3>
-                    <div class="results-list" id="results-list">
-                        <!-- Dynamisch gefüllt -->
-                    </div>
-                </div>
-
-                <!-- Weiter Button -->
-                <button class="btn-primary btn-large" onclick="nextRound()" id="next-round-btn">
-                    Nächste Runde! 🎉
-                </button>
-            </div>
-        </div>
-
-        <!-- SCHRITT 5: Spiel Ende -->
-        <div class="screen" id="end-screen">
-            <div class="content-area">
-                <div class="end-header">
-                    <h1>🏆 Spiel beendet!</h1>
-                    <p>Das waren alle 10 Runden!</p>
-                </div>
-
-                <!-- Endergebnisse -->
-                <div class="final-results">
-                    <h3>🥇 Endrangliste</h3>
-                    <div class="rankings" id="final-rankings">
-                        <!-- Dynamisch gefüllt -->
-                    </div>
-                </div>
-
-                <!-- Statistiken -->
-                <div class="final-stats">
-                    <h3>📊 Statistiken</h3>
-                    <div class="stats-grid" id="final-stats-grid">
-                        <!-- Dynamisch gefüllt -->
-                    </div>
-                </div>
-
-                <!-- Aktionen -->
-                <div class="end-actions">
-                    <button class="btn-primary btn-large" onclick="playAgain()">
-                        🔄 Nochmal spielen
-                    </button>
-                    <button class="btn-secondary" onclick="goHome()">
-                        🏠 Hauptmenü
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Menü Modal -->
-    <div class="modal" id="menu-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🎮 Spielmenü</h3>
-                <button class="close-btn" onclick="closeMenu()">✕</button>
-            </div>
-            <div class="modal-body">
-                <button class="menu-option" onclick="resumeGame()">
-                    ▶️ Weiterspielen
-                </button>
-                <button class="menu-option" onclick="restartGame()">
-                    🔄 Spiel neustarten
-                </button>
-                <button class="menu-option" onclick="goHome()">
-                    🏠 Hauptmenü
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notifications -->
-    <div class="toast-container" id="toast-container"></div>
-
+    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -277,10 +21,11 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             overflow-x: hidden;
-            user-select: none;
+            touch-action: manipulation;
+            position: relative;
         }
 
-        /* Background */
+        /* Background Particles */
         .background-particles {
             position: fixed;
             top: 0;
@@ -293,160 +38,183 @@
 
         .particle {
             position: absolute;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
+            animation: float 15s ease-in-out infinite;
         }
 
-        .particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 100px; height: 100px; left: 70%; animation-delay: 1s; }
-        .particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 2s; }
-        .particle:nth-child(4) { width: 80px; height: 80px; left: 80%; animation-delay: 3s; }
-        .particle:nth-child(5) { width: 30px; height: 30px; left: 50%; animation-delay: 4s; }
+        .particle:nth-child(1) { width: 100px; height: 100px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 60px; height: 60px; left: 80%; animation-delay: 3s; }
+        .particle:nth-child(3) { width: 80px; height: 80px; left: 30%; animation-delay: 6s; }
+        .particle:nth-child(4) { width: 120px; height: 120px; left: 70%; animation-delay: 9s; }
 
         @keyframes float {
             0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
-            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
-            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
+            25% { transform: translateY(-30px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(-60px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translateY(-30px) rotate(270deg); opacity: 0.6; }
         }
 
-        /* Layout */
         .app-container {
             min-height: 100vh;
-            padding: 20px;
-        }
-
-        .screen {
-            display: none;
-            min-height: 100vh;
-            animation: slideIn 0.5s ease-out;
-        }
-
-        .screen.active {
-            display: block;
-        }
-
-        .content-area {
-            max-width: 600px;
-            margin: 0 auto;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 25px;
+            padding: 15px;
+            max-width: 450px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         /* Header */
         .game-header {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .round-info, .category-info, .phase-info {
-            color: white;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .category-info, .phase-info {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        .menu-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-        }
-
-        .menu-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-
-        /* Cards */
-        .question-card, .instruction-card, .player-card, .question-reminder, .estimation-card, .result-main, .final-results, .final-stats {
             background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(25px);
+            border-radius: 25px;
+            padding: 18px 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-info {
+            color: white;
+        }
+
+        .device-mode {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .question-counter {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .players-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .players-indicator {
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        /* Game Phases */
+        .game-phase {
+            display: none;
+        }
+
+        .game-phase.active {
+            display: block;
         }
 
         /* Question Card */
-        .question-title {
+        .question-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 35px 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .question-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4CAF50, #2196F3, #9C27B0);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 200% 0; }
+            50% { background-position: -200% 0; }
+        }
+
+        .question-category {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(76, 175, 80, 0.35));
+            border: 1px solid rgba(76, 175, 80, 0.5);
             color: white;
-            font-size: 2rem;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
             font-weight: 700;
+            display: inline-block;
             margin-bottom: 20px;
+            backdrop-filter: blur(10px);
         }
 
         .question-text {
             color: white;
-            font-size: 2.5rem;
-            font-weight: 800;
+            font-size: 1.3rem;
+            font-weight: 700;
+            line-height: 1.5;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
-        /* Instruction Card */
-        .instruction-card h3 {
-            color: white;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
-        }
-
-        .steps {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            text-align: left;
-        }
-
-        .step {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.95rem;
-            border-left: 4px solid #4CAF50;
-        }
-
-        /* Player Card */
-        .player-card {
+        /* Current Player Display */
+        .current-player-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 25px;
+            padding: 25px;
+            margin-bottom: 25px;
             display: flex;
             align-items: center;
             gap: 20px;
-            text-align: left;
-            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
         }
 
         .player-avatar {
             width: 60px;
             height: 60px;
-            background: linear-gradient(45deg, #4CAF50, #81C784);
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 800;
             color: white;
+            font-weight: 800;
+            font-size: 1.3rem;
+            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.3);
             flex-shrink: 0;
+        }
+
+        .player-info {
+            flex: 1;
         }
 
         .player-name {
@@ -461,645 +229,708 @@
             font-size: 1rem;
         }
 
-        /* Question Reminder */
-        .reminder-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.1rem;
-            margin-bottom: 10px;
+        /* Answer Section */
+        .answer-section {
+            margin-bottom: 35px;
         }
 
-        .reminder-question {
+        .answer-title {
             color: white;
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
-        .reminder-ask {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        /* Voting Buttons */
-        .voting-buttons {
+        .answer-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-            width: 100%;
         }
 
-        .vote-btn {
+        .answer-btn {
             background: rgba(255, 255, 255, 0.1);
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 35px 25px;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 25px 20px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
+            min-height: 100px;
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
         }
 
-        .vote-btn:hover {
+        .answer-btn:active {
+            transform: scale(0.95);
+        }
+
+        .answer-btn.selected {
             transform: scale(1.05);
-            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
         }
 
-        .vote-yes:hover {
+        .answer-btn.yes.selected {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
             border-color: #4CAF50;
-            background: rgba(76, 175, 80, 0.2);
+            box-shadow: 0 15px 40px rgba(76, 175, 80, 0.3);
         }
 
-        .vote-no:hover {
-            border-color: #F44336;
-            background: rgba(244, 67, 54, 0.2);
+        .answer-btn.no.selected {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.3), rgba(244, 67, 54, 0.4));
+            border-color: #f44336;
+            box-shadow: 0 15px 40px rgba(244, 67, 54, 0.3);
         }
 
-        .vote-emoji {
-            font-size: 3rem;
+        .answer-emoji {
+            font-size: 2rem;
         }
 
-        .vote-text {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 800;
-        }
-
-        .vote-subtext {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1rem;
-        }
-
-        /* Estimation */
-        .estimation-question {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 600;
+        /* Estimation Section */
+        .estimation-section {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 25px;
+            padding: 30px 25px;
             margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
         }
 
-        .number-picker {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 30px;
+        .estimation-title {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Number Grid */
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 15px;
             margin-bottom: 25px;
+            justify-items: center;
         }
 
-        .picker-btn {
+        .number-btn {
             width: 60px;
             height: 60px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: white;
             border-radius: 50%;
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .picker-btn:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-
-        .picker-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .estimate-display {
-            text-align: center;
-        }
-
-        .estimate-number {
-            color: white;
-            font-size: 4rem;
-            font-weight: 800;
-            line-height: 1;
-        }
-
-        .estimate-label {
-            color: rgba(255, 255, 255, 0.8);
             font-size: 1.2rem;
-            margin-top: 5px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(20px);
         }
 
-        .quick-picks {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
+        .number-btn:active {
+            transform: scale(0.9);
+        }
+
+        .number-btn.selected {
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            border-color: #4CAF50;
+            transform: scale(1.1);
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
+            color: white;
+        }
+
+        /* Current Selection Display */
+        .current-selection {
+            text-align: center;
             margin-bottom: 25px;
         }
 
-        .quick-pick {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 10px 20px;
+        .selection-display {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
+            padding: 20px;
+            display: inline-block;
+            min-width: 200px;
         }
 
-        .quick-pick:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-        }
-
-        .quick-pick.selected {
-            background: rgba(76, 175, 80, 0.3);
-            border-color: #4CAF50;
-        }
-
-        /* Results */
-        .result-main {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 25px;
-            background: rgba(76, 175, 80, 0.2);
-            border: 2px solid rgba(76, 175, 80, 0.4);
-        }
-
-        .result-icon {
-            font-size: 3rem;
-        }
-
-        .result-number {
-            color: #4CAF50;
-            font-size: 4rem;
-            font-weight: 800;
-            line-height: 1;
-        }
-
-        .result-label {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-top: 8px;
-        }
-
-        .yes-voters-section h3, .results-section h3 {
-            color: white;
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-        }
-
-        .yes-voters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .yes-voter {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid rgba(76, 175, 80, 0.4);
-            color: #4CAF50;
-            padding: 8px 16px;
-            border-radius: 15px;
-            font-weight: 600;
-        }
-
-        .results-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .result-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px 20px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .result-player {
-            color: white;
-            font-weight: 600;
-        }
-
-        .result-details {
-            text-align: right;
-        }
-
-        .result-estimate {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-        }
-
-        .result-penalty {
-            color: #FF9800;
-            font-weight: 700;
-            margin-top: 3px;
-        }
-
-        .penalty-perfect {
-            color: #4CAF50;
-        }
-
-        .penalty-close {
-            color: #FFC107;
-        }
-
-        .penalty-bad {
-            color: #F44336;
-        }
-
-        /* End Screen */
-        .end-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .end-header h1 {
+        .selection-number {
             color: white;
             font-size: 2.5rem;
             font-weight: 800;
-            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 5px;
         }
 
-        .end-header p {
+        .selection-label {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 1.2rem;
+            font-size: 1rem;
+            font-weight: 600;
         }
 
-        .final-results h3, .final-stats h3 {
+        /* Submit Button */
+        .submit-section {
+            margin-bottom: 30px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
-            font-size: 1.5rem;
-            margin-bottom: 25px;
+            border: none;
+            padding: 22px;
+            border-radius: 25px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0.4;
+            transform: scale(0.95);
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.2);
         }
 
-        .rankings {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        .submit-btn.enabled {
+            opacity: 1;
+            transform: scale(1);
+            box-shadow: 0 15px 40px rgba(76, 175, 80, 0.4);
         }
 
-        .ranking-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
+        .submit-btn.enabled:active {
+            transform: scale(0.98);
+        }
+
+        /* Results Phase */
+        .results-screen {
+            padding: 20px 0;
+        }
+
+        .results-header {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 25px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .results-title {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .results-summary {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .correct-answer {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
+            border: 1px solid #4CAF50;
             border-radius: 15px;
+            padding: 15px;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .result-item {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 20px;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-result {
             display: flex;
             align-items: center;
-            gap: 20px;
-            border-left: 5px solid #4CAF50;
+            gap: 18px;
         }
 
-        .ranking-item:first-child {
-            border-left-color: #FFD700;
-            background: rgba(255, 215, 0, 0.1);
-        }
-
-        .ranking-position {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #4CAF50;
-            min-width: 40px;
-        }
-
-        .ranking-item:first-child .ranking-position {
-            color: #FFD700;
-        }
-
-        .ranking-player {
-            flex: 1;
-        }
-
-        .ranking-name {
+        .player-result-info {
             color: white;
-            font-size: 1.3rem;
+        }
+
+        .player-result-name {
             font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
         }
 
-        .ranking-stats {
-            color: rgba(255, 255, 255, 0.8);
+        .player-answer {
             font-size: 0.9rem;
-            margin-top: 5px;
+            opacity: 0.8;
+            font-weight: 500;
         }
 
-        .stats-grid {
+        .sips-penalty {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.3), rgba(244, 67, 54, 0.4));
+            border: 1px solid #f44336;
+            color: #f44336;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.2);
+        }
+
+        .sips-penalty.none {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
+            border-color: #4CAF50;
+            color: #4CAF50;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+        }
+
+        /* Final Results Screen */
+        .final-results-screen {
+            padding: 20px 0;
+        }
+
+        .final-header {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            backdrop-filter: blur(30px);
+            border-radius: 25px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .final-title {
+            color: #FFD700;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .final-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .final-stats {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
 
         .stat-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 12px;
             text-align: center;
         }
 
         .stat-value {
-            color: #4CAF50;
-            font-size: 2rem;
+            color: white;
+            font-size: 1.8rem;
             font-weight: 800;
-            display: block;
+            margin-bottom: 5px;
         }
 
         .stat-label {
             color: rgba(255, 255, 255, 0.8);
             font-size: 0.9rem;
-            margin-top: 5px;
+            font-weight: 600;
         }
 
-        /* Buttons */
-        .btn-primary, .btn-secondary {
-            background: linear-gradient(45deg, #4CAF50, #81C784);
+        .leaderboard {
+            margin: 30px 0;
+        }
+
+        .leaderboard-title {
             color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        .btn-large {
-            padding: 20px 40px;
-            font-size: 1.3rem;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            color: rgba(255, 255, 255, 0.9);
-            box-shadow: none;
-        }
-
-        .btn-primary:hover, .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
-        }
-
-        .end-actions {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        /* Modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
+        .leaderboard-item {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
             border-radius: 20px;
-            max-width: 350px;
-            width: 90%;
-            overflow: hidden;
-        }
-
-        .modal-header {
-            background: rgba(76, 175, 80, 0.1);
             padding: 20px;
+            margin: 15px 0;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            gap: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
         }
 
-        .modal-header h3 {
-            color: #333;
-            margin: 0;
+        .leaderboard-item.winner {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border-color: #FFD700;
         }
 
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
-            padding: 5px;
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .menu-option {
-            width: 100%;
-            background: transparent;
-            border: 2px solid #ddd;
-            color: #333;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .menu-option:hover {
-            background: #f0f0f0;
-            border-color: #4CAF50;
-        }
-
-        /* Loading */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .loading.show {
-            display: flex;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
+        .rank-number {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: white; }
+        .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: white; }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32, #B8860B); color: white; }
+        .rank-other { background: rgba(255, 255, 255, 0.2); color: white; }
+
+        .player-final-stats {
+            flex: 1;
         }
 
-        /* Toast */
-        .toast-container {
+        .player-final-name {
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .player-final-details {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            display: flex;
+            gap: 15px;
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            display: grid;
+            gap: 18px;
+            margin-top: 25px;
+        }
+
+        .nav-btn {
+            padding: 20px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn.primary {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .nav-btn.secondary {
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            backdrop-filter: blur(20px);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Toast Notifications */
+        .toast-notification {
             position: fixed;
             top: 20px;
             right: 20px;
-            z-index: 1001;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 350px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
         }
 
-        .toast {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border-left: 4px solid #4CAF50;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            animation: slideInRight 0.3s ease-out;
-            max-width: 300px;
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
         }
 
-        .toast.success { border-left-color: #4CAF50; }
-        .toast.warning { border-left-color: #FFC107; }
-        .toast.error { border-left-color: #F44336; }
-
-        .toast-text {
-            color: #333;
-            font-size: 0.9rem;
-            font-weight: 500;
+        .toast-notification.success {
+            border-color: rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
         }
 
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .toast-notification.warning {
+            border-color: rgba(255, 152, 0, 0.5);
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
         }
 
-        @keyframes slideIn {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        .toast-notification.error {
+            border-color: rgba(244, 67, 54, 0.5);
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
         }
 
-        /* Mobile */
-        @media (max-width: 768px) {
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-message {
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
             .app-container {
-                padding: 15px;
+                padding: 12px;
             }
-
-            .content-area {
-                gap: 20px;
-            }
-
+            
             .question-text {
-                font-size: 2rem;
+                font-size: 1.2rem;
+            }
+            
+            .number-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.1rem;
             }
 
-            .reminder-question {
-                font-size: 1.5rem;
-            }
-
-            .voting-buttons {
+            .final-stats {
                 grid-template-columns: 1fr;
-                gap: 15px;
+                gap: 10px;
             }
 
-            .vote-btn {
-                padding: 25px 20px;
-            }
-
-            .vote-text {
-                font-size: 1.5rem;
-            }
-
-            .result-number, .estimate-number {
-                font-size: 3rem;
-            }
-
-            .end-actions {
+            .player-final-details {
                 flex-direction: column;
-                align-items: center;
+                gap: 5px;
             }
+        }
 
-            .stats-grid {
-                grid-template-columns: 1fr 1fr;
+        /* Animations */
+        .fadeInUp {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
     </style>
+</head>
+<body>
+    <!-- Background Particles -->
+    <div class="background-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <!-- Game Header -->
+        <div class="game-header fadeInUp">
+            <div class="game-info">
+                <div class="device-mode">📱 Ein Gerät</div>
+                <div class="question-counter">Frage <span id="question-number">1</span> von 10</div>
+            </div>
+            <div class="players-info">
+                <div class="players-indicator"></div>
+                <span id="players-count">0 Spieler</span>
+            </div>
+        </div>
+
+        <!-- PHASE 1: Question & Answer -->
+        <div class="game-phase active" id="question-phase">
+            <!-- Question Card -->
+            <div class="question-card fadeInUp">
+                <div class="question-category" id="question-category">
+                    🎮 Loading...
+                </div>
+                <div class="question-text" id="question-text">
+                    Lade Frage...
+                </div>
+            </div>
+
+            <!-- Current Player -->
+            <div class="current-player-card fadeInUp">
+                <div class="player-avatar" id="current-avatar">M</div>
+                <div class="player-info">
+                    <div class="player-name" id="current-player-name">Max</div>
+                    <div class="player-status">Du bist dran! <span id="player-progress">(1/4)</span></div>
+                </div>
+            </div>
+
+            <!-- Answer Section -->
+            <div class="answer-section fadeInUp">
+                <div class="answer-title">🤔 Deine Antwort</div>
+                <div class="answer-buttons">
+                    <button class="answer-btn yes" onclick="selectAnswer(true)" id="yes-btn">
+                        <div class="answer-emoji">✅</div>
+                        <div>Ja, habe ich</div>
+                    </button>
+                    <button class="answer-btn no" onclick="selectAnswer(false)" id="no-btn">
+                        <div class="answer-emoji">❌</div>
+                        <div>Nein, noch nie</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Estimation Section -->
+            <div class="estimation-section fadeInUp">
+                <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
+                
+                <!-- Current Selection Display -->
+                <div class="current-selection">
+                    <div class="selection-display">
+                        <div class="selection-number" id="selected-number">1</div>
+                        <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
+                    </div>
+                </div>
+
+                <!-- Number Grid -->
+                <div class="number-grid" id="number-grid">
+                    <!-- Numbers will be generated dynamically -->
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="submit-section fadeInUp">
+<button class="submit-btn" onclick="submitAnswer()" id="submit-btn">
+                    📤 Antwort bestätigen
+                </button>
+            </div>
+        </div>
+
+        <!-- PHASE 2: Round Results -->
+        <div class="game-phase" id="results-phase">
+            <div class="results-screen">
+                <div class="results-header fadeInUp">
+                    <div class="results-title">📊 Ergebnis Frage <span id="results-round">1</span></div>
+                    <div class="results-summary" id="results-summary">
+                        Berechne Ergebnisse...
+                    </div>
+                    <div class="correct-answer">
+                        ✅ Korrekte Antwort: <span id="correct-count">0</span> Spieler
+                    </div>
+                </div>
+
+                <div class="results-grid fadeInUp" id="results-grid">
+                    <!-- Results will be populated dynamically -->
+                </div>
+
+                <div class="nav-buttons fadeInUp">
+                    <button class="nav-btn primary" onclick="nextQuestion()" id="next-question-btn">
+                        ➡️ Nächste Frage
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHASE 3: Final Results -->
+        <div class="game-phase" id="final-results-phase">
+            <div class="final-results-screen">
+                <div class="final-header fadeInUp">
+                    <div class="final-title">🏆 Spiel beendet!</div>
+                    <div class="final-subtitle">Hier sind die Gesamtergebnisse</div>
+                    
+                    <div class="final-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-questions">10</div>
+                            <div class="stat-label">Fragen gespielt</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-players-final">0</div>
+                            <div class="stat-label">Spieler</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="leaderboard fadeInUp">
+                    <div class="leaderboard-title">🏅 Bestenliste</div>
+                    <div id="leaderboard-list">
+                        <!-- Leaderboard will be populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="nav-buttons fadeInUp">
+                    <button class="nav-btn primary" onclick="playAgain()">
+                        🔄 Nochmal spielen
+                    </button>
+                    <button class="nav-btn secondary" onclick="goHome()">
+                        🏠 Zur Startseite
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Global Game State
-        let gameState = null;
-        let currentGame = {
-            players: [],
-            questions: [],
-            currentRound: 1,
-            totalRounds: 10,
-            currentPlayerIndex: 0,
-            currentScreen: 'question',
-            votes: {},
-            estimates: {},
-            roundResults: [],
-            settings: {}
-        };
-
-        // Questions Database
-        const questionsDB = {
-            fsk0: [
-                "im Ausland gewesen",
-                "ein Buch zu Ende gelesen",
-                "auf einem Konzert gewesen",
-                "einen Film zweimal hintereinander geschaut",
-                "mich beim Kochen verletzt",
-                "einen ganzen Tag im Pyjama verbracht",
-                "mit öffentlichen Verkehrsmitteln gefahren",
-                "Karaoke gesungen",
-                "eine Fremdsprache gelernt",
-                "einen Regenbogen gesehen"
-            ],
-            fsk16: [
-                "richtig betrunken gewesen",
-                "gelogen, um frei zu bekommen",
-                "heimlich verliebt gewesen",
-                "beim Mogeln erwischt worden",
-                "einen peinlichen Moment vor anderen gehabt",
-                "auf einer Party gekotzt",
-                "bei den Eltern gelogen",
-                "eine Mutprobe gemacht",
-                "bei einer Klassenarbeit geschummelt",
-                "heimlich geraucht"
-            ],
-            fsk18: [
-                "einen One-Night-Stand gehabt",
-                "etwas Illegales gemacht",
-                "fremdgegangen",
-                "nackt gebadet",
-                "in der Öffentlichkeit geknutscht",
-                "über mein Liebesleben gelogen",
-                "etwas gestohlen",
-                "mich betrunken an nichts mehr erinnert",
-                "Nacktbilder verschickt",
-                "beim Fremdgehen erwischt worden"
-            ]
-        };
-
-        // Game State Management
+        // ===== GAME STATE MANAGEMENT =====
         class GameState {
             constructor() {
+                this.deviceMode = null;
+                this.selectedCategories = [];
+                this.difficulty = null;
+                this.players = [];
+                this.gameId = null;
+                this.playerName = null;
+                this.isHost = false;
+                this.isGuest = false;
+                this.gameState = 'setup';
+                this.timestamp = Date.now();
+                
                 this.loadFromStorage();
             }
 
@@ -1109,59 +940,146 @@
                     if (saved) {
                         const state = JSON.parse(saved);
                         if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                            Object.assign(this, state);
+                            // Lade nur die relevanten Properties
+                            this.deviceMode = state.deviceMode || null;
+                            this.selectedCategories = state.selectedCategories || [];
+                            this.difficulty = state.difficulty || null;
+                            this.players = state.players || [];
+                            this.gameId = state.gameId || null;
+                            this.playerName = state.playerName || null;
+                            this.isHost = state.isHost || false;
+                            this.isGuest = state.isGuest || false;
+                            this.gameState = state.gameState || 'setup';
+                            
+                            console.log('✅ GameState loaded from storage:', this);
                             return true;
+                        } else {
+                            console.log('⚠️ GameState expired, clearing storage');
+                            this.clearStorage();
                         }
                     }
                 } catch (error) {
-                    console.error('Could not load game state:', error);
+                    console.error('❌ Could not load game state:', error);
+                    this.clearStorage();
                 }
                 return false;
             }
+
+            clearStorage() {
+                localStorage.removeItem('denkstdu_game_state');
+            }
         }
 
-        // Initialize Game
-        function initGame() {
-            console.log('🎮 Initializing DenkstDu Gameplay...');
+        // ===== GLOBAL VARIABLES =====
+        let gameState = null;
+        let currentGame = {
+            players: [],
+            questions: [],
+            currentRound: 1,
+            totalRounds: 10,
+            currentPlayerIndex: 0,
+            currentAnswers: {},
+            currentEstimates: {},
+            allAnswers: {},
+            allEstimates: {},
+            roundResults: []
+        };
+
+        // Questions Database
+        const questionsDatabase = {
+            fsk0: [
+                "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
+                "Ich habe schon mal... Pizza zum Frühstück gegessen", 
+                "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen",
+                "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht",
+                "Ich habe schon mal... beim Kochen das Essen anbrennen lassen",
+                "Ich habe schon mal... mein Handy in die Toilette fallen lassen",
+                "Ich habe schon mal... ein Lied komplett falsch mitgesungen",
+                "Ich habe schon mal... heimlich Süßigkeiten vor dem Abendessen gegessen",
+                "Ich habe schon mal... so getan, als würde ich schlafen",
+                "Ich habe schon mal... einen Film dreimal hintereinander geschaut"
+            ],
+            fsk16: [
+                "Ich habe schon mal... so getan, als wäre ich krank, um nicht zur Schule zu müssen",
+                "Ich habe schon mal... bis 3 Uhr morgens Netflix geschaut",
+                "Ich habe schon mal... ein Lied so laut gesungen, dass die Nachbarn sich beschwert haben",
+                "Ich habe schon mal... vergessen, wo ich mein Auto geparkt habe",
+                "Ich habe schon mal... bei einer Prüfung geschummelt",
+                "Ich habe schon mal... heimlich das Tagebuch von jemand anderem gelesen",
+                "Ich habe schon mal... gelogen, um aus einer Verabredung herauszukommen",
+                "Ich habe schon mal... mich richtig betrunken",
+                "Ich habe schon mal... eine ganze Nacht durchgemacht",
+                "Ich habe schon mal... heimlich geraucht"
+            ],
+            fsk18: [
+                "Ich habe schon mal... einen peinlichen Betrunkenheits-Text verschickt",
+                "Ich habe schon mal... mich in eine Person verliebt, die vergeben war",
+                "Ich habe schon mal... bei einem Date gelogen, um interessanter zu wirken",
+                "Ich habe schon mal... heimlich die Social Media Profile meines Ex gecheckt",
+                "Ich habe schon mal... einen One-Night-Stand gehabt",
+                "Ich habe schon mal... fremdgegangen",
+                "Ich habe schon mal... nackt gebadet",
+                "Ich habe schon mal... in der Öffentlichkeit geknutscht",
+                "Ich habe schon mal... über mein Liebesleben gelogen",
+                "Ich habe schon mal... Nacktbilder verschickt"
+            ]
+        };
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGame();
+        });
+
+        function initializeGame() {
+            console.log('🎮 Initializing single device gameplay...');
             
+            // Load game state
             gameState = new GameState();
             
             // Validate game state
             if (!gameState.players || gameState.players.length < 2) {
-                showToast('Keine Spieler gefunden!', 'error');
+                showNotification('Keine Spieler gefunden!', 'error');
                 setTimeout(() => window.location.href = 'player-setup.html', 2000);
                 return;
             }
 
             if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-                showToast('Keine Kategorien ausgewählt!', 'error');
+                showNotification('Keine Kategorien ausgewählt!', 'error');
                 setTimeout(() => window.location.href = 'category-selection.html', 2000);
+                return;
+            }
+
+            if (!gameState.difficulty) {
+                showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
+                setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
                 return;
             }
 
             // Setup game
             currentGame.players = [...gameState.players];
             currentGame.questions = generateQuestions();
-            currentGame.settings = {
+            
+            // Initialize UI
+            updateGameDisplay();
+            createNumberGrid();
+            
+            // Start first round
+            startNewRound();
+            
+            console.log('✅ Game initialized:', {
+                players: currentGame.players,
                 categories: gameState.selectedCategories,
                 difficulty: gameState.difficulty,
-                baseSips: getBaseSips()
-            };
-
-            // Initialize UI
-            updateGameUI();
-            showCurrentQuestion();
-            
-            console.log('✅ Game initialized:', currentGame);
+                questions: currentGame.questions.length
+            });
         }
 
-        // Generate Questions
         function generateQuestions() {
             let allQuestions = [];
             
             gameState.selectedCategories.forEach(category => {
-                if (questionsDB[category]) {
-                    questionsDB[category].forEach(q => {
+                if (questionsDatabase[category]) {
+                    questionsDatabase[category].forEach(q => {
                         allQuestions.push({
                             text: q,
                             category: category
@@ -1174,453 +1092,6 @@
             return shuffleArray(allQuestions).slice(0, currentGame.totalRounds);
         }
 
-        // Get Base Sips from Difficulty
-        function getBaseSips() {
-            const sips = { easy: 1, medium: 2, hard: 3 };
-            return sips[gameState.difficulty] || 2;
-        }
-
-        // Update Game UI
-        function updateGameUI() {
-            // Update round numbers
-            document.querySelectorAll('#round-number, .round-number').forEach(el => {
-                el.textContent = currentGame.currentRound;
-            });
-
-            // Update category
-            const categoryNames = {
-                fsk0: '👨‍👩‍👧‍👦 Familie & Freunde',
-                fsk16: '🎉 Party Time', 
-                fsk18: '🔥 Heiß & Gewagt'
-            };
-            
-            if (currentGame.questions[currentGame.currentRound - 1]) {
-                const currentCategory = currentGame.questions[currentGame.currentRound - 1].category;
-                document.getElementById('category-name').textContent = categoryNames[currentCategory];
-            }
-
-            // Update total players
-            document.querySelectorAll('#total-players, .total-players').forEach(el => {
-                el.textContent = currentGame.players.length;
-            });
-        }
-
-        // Show Current Question
-        function showCurrentQuestion() {
-            if (currentGame.currentRound > currentGame.questions.length) {
-                endGame();
-                return;
-            }
-
-            const question = currentGame.questions[currentGame.currentRound - 1];
-            
-            // Update question text
-            document.getElementById('question-text').textContent = `...${question.text}.`;
-            
-            // Show question screen
-            showScreen('question-screen');
-        }
-
-        // Start Voting Phase
-        function startVoting() {
-            currentGame.currentPlayerIndex = 0;
-            currentGame.votes = {};
-            
-            showScreen('voting-screen');
-            updateVotingUI();
-        }
-
-        // Update Voting UI
-        function updateVotingUI() {
-            const currentPlayer = currentGame.players[currentGame.currentPlayerIndex];
-            const question = currentGame.questions[currentGame.currentRound - 1];
-            
-            // Update player info
-            document.getElementById('voter-avatar').textContent = currentPlayer.charAt(0).toUpperCase();
-            document.getElementById('voter-name').textContent = currentPlayer;
-            document.getElementById('voting-progress').textContent = `(${currentGame.currentPlayerIndex + 1}/${currentGame.players.length})`;
-            
-            // Update question
-            document.getElementById('voting-question').textContent = question.text;
-        }
-
-        // Submit Vote
-        function vote(answer) {
-            const currentPlayer = currentGame.players[currentGame.currentPlayerIndex];
-            currentGame.votes[currentPlayer] = answer;
-            
-            showToast(`${currentPlayer}: ${answer ? 'JA' : 'NEIN'}`, 'success', 2000);
-            
-            // Move to next player or estimation
-            setTimeout(() => {
-                if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
-                    currentGame.currentPlayerIndex++;
-                    updateVotingUI();
-                } else {
-                    startEstimation();
-                }
-            }, 1500);
-        }
-
-        // Start Estimation Phase
-        function startEstimation() {
-            currentGame.currentPlayerIndex = 0;
-            currentGame.estimates = {};
-            
-            showScreen('estimation-screen');
-            updateEstimationUI();
-        }
-
-        // Update Estimation UI
-        function updateEstimationUI() {
-            const currentPlayer = currentGame.players[currentGame.currentPlayerIndex];
-            const question = currentGame.questions[currentGame.currentRound - 1];
-            
-            // Update player info
-            document.getElementById('estimator-avatar').textContent = currentPlayer.charAt(0).toUpperCase();
-            document.getElementById('estimator-name').textContent = currentPlayer;
-            document.getElementById('estimation-progress').textContent = `(${currentGame.currentPlayerIndex + 1}/${currentGame.players.length})`;
-            
-            // Update question
-            document.getElementById('estimation-question').textContent = question.text;
-            
-            // Reset estimate
-            document.getElementById('estimate').textContent = Math.floor(currentGame.players.length / 2);
-            
-            // Generate quick picks
-            generateQuickPicks();
-            updateEstimateButtons();
-        }
-
-        // Generate Quick Pick Buttons
-        function generateQuickPicks() {
-            const container = document.getElementById('quick-picks');
-            container.innerHTML = '';
-            
-            for (let i = 0; i <= currentGame.players.length; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'quick-pick';
-                btn.textContent = i;
-                btn.onclick = () => setEstimate(i);
-                container.appendChild(btn);
-            }
-        }
-
-        // Change Estimate
-        function changeEstimate(delta) {
-            const current = parseInt(document.getElementById('estimate').textContent);
-            const newValue = Math.max(0, Math.min(currentGame.players.length, current + delta));
-            setEstimate(newValue);
-        }
-
-        // Set Estimate
-        function setEstimate(value) {
-            document.getElementById('estimate').textContent = value;
-            updateEstimateButtons();
-            
-            // Update quick pick selection
-            document.querySelectorAll('.quick-pick').forEach(btn => {
-                btn.classList.toggle('selected', parseInt(btn.textContent) === value);
-            });
-        }
-
-        // Update Estimate Buttons
-        function updateEstimateButtons() {
-            const current = parseInt(document.getElementById('estimate').textContent);
-            document.getElementById('minus-btn').disabled = current <= 0;
-            document.getElementById('plus-btn').disabled = current >= currentGame.players.length;
-        }
-
-        // Confirm Estimate
-        function confirmEstimate() {
-            const currentPlayer = currentGame.players[currentGame.currentPlayerIndex];
-            const estimate = parseInt(document.getElementById('estimate').textContent);
-            
-            currentGame.estimates[currentPlayer] = estimate;
-            
-            showToast(`${currentPlayer} schätzt: ${estimate}`, 'success', 2000);
-            
-            // Move to next player or results
-            setTimeout(() => {
-                if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
-                    currentGame.currentPlayerIndex++;
-                    updateEstimationUI();
-                } else {
-                    showResults();
-                }
-            }, 1500);
-        }
-
-        // Show Results
-        function showResults() {
-            const question = currentGame.questions[currentGame.currentRound - 1];
-            
-            // Calculate actual yes count
-            const actualYes = Object.values(currentGame.votes).filter(vote => vote).length;
-            
-            // Update question
-            document.getElementById('results-question').textContent = question.text;
-            
-            // Update actual count
-            document.getElementById('actual-count').textContent = actualYes;
-            
-            // Show who voted yes
-            displayYesVoters(actualYes);
-            
-            // Show results and penalties
-            displayResults(actualYes);
-            
-            // Save round result
-            saveRoundResult(actualYes);
-            
-            // Update next round button
-            const nextBtn = document.getElementById('next-round-btn');
-            if (currentGame.currentRound >= currentGame.totalRounds) {
-                nextBtn.textContent = 'Endergebnisse anzeigen! 🏆';
-            }
-            
-            showScreen('results-screen');
-        }
-
-        // Display Yes Voters
-        function displayYesVoters(actualYes) {
-            const container = document.getElementById('yes-voters');
-            const section = document.getElementById('yes-voters-section');
-            
-            if (actualYes === 0) {
-                section.style.display = 'none';
-                return;
-            }
-            
-            section.style.display = 'block';
-            
-            const yesVoters = currentGame.players.filter(player => 
-                currentGame.votes[player] === true
-            );
-            
-            container.innerHTML = yesVoters.map(player => 
-                `<div class="yes-voter">${player}</div>`
-            ).join('');
-        }
-
-        // Display Results and Penalties
-        function displayResults(actualYes) {
-            const container = document.getElementById('results-list');
-            const baseSips = currentGame.settings.baseSips;
-            
-            container.innerHTML = currentGame.players.map(player => {
-                const estimate = currentGame.estimates[player];
-                const difference = Math.abs(estimate - actualYes);
-                
-                let penalty = '';
-                let penaltyClass = '';
-                
-                if (difference === 0) {
-                    penalty = 'Perfekt! 0 Schlücke 🎯';
-                    penaltyClass = 'penalty-perfect';
-                } else {
-                    const totalSips = baseSips + difference;
-                    penalty = `${totalSips} Schlücke 🍺`;
-                    
-                    if (difference === 1) {
-                        penaltyClass = 'penalty-close';
-                    } else {
-                        penaltyClass = 'penalty-bad';
-                    }
-                }
-                
-                return `
-                    <div class="result-item">
-                        <div class="result-player">${player}</div>
-                        <div class="result-details">
-                            <div class="result-estimate">Schätzung: ${estimate}</div>
-                            <div class="result-penalty ${penaltyClass}">${penalty}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Save Round Result
-        function saveRoundResult(actualYes) {
-            currentGame.roundResults.push({
-                round: currentGame.currentRound,
-                question: currentGame.questions[currentGame.currentRound - 1],
-                actualYes: actualYes,
-                votes: { ...currentGame.votes },
-                estimates: { ...currentGame.estimates }
-            });
-        }
-
-        // Next Round
-        function nextRound() {
-            if (currentGame.currentRound >= currentGame.totalRounds) {
-                endGame();
-                return;
-            }
-            
-            currentGame.currentRound++;
-            currentGame.votes = {};
-            currentGame.estimates = {};
-            currentGame.currentPlayerIndex = 0;
-            
-            updateGameUI();
-            showCurrentQuestion();
-        }
-
-        // End Game
-        function endGame() {
-            displayFinalResults();
-            showScreen('end-screen');
-        }
-
-        // Display Final Results
-        function displayFinalResults() {
-            const rankings = calculateFinalRankings();
-            const stats = calculateGameStats();
-            
-            // Display rankings
-            const rankingsContainer = document.getElementById('final-rankings');
-            rankingsContainer.innerHTML = rankings.map((player, index) => `
-                <div class="ranking-item">
-                    <div class="ranking-position">${index + 1}</div>
-                    <div class="ranking-player">
-                        <div class="ranking-name">${player.name}</div>
-                        <div class="ranking-stats">
-                            ${player.totalSips} Schlücke • ${player.perfectGuesses} Treffer
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            
-            // Display stats
-            const statsContainer = document.getElementById('final-stats-grid');
-            statsContainer.innerHTML = `
-                <div class="stat-item">
-                    <span class="stat-value">${stats.totalQuestions}</span>
-                    <span class="stat-label">Fragen gespielt</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">${stats.totalYesAnswers}</span>
-                    <span class="stat-label">Ja-Antworten</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">${stats.mostHonestPlayer}</span>
-                    <span class="stat-label">Ehrlichster Spieler</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">${stats.bestGuesser}</span>
-                    <span class="stat-label">Bester Schätzer</span>
-                </div>
-            `;
-        }
-
-        // Calculate Final Rankings
-        function calculateFinalRankings() {
-            const baseSips = currentGame.settings.baseSips;
-            
-            const playerStats = currentGame.players.map(playerName => {
-                let totalSips = 0;
-                let perfectGuesses = 0;
-                
-                currentGame.roundResults.forEach(result => {
-                    const estimate = result.estimates[playerName];
-                    const actual = result.actualYes;
-                    const difference = Math.abs(estimate - actual);
-                    
-                    if (difference === 0) {
-                        perfectGuesses++;
-                    } else {
-                        totalSips += baseSips + difference;
-                    }
-                });
-                
-                return {
-                    name: playerName,
-                    totalSips: totalSips,
-                    perfectGuesses: perfectGuesses
-                };
-            });
-            
-            // Sort by total sips (fewer is better)
-            return playerStats.sort((a, b) => a.totalSips - b.totalSips);
-        }
-
-        // Calculate Game Stats
-        function calculateGameStats() {
-            const totalQuestions = currentGame.roundResults.length;
-            const totalYesAnswers = currentGame.roundResults.reduce((sum, result) => sum + result.actualYes, 0);
-            
-            // Most honest player (most yes votes)
-            const playerYesCounts = {};
-            currentGame.players.forEach(player => {
-                playerYesCounts[player] = currentGame.roundResults.reduce((count, result) => 
-                    count + (result.votes[player] ? 1 : 0), 0);
-            });
-            
-            const mostHonestPlayer = Object.keys(playerYesCounts).reduce((a, b) => 
-                playerYesCounts[a] > playerYesCounts[b] ? a : b);
-            
-            // Best guesser (most perfect guesses)
-            const perfectGuessCounts = {};
-            currentGame.players.forEach(player => {
-                perfectGuessCounts[player] = currentGame.roundResults.reduce((count, result) => 
-                    count + (Math.abs(result.estimates[player] - result.actualYes) === 0 ? 1 : 0), 0);
-            });
-            
-            const bestGuesser = Object.keys(perfectGuessCounts).reduce((a, b) => 
-                perfectGuessCounts[a] > perfectGuessCounts[b] ? a : b);
-            
-            return {
-                totalQuestions,
-                totalYesAnswers,
-                mostHonestPlayer,
-                bestGuesser
-            };
-        }
-
-        // Screen Management
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            document.getElementById(screenId).classList.add('active');
-        }
-
-        // Menu Functions
-        function showMenu() {
-            document.getElementById('menu-modal').style.display = 'flex';
-        }
-
-        function closeMenu() {
-            document.getElementById('menu-modal').style.display = 'none';
-        }
-
-        function resumeGame() {
-            closeMenu();
-        }
-
-        function restartGame() {
-            if (confirm('Spiel wirklich neu starten? Alle Fortschritte gehen verloren.')) {
-                localStorage.removeItem('denkstdu_game_state');
-                window.location.reload();
-            }
-        }
-
-        function playAgain() {
-            if (confirm('Nochmal spielen? Zurück zur Spielerauswahl.')) {
-                window.location.href = 'player-setup.html';
-            }
-        }
-
-        function goHome() {
-            if (confirm('Zurück zum Hauptmenü? Alle Fortschritte gehen verloren.')) {
-                localStorage.removeItem('denkstdu_game_state');
-                window.location.href = 'index.html';
-            }
-        }
-
-        // Utility Functions
         function shuffleArray(array) {
             const shuffled = [...array];
             for (let i = shuffled.length - 1; i > 0; i--) {
@@ -1630,38 +1101,437 @@
             return shuffled;
         }
 
-        function showToast(message, type = 'success', duration = 3000) {
-            const container = document.getElementById('toast-container');
+        // ===== GAME FLOW =====
+        function updateGameDisplay() {
+            document.getElementById('question-number').textContent = currentGame.currentRound;
+            document.getElementById('players-count').textContent = `${currentGame.players.length} Spieler`;
+            document.getElementById('total-players').textContent = currentGame.players.length;
             
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<div class="toast-text">${message}</div>`;
+            // Update current player
+            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
+            document.getElementById('current-player-name').textContent = currentPlayerName;
+            document.getElementById('current-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
+            document.getElementById('player-progress').textContent = 
+                `(${currentGame.currentPlayerIndex + 1}/${currentGame.players.length})`;
+        }
+
+        function startNewRound() {
+            console.log(`🎲 Starting round ${currentGame.currentRound}`);
             
-            container.appendChild(toast);
+            // Reset for new round
+            currentGame.currentPlayerIndex = 0;
+            currentGame.currentAnswers = {};
+            currentGame.currentEstimates = {};
             
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.remove();
+            // Load question
+            const question = currentGame.questions[currentGame.currentRound - 1];
+            loadQuestion(question);
+            
+            // Reset UI
+            resetPlayerUI();
+            updateGameDisplay();
+            
+            // Show question phase
+            showPhase('question');
+        }
+
+        function loadQuestion(question) {
+            const categoryNames = {
+                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
+                'fsk16': '🎉 Party Time',
+                'fsk18': '🔥 Heiß & Gewagt'
+            };
+            
+            document.getElementById('question-text').textContent = question.text;
+            document.getElementById('question-category').textContent = categoryNames[question.category] || '🎮 Spiel';
+        }
+
+        function resetPlayerUI() {
+            // Reset answer buttons
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Reset number selection
+            updateSelectedNumber(Math.floor(currentGame.players.length / 2));
+            updateNumberSelection();
+            updateSubmitButton();
+        }
+
+        // ===== UI CONTROLS =====
+        function createNumberGrid() {
+            const numberGrid = document.getElementById('number-grid');
+            numberGrid.innerHTML = '';
+
+            for (let i = 0; i <= currentGame.players.length; i++) {
+                const numberBtn = document.createElement('button');
+                numberBtn.className = 'number-btn';
+                numberBtn.textContent = i;
+                numberBtn.onclick = () => selectNumber(i);
+                numberBtn.id = `number-btn-${i}`;
+                
+                numberGrid.appendChild(numberBtn);
+            }
+            
+            updateNumberSelection();
+        }
+
+        function selectNumber(number) {
+            if (number >= 0 && number <= currentGame.players.length) {
+                currentEstimation = number;
+                updateSelectedNumber(number);
+                updateNumberSelection();
+                updateSubmitButton();
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
                 }
+            }
+        }
+
+        function updateSelectedNumber(number) {
+            document.getElementById('selected-number').textContent = number;
+            
+            const selectionDisplay = document.querySelector('.selection-display');
+            selectionDisplay.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                selectionDisplay.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        function updateNumberSelection() {
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            const selectedBtn = document.getElementById(`number-btn-${currentEstimation}`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('selected');
+            }
+        }
+
+        function selectAnswer(answer) {
+            currentAnswer = answer;
+            
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            const selectedBtn = answer ? document.getElementById('yes-btn') : document.getElementById('no-btn');
+            selectedBtn.classList.add('selected');
+            
+            updateSubmitButton();
+        }
+
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submit-btn');
+            if (currentAnswer !== null) {
+                submitBtn.classList.add('enabled');
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.classList.remove('enabled');
+                submitBtn.disabled = true;
+            }
+        }
+
+        // ===== GAME ACTIONS =====
+        let currentAnswer = null;
+        let currentEstimation = 1;
+
+        function submitAnswer() {
+            if (currentAnswer === null) {
+                showNotification('Bitte wähle eine Antwort aus!', 'warning');
+                return;
+            }
+
+            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
+            
+            // Save answers
+            currentGame.currentAnswers[currentPlayerName] = currentAnswer;
+            currentGame.currentEstimates[currentPlayerName] = currentEstimation;
+            
+            console.log(`📤 ${currentPlayerName} answered:`, {
+                answer: currentAnswer,
+                estimation: currentEstimation
+            });
+
+            showNotification(`${currentPlayerName}: ${currentAnswer ? 'JA' : 'NEIN'} (Tipp: ${currentEstimation})`, 'success', 2000);
+            
+            // Move to next player or show results
+            setTimeout(() => {
+                if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
+                    currentGame.currentPlayerIndex++;
+                    currentAnswer = null;
+                    currentEstimation = Math.floor(currentGame.players.length / 2);
+                    resetPlayerUI();
+                    updateGameDisplay();
+                } else {
+                    showResults();
+                }
+            }, 1500);
+        }
+
+        // ===== RESULTS =====
+        function showResults() {
+            console.log('📊 Calculating results...');
+            
+            // Calculate actual yes count
+            const actualYesCount = Object.values(currentGame.currentAnswers).filter(answer => answer === true).length;
+            
+            // Calculate results for each player
+            const results = currentGame.players.map(playerName => {
+                const answer = currentGame.currentAnswers[playerName];
+                const estimation = currentGame.currentEstimates[playerName];
+                const difference = Math.abs(estimation - actualYesCount);
+                const isCorrect = difference === 0;
+                
+                // Calculate sips based on difficulty
+                let sips = 0;
+                if (!isCorrect) {
+                    const baseSips = getDifficultyMultiplier();
+                    sips = baseSips + difference;
+                }
+                
+                return {
+                    playerName: playerName,
+                    answer: answer,
+                    estimation: estimation,
+                    difference: difference,
+                    isCorrect: isCorrect,
+                    sips: sips
+                };
+            });
+            
+            // Save round result
+            currentGame.roundResults.push({
+                round: currentGame.currentRound,
+                question: currentGame.questions[currentGame.currentRound - 1],
+                actualYesCount: actualYesCount,
+                results: results
+            });
+            
+            // Display results
+            displayRoundResults(results, actualYesCount);
+            showPhase('results');
+        }
+
+        function getDifficultyMultiplier() {
+            switch (gameState.difficulty) {
+                case 'easy': return 1;
+                case 'hard': return 3;
+                default: return 2; // medium
+            }
+        }
+
+        function displayRoundResults(results, actualYesCount) {
+            // Update summary
+            document.getElementById('results-round').textContent = currentGame.currentRound;
+            document.getElementById('results-summary').textContent = 
+                `${actualYesCount} von ${currentGame.players.length} Spielern haben mit "Ja" geantwortet`;
+            document.getElementById('correct-count').textContent = actualYesCount;
+
+            // Display individual results
+            const resultsGrid = document.getElementById('results-grid');
+            resultsGrid.innerHTML = '';
+
+            results.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                
+                const avatar = result.playerName.substring(0, 2).toUpperCase();
+                const answerText = result.answer ? 'Ja' : 'Nein';
+                const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
+                const sipsClass = result.sips === 0 ? 'none' : '';
+
+                resultItem.innerHTML = `
+                    <div class="player-result">
+                        <div class="player-avatar">${avatar}</div>
+                        <div class="player-result-info">
+                            <div class="player-result-name">${result.playerName}</div>
+                            <div class="player-answer">${answerText} • Tipp: ${result.estimation}</div>
+                        </div>
+                    </div>
+                    <div class="sips-penalty ${sipsClass}">${sipsText}</div>
+                `;
+
+                resultsGrid.appendChild(resultItem);
+            });
+
+            // Update next question button
+            const nextBtn = document.getElementById('next-question-btn');
+            if (currentGame.currentRound >= currentGame.totalRounds) {
+                nextBtn.textContent = '🏆 Endergebnisse anzeigen';
+                nextBtn.onclick = showFinalResults;
+            }
+        }
+
+        function nextQuestion() {
+            if (currentGame.currentRound >= currentGame.totalRounds) {
+                showFinalResults();
+                return;
+            }
+            
+            currentGame.currentRound++;
+            startNewRound();
+            showNotification('Neue Frage geladen! 🎮', 'success');
+        }
+
+        // ===== FINAL RESULTS =====
+        function showFinalResults() {
+            console.log('🏆 Calculating final results...');
+            
+            // Calculate final statistics
+            const playerStats = currentGame.players.map(playerName => {
+                let totalSips = 0;
+                let correctGuesses = 0;
+                let totalGuesses = 0;
+
+                currentGame.roundResults.forEach(roundResult => {
+                    const playerResult = roundResult.results.find(r => r.playerName === playerName);
+                    if (playerResult) {
+                        totalSips += playerResult.sips;
+                        totalGuesses++;
+                        if (playerResult.isCorrect) {
+                            correctGuesses++;
+                        }
+                    }
+                });
+
+                const accuracy = totalGuesses > 0 ? Math.round((correctGuesses / totalGuesses) * 100) : 0;
+                const score = correctGuesses * 10 - totalSips; // Simple scoring system
+
+                return {
+                    playerName: playerName,
+                    totalSips: totalSips,
+                    correctGuesses: correctGuesses,
+                    totalGuesses: totalGuesses,
+                    accuracy: accuracy,
+                    score: score
+                };
+            });
+
+            // Sort by score (higher is better)
+            const finalRankings = playerStats.sort((a, b) => b.score - a.score);
+            
+            // Display final results
+            displayFinalResults(finalRankings);
+            showPhase('final-results');
+        }
+
+        function displayFinalResults(finalRankings) {
+            // Update final stats
+            document.getElementById('total-questions').textContent = currentGame.totalRounds;
+            document.getElementById('total-players-final').textContent = currentGame.players.length;
+            
+            // Build leaderboard
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '';
+            
+            finalRankings.forEach((player, index) => {
+                const leaderboardItem = document.createElement('div');
+                leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
+                
+                const rankClass = index === 0 ? 'rank-1' : 
+                                 index === 1 ? 'rank-2' : 
+                                 index === 2 ? 'rank-3' : 'rank-other';
+                
+                leaderboardItem.innerHTML = `
+                    <div class="rank-number ${rankClass}">${index + 1}</div>
+                    <div class="player-final-stats">
+                        <div class="player-final-name">${player.playerName}</div>
+                        <div class="player-final-details">
+                            <span>Schlücke: ${player.totalSips}</span>
+                            <span>Genauigkeit: ${player.accuracy}%</span>
+                            <span>Punkte: ${player.score}</span>
+                        </div>
+                    </div>
+                `;
+                
+                leaderboardList.appendChild(leaderboardItem);
+            });
+
+            showNotification('Spiel beendet! 🏆', 'success');
+        }
+
+        // ===== PHASE MANAGEMENT =====
+        function showPhase(phase) {
+            document.querySelectorAll('.game-phase').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            document.getElementById(`${phase}-phase`).classList.add('active');
+            
+            console.log(`📍 Phase changed to: ${phase}`);
+        }
+
+        // ===== NAVIGATION =====
+        function playAgain() {
+            if (confirm('Möchtest du ein neues Spiel starten?')) {
+                // Reset game state but keep players
+                currentGame.currentRound = 1;
+                currentGame.currentPlayerIndex = 0;
+                currentGame.currentAnswers = {};
+                currentGame.currentEstimates = {};
+                currentGame.roundResults = [];
+                currentGame.questions = generateQuestions();
+                
+                startNewRound();
+                showNotification('Neues Spiel gestartet! 🎮', 'success');
+            }
+        }
+
+        function goHome() {
+            if (confirm('Spiel wirklich verlassen?')) {
+                localStorage.removeItem('denkstdu_game_state');
+                window.location.href = 'index.html';
+            }
+        }
+
+        // ===== UTILITY FUNCTIONS =====
+        function showNotification(message, type = 'info', duration = 3000) {
+            // Remove existing notifications
+            document.querySelectorAll('.toast-notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `toast-notification ${type}`;
+            notification.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Remove after duration
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
             }, duration);
         }
 
-        function showLoading() {
-            document.getElementById('loading').classList.add('show');
-        }
+        // ===== DEBUG FUNCTIONS =====
+        window.debugGame = function() {
+            console.log('🔍 Game Debug Info:');
+            console.log('GameState:', gameState);
+            console.log('Current Game:', currentGame);
+        };
 
-        function hideLoading() {
-            document.getElementById('loading').classList.remove('show');
-        }
+        window.skipToFinal = function() {
+            showFinalResults();
+        };
 
-        // Initialize when DOM loads
-        document.addEventListener('DOMContentLoaded', initGame);
+        console.log('✅ Single Device Gameplay loaded');
+        console.log('🎮 Debug Commands:');
+        console.log('- debugGame() - Show debug info');
+        console.log('- skipToFinal() - Skip to final results');
     </script>
 </body>
 </html>
-            background: rgba(76, 175, 80, 0.1);
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px
