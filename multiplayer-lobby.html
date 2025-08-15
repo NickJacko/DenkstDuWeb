@@ -852,10 +852,10 @@
                     };
                     
                     localStorage.setItem(this.getStorageKey(), JSON.stringify(stateToSave));
-                    console.log('💾 State saved');
+console.log('💾 State saved');
                     return true;
                 } catch (error) {
-console.error('❌ Save failed:', error);
+                    console.error('❌ Save failed:', error);
                     return false;
                 }
             }
@@ -906,8 +906,12 @@ console.error('❌ Save failed:', error);
         async function initLobby() {
             console.log('🌐 Init lobby...');
             
-            // Find game state with detailed logging
-            gameState = findPlayerGameState();
+            // *** CRITICAL FIX: Parse URL parameters first ***
+            const urlParams = parseURLParameters();
+            console.log('🔗 URL Parameters:', urlParams);
+            
+            // *** Find the correct game state based on URL parameters ***
+            gameState = findCorrectGameState(urlParams);
             
             if (!gameState || !gameState.gameId) {
                 console.error('❌ No game state found');
@@ -953,7 +957,7 @@ console.error('❌ Save failed:', error);
                         console.log('⚠️ No player ID found for online status');
                     }
                     
-                    // Load initial game data
+                    // Load initial game data from Firebase
                     await loadFirebaseGameData();
                 } else {
                     console.log('⚠️ Firebase not available, using local fallback');
@@ -964,28 +968,72 @@ console.error('❌ Save failed:', error);
             console.log('✅ Lobby initialized');
         }
 
-        function findPlayerGameState() {
-            console.log('🔍 Looking for game state...');
+        // *** NEW: Parse URL parameters to get specific game info ***
+        function parseURLParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                gameId: urlParams.get('gameId'),
+                playerKey: urlParams.get('playerKey')
+            };
+        }
+
+        // *** COMPLETELY REWRITTEN: Find correct game state based on URL parameters ***
+        function findCorrectGameState(urlParams) {
+            console.log('🔍 Looking for correct game state...');
             
-            // Check all localStorage keys
+            // If we have URL parameters, use them to find the specific state
+            if (urlParams.gameId && urlParams.playerKey) {
+                console.log(`🎯 URL指定: gameId=${urlParams.gameId}, playerKey=${urlParams.playerKey}`);
+                
+                // Try to load the specific player state
+                try {
+                    const specificState = new GameState(urlParams.playerKey);
+                    if (specificState.gameId === urlParams.gameId) {
+                        console.log('✅ Found matching URL game state');
+                        return specificState;
+                    } else {
+                        console.log('⚠️ URL state gameId mismatch');
+                    }
+                } catch (e) {
+                    console.error('❌ Error loading URL-specific state:', e);
+                }
+            }
+            
+            // Fallback: Check all localStorage keys for valid states
             const keys = Object.keys(localStorage);
             console.log('📂 Available keys:', keys.filter(k => k.includes('denkstdu')));
+            
+            // If URL gameId is specified, find any state with that gameId
+            if (urlParams.gameId) {
+                console.log(`🔍 Looking for any state with gameId: ${urlParams.gameId}`);
+                
+                for (let key of keys) {
+                    if (key.startsWith('denkstdu_game_state')) {
+                        try {
+                            const state = JSON.parse(localStorage.getItem(key));
+                            if (state.gameId === urlParams.gameId && state.deviceMode === 'multi') {
+                                console.log(`✅ Found matching gameId state: ${key}`);
+                                const playerKey = key.replace('denkstdu_game_state_', '') || null;
+                                return new GameState(playerKey === 'denkstdu_game_state' ? null : playerKey);
+                            }
+                        } catch (e) {
+                            console.error(`❌ Error checking state ${key}:`, e);
+                        }
+                    }
+                }
+            }
+            
+            // Final fallback: Use any valid multiplayer state
+            console.log('🔍 Looking for any valid multiplayer state...');
             
             // First try main host state
             try {
                 const mainState = localStorage.getItem('denkstdu_game_state');
                 if (mainState) {
                     const state = JSON.parse(mainState);
-                    console.log('📂 Host state check:', {
-                        deviceMode: state.deviceMode,
-                        gameId: state.gameId,
-                        isHost: state.isHost,
-                        playerName: state.playerName
-                    });
-                    
                     if (state.deviceMode === 'multi' && state.gameId) {
                         console.log('✅ Found valid host state');
-                        return new GameState(); // Uses default storage key
+                        return new GameState();
                     }
                 }
             } catch (e) {
@@ -999,14 +1047,6 @@ console.error('❌ Save failed:', error);
                         const guestState = localStorage.getItem(key);
                         if (guestState) {
                             const state = JSON.parse(guestState);
-                            console.log(`📂 Guest state check (${key}):`, {
-                                deviceMode: state.deviceMode,
-                                gameId: state.gameId,
-                                isGuest: state.isGuest,
-                                playerName: state.playerName,
-                                playerId: state.playerId
-                            });
-                            
                             if (state.deviceMode === 'multi' && state.gameId && state.isGuest) {
                                 const playerKey = key.replace('denkstdu_game_state_', '');
                                 console.log(`✅ Found valid guest state: ${playerKey}`);
@@ -1068,28 +1108,30 @@ console.error('❌ Save failed:', error);
         function updateFromFirebaseData(gameData) {
             console.log('📝 Updating from Firebase data:', gameData);
             
-            // Update game settings from Firebase
+            // *** CRITICAL FIX: Always update local state with Firebase data ***
             if (gameData.categories && gameData.categories.length > 0) {
                 gameState.selectedCategories = gameData.categories;
+                console.log('📝 Updated categories from Firebase:', gameData.categories);
             }
             
             if (gameData.difficulty) {
                 gameState.difficulty = gameData.difficulty;
+                console.log('📝 Updated difficulty from Firebase:', gameData.difficulty);
             }
             
             // Save updated state
             gameState.saveToStorage();
             
-            // Update UI
+            // Update UI with fresh Firebase data
             updateGameSettings();
             
-            // *** FIXED: Handle Firebase player format correctly ***
+            // *** Handle Firebase player format correctly ***
             if (gameData.players) {
                 console.log('👥 Firebase players data:', gameData.players);
                 updatePlayersDisplayFromFirebase(gameData.players);
             } else {
                 console.log('👥 No players in Firebase');
-                loadLocalPlayers();
+                showEmptyPlayersList();
             }
             
             // Update start button for host
@@ -1110,7 +1152,7 @@ console.error('❌ Save failed:', error);
                 id: id,
                 name: data.name,
                 isHost: data.isHost || false,
-                isOnline: data.isOnline || false,
+                isOnline: data.isOnline !== false, // Default to true if not specified
                 joinedAt: data.joinedAt
             }));
             
@@ -1130,12 +1172,7 @@ console.error('❌ Save failed:', error);
                 playersList.innerHTML = '';
                 
                 if (playersArray.length === 0) {
-                    playersList.innerHTML = `
-                        <div style="text-align: center; padding: 20px; opacity: 0.7;">
-                            Noch keine Spieler...
-                            <br><small>Teile den Spiel-Code mit deinen Freunden!</small>
-                        </div>
-                    `;
+                    showEmptyPlayersList();
                     return;
                 }
                 
@@ -1146,6 +1183,18 @@ console.error('❌ Save failed:', error);
             }
             
             console.log(`✅ Displayed ${playersArray.length} players`);
+        }
+
+        function showEmptyPlayersList() {
+            const playersList = document.getElementById('players-list');
+            if (playersList) {
+                playersList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; opacity: 0.7;">
+                        Noch keine Spieler...
+                        <br><small>Teile den Spiel-Code mit deinen Freunden!</small>
+                    </div>
+                `;
+            }
         }
 
         function createPlayerElement(player) {
@@ -1271,6 +1320,11 @@ console.error('❌ Save failed:', error);
         function updateGameSettings() {
             const categoriesDisplay = document.getElementById('game-categories');
             const difficultyDisplay = document.getElementById('game-difficulty');
+            
+            console.log('🎯 Updating game settings:', {
+                categories: gameState.selectedCategories,
+                difficulty: gameState.difficulty
+            });
             
             // Categories
             const categoryNames = {
@@ -1503,10 +1557,14 @@ console.error('❌ Save failed:', error);
 
         window.refreshPlayers = function() {
             console.log('🔄 Refreshing players...');
-            loadLocalPlayers();
+            if (currentGameData && currentGameData.players) {
+                updatePlayersDisplayFromFirebase(currentGameData.players);
+            } else {
+                loadLocalPlayers();
+            }
         };
 
-        console.log('✅ Enhanced Multiplayer Lobby - Rebuilt & Ready');
+        console.log('✅ Enhanced Multiplayer Lobby - COMPLETELY FIXED & Ready');
         console.log('🎮 Commands: debugLobby(), simulateGameStart(), refreshPlayers()');
     </script>
 </body>
