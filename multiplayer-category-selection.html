@@ -108,8 +108,32 @@
             text-align: center;
         }
 
-        .game-id-section {
+        .host-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
+        }
+
+        .host-details {
+            text-align: left;
+        }
+
+        .host-name {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .host-indicator {
+            color: #4CAF50;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .game-id-section {
+            text-align: right;
         }
 
         .game-id-label {
@@ -124,12 +148,6 @@
             font-weight: 700;
             font-family: 'Courier New', monospace;
             letter-spacing: 2px;
-        }
-
-        .host-indicator {
-            color: #4CAF50;
-            font-size: 0.9rem;
-            font-weight: 600;
         }
 
         .selection-description {
@@ -385,7 +403,7 @@
             background: #f44336;
         }
 
-        /* Age Verification Modal */
+        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -411,9 +429,10 @@
             background: white;
             border-radius: 20px;
             padding: 30px;
-            max-width: 400px;
+            max-width: 450px;
             width: 90%;
             text-align: center;
+            position: relative;
         }
 
         .modal-header {
@@ -437,6 +456,41 @@
             display: flex;
             gap: 15px;
             justify-content: center;
+        }
+
+        /* Name Input Modal Specific Styles */
+        .name-input-section {
+            margin: 20px 0;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: white;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
+        }
+
+        .name-input::placeholder {
+            color: #999;
+        }
+
+        .name-requirements {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+            text-align: left;
         }
 
         .btn {
@@ -467,6 +521,11 @@
             background: #45a049;
         }
 
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .connection-status {
@@ -485,6 +544,20 @@
             }
 
             .glass-card {
+                padding: 25px 20px;
+            }
+
+            .host-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .host-details, .game-id-section {
+                text-align: center;
+            }
+
+            .modal-content {
                 padding: 25px 20px;
             }
         }
@@ -514,11 +587,16 @@
         <div class="glass-card">
             <!-- Multiplayer Header -->
             <div class="multiplayer-header">
-                <div class="game-id-section">
-                    <div class="game-id-label">Spiel-ID:</div>
-                    <div class="game-id-display" id="game-id-display">Wird erstellt...</div>
+                <div class="host-info">
+                    <div class="host-details">
+                        <div class="host-name" id="host-name">Host Name</div>
+                        <div class="host-indicator">👑 Du bist der Host</div>
+                    </div>
+                    <div class="game-id-section">
+                        <div class="game-id-label">Spiel-ID:</div>
+                        <div class="game-id-display" id="game-id-display">Wird erstellt...</div>
+                    </div>
                 </div>
-                <div class="host-indicator">👑 Du bist der Host</div>
             </div>
 
             <p class="selection-description">
@@ -603,6 +681,41 @@
         </div>
     </div>
 
+    <!-- Host Name Input Modal -->
+    <div class="modal-overlay" id="host-name-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">👑 Host-Name eingeben</h3>
+            </div>
+            <div class="modal-body">
+                <p>Als Host des Multiplayer-Spiels benötigst du einen Namen, damit andere Spieler dich in der Lobby erkennen können.</p>
+                
+                <div class="name-input-section">
+                    <input 
+                        type="text" 
+                        id="host-name-input" 
+                        class="name-input" 
+                        placeholder="Dein Host-Name" 
+                        maxlength="20"
+                        autocomplete="name"
+                        oninput="validateHostName()"
+                    >
+                    <div class="name-requirements">
+                        • Mindestens 2 Zeichen<br>
+                        • Maximal 20 Zeichen<br>
+                        • Nur Buchstaben, Zahlen und Leerzeichen
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="goBack()">Abbrechen</button>
+                <button class="btn btn-primary" id="confirm-name-btn" onclick="confirmHostName()" disabled>
+                    Name bestätigen
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Age Verification Modal -->
     <div class="modal-overlay" id="age-verification-modal">
         <div class="modal-content">
@@ -630,7 +743,6 @@
                 this.isConnected = false;
                 this.gameRef = null;
                 
-                // Firebase Config
                 this.config = {
                     apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
                     authDomain: "denkstduwebsite.firebaseapp.com",
@@ -801,7 +913,7 @@
                         version: 3
                     };
                     
-                    localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
+localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
                     console.log('✅ GameState saved successfully');
                     return true;
                 } catch (error) {
@@ -842,6 +954,11 @@
 
             setSelectedCategories(categories) {
                 this.selectedCategories = categories;
+                this.saveToStorage();
+            }
+
+            setPlayerName(name) {
+                this.playerName = name;
                 this.saveToStorage();
             }
 
@@ -901,7 +1018,7 @@
         });
 
         async function initMultiplayerCategorySelection() {
-console.log('🌐 Initializing multiplayer category selection...');
+            console.log('🌐 Initializing multiplayer category selection...');
             showLoading();
             
             try {
@@ -935,38 +1052,16 @@ console.log('🌐 Initializing multiplayer category selection...');
                     gameState.generateGameId();
                 }
                 
-                // Display game ID
-                document.getElementById('game-id-display').textContent = gameState.gameId;
-                
-                // Create game in Firebase if connected
-                if (firebaseService.isInitialized) {
-                    await createGameInFirebase();
-                }
-                
-                // Load previously selected categories
-                if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
-                    selectedCategories = [...gameState.selectedCategories];
-                    
-                    // Update UI to reflect loaded categories
-                    selectedCategories.forEach(category => {
-                        const card = document.querySelector(`[data-category="${category}"]`);
-                        if (card) {
-                            card.classList.add('selected');
-                        }
-                    });
-                    
-                    updateSelectionSummary();
-                }
-                
-                console.log('✅ Multiplayer category selection initialized:', {
-                    deviceMode: gameState.deviceMode,
-                    gameId: gameState.gameId,
-                    categories: gameState.selectedCategories,
-                    isHost: gameState.isHost,
-                    firebase: firebaseService.isInitialized
-                });
-
                 hideLoading();
+                
+                // *** Check if player name exists, if not show name input modal ***
+                if (!gameState.playerName || gameState.playerName.trim() === '') {
+                    console.log('👤 No player name found, showing name input modal');
+                    showHostNameModal();
+                } else {
+                    console.log('👤 Player name found:', gameState.playerName);
+                    continueWithExistingName();
+                }
                 
             } catch (error) {
                 console.error('❌ Failed to initialize page:', error);
@@ -975,20 +1070,122 @@ console.log('🌐 Initializing multiplayer category selection...');
             }
         }
 
+        // ===== HOST NAME HANDLING =====
+        function showHostNameModal() {
+            const modal = document.getElementById('host-name-modal');
+            const input = document.getElementById('host-name-input');
+            
+            modal.classList.add('show');
+            
+            // Auto-focus after animation
+            setTimeout(() => {
+                input.focus();
+            }, 300);
+            
+            // Enter key support
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !document.getElementById('confirm-name-btn').disabled) {
+                    confirmHostName();
+                }
+            });
+        }
+
+        function validateHostName() {
+            const input = document.getElementById('host-name-input');
+            const button = document.getElementById('confirm-name-btn');
+            const name = input.value.trim();
+            
+            // Validate name: 2-20 characters, letters, numbers, spaces only
+            const isValid = name.length >= 2 && name.length <= 20 && /^[a-zA-Z0-9\s]+$/.test(name);
+            
+            button.disabled = !isValid;
+            
+            // Visual feedback
+            if (name.length > 0) {
+                input.style.borderColor = isValid ? '#4CAF50' : '#f44336';
+            } else {
+                input.style.borderColor = '#ddd';
+            }
+        }
+
+        function confirmHostName() {
+            const input = document.getElementById('host-name-input');
+            const name = input.value.trim();
+            
+            if (name.length < 2) {
+                showNotification('Name muss mindestens 2 Zeichen lang sein', 'warning');
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
+                showNotification('Name darf nur Buchstaben, Zahlen und Leerzeichen enthalten', 'warning');
+                return;
+            }
+            
+            // Save name to game state
+            gameState.setPlayerName(name);
+            
+            // Close modal
+            document.getElementById('host-name-modal').classList.remove('show');
+            
+            // Continue initialization
+            continueWithExistingName();
+            
+            showNotification(`Willkommen, ${name}! 👑`, 'success');
+            console.log('✅ Host name set:', name);
+        }
+
+        async function continueWithExistingName() {
+            // Display game info
+            document.getElementById('host-name').textContent = gameState.playerName;
+            document.getElementById('game-id-display').textContent = gameState.gameId;
+            
+            // Create game in Firebase if connected
+            if (firebaseService.isInitialized) {
+                await createGameInFirebase();
+            }
+            
+            // Load previously selected categories
+            if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
+                selectedCategories = [...gameState.selectedCategories];
+                
+                // Update UI to reflect loaded categories
+                selectedCategories.forEach(category => {
+                    const card = document.querySelector(`[data-category="${category}"]`);
+                    if (card) {
+                        card.classList.add('selected');
+                    }
+                });
+                
+                updateSelectionSummary();
+            }
+            
+            console.log('✅ Multiplayer category selection ready:', {
+                deviceMode: gameState.deviceMode,
+                gameId: gameState.gameId,
+                playerName: gameState.playerName,
+                categories: gameState.selectedCategories,
+                isHost: gameState.isHost,
+                firebase: firebaseService.isInitialized
+            });
+        }
+
         async function createGameInFirebase() {
             try {
                 const gameData = {
                     gameId: gameState.gameId,
-                    gameCreator: gameState.playerName || 'Host',
+                    gameCreator: gameState.playerName,
                     categories: gameState.selectedCategories,
                     difficulty: gameState.difficulty,
                     gameState: 'setup',
                     players: {
-                        [gameState.gameId + '_host']: {
-                            name: gameState.playerName || 'Host',
+                        ['host']: {
+                            id: 'host',
+                            name: gameState.playerName,
                             isHost: true,
                             isReady: false,
-                            joinedAt: Date.now()
+                            joinedAt: Date.now(),
+                            isOnline: true
                         }
                     }
                 };
@@ -1195,8 +1392,14 @@ console.log('🌐 Initializing multiplayer category selection...');
             showNotification('GameState wurde korrigiert!', 'success');
         };
 
-        console.log('✅ Multiplayer Category Selection with Firebase loaded');
-        console.log('🎮 Commands: debugGameState(), forceFixGameState()');
+        window.testNameModal = function() {
+            console.log('🧪 Testing name modal...');
+            gameState.playerName = ''; // Clear name
+            showHostNameModal();
+        };
+
+        console.log('✅ Multiplayer Category Selection with Host Name Modal loaded');
+        console.log('🎮 Commands: debugGameState(), forceFixGameState(), testNameModal()');
     </script>
 </body>
 </html>
