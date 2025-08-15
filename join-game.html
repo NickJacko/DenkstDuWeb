@@ -772,7 +772,7 @@
                         throw new Error('NAME_TAKEN');
                     }
 
-                    // *** FIXED: Generate consistent player ID ***
+                    // Generate consistent player ID
                     const playerId = `guest_${playerData.name}_${Date.now()}`;
                     
                     const playerObject = {
@@ -784,7 +784,7 @@
                         isOnline: true
                     };
 
-                    // *** FIXED: Save to Firebase with proper reference ***
+                    // Save to Firebase
                     this.playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
                     await this.playerRef.set(playerObject);
 
@@ -878,7 +878,7 @@
                         isHost: this.isHost,
                         isGuest: this.isGuest,
                         currentQuestionIndex: this.currentQuestionIndex,
-                        gamePhase: this.gamePhase,
+gamePhase: this.gamePhase,
                         timestamp: Date.now(),
                         version: 3,
                         playerKey: this.playerKey
@@ -893,7 +893,7 @@
                 }
             }
 
-loadFromStorage() {
+            loadFromStorage() {
                 try {
                     const saved = localStorage.getItem(this.getStorageKey());
                     if (saved) {
@@ -940,12 +940,47 @@ loadFromStorage() {
         async function initJoinGame() {
             console.log('🎮 Init join game...');
             
+            // *** CRITICAL FIX: Clear any existing old game states ***
+            clearOldGameStates();
+            
             // Initialize Firebase in background - don't wait
             firebaseService.initialize().then(result => {
                 console.log(`🔥 Firebase ready: ${result}`);
             });
             
             console.log('✅ Join game ready');
+        }
+
+        // *** NEW: Clear old game states to prevent lobby confusion ***
+        function clearOldGameStates() {
+            console.log('🧹 Clearing old game states...');
+            
+            const keys = Object.keys(localStorage);
+            let clearedCount = 0;
+            
+            for (let key of keys) {
+                if (key.startsWith('denkstdu_game_state')) {
+                    try {
+                        const state = JSON.parse(localStorage.getItem(key));
+                        const age = Date.now() - (state.timestamp || 0);
+                        const maxAge = 2 * 60 * 60 * 1000; // 2 hours
+                        
+                        // Clear old states or finished games
+                        if (age > maxAge || state.gamePhase === 'finished') {
+                            localStorage.removeItem(key);
+                            clearedCount++;
+                            console.log(`🗑️ Cleared old state: ${key}`);
+                        }
+                    } catch (e) {
+                        // Invalid state, remove it
+                        localStorage.removeItem(key);
+                        clearedCount++;
+                        console.log(`🗑️ Cleared invalid state: ${key}`);
+                    }
+                }
+            }
+            
+            console.log(`✅ Cleared ${clearedCount} old game states`);
         }
 
         // ===== CLIPBOARD =====
@@ -1177,7 +1212,7 @@ loadFromStorage() {
             }
         }
 
-        // ===== GAME JOINING (FIXED) =====
+        // ===== GAME JOINING (COMPLETELY FIXED) =====
         async function joinGame(gameCode, playerName) {
             if (isNavigating) return;
             
@@ -1188,6 +1223,16 @@ loadFromStorage() {
             try {
                 console.log(`🚀 Joining: ${gameCode} as ${playerName}`);
                 
+                // *** CRITICAL FIX: Clear any existing game states first ***
+                console.log('🧹 Clearing existing states before join...');
+                const keys = Object.keys(localStorage);
+                for (let key of keys) {
+                    if (key.startsWith('denkstdu_game_state')) {
+                        localStorage.removeItem(key);
+                        console.log(`🗑️ Cleared: ${key}`);
+                    }
+                }
+                
                 // Join game via Firebase
                 const joinResult = await firebaseService.joinGame(gameCode, {
                     name: playerName
@@ -1195,18 +1240,19 @@ loadFromStorage() {
 
                 console.log('✅ Firebase join result:', joinResult);
 
-                // *** FIXED: Create guest game state with proper player key ***
-                const guestPlayerKey = `guest_${playerName}_${Date.now()}`;
-                gameState = new GameState(guestPlayerKey);
+                // *** Create completely fresh guest game state ***
+                const uniqueKey = `guest_${playerName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                gameState = new GameState(uniqueKey);
                 
-                // *** CRITICAL: Setup complete game state with Firebase player ID ***
-                gameState.gameId = gameCode;
-                gameState.playerId = joinResult.playerId; // This is the Firebase player ID!
+                // *** Setup complete game state with Firebase player ID ***
+                gameState.gameId = gameCode; // Use the EXACT code we just joined
+                gameState.playerId = joinResult.playerId;
                 gameState.playerName = playerName;
                 gameState.deviceMode = 'multi';
                 gameState.isHost = false;
                 gameState.isGuest = true;
-                gameState.playerKey = guestPlayerKey;
+                gameState.playerKey = uniqueKey;
+                gameState.timestamp = Date.now(); // Fresh timestamp
                 
                 // Copy game settings from Firebase
                 const gameData = joinResult.gameData;
@@ -1221,15 +1267,25 @@ loadFromStorage() {
                     gameState.gamePhase = 'lobby';
                 }
                 
-                // *** CRITICAL: Save state to localStorage ***
-                gameState.saveToStorage();
+                // *** Save state immediately ***
+                const saveSuccess = gameState.saveToStorage();
+                if (!saveSuccess) {
+                    throw new Error('SAVE_FAILED');
+                }
                 
-                console.log('📂 Guest state created:', {
+                // *** Verify the save worked ***
+                const verifyState = new GameState(uniqueKey);
+                if (verifyState.gameId !== gameCode) {
+                    throw new Error('SAVE_VERIFICATION_FAILED');
+                }
+                
+                console.log('📂 Guest state created and verified:', {
                     gameId: gameState.gameId,
                     playerId: gameState.playerId,
                     playerName: gameState.playerName,
                     playerKey: gameState.playerKey,
-                    isGuest: gameState.isGuest
+                    isGuest: gameState.isGuest,
+                    storageKey: gameState.getStorageKey()
                 });
                 
                 hideLoading();
@@ -1239,12 +1295,12 @@ loadFromStorage() {
                 // Setup real-time listener
                 setupGameListener(gameCode);
                 
-                // Navigate based on game state
+                // *** Add URL parameter to ensure lobby loads correct game ***
                 setTimeout(() => {
                     if (gameState.gamePhase === 'playing') {
-                        window.location.href = 'multiplayer-game.html';
+                        window.location.href = `multiplayer-game.html?gameId=${gameCode}&playerKey=${uniqueKey}`;
                     } else {
-                        window.location.href = 'multiplayer-lobby.html';
+                        window.location.href = `multiplayer-lobby.html?gameId=${gameCode}&playerKey=${uniqueKey}`;
                     }
                 }, 1500);
                 
@@ -1391,6 +1447,7 @@ loadFromStorage() {
                 connected: firebaseService.isConnected
             });
             console.log('Current Game:', currentGameData);
+            console.log('LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkstdu')));
         };
 
         window.testCode = function(code) {
@@ -1406,7 +1463,7 @@ loadFromStorage() {
             return result;
         };
 
-        console.log('✅ Join Game - Rebuilt & Ready');
+        console.log('✅ Join Game - COMPLETELY FIXED & Ready');
         console.log('🎮 Commands: debugJoinGame(), testCode("ABC123"), testFirebase()');
     </script>
 </body>
