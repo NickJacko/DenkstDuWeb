@@ -772,6 +772,7 @@
                         throw new Error('NAME_TAKEN');
                     }
 
+                    // *** FIXED: Generate consistent player ID ***
                     const playerId = `guest_${playerData.name}_${Date.now()}`;
                     
                     const playerObject = {
@@ -783,17 +784,19 @@
                         isOnline: true
                     };
 
+                    // *** FIXED: Save to Firebase with proper reference ***
                     this.playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
                     await this.playerRef.set(playerObject);
 
+                    // Set disconnect handlers
                     this.playerRef.child('isOnline').onDisconnect().set(false);
                     await this.playerRef.child('isOnline').set(true);
 
-                    console.log('✅ Join successful');
+                    console.log('✅ Join successful, player ID:', playerId);
                     
                     return {
                         gameId: gameId,
-                        playerId: playerId,
+                        playerId: playerId, // Return the Firebase player ID
                         gameData: gameData,
                         playerData: playerObject
                     };
@@ -1174,7 +1177,7 @@ loadFromStorage() {
             }
         }
 
-        // ===== GAME JOINING =====
+        // ===== GAME JOINING (FIXED) =====
         async function joinGame(gameCode, playerName) {
             if (isNavigating) return;
             
@@ -1185,40 +1188,53 @@ loadFromStorage() {
             try {
                 console.log(`🚀 Joining: ${gameCode} as ${playerName}`);
                 
+                // Join game via Firebase
                 const joinResult = await firebaseService.joinGame(gameCode, {
                     name: playerName
                 });
 
-                // Create guest game state
+                console.log('✅ Firebase join result:', joinResult);
+
+                // *** FIXED: Create guest game state with proper player key ***
                 const guestPlayerKey = `guest_${playerName}_${Date.now()}`;
                 gameState = new GameState(guestPlayerKey);
                 
-                // Setup game state
+                // *** CRITICAL: Setup complete game state with Firebase player ID ***
                 gameState.gameId = gameCode;
-                gameState.playerId = joinResult.playerId;
+                gameState.playerId = joinResult.playerId; // This is the Firebase player ID!
                 gameState.playerName = playerName;
                 gameState.deviceMode = 'multi';
                 gameState.isHost = false;
                 gameState.isGuest = true;
                 gameState.playerKey = guestPlayerKey;
                 
-                // Copy game settings
-                gameState.selectedCategories = joinResult.gameData.categories || [];
-                gameState.difficulty = joinResult.gameData.difficulty || 'medium';
+                // Copy game settings from Firebase
+                const gameData = joinResult.gameData;
+                gameState.selectedCategories = gameData.categories || [];
+                gameState.difficulty = gameData.difficulty || 'medium';
                 
-                // Set phase based on current state
-                if (joinResult.gameData.gameState === 'playing') {
+                // Set correct game phase
+                if (gameData.gameState === 'playing') {
                     gameState.gamePhase = 'playing';
+                    showNotification('Spiel läuft bereits - wirst weitergeleitet!', 'info');
                 } else {
                     gameState.gamePhase = 'lobby';
                 }
                 
+                // *** CRITICAL: Save state to localStorage ***
                 gameState.saveToStorage();
+                
+                console.log('📂 Guest state created:', {
+                    gameId: gameState.gameId,
+                    playerId: gameState.playerId,
+                    playerName: gameState.playerName,
+                    playerKey: gameState.playerKey,
+                    isGuest: gameState.isGuest
+                });
                 
                 hideLoading();
                 showNotification('Erfolgreich beigetreten! 🎉', 'success');
-                
-                console.log(`✅ Joined with key: ${guestPlayerKey}`);
+                isNavigating = true;
                 
                 // Setup real-time listener
                 setupGameListener(gameCode);
@@ -1226,21 +1242,23 @@ loadFromStorage() {
                 // Navigate based on game state
                 setTimeout(() => {
                     if (gameState.gamePhase === 'playing') {
-                        navigateToGameplay();
+                        window.location.href = 'multiplayer-game.html';
                     } else {
-                        navigateToLobby();
+                        window.location.href = 'multiplayer-lobby.html';
                     }
                 }, 1500);
-
-            } catch (error) {
-                hideLoading();
-                appState = 'GAME_FOUND';
-                updateMainButton();
                 
+            } catch (error) {
                 console.error('❌ Join failed:', error);
+                
+                // Reset states
+                appState = 'GAME_FOUND';
+                isNavigating = false;
+                hideLoading();
                 
                 let errorMessage = getErrorMessage(error.message);
                 showNotification(errorMessage, 'error');
+                updateMainButton();
             }
         }
 
