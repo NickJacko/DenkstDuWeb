@@ -886,6 +886,7 @@
                 this.difficulty = null;
                 this.players = [];
                 this.gameId = null;
+                this.playerId = null; // ✅ HINZUGEFÜGT: Player ID für Host/Guest
                 this.playerName = null;
                 this.isHost = false;
                 this.isGuest = false;
@@ -903,6 +904,7 @@
                         difficulty: this.difficulty,
                         players: this.players,
                         gameId: this.gameId,
+                        playerId: this.playerId, // ✅ HINZUGEFÜGT: Player ID wird gespeichert
                         playerName: this.playerName,
                         isHost: this.isHost,
                         isGuest: this.isGuest,
@@ -910,10 +912,10 @@
                         totalRounds: this.totalRounds,
                         gameState: this.gameState,
                         timestamp: Date.now(),
-                        version: 3
+                        version: 4 // ✅ HINZUGEFÜGT: Version erhöht für neue Player ID
                     };
                     
-localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
                     console.log('✅ GameState saved successfully');
                     return true;
                 } catch (error) {
@@ -962,6 +964,22 @@ localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
                 this.saveToStorage();
             }
 
+            // ✅ HINZUGEFÜGT: Player ID Generation für Host
+            generatePlayerId(isHost = false, playerName = null) {
+                if (!this.playerId) {
+                    const timestamp = Date.now();
+                    if (isHost) {
+                        this.playerId = `host_${timestamp}`;
+                    } else {
+                        const safeName = (playerName || this.playerName || 'guest').replace(/[^a-zA-Z0-9]/g, '');
+                        this.playerId = `guest_${safeName}_${timestamp}`;
+                    }
+                    this.saveToStorage();
+                    console.log('✅ Generated Player ID:', this.playerId);
+                }
+                return this.playerId;
+            }
+
             generateGameId() {
                 if (!this.gameId) {
                     this.gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -975,6 +993,7 @@ localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
                     deviceMode: this.deviceMode,
                     isHost: this.isHost,
                     gameId: this.gameId,
+                    playerId: this.playerId, // ✅ HINZUGEFÜGT: Player ID im Debug
                     categories: this.selectedCategories,
                     difficulty: this.difficulty,
                     playerName: this.playerName,
@@ -1122,8 +1141,14 @@ localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
                 return;
             }
             
-            // Save name to game state
+            // ✅ KRITISCHER FIX: Host Player ID generieren BEVOR Name gespeichert wird
             gameState.setPlayerName(name);
+            gameState.generatePlayerId(true); // true = isHost
+            console.log('✅ Host setup complete:', {
+                playerName: gameState.playerName,
+                playerId: gameState.playerId,
+                isHost: gameState.isHost
+            });
             
             // Close modal
             document.getElementById('host-name-modal').classList.remove('show');
@@ -1132,10 +1157,15 @@ localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
             continueWithExistingName();
             
             showNotification(`Willkommen, ${name}! 👑`, 'success');
-            console.log('✅ Host name set:', name);
         }
 
         async function continueWithExistingName() {
+            // ✅ SICHERHEITSCHECK: Player ID generieren falls nicht vorhanden
+            if (!gameState.playerId) {
+                gameState.generatePlayerId(gameState.isHost);
+                console.log('⚠️ Generated missing Player ID:', gameState.playerId);
+            }
+            
             // Display game info
             document.getElementById('host-name').textContent = gameState.playerName;
             document.getElementById('game-id-display').textContent = gameState.gameId;
@@ -1163,6 +1193,7 @@ localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
             console.log('✅ Multiplayer category selection ready:', {
                 deviceMode: gameState.deviceMode,
                 gameId: gameState.gameId,
+                playerId: gameState.playerId, // ✅ Player ID wird geloggt
                 playerName: gameState.playerName,
                 categories: gameState.selectedCategories,
                 isHost: gameState.isHost,
@@ -1172,15 +1203,17 @@ localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
 
         async function createGameInFirebase() {
             try {
+                // ✅ KRITISCHER FIX: Korrekte Firebase-Struktur mit Host Player ID
                 const gameData = {
                     gameId: gameState.gameId,
                     gameCreator: gameState.playerName,
+                    creatorPlayerId: gameState.playerId, // ✅ Host Player ID hinzugefügt
                     categories: gameState.selectedCategories,
                     difficulty: gameState.difficulty,
                     gameState: 'setup',
                     players: {
-                        ['host']: {
-                            id: 'host',
+                        [gameState.playerId]: { // ✅ Player ID als Key verwenden
+                            id: gameState.playerId,
                             name: gameState.playerName,
                             isHost: true,
                             isReady: false,
@@ -1191,215 +1224,10 @@ localStorage.setItem('denkstdu_game_state', JSON.stringify(stateToSave));
                 };
 
                 await firebaseService.createGame(gameData);
-                console.log('✅ Game created in Firebase successfully');
+                console.log('✅ Game created in Firebase with Host Player ID:', gameState.playerId);
                 
             } catch (error) {
                 console.error('❌ Error creating game in Firebase:', error);
                 showNotification('Firebase-Synchronisation fehlgeschlagen', 'warning');
             }
         }
-
-        // ===== CATEGORY SELECTION LOGIC =====
-        function toggleCategory(element) {
-            const category = element.dataset.category;
-            console.log('🔄 Toggling category:', category);
-            
-            // Check if it's FSK18 and needs age verification
-            if (category === 'fsk18' && !selectedCategories.includes(category)) {
-                console.log('🔞 FSK18 category requires age verification');
-                pendingAgeVerification = element;
-                showAgeVerificationModal();
-                return;
-            }
-            
-            // Toggle selection
-            if (selectedCategories.includes(category)) {
-                // Remove category
-                selectedCategories = selectedCategories.filter(c => c !== category);
-                element.classList.remove('selected');
-                console.log('➖ Category removed:', category);
-            } else {
-                // Add category
-                selectedCategories.push(category);
-                element.classList.add('selected');
-                console.log('➕ Category added:', category);
-            }
-            
-            // Update UI and save
-            updateSelectionSummary();
-            gameState.setSelectedCategories(selectedCategories);
-            
-            // Sync with Firebase
-            syncWithFirebase();
-        }
-
-        function updateSelectionSummary() {
-            const summaryElement = document.getElementById('selection-summary');
-            const summaryTitleElement = document.getElementById('summary-title');
-            const categoriesListElement = document.getElementById('selected-categories');
-            const totalQuestionsElement = document.getElementById('total-questions');
-            const proceedButton = document.getElementById('proceed-button');
-
-            if (selectedCategories.length > 0) {
-                summaryElement.classList.add('show');
-                proceedButton.classList.add('enabled');
-
-                // Update title
-                summaryTitleElement.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length !== 1 ? 'n' : ''} ausgewählt`;
-
-                // Build category list
-                categoriesListElement.innerHTML = selectedCategories.map(category => {
-                    const data = categoryData[category];
-                    return `
-                        <div class="selected-category-tag">
-                            <span>${data.icon}</span>
-                            <span>${data.name}</span>
-                        </div>
-                    `;
-                }).join('');
-
-                // Calculate total questions
-                const totalQuestions = selectedCategories.reduce((sum, category) => {
-                    return sum + categoryData[category].questions;
-                }, 0);
-                totalQuestionsElement.textContent = totalQuestions;
-            } else {
-                summaryElement.classList.remove('show');
-                proceedButton.classList.remove('enabled');
-            }
-        }
-
-        async function syncWithFirebase() {
-            if (firebaseService.isInitialized && gameState.gameId) {
-                try {
-                    await firebaseService.syncCategories(gameState.gameId, selectedCategories);
-                    console.log('✅ Categories synced with Firebase');
-                } catch (error) {
-                    console.error('❌ Failed to sync categories with Firebase:', error);
-                }
-            }
-        }
-
-        // ===== AGE VERIFICATION =====
-        function showAgeVerificationModal() {
-            document.getElementById('age-verification-modal').classList.add('show');
-        }
-
-        function closeAgeVerificationModal() {
-            document.getElementById('age-verification-modal').classList.remove('show');
-            pendingAgeVerification = null;
-        }
-
-        function confirmAge() {
-            if (pendingAgeVerification) {
-                const category = pendingAgeVerification.dataset.category;
-                selectedCategories.push(category);
-                pendingAgeVerification.classList.add('selected');
-                updateSelectionSummary();
-                gameState.setSelectedCategories(selectedCategories);
-                syncWithFirebase();
-                
-                showNotification('FSK 18 Kategorie hinzugefügt', 'success');
-                console.log('🔞 Age verified, FSK18 category added');
-            }
-            closeAgeVerificationModal();
-        }
-
-        // ===== NAVIGATION =====
-        function proceedWithCategories() {
-            if (selectedCategories.length === 0) {
-                showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
-                return;
-            }
-
-            console.log('🚀 Proceeding with multiplayer categories:', selectedCategories);
-            console.log('Final GameState:', gameState.getDebugInfo());
-            
-            showLoading();
-            
-            // Save categories to game state
-            gameState.setSelectedCategories(selectedCategories);
-            
-            setTimeout(() => {
-                window.location.href = 'multiplayer-difficulty-selection.html';
-            }, 500);
-        }
-
-        function goBack() {
-            // Cleanup Firebase listeners
-            if (firebaseService) {
-                firebaseService.cleanup();
-            }
-            
-            showLoading();
-            setTimeout(() => {
-                window.location.href = 'device-selection.html';
-            }, 300);
-        }
-
-        // ===== CLEANUP =====
-        window.addEventListener('beforeunload', function() {
-            if (firebaseService) {
-                firebaseService.cleanup();
-            }
-        });
-
-        // ===== UTILITY FUNCTIONS =====
-        function showLoading() {
-            document.getElementById('loading').classList.add('show');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading').classList.remove('show');
-        }
-
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type} show`;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        // ===== DEBUG FUNCTIONS =====
-        window.debugGameState = function() {
-            console.log('🔍 Current GameState Debug Info:');
-            console.log(gameState.getDebugInfo());
-            
-            console.log('🔍 Selected Categories:');
-            console.log(selectedCategories);
-            
-            console.log('🔍 Firebase Status:');
-            console.log({
-                initialized: firebaseService?.isInitialized,
-                connected: firebaseService?.isConnected
-            });
-        };
-
-        window.forceFixGameState = function() {
-            console.log('🔧 Force fixing GameState...');
-            
-            gameState.deviceMode = 'multi';
-            gameState.isHost = true;
-            gameState.gameId = gameState.gameId || gameState.generateGameId();
-            gameState.saveToStorage();
-            
-            document.getElementById('game-id-display').textContent = gameState.gameId;
-            
-            console.log('✅ GameState force fixed:', gameState.getDebugInfo());
-            showNotification('GameState wurde korrigiert!', 'success');
-        };
-
-        window.testNameModal = function() {
-            console.log('🧪 Testing name modal...');
-            gameState.playerName = ''; // Clear name
-            showHostNameModal();
-        };
-
-        console.log('✅ Multiplayer Category Selection with Host Name Modal loaded');
-        console.log('🎮 Commands: debugGameState(), forceFixGameState(), testNameModal()');
-    </script>
-</body>
-</html>

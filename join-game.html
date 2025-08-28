@@ -660,7 +660,7 @@
     </div>
 
     <script>
-        // ===== FIREBASE SERVICE - ROBUST =====
+        // ===== FIREBASE SERVICE =====
         class FirebaseGameService {
             constructor() {
                 this.app = null;
@@ -796,7 +796,7 @@
                     
                     return {
                         gameId: gameId,
-                        playerId: playerId, // Return the Firebase player ID
+                        playerId: playerId,
                         gameData: gameData,
                         playerData: playerObject
                     };
@@ -838,7 +838,7 @@
             }
         }
 
-        // ===== GAME STATE =====
+        // ===== GAME STATE CLASS (FIXED) =====
         class GameState {
             constructor(playerKey = null) {
                 this.playerKey = playerKey;
@@ -862,7 +862,10 @@
             }
 
             getStorageKey() {
-                return this.playerKey ? `denkstdu_game_state_${this.playerKey}` : 'denkstdu_game_state';
+                if (this.playerKey) {
+                    return `denkstdu_game_state_${this.playerKey}`;
+                }
+                return 'denkstdu_game_state';
             }
 
             saveToStorage() {
@@ -878,14 +881,14 @@
                         isHost: this.isHost,
                         isGuest: this.isGuest,
                         currentQuestionIndex: this.currentQuestionIndex,
-gamePhase: this.gamePhase,
+                        gamePhase: this.gamePhase,
                         timestamp: Date.now(),
                         version: 3,
                         playerKey: this.playerKey
                     };
                     
                     localStorage.setItem(this.getStorageKey(), JSON.stringify(stateToSave));
-                    console.log('💾 State saved');
+                    console.log(`💾 State saved to: ${this.getStorageKey()}`);
                     return true;
                 } catch (error) {
                     console.error('❌ Save failed:', error);
@@ -901,11 +904,9 @@ gamePhase: this.gamePhase,
                         const maxAge = 24 * 60 * 60 * 1000; // 24 hours
                         if (state.timestamp && (Date.now() - state.timestamp) < maxAge) {
                             Object.keys(state).forEach(key => {
-                                if (this.hasOwnProperty(key) || key === 'deviceMode' || key === 'playerKey' || key === 'playerId') {
-                                    this[key] = state[key];
-                                }
+                                this[key] = state[key];
                             });
-                            console.log('📂 State loaded');
+                            console.log(`📂 State loaded from: ${this.getStorageKey()}`);
                             return true;
                         } else {
                             this.clearStorage();
@@ -940,10 +941,10 @@ gamePhase: this.gamePhase,
         async function initJoinGame() {
             console.log('🎮 Init join game...');
             
-            // *** CRITICAL FIX: Clear any existing old game states ***
+            // Clear old game states
             clearOldGameStates();
             
-            // Initialize Firebase in background - don't wait
+            // Initialize Firebase in background
             firebaseService.initialize().then(result => {
                 console.log(`🔥 Firebase ready: ${result}`);
             });
@@ -951,7 +952,6 @@ gamePhase: this.gamePhase,
             console.log('✅ Join game ready');
         }
 
-        // *** NEW: Clear old game states to prevent lobby confusion ***
         function clearOldGameStates() {
             console.log('🧹 Clearing old game states...');
             
@@ -965,14 +965,12 @@ gamePhase: this.gamePhase,
                         const age = Date.now() - (state.timestamp || 0);
                         const maxAge = 2 * 60 * 60 * 1000; // 2 hours
                         
-                        // Clear old states or finished games
                         if (age > maxAge || state.gamePhase === 'finished') {
                             localStorage.removeItem(key);
                             clearedCount++;
                             console.log(`🗑️ Cleared old state: ${key}`);
                         }
                     } catch (e) {
-                        // Invalid state, remove it
                         localStorage.removeItem(key);
                         clearedCount++;
                         console.log(`🗑️ Cleared invalid state: ${key}`);
@@ -1012,7 +1010,6 @@ gamePhase: this.gamePhase,
             const input = document.getElementById('game-code-input');
             const statusIndicator = document.getElementById('status-indicator');
             
-            // Clean input: only letters and numbers
             let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
             
             if (value.length > 6) {
@@ -1021,23 +1018,19 @@ gamePhase: this.gamePhase,
             
             input.value = value;
             
-            // Clear previous timeout
             if (checkTimeout) {
                 clearTimeout(checkTimeout);
             }
             
-            // Reset states
             input.classList.remove('valid', 'error');
             hideGameInfo();
             hidePlayerNameInput();
             
-            // Update app state and button
             if (value.length === 6) {
                 appState = 'CODE_COMPLETE';
                 statusIndicator.className = 'status-indicator checking';
                 statusIndicator.textContent = '🔍';
                 
-                // Auto-check game after short delay
                 checkTimeout = setTimeout(() => {
                     checkGameExists(value);
                 }, 800);
@@ -1056,7 +1049,6 @@ gamePhase: this.gamePhase,
             try {
                 console.log(`🔍 Checking: ${gameCode}`);
                 
-                // Ensure Firebase is ready
                 if (!firebaseService.isConnected) {
                     const connected = await firebaseService.initialize();
                     if (!connected) {
@@ -1065,8 +1057,8 @@ gamePhase: this.gamePhase,
                 }
                 
                 const gameData = await firebaseService.getGameInfo(gameCode);
+                currentGameData = gameData;
                 
-                // Success - game found
                 appState = 'GAME_FOUND';
                 statusIndicator.className = 'status-indicator found';
                 statusIndicator.textContent = '✅';
@@ -1082,7 +1074,6 @@ gamePhase: this.gamePhase,
             } catch (error) {
                 console.error('❌ Check failed:', error);
                 
-                // Error handling
                 appState = 'CODE_INPUT';
                 statusIndicator.className = 'status-indicator error';
                 statusIndicator.textContent = '❌';
@@ -1147,7 +1138,6 @@ gamePhase: this.gamePhase,
             const nameSection = document.getElementById('player-name-section');
             nameSection.classList.add('visible');
             
-            // Auto-focus after animation
             setTimeout(() => {
                 document.getElementById('player-name-input').focus();
             }, 400);
@@ -1212,7 +1202,7 @@ gamePhase: this.gamePhase,
             }
         }
 
-        // ===== GAME JOINING (COMPLETELY FIXED) =====
+        // ===== GAME JOINING (FIXED) =====
         async function joinGame(gameCode, playerName) {
             if (isNavigating) return;
             
@@ -1223,8 +1213,7 @@ gamePhase: this.gamePhase,
             try {
                 console.log(`🚀 Joining: ${gameCode} as ${playerName}`);
                 
-                // *** CRITICAL FIX: Clear any existing game states first ***
-                console.log('🧹 Clearing existing states before join...');
+                // Clear existing states
                 const keys = Object.keys(localStorage);
                 for (let key of keys) {
                     if (key.startsWith('denkstdu_game_state')) {
@@ -1240,19 +1229,19 @@ gamePhase: this.gamePhase,
 
                 console.log('✅ Firebase join result:', joinResult);
 
-                // *** Create completely fresh guest game state ***
+                // Create unique key for guest
                 const uniqueKey = `guest_${playerName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 gameState = new GameState(uniqueKey);
                 
-                // *** Setup complete game state with Firebase player ID ***
-                gameState.gameId = gameCode; // Use the EXACT code we just joined
-                gameState.playerId = joinResult.playerId;
+                // Setup complete game state with Firebase player ID
+                gameState.gameId = gameCode;
+                gameState.playerId = joinResult.playerId; // WICHTIG: Firebase Player ID
                 gameState.playerName = playerName;
                 gameState.deviceMode = 'multi';
                 gameState.isHost = false;
                 gameState.isGuest = true;
                 gameState.playerKey = uniqueKey;
-                gameState.timestamp = Date.now(); // Fresh timestamp
+                gameState.timestamp = Date.now();
                 
                 // Copy game settings from Firebase
                 const gameData = joinResult.gameData;
@@ -1267,13 +1256,13 @@ gamePhase: this.gamePhase,
                     gameState.gamePhase = 'lobby';
                 }
                 
-                // *** Save state immediately ***
+                // Save state
                 const saveSuccess = gameState.saveToStorage();
                 if (!saveSuccess) {
                     throw new Error('SAVE_FAILED');
                 }
                 
-                // *** Verify the save worked ***
+                // Verify the save worked
                 const verifyState = new GameState(uniqueKey);
                 if (verifyState.gameId !== gameCode) {
                     throw new Error('SAVE_VERIFICATION_FAILED');
@@ -1295,10 +1284,10 @@ gamePhase: this.gamePhase,
                 // Setup real-time listener
                 setupGameListener(gameCode);
                 
-                // *** Add URL parameter to ensure lobby loads correct game ***
+                // Navigate with correct URL parameters
                 setTimeout(() => {
                     if (gameState.gamePhase === 'playing') {
-                        window.location.href = `multiplayer-game.html?gameId=${gameCode}&playerKey=${uniqueKey}`;
+                        window.location.href = `multiplayer-gameplay.html?gameId=${gameCode}&playerKey=${uniqueKey}`;
                     } else {
                         window.location.href = `multiplayer-lobby.html?gameId=${gameCode}&playerKey=${uniqueKey}`;
                     }
@@ -1307,7 +1296,6 @@ gamePhase: this.gamePhase,
             } catch (error) {
                 console.error('❌ Join failed:', error);
                 
-                // Reset states
                 appState = 'GAME_FOUND';
                 isNavigating = false;
                 hideLoading();
@@ -1333,12 +1321,10 @@ gamePhase: this.gamePhase,
                     console.log(`🎮 Update: ${oldGameState} → ${newGameState}`);
                     currentGameData = newGameData;
                     
-                    // Update UI if still on join page
                     if (document.getElementById('game-info-preview').classList.contains('visible')) {
                         displayGameInfo(newGameData);
                     }
                     
-                    // Handle game start
                     if (newGameState === 'playing' && oldGameState !== 'playing') {
                         console.log('🚀 Game started!');
                         handleGameStarted(newGameData);
@@ -1357,7 +1343,6 @@ gamePhase: this.gamePhase,
             showNotification('Spiel wurde gestartet! 🎮', 'success');
             showLoading();
             
-            // Update local game state
             if (gameState) {
                 gameState.gamePhase = 'playing';
                 
@@ -1450,6 +1435,46 @@ gamePhase: this.gamePhase,
             console.log('LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkstdu')));
         };
 
+        window.debugMultiplayer = function() {
+            console.log('🔍 === MULTIPLAYER DEBUG ===');
+            
+            const keys = Object.keys(localStorage);
+            const gameStates = keys.filter(k => k.startsWith('denkstdu_game_state'));
+            
+            console.log('📦 Stored Game States:');
+            gameStates.forEach(key => {
+                try {
+                    const state = JSON.parse(localStorage.getItem(key));
+                    console.log(`  ${key}:`, {
+                        gameId: state.gameId,
+                        playerId: state.playerId,
+                        playerName: state.playerName,
+                        isHost: state.isHost,
+                        isGuest: state.isGuest,
+                        playerKey: state.playerKey
+                    });
+                } catch (e) {
+                    console.log(`  ${key}: Invalid`);
+                }
+            });
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            console.log('🔗 URL Parameters:', {
+                gameId: urlParams.get('gameId'),
+                playerKey: urlParams.get('playerKey')
+            });
+            
+            if (typeof gameState !== 'undefined' && gameState) {
+                console.log('🎮 Current GameState:', {
+                    gameId: gameState.gameId,
+                    playerId: gameState.playerId,
+                    playerName: gameState.playerName,
+                    isHost: gameState.isHost,
+                    storageKey: gameState.getStorageKey()
+                });
+            }
+        };
+
         window.testCode = function(code) {
             console.log(`🧪 Testing: ${code}`);
             const input = document.getElementById('game-code-input');
@@ -1463,8 +1488,8 @@ gamePhase: this.gamePhase,
             return result;
         };
 
-        console.log('✅ Join Game - COMPLETELY FIXED & Ready');
-        console.log('🎮 Commands: debugJoinGame(), testCode("ABC123"), testFirebase()');
+        console.log('✅ Join Game - FIXED & Ready');
+        console.log('🎮 Commands: debugJoinGame(), debugMultiplayer(), testCode("ABC123"), testFirebase()');
     </script>
 </body>
 </html>
