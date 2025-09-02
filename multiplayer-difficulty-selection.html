@@ -1172,6 +1172,7 @@
                 
                 // Validate multiplayer state
                 if (!validateMultiplayerState()) {
+                    hideLoading();
                     return;
                 }
 
@@ -1182,6 +1183,7 @@
                 });
                 if (!firebaseOk) {
                     showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
+                    hideLoading();
                     return;
                 }
 
