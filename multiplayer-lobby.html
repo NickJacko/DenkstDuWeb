@@ -617,15 +617,13 @@
     </div>
 
     <script>
-        // ===== FIREBASE SERVICE - ROBUST =====
+        // ===== KORRIGIERTER FIREBASE SERVICE =====
         class FirebaseGameService {
             constructor() {
                 this.app = null;
                 this.database = null;
                 this.isInitialized = false;
                 this.isConnected = false;
-                this.gameRef = null;
-                this.playersRef = null;
                 
                 this.config = {
                     apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
@@ -656,6 +654,7 @@
                     this.database = firebase.database();
                     this.setupConnectionMonitoring();
                     
+                    // Connection test
                     const testRef = this.database.ref('.info/connected');
                     const snapshot = await Promise.race([
                         testRef.once('value'),
@@ -733,53 +732,72 @@
             }
 
             listenToGame(gameId, callback) {
-                if (!this.isConnected) return null;
+                if (!this.isConnected) {
+                    console.error('❌ Cannot listen - not connected');
+                    return null;
+                }
 
-                console.log(`🎧 Listen to game: ${gameId}`);
-                this.gameRef = this.database.ref(`games/${gameId}`);
-                
-                this.gameRef.on('value', (snapshot) => {
-                    if (snapshot.exists()) {
-                        const gameData = snapshot.val();
-                        console.log('🎮 Game data update:', gameData);
-                        
-                        if (gameData.gameState === 'playing' && currentGameData?.gameState !== 'playing') {
-                            console.log('🚀 Game started!');
-                            setTimeout(() => handleGameStarted(gameData), 100);
+                try {
+                    console.log(`🎧 Setting up listener for: ${gameId}`);
+                    
+                    const gameRef = this.database.ref(`games/${gameId}`);
+                    
+                    const listener = gameRef.on('value', (snapshot) => {
+                        if (snapshot.exists()) {
+                            const gameData = snapshot.val();
+                            console.log('🔄 Game update received:', {
+                                gameState: gameData.gameState,
+                                playerCount: gameData.players ? Object.keys(gameData.players).length : 0
+                            });
+                            callback(gameData);
+                        } else {
+                            console.log('❌ Game no longer exists');
+                            callback(null);
                         }
-                        
-                        callback(gameData);
-                    } else {
-                        console.log('❌ Game not found');
+                    }, (error) => {
+                        console.error('❌ Listener error:', error);
                         callback(null);
-                    }
-                });
-                
-                return this.gameRef;
+                    });
+
+                    return () => {
+                        console.log(`🔇 Removing listener for: ${gameId}`);
+                        gameRef.off('value', listener);
+                    };
+
+                } catch (error) {
+                    console.error('❌ Listener setup failed:', error);
+                    return null;
+                }
             }
 
-            async setPlayerOnline(gameId, playerId) {
-                if (!this.isConnected || !playerId) return;
+            async setPlayerOnline(gameId, playerId, online = true) {
+                if (!this.isConnected || !playerId) return false;
 
                 try {
                     const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
-                    await playerRef.child('isOnline').set(true);
+                    await playerRef.child('isOnline').set(online);
                     await playerRef.child('lastSeen').set(firebase.database.ServerValue.TIMESTAMP);
                     
-                    playerRef.child('isOnline').onDisconnect().set(false);
-                    playerRef.child('lastSeen').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+                    if (online) {
+                        playerRef.child('isOnline').onDisconnect().set(false);
+                        playerRef.child('lastSeen').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+                    }
                     
-                    console.log(`✅ Player ${playerId} marked online`);
+                    console.log(`🟢 Player ${playerId} set to ${online ? 'online' : 'offline'}`);
+                    return true;
                 } catch (error) {
                     console.error('❌ Set player online failed:', error);
+                    return false;
                 }
             }
 
             async startGame(gameId) {
-                if (!this.isConnected) return false;
+                if (!this.isConnected) {
+                    throw new Error('NOT_CONNECTED');
+                }
 
                 try {
-                    console.log('🚀 Starting game...');
+                    console.log(`🚀 Starting game: ${gameId}`);
                     
                     const gameRef = this.database.ref(`games/${gameId}`);
                     const updates = {
@@ -800,93 +818,135 @@
             }
 
             cleanup() {
-                if (this.gameRef) this.gameRef.off();
-                if (this.playersRef) this.playersRef.off();
+                console.log('🧹 Firebase cleanup');
+                // Cleanup is handled by the listener return function
             }
         }
 
-        // ===== GAME STATE =====
+        // ===== KORRIGIERTE GAME STATE KLASSE =====
         class GameState {
             constructor(playerKey = null) {
-                this.playerKey = playerKey;
-                this.reset();
-                this.loadFromStorage();
-            }
-
-            reset() {
-                this.deviceMode = 'multi';
+                this.playerKey = playerKey || 'main';
+                this.deviceMode = 'single';
                 this.selectedCategories = [];
-                this.difficulty = null;
-                this.players = [];
+                this.difficulty = 'medium';
+                this.playerNames = [];
+                this.currentPlayerIndex = 0;
+                this.playerName = '';
                 this.gameId = null;
                 this.playerId = null;
-                this.playerName = null;
                 this.isHost = false;
                 this.isGuest = false;
-                this.currentQuestionIndex = 0;
-                this.gamePhase = 'lobby';
+                this.gamePhase = 'setup';
                 this.timestamp = Date.now();
             }
 
             getStorageKey() {
-                return this.playerKey ? `denkstdu_game_state_${this.playerKey}` : 'denkstdu_game_state';
+                if (this.playerKey === 'main') {
+                    return 'denkstdu_game_state';
+                }
+                return `denkstdu_game_state_${this.playerKey}`;
             }
 
-            saveToStorage() {
+            save() {
                 try {
-                    const stateToSave = {
+                    const data = {
                         deviceMode: this.deviceMode,
                         selectedCategories: this.selectedCategories,
                         difficulty: this.difficulty,
-                        players: this.players,
+                        playerNames: this.playerNames,
+                        currentPlayerIndex: this.currentPlayerIndex,
+                        playerName: this.playerName,
                         gameId: this.gameId,
                         playerId: this.playerId,
-                        playerName: this.playerName,
                         isHost: this.isHost,
                         isGuest: this.isGuest,
-                        currentQuestionIndex: this.currentQuestionIndex,
                         gamePhase: this.gamePhase,
-                        timestamp: Date.now(),
-                        version: 3,
+                        timestamp: this.timestamp,
                         playerKey: this.playerKey
                     };
                     
-                    localStorage.setItem(this.getStorageKey(), JSON.stringify(stateToSave));
-console.log('💾 State saved');
+                    localStorage.setItem(this.getStorageKey(), JSON.stringify(data));
+                    console.log(`💾 State saved to: ${this.getStorageKey()}`);
                     return true;
                 } catch (error) {
-                    console.error('❌ Save failed:', error);
+                    console.error('❌ Save state failed:', error);
                     return false;
                 }
             }
 
-            loadFromStorage() {
+            load() {
                 try {
-                    const saved = localStorage.getItem(this.getStorageKey());
-                    if (saved) {
-                        const state = JSON.parse(saved);
-                        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-                        if (state.timestamp && (Date.now() - state.timestamp) < maxAge) {
-                            Object.keys(state).forEach(key => {
-                                if (this.hasOwnProperty(key) || key === 'deviceMode' || key === 'playerKey' || key === 'playerId') {
-                                    this[key] = state[key];
-                                }
-                            });
-                            console.log('📂 State loaded');
-                            return true;
-                        } else {
-                            this.clearStorage();
-                        }
+                    const data = localStorage.getItem(this.getStorageKey());
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        
+                        this.deviceMode = parsed.deviceMode || 'single';
+                        this.selectedCategories = parsed.selectedCategories || [];
+                        this.difficulty = parsed.difficulty || 'medium';
+                        this.playerNames = parsed.playerNames || [];
+                        this.currentPlayerIndex = parsed.currentPlayerIndex || 0;
+                        this.playerName = parsed.playerName || '';
+                        this.gameId = parsed.gameId || null;
+                        this.playerId = parsed.playerId || null;
+                        this.isHost = parsed.isHost || false;
+                        this.isGuest = parsed.isGuest || false;
+                        this.gamePhase = parsed.gamePhase || 'setup';
+                        this.timestamp = parsed.timestamp || Date.now();
+                        this.playerKey = parsed.playerKey || this.playerKey;
+                        
+                        console.log(`📂 State loaded from: ${this.getStorageKey()}`);
+                        return true;
                     }
                 } catch (error) {
-                    console.error('❌ Load failed:', error);
-                    this.clearStorage();
+                    console.error('❌ Load state failed:', error);
                 }
                 return false;
             }
 
             clearStorage() {
                 localStorage.removeItem(this.getStorageKey());
+                console.log(`🗑️ Cleared storage: ${this.getStorageKey()}`);
+            }
+
+            static findValidMultiplayerState() {
+                const keys = Object.keys(localStorage);
+                
+                // Try main host state first
+                try {
+                    const mainState = localStorage.getItem('denkstdu_game_state');
+                    if (mainState) {
+                        const state = JSON.parse(mainState);
+                        if (state.deviceMode === 'multi' && state.gameId) {
+                            console.log('✅ Found valid host state');
+                            return new GameState();
+                        }
+                    }
+                } catch (e) {
+                    console.error('❌ Error loading host state:', e);
+                }
+                
+                // Try guest states
+                for (let key of keys) {
+                    if (key.startsWith('denkstdu_game_state_guest_')) {
+                        try {
+                            const guestState = localStorage.getItem(key);
+                            if (guestState) {
+                                const state = JSON.parse(guestState);
+                                if (state.deviceMode === 'multi' && state.gameId && state.isGuest) {
+                                    const playerKey = key.replace('denkstdu_game_state_', '');
+                                    console.log(`✅ Found valid guest state: ${playerKey}`);
+                                    return new GameState(playerKey);
+                                }
+                            }
+                        } catch (e) {
+                            console.error(`❌ Error loading guest state ${key}:`, e);
+                        }
+                    }
+                }
+                
+                console.error('❌ No valid multiplayer state found');
+                return null;
             }
         }
 
@@ -906,11 +966,11 @@ console.log('💾 State saved');
         async function initLobby() {
             console.log('🌐 Init lobby...');
             
-            // *** CRITICAL FIX: Parse URL parameters first ***
+            // Parse URL parameters first
             const urlParams = parseURLParameters();
             console.log('🔗 URL Parameters:', urlParams);
             
-            // *** Find the correct game state based on URL parameters ***
+            // Find the correct game state based on URL parameters
             gameState = findCorrectGameState(urlParams);
             
             if (!gameState || !gameState.gameId) {
@@ -968,34 +1028,38 @@ console.log('💾 State saved');
             console.log('✅ Lobby initialized');
         }
 
-        // *** NEW: Parse URL parameters to get specific game info ***
         function parseURLParameters() {
             const urlParams = new URLSearchParams(window.location.search);
             return {
                 gameId: urlParams.get('gameId'),
-                playerKey: urlParams.get('playerKey')
+                playerId: urlParams.get('playerId')
             };
         }
 
-        // *** COMPLETELY REWRITTEN: Find correct game state based on URL parameters ***
         function findCorrectGameState(urlParams) {
             console.log('🔍 Looking for correct game state...');
             
             // If we have URL parameters, use them to find the specific state
-            if (urlParams.gameId && urlParams.playerKey) {
-                console.log(`🎯 URL指定: gameId=${urlParams.gameId}, playerKey=${urlParams.playerKey}`);
+            if (urlParams.gameId && urlParams.playerId) {
+                console.log(`🎯 URL指定: gameId=${urlParams.gameId}, playerId=${urlParams.playerId}`);
                 
-                // Try to load the specific player state
-                try {
-                    const specificState = new GameState(urlParams.playerKey);
-                    if (specificState.gameId === urlParams.gameId) {
-                        console.log('✅ Found matching URL game state');
-                        return specificState;
-                    } else {
-                        console.log('⚠️ URL state gameId mismatch');
+                // Try to find state with matching playerId as key
+                const keys = Object.keys(localStorage);
+                for (let key of keys) {
+                    if (key.startsWith('denkstdu_game_state')) {
+                        try {
+                            const state = JSON.parse(localStorage.getItem(key));
+                            if (state.gameId === urlParams.gameId && 
+                                state.playerId === urlParams.playerId && 
+                                state.deviceMode === 'multi') {
+                                console.log(`✅ Found matching URL game state: ${key}`);
+                                const playerKey = key.replace('denkstdu_game_state_', '') || null;
+                                return new GameState(playerKey === key ? null : playerKey);
+                            }
+                        } catch (e) {
+                            console.error(`❌ Error checking state ${key}:`, e);
+                        }
                     }
-                } catch (e) {
-                    console.error('❌ Error loading URL-specific state:', e);
                 }
             }
             
@@ -1014,7 +1078,7 @@ console.log('💾 State saved');
                             if (state.gameId === urlParams.gameId && state.deviceMode === 'multi') {
                                 console.log(`✅ Found matching gameId state: ${key}`);
                                 const playerKey = key.replace('denkstdu_game_state_', '') || null;
-                                return new GameState(playerKey === 'denkstdu_game_state' ? null : playerKey);
+                                return new GameState(playerKey === key ? null : playerKey);
                             }
                         } catch (e) {
                             console.error(`❌ Error checking state ${key}:`, e);
@@ -1075,11 +1139,20 @@ console.log('💾 State saved');
                         categories: gameData.categories,
                         difficulty: gameData.difficulty
                     });
+                    
                     currentGameData = gameData;
                     updateFromFirebaseData(gameData);
+                    
+                    // Handle game state changes
+                    if (gameData.gameState === 'playing' && !isNavigating) {
+                        console.log('🚀 Game started - redirecting to gameplay');
+                        isNavigating = true;
+                        handleGameStarted(gameData);
+                    }
                 } else {
-                    console.log('❌ Game not found in Firebase');
+                    console.log('❌ Game no longer exists');
                     showNotification('Spiel wurde beendet oder nicht gefunden', 'error');
+                    setTimeout(() => window.location.href = 'index.html', 2000);
                 }
             });
         }
@@ -1108,7 +1181,7 @@ console.log('💾 State saved');
         function updateFromFirebaseData(gameData) {
             console.log('📝 Updating from Firebase data:', gameData);
             
-            // *** CRITICAL FIX: Always update local state with Firebase data ***
+            // Update local state with Firebase data
             if (gameData.categories && gameData.categories.length > 0) {
                 gameState.selectedCategories = gameData.categories;
                 console.log('📝 Updated categories from Firebase:', gameData.categories);
@@ -1120,35 +1193,33 @@ console.log('💾 State saved');
             }
             
             // Save updated state
-            gameState.saveToStorage();
+            gameState.save();
             
             // Update UI with fresh Firebase data
             updateGameSettings();
             
-            // *** Handle Firebase player format correctly ***
+            // Handle Firebase player format correctly
             if (gameData.players) {
                 console.log('👥 Firebase players data:', gameData.players);
-                updatePlayersDisplayFromFirebase(gameData.players);
+                updatePlayersDisplay(gameData.players);
             } else {
                 console.log('👥 No players in Firebase');
                 showEmptyPlayersList();
             }
             
             // Update start button for host
-            if (isHost) {
-                updateStartButton(gameData.players);
-            }
+            updateStartButton(gameData.players || {});
         }
 
-        // ===== PLAYER DISPLAY (FIXED) =====
-        function updatePlayersDisplayFromFirebase(firebasePlayers) {
-            console.log('👥 Updating players from Firebase:', firebasePlayers);
+        // ===== PLAYER DISPLAY =====
+        function updatePlayersDisplay(players) {
+            console.log('👥 Updating players display:', players);
             
             const playersList = document.getElementById('players-list');
             const playerCount = document.getElementById('player-count');
             
             // Convert Firebase format { playerId: {data} } to array
-            const playersArray = Object.entries(firebasePlayers || {}).map(([id, data]) => ({
+            const playersArray = Object.entries(players || {}).map(([id, data]) => ({
                 id: id,
                 name: data.name,
                 isHost: data.isHost || false,
@@ -1228,7 +1299,19 @@ console.log('💾 State saved');
         function startLocalFallback() {
             console.log('🔄 Starting local fallback mode...');
             showNotification('Offline-Modus aktiv', 'warning');
-            loadLocalPlayers();
+            
+            const mockPlayers = {};
+            if (gameState.isHost && gameState.playerName) {
+                mockPlayers['host'] = {
+                    id: 'host',
+                    name: gameState.playerName,
+                    isHost: true,
+                    isOnline: true,
+                    joinedAt: Date.now()
+                };
+            }
+            
+            updatePlayersDisplay(mockPlayers);
             
             // Periodic reconnection attempts
             setInterval(async () => {
@@ -1241,71 +1324,6 @@ console.log('💾 State saved');
                     }
                 }
             }, 10000); // Try every 10 seconds
-        }
-
-        function loadLocalPlayers() {
-            console.log('👥 Loading local players...');
-            
-            const localPlayers = getAllLocalPlayers();
-            const firebaseFormat = {};
-            
-            localPlayers.forEach(player => {
-                const playerId = player.isHost ? 'host' : `guest_${player.name}_${Date.now()}`;
-                firebaseFormat[playerId] = {
-                    id: playerId,
-                    name: player.name,
-                    isHost: player.isHost,
-                    isOnline: true,
-                    joinedAt: player.lastSeen || Date.now()
-                };
-            });
-            
-            console.log('👥 Local players converted:', firebaseFormat);
-            updatePlayersDisplayFromFirebase(firebaseFormat);
-        }
-
-        function getAllLocalPlayers() {
-            const players = [];
-            const gameId = gameState.gameId;
-            
-            // Get host
-            try {
-                const hostState = localStorage.getItem('denkstdu_game_state');
-                if (hostState) {
-                    const host = JSON.parse(hostState);
-                    if (host.gameId === gameId && host.isHost && host.playerName) {
-                        players.push({
-                            name: host.playerName,
-                            isHost: true,
-                            lastSeen: host.timestamp
-                        });
-                    }
-                }
-            } catch (e) {
-                console.error('Error loading host:', e);
-            }
-            
-            // Get guests
-            const keys = Object.keys(localStorage);
-            for (let key of keys) {
-                if (key.startsWith('denkstdu_game_state_guest_')) {
-                    try {
-                        const guestState = JSON.parse(localStorage.getItem(key));
-                        if (guestState.gameId === gameId && guestState.isGuest && guestState.playerName) {
-                            players.push({
-                                name: guestState.playerName,
-                                isHost: false,
-                                lastSeen: guestState.timestamp
-                            });
-                        }
-                    } catch (e) {
-                        console.error('Error loading guest:', e);
-                    }
-                }
-            }
-            
-            console.log('👥 Found local players:', players);
-            return players;
         }
 
         // ===== UI UPDATES =====
@@ -1421,7 +1439,7 @@ console.log('💾 State saved');
                 } else {
                     console.log('✅ Starting game locally');
                     gameState.gamePhase = 'playing';
-                    gameState.saveToStorage();
+                    gameState.save();
                     
                     showNotification('Spiel wird gestartet...', 'success');
                     
@@ -1459,7 +1477,7 @@ console.log('💾 State saved');
                 if (gameData.difficulty) gameState.difficulty = gameData.difficulty;
             }
             
-            gameState.saveToStorage();
+            gameState.save();
             
             setTimeout(() => {
                 navigateToGameplay();
@@ -1475,7 +1493,7 @@ console.log('💾 State saved');
         function leaveLobby() {
             // Cleanup
             if (gameListener) {
-                gameListener.off();
+                gameListener();
             }
             firebaseService.cleanup();
 
@@ -1492,7 +1510,7 @@ console.log('💾 State saved');
         // ===== CLEANUP =====
         window.addEventListener('beforeunload', function() {
             if (gameListener) {
-                gameListener.off();
+                gameListener();
             }
             firebaseService.cleanup();
         });
@@ -1534,14 +1552,26 @@ console.log('💾 State saved');
 
         // ===== DEBUG FUNCTIONS =====
         window.debugLobby = function() {
-            console.log('🔍 Lobby Debug:');
-            console.log('GameState:', gameState);
+            console.log('🔍 === LOBBY DEBUG ===');
+            console.log('GameState:', {
+                gameId: gameState?.gameId,
+                playerId: gameState?.playerId,
+                playerName: gameState?.playerName,
+                isHost: gameState?.isHost,
+                storageKey: gameState?.getStorageKey()
+            });
             console.log('Firebase:', {
                 initialized: firebaseService.isInitialized,
                 connected: firebaseService.isConnected
             });
             console.log('Current Game Data:', currentGameData);
             console.log('LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('denkstdu')));
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            console.log('URL Parameters:', {
+                gameId: urlParams.get('gameId'),
+                playerId: urlParams.get('playerId')
+            });
         };
 
         window.simulateGameStart = function() {
@@ -1555,17 +1585,8 @@ console.log('💾 State saved');
             handleGameStarted(testGameData);
         };
 
-        window.refreshPlayers = function() {
-            console.log('🔄 Refreshing players...');
-            if (currentGameData && currentGameData.players) {
-                updatePlayersDisplayFromFirebase(currentGameData.players);
-            } else {
-                loadLocalPlayers();
-            }
-        };
-
-        console.log('✅ Enhanced Multiplayer Lobby - COMPLETELY FIXED & Ready');
-        console.log('🎮 Commands: debugLobby(), simulateGameStart(), refreshPlayers()');
+        console.log('✅ Multiplayer Lobby - COMPLETELY FIXED & Ready');
+        console.log('🎮 Commands: debugLobby(), simulateGameStart()');
     </script>
 </body>
 </html>
