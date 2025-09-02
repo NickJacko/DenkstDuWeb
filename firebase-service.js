@@ -41,6 +41,8 @@ class FirebaseGameService {
             this.database = firebase.database();
 
             // Connection test
+
+            try {
             const testRef = this.database.ref('.info/connected');
             const snapshot = await Promise.race([
                 testRef.once('value'),
@@ -48,6 +50,7 @@ class FirebaseGameService {
             ]);
 
             this.isConnected = snapshot.val() === true;
+
             this.isInitialized = this.isConnected;
 
             if (this.isConnected && gameId) {
