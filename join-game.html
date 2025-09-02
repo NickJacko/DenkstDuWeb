@@ -510,66 +510,6 @@
                 gap: 8px;
             }
         }
-
-        @media (max-height: 700px) {
-            .join-container {
-                justify-content: flex-start;
-                padding-top: 40px;
-            }
-
-            .glass-card {
-                margin-top: 0;
-            }
-
-            .join-header {
-                margin-bottom: 20px;
-            }
-
-            .form-group {
-                margin-bottom: 15px;
-            }
-        }
-
-        @media (max-width: 320px) {
-            .glass-card {
-                padding: 15px 12px;
-            }
-
-            .game-code-input {
-                font-size: 1.1rem;
-                letter-spacing: 1px;
-                padding: 14px 45px 14px 16px;
-            }
-
-            .btn {
-                padding: 12px 16px;
-                font-size: 0.8rem;
-            }
-        }
-
-        @media (orientation: landscape) and (max-height: 500px) {
-            .join-container {
-                justify-content: center;
-                padding-top: 20px;
-            }
-
-            .join-header {
-                margin-bottom: 15px;
-            }
-
-            .join-title {
-                font-size: 1.6rem;
-            }
-
-            .join-subtitle {
-                font-size: 0.9rem;
-            }
-
-            .game-info-preview {
-                margin: 15px 0;
-                padding: 12px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -772,7 +712,7 @@
                         throw new Error('NAME_TAKEN');
                     }
 
-                    // Generate consistent player ID
+                    // KRITISCHER FIX: Konsistente Player ID Generation
                     const playerId = `guest_${playerData.name}_${Date.now()}`;
                     
                     const playerObject = {
@@ -838,7 +778,7 @@
             }
         }
 
-        // ===== GAME STATE CLASS (FIXED) =====
+        // ===== GAME STATE CLASS (FIXED WITH PLAYER ID) =====
         class GameState {
             constructor(playerKey = null) {
                 this.playerKey = playerKey;
@@ -852,10 +792,10 @@
                 this.difficulty = null;
                 this.players = [];
                 this.gameId = null;
-                this.playerId = null;
+                this.playerId = null; // HINZUGEFÜGT: Player ID Support
                 this.playerName = null;
                 this.isHost = false;
-                this.isGuest = false;
+                this.isGuest = true; // Guests sind immer Gäste
                 this.currentQuestionIndex = 0;
                 this.gamePhase = 'lobby';
                 this.timestamp = Date.now();
@@ -876,14 +816,14 @@
                         difficulty: this.difficulty,
                         players: this.players,
                         gameId: this.gameId,
-                        playerId: this.playerId,
+                        playerId: this.playerId, // Player ID wird gespeichert
                         playerName: this.playerName,
                         isHost: this.isHost,
                         isGuest: this.isGuest,
                         currentQuestionIndex: this.currentQuestionIndex,
                         gamePhase: this.gamePhase,
                         timestamp: Date.now(),
-                        version: 3,
+                        version: 4, // Version 4 für Player ID Support
                         playerKey: this.playerKey
                     };
                     
@@ -921,6 +861,22 @@
 
             clearStorage() {
                 localStorage.removeItem(this.getStorageKey());
+            }
+
+            getDebugInfo() {
+                return {
+                    deviceMode: this.deviceMode,
+                    isHost: this.isHost,
+                    isGuest: this.isGuest,
+                    gameId: this.gameId,
+                    playerId: this.playerId, // Player ID im Debug
+                    categories: this.selectedCategories,
+                    difficulty: this.difficulty,
+                    playerName: this.playerName,
+                    gamePhase: this.gamePhase,
+                    playerKey: this.playerKey,
+                    storageKey: this.getStorageKey()
+                };
             }
         }
 
@@ -992,7 +948,7 @@
                         const input = document.getElementById('game-code-input');
                         input.value = cleanText;
                         handleGameCodeInput();
-                        showNotification('Code eingefügt! 📋', 'success');
+                        showNotification('Code eingefügt!', 'success');
                     } else {
                         showNotification('Ungültiger Code', 'warning');
                     }
@@ -1068,7 +1024,7 @@
                 showPlayerNameInput();
                 setupGameListener(gameCode);
                 
-                showNotification('Spiel gefunden! 🎉', 'success');
+                showNotification('Spiel gefunden!', 'success');
                 updateMainButton();
                 
             } catch (error) {
@@ -1102,25 +1058,25 @@
             const preview = document.getElementById('game-info-preview');
             
             const categoryNames = {
-                'fsk0': '👨‍👩‍👧‍👦 Familie',
-                'fsk16': '🎉 Party',
-                'fsk18': '🔥 Erwachsene'
+                'fsk0': 'Familie',
+                'fsk16': 'Party',
+                'fsk18': 'Erwachsene'
             };
             const categories = (gameData.categories || []).map(cat => categoryNames[cat] || cat).join(', ');
             document.getElementById('game-categories').textContent = categories || 'Standard';
             
             const difficultyNames = {
-                'easy': '🍺 Entspannt',
-                'medium': '🍺🍺 Standard',
-                'hard': '🍺🍺🍺 Hardcore'
+                'easy': 'Entspannt',
+                'medium': 'Standard',
+                'hard': 'Hardcore'
             };
             document.getElementById('game-difficulty').textContent = difficultyNames[gameData.difficulty] || 'Standard';
             
             const statusNames = {
-                'waiting': '⏳ Wartet',
-                'lobby': '🏠 Lobby',
-                'playing': '🎮 Läuft',
-                'finished': '🏁 Beendet'
+                'waiting': 'Wartet',
+                'lobby': 'Lobby',
+                'playing': 'Läuft',
+                'finished': 'Beendet'
             };
             document.getElementById('game-status').textContent = statusNames[gameData.gameState] || 'Unbekannt';
             
@@ -1202,7 +1158,7 @@
             }
         }
 
-        // ===== GAME JOINING (FIXED) =====
+        // ===== GAME JOINING (KRITISCH GEFIXT) =====
         async function joinGame(gameCode, playerName) {
             if (isNavigating) return;
             
@@ -1229,18 +1185,18 @@
 
                 console.log('✅ Firebase join result:', joinResult);
 
-                // Create unique key for guest
-                const uniqueKey = `guest_${playerName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                gameState = new GameState(uniqueKey);
+                // KRITISCHER FIX: Verwende KONSISTENTE Player ID von Firebase
+                const playerKey = joinResult.playerId; // Verwende Firebase Player ID als Key
+                gameState = new GameState(playerKey);
                 
                 // Setup complete game state with Firebase player ID
                 gameState.gameId = gameCode;
-                gameState.playerId = joinResult.playerId; // WICHTIG: Firebase Player ID
+                gameState.playerId = joinResult.playerId; // KONSISTENTE Player ID
                 gameState.playerName = playerName;
                 gameState.deviceMode = 'multi';
                 gameState.isHost = false;
                 gameState.isGuest = true;
-                gameState.playerKey = uniqueKey;
+                gameState.playerKey = playerKey;
                 gameState.timestamp = Date.now();
                 
                 // Copy game settings from Firebase
@@ -1263,8 +1219,12 @@
                 }
                 
                 // Verify the save worked
-                const verifyState = new GameState(uniqueKey);
-                if (verifyState.gameId !== gameCode) {
+                const verifyState = new GameState(playerKey);
+                if (verifyState.gameId !== gameCode || verifyState.playerId !== joinResult.playerId) {
+                    console.error('❌ Save verification failed:', {
+                        expected: { gameId: gameCode, playerId: joinResult.playerId },
+                        actual: { gameId: verifyState.gameId, playerId: verifyState.playerId }
+                    });
                     throw new Error('SAVE_VERIFICATION_FAILED');
                 }
                 
@@ -1278,18 +1238,18 @@
                 });
                 
                 hideLoading();
-                showNotification('Erfolgreich beigetreten! 🎉', 'success');
+                showNotification('Erfolgreich beigetreten!', 'success');
                 isNavigating = true;
                 
                 // Setup real-time listener
                 setupGameListener(gameCode);
                 
-                // Navigate with correct URL parameters
+                // KRITISCHER FIX: Korrekte URL-Navigation mit playerId
                 setTimeout(() => {
                     if (gameState.gamePhase === 'playing') {
-                        window.location.href = `multiplayer-gameplay.html?gameId=${gameCode}&playerKey=${uniqueKey}`;
+                        window.location.href = `multiplayer-gameplay.html?gameId=${gameCode}&playerId=${joinResult.playerId}`;
                     } else {
-                        window.location.href = `multiplayer-lobby.html?gameId=${gameCode}&playerKey=${uniqueKey}`;
+                        window.location.href = `multiplayer-lobby.html?gameId=${gameCode}&playerId=${joinResult.playerId}`;
                     }
                 }, 1500);
                 
@@ -1340,7 +1300,7 @@
             console.log('🚀 Game started!');
             isNavigating = true;
             
-            showNotification('Spiel wurde gestartet! 🎮', 'success');
+            showNotification('Spiel wurde gestartet!', 'success');
             showLoading();
             
             if (gameState) {
@@ -1357,11 +1317,6 @@
             setTimeout(() => {
                 navigateToGameplay();
             }, 1500);
-        }
-
-        function navigateToLobby() {
-            console.log('🎯 → multiplayer-lobby.html');
-            window.location.href = 'multiplayer-lobby.html';
         }
 
         function navigateToGameplay() {
@@ -1461,7 +1416,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             console.log('🔗 URL Parameters:', {
                 gameId: urlParams.get('gameId'),
-                playerKey: urlParams.get('playerKey')
+                playerId: urlParams.get('playerId')
             });
             
             if (typeof gameState !== 'undefined' && gameState) {
@@ -1475,21 +1430,8 @@
             }
         };
 
-        window.testCode = function(code) {
-            console.log(`🧪 Testing: ${code}`);
-            const input = document.getElementById('game-code-input');
-            input.value = code;
-            handleGameCodeInput();
-        };
-
-        window.testFirebase = async function() {
-            const result = await firebaseService.initialize();
-            showNotification(`Firebase: ${result ? 'OK' : 'FEHLER'}`, result ? 'success' : 'error');
-            return result;
-        };
-
-        console.log('✅ Join Game - FIXED & Ready');
-        console.log('🎮 Commands: debugJoinGame(), debugMultiplayer(), testCode("ABC123"), testFirebase()');
+        console.log('✅ Join Game - COMPLETE FIXED & Ready');
+        console.log('🎮 Commands: debugJoinGame(), debugMultiplayer()');
     </script>
 </body>
 </html>
