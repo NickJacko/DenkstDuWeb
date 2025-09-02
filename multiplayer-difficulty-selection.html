@@ -11,7 +11,8 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    
+    <script src="firebase-service.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -1024,137 +1025,6 @@
 
     <script>
         // ===== Firebase & GameState Service =====
-        class FirebaseGameService {
-            constructor() {
-                this.isInitialized = false;
-                this.app = null;
-                this.database = null;
-                this.gameRef = null;
-                this.playersRef = null;
-                this.settingsRef = null;
-                this.currentGameId = null;
-                this.listeners = [];
-                
-                this.config = {
-                    apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-                    authDomain: "denkstduwebsite.firebaseapp.com",
-                    databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-                    projectId: "denkstduwebsite",
-                    storageBucket: "denkstduwebsite.appspot.com",
-                    messagingSenderId: "27029260611",
-                    appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6"
-                };
-            }
-
-            async initialize(gameId = null) {
-                try {
-                    if (typeof firebase === 'undefined') {
-                        throw new Error('Firebase SDK not loaded');
-                    }
-
-                    if (!firebase.apps.length) {
-                        this.app = firebase.initializeApp(this.config);
-                    } else {
-                        this.app = firebase.app();
-                    }
-
-                    this.database = firebase.database();
-                    this.isInitialized = true;
-
-                    if (gameId) {
-                        await this.connectToGame(gameId);
-                    }
-
-                    console.log('🔥 Firebase service initialized');
-                    return true;
-                } catch (error) {
-                    console.error('❌ Firebase initialization failed:', error);
-                    return false;
-                }
-            }
-
-            async connectToGame(gameId) {
-                if (!this.isInitialized) return false;
-
-                try {
-                    this.currentGameId = gameId;
-                    this.gameRef = this.database.ref(`games/${gameId}`);
-                    this.playersRef = this.database.ref(`games/${gameId}/players`);
-                    this.settingsRef = this.database.ref(`games/${gameId}/settings`);
-
-                    // Setup real-time listeners
-                    this.setupListeners();
-
-                    console.log('🎮 Connected to game:', gameId);
-                    return true;
-                } catch (error) {
-                    console.error('❌ Failed to connect to game:', error);
-                    return false;
-                }
-            }
-
-            setupListeners() {
-                // Listen for player count changes
-                const playersListener = this.playersRef.on('value', (snapshot) => {
-                    const players = snapshot.val() || {};
-                    const playerCount = Object.keys(players).length;
-                    updatePlayerCount(playerCount);
-                });
-                
-                this.listeners.push({ ref: this.playersRef, type: 'value', listener: playersListener });
-
-                // Listen for settings changes from other players
-                const settingsListener = this.settingsRef.on('value', (snapshot) => {
-                    const settings = snapshot.val();
-                    if (settings) {
-                        handleSettingsUpdate(settings);
-                    }
-                });
-                
-                this.listeners.push({ ref: this.settingsRef, type: 'value', listener: settingsListener });
-            }
-
-            async updateDifficulty(difficulty) {
-                if (!this.settingsRef) return false;
-
-                try {
-                    await this.settingsRef.child('difficulty').set(difficulty);
-                    console.log('🎯 Difficulty synced to Firebase:', difficulty);
-                    return true;
-                } catch (error) {
-                    console.error('❌ Failed to sync difficulty:', error);
-                    return false;
-                }
-            }
-
-            async updateGameSettings(settings) {
-                if (!this.settingsRef) return false;
-
-                try {
-                    const updateData = {
-                        ...settings,
-                        lastUpdated: Date.now(),
-                        updatedBy: gameState.playerName || 'Host'
-                    };
-                    
-                    await this.settingsRef.update(updateData);
-                    console.log('⚙️ Game settings synced:', updateData);
-                    return true;
-                } catch (error) {
-                    console.error('❌ Failed to sync game settings:', error);
-                    return false;
-                }
-            }
-
-            cleanup() {
-                // Remove all Firebase listeners
-                this.listeners.forEach(({ ref, type, listener }) => {
-                    ref.off(type, listener);
-                });
-                this.listeners = [];
-                console.log('🧹 Firebase listeners cleaned up');
-            }
-        }
 
         // ===== GameState Management =====
         class GameState {
@@ -1306,7 +1176,10 @@
                 }
 
                 // Initialize Firebase connection
-                const firebaseOk = await firebaseService.initialize(gameState.gameId);
+                const firebaseOk = await firebaseService.initialize(gameState.gameId, {
+                    onPlayers: (players) => updatePlayerCount(Object.keys(players).length),
+                    onSettings: handleSettingsUpdate
+                });
                 if (!firebaseOk) {
                     showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
                     return;
