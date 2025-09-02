@@ -718,7 +718,7 @@
                 }
             }
 
-            async getGameData(gameId) {
+            async getGameInfo(gameId) {
                 if (!this.isConnected) return null;
 
                 try {
@@ -726,7 +726,7 @@
                     const snapshot = await gameRef.once('value');
                     return snapshot.exists() ? snapshot.val() : null;
                 } catch (error) {
-                    console.error('❌ Get game data failed:', error);
+                    console.error('❌ Get game info failed:', error);
                     return null;
                 }
             }
@@ -1161,7 +1161,7 @@
             console.log('🔄 Loading initial Firebase data...');
             
             try {
-                const gameData = await firebaseService.getGameData(gameState.gameId);
+                const gameData = await firebaseService.getGameInfo(gameState.gameId);
                 if (gameData) {
                     console.log('✅ Initial game data loaded:', gameData);
                     currentGameData = gameData;
