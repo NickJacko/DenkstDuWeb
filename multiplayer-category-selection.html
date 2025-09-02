@@ -898,6 +898,8 @@
             try {
                 // Initialize services
                 gameState = new GameState();
+                // Load persisted state to retain multiplayer mode
+                gameState.load();
                 firebaseService = new FirebaseGameService();
                 
                 // Initialize Firebase
