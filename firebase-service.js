@@ -41,17 +41,15 @@ class FirebaseGameService {
             this.database = firebase.database();
 
             // Connection test
+
             try {
-                const testRef = this.database.ref('.info/connected');
-                await Promise.race([
-                    testRef.once('value'),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-                ]);
-                this.isConnected = true;
-            } catch (connError) {
-                console.error('❌ Firebase connection test failed:', connError);
-                this.isConnected = false;
-            }
+            const testRef = this.database.ref('.info/connected');
+            const snapshot = await Promise.race([
+                testRef.once('value'),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+            ]);
+
+            this.isConnected = snapshot.val() === true;
 
             this.isInitialized = this.isConnected;
 
