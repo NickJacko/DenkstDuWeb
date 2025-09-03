@@ -48,14 +48,18 @@ class FirebaseGameService {
             ]);
 
             this.isConnected = snapshot.val() === true;
+
+            let connectSuccess = true;
             this.isInitialized = this.isConnected;
 
             if (this.isConnected && gameId) {
-                await this.connectToGame(gameId, callbacks);
+                connectSuccess = await this.connectToGame(gameId, callbacks);
             }
 
-            console.log(`✅ Firebase: ${this.isConnected ? 'connected' : 'failed'}`);
-            return this.isConnected;
+            this.isInitialized = this.isConnected && connectSuccess;
+
+            console.log(`✅ Firebase: ${this.isInitialized ? 'connected' : 'failed'}`);
+            return this.isInitialized;
 
         } catch (error) {
             console.error('❌ Firebase init failed:', error);
