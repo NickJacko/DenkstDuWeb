@@ -48,7 +48,9 @@ class FirebaseGameService {
             ]);
 
             this.isConnected = snapshot.val() === true;
+
             let connectSuccess = true;
+            this.isInitialized = this.isConnected;
 
             if (this.isConnected && gameId) {
                 connectSuccess = await this.connectToGame(gameId, callbacks);
