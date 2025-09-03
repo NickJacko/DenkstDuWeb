@@ -41,8 +41,6 @@ class FirebaseGameService {
             this.database = firebase.database();
 
             // Connection test
-
-            try {
             const testRef = this.database.ref('.info/connected');
             const snapshot = await Promise.race([
                 testRef.once('value'),
@@ -50,15 +48,16 @@ class FirebaseGameService {
             ]);
 
             this.isConnected = snapshot.val() === true;
-
-            this.isInitialized = this.isConnected;
+            let connectSuccess = true;
 
             if (this.isConnected && gameId) {
-                await this.connectToGame(gameId, callbacks);
+                connectSuccess = await this.connectToGame(gameId, callbacks);
             }
 
-            console.log(`✅ Firebase: ${this.isConnected ? 'connected' : 'failed'}`);
-            return this.isConnected;
+            this.isInitialized = this.isConnected && connectSuccess;
+
+            console.log(`✅ Firebase: ${this.isInitialized ? 'connected' : 'failed'}`);
+            return this.isInitialized;
 
         } catch (error) {
             console.error('❌ Firebase init failed:', error);

@@ -902,10 +902,18 @@
                 gameState.load();
                 firebaseService = new FirebaseGameService();
                 
-                // Initialize Firebase
-                const firebaseReady = await firebaseService.initialize();
+                // Initialize Firebase (connect if game already exists)
+                const firebaseReady = await firebaseService.initialize(gameState.gameId);
                 console.log(`🔥 Firebase ready: ${firebaseReady}`);
-                
+                if (!firebaseReady) {
+                    showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                // Track connection status
+                setupConnectionStatus();
+
                 // Verify multiplayer state
                 console.log('🔍 Current GameState:', gameState.getDebugInfo());
                 
@@ -1047,6 +1055,18 @@
                 console.error('❌ Error in continueWithExistingName:', error);
                 showNotification('Setup-Fehler', 'warning');
             }
+        }
+
+        // Listen for connection changes and update status display
+        function setupConnectionStatus() {
+            const statusEl = document.getElementById('connection-status');
+            if (!statusEl || !firebaseService) return;
+
+            firebaseService.onConnectionChange((connected) => {
+                statusEl.textContent = connected ? 'Online' : 'Offline';
+                statusEl.classList.remove('connecting', 'connected', 'disconnected');
+                statusEl.classList.add(connected ? 'connected' : 'disconnected');
+            });
         }
 
         // KRITISCHER FIX: Neue createGameInFirebase Funktion

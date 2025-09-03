@@ -1168,6 +1168,9 @@
                 
                 // Initialize services
                 gameState = new GameState();
+                if (gameState.loadFromStorage) {
+                    gameState.loadFromStorage();
+                }
                 firebaseService = new FirebaseGameService();
                 
                 // Validate multiplayer state
@@ -1182,6 +1185,7 @@
                     onSettings: handleSettingsUpdate
                 });
                 if (!firebaseOk) {
+                    console.error('❌ Firebase initialization failed');
                     showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
                     hideLoading();
                     return;
