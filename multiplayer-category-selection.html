@@ -902,9 +902,14 @@
                 gameState.load();
                 firebaseService = new FirebaseGameService();
                 
-                // Initialize Firebase
-                const firebaseReady = await firebaseService.initialize();
+                // Initialize Firebase (connect if game already exists)
+                const firebaseReady = await firebaseService.initialize(gameState.gameId);
                 console.log(`🔥 Firebase ready: ${firebaseReady}`);
+                if (!firebaseReady) {
+                    showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
+                    hideLoading();
+                    return;
+                }
                 
                 // Verify multiplayer state
                 console.log('🔍 Current GameState:', gameState.getDebugInfo());
