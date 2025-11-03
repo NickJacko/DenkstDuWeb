@@ -444,78 +444,158 @@
             }
         }
 
-        /* Quick Results Display */
-        .quick-results {
+        /* Results Section */
+        .results-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .results-header {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        .results-title {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .results-summary {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            border-radius: 15px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex: 1;
+            align-content: start;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .result-item {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
             border-radius: 15px;
             padding: 15px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
-            display: none;
-        }
-
-        .quick-results.show {
-            display: block;
-            animation: slideDown 0.4s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .quick-results-header {
-            color: white;
-            font-size: 1rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .quick-results-summary {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .quick-results-grid {
-            display: grid;
-            gap: 8px;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-
-        .quick-result-item {
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            padding: 8px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
-        .quick-result-player {
+        .player-result {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .result-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            font-weight: 600;
+            font-weight: 800;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            flex-shrink: 0;
         }
 
-        .quick-result-penalty {
-            color: #f44336;
+        .player-result-info {
+            color: white;
+        }
+
+        .player-result-name {
             font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 3px;
         }
 
-        .quick-result-penalty.none {
+        .player-answer {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        .sips-penalty {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.3), rgba(244, 67, 54, 0.4));
+            border: 1px solid #f44336;
+            color: #f44336;
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2);
+        }
+
+        .sips-penalty.none {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
+            border-color: #4CAF50;
             color: #4CAF50;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+        }
+
+        .results-navigation {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+
+        .nav-btn {
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn.primary {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .nav-btn.secondary {
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            backdrop-filter: blur(20px);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.98);
         }
 
         /* Toast Notifications */
@@ -752,15 +832,8 @@
                 </div>
             </div>
 
-            <!-- Quick Results (shown briefly after each round) -->
-            <div class="quick-results" id="quick-results">
-                <div class="quick-results-header" id="quick-results-header">Ergebnis der letzten Frage</div>
-                <div class="quick-results-summary" id="quick-results-summary"></div>
-                <div class="quick-results-grid" id="quick-results-grid"></div>
-            </div>
-
             <!-- Answer Section -->
-            <div class="answer-section fadeInUp">
+            <div class="answer-section fadeInUp" id="answer-section">
                 <div class="answer-title">🤔 Deine Antwort</div>
                 <div class="answer-buttons">
                     <button class="answer-btn yes" onclick="selectAnswer(true)" id="yes-btn">
@@ -775,7 +848,7 @@
             </div>
 
             <!-- Estimation Section -->
-            <div class="estimation-section fadeInUp">
+            <div class="estimation-section fadeInUp" id="estimation-section">
                 <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
                 
                 <!-- Current Selection Display -->
@@ -793,10 +866,31 @@
             </div>
 
             <!-- Submit Button -->
-            <div class="submit-section fadeInUp">
+            <div class="submit-section fadeInUp" id="submit-section">
                 <button class="submit-btn" onclick="submitAnswer()" id="submit-btn">
                     📤 Antwort bestätigen
                 </button>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="results-section" style="display: none;">
+                <div class="results-header">
+                    <div class="results-title">📊 Ergenis der letzten Frage</div>
+                    <div class="results-summary" id="results-summary"></div>
+                </div>
+
+                <div class="results-grid" id="results-grid">
+                    <!-- Results will be populated dynamically -->
+                </div>
+
+                <div class="results-navigation">
+                    <button class="nav-btn primary" onclick="nextQuestion()">
+                        ➡️ Nächste Frage
+                    </button>
+                    <button class="nav-btn secondary" onclick="endGame()">
+                        🚪 Spiel beenden
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1119,8 +1213,19 @@
             resetPlayerUI();
             updateGameDisplay();
             
-            // Hide quick results
-            document.getElementById('quick-results').classList.remove('show');
+            // Show game view
+            showGameView();
+        }
+
+        // ===== NAVIGATION =====
+        function nextQuestion() {
+            currentGame.currentQuestionNumber++;
+            startNewQuestion();
+            showNotification('Neue Frage geladen! 🎮', 'success');
+        }
+
+        function endGame() {
+            showExitConfirmation();
         }
 
         function loadQuestion(question) {
@@ -1278,9 +1383,9 @@
             }, 2000);
         }
 
-        // ===== QUICK RESULTS =====
-        function showQuickResults() {
-            console.log('📊 Calculating quick results...');
+        // ===== RESULTS =====
+        function showResults() {
+            console.log('📊 Calculating results...');
             
             // Calculate actual yes count
             const actualYesCount = Object.values(currentGame.currentAnswers).filter(answer => answer === true).length;
@@ -1316,14 +1421,33 @@
                 results: results
             });
             
-            // Display quick results
-            displayQuickResults(results, actualYesCount);
+            // Display results
+            displayResults(results, actualYesCount);
             
-            // Auto-continue to next question after 4 seconds
-            setTimeout(() => {
-                currentGame.currentQuestionNumber++;
-                startNewQuestion();
-            }, 4000);
+            // Switch to results view
+            showResultsView();
+        }
+
+        function showResultsView() {
+            // Hide game elements
+            document.getElementById('answer-section').style.display = 'none';
+            document.getElementById('estimation-section').style.display = 'none';
+            document.getElementById('submit-section').style.display = 'none';
+            
+            // Show results
+            document.getElementById('results-section').style.display = 'flex';
+            
+            showNotification('Ergebnisse werden angezeigt...', 'success', 2000);
+        }
+
+        function showGameView() {
+            // Show game elements
+            document.getElementById('answer-section').style.display = 'block';
+            document.getElementById('estimation-section').style.display = 'flex';
+            document.getElementById('submit-section').style.display = 'block';
+            
+            // Hide results
+            document.getElementById('results-section').style.display = 'none';
         }
 
         function getDifficultyMultiplier() {
@@ -1334,35 +1458,70 @@
             }
         }
 
-        function displayQuickResults(results, actualYesCount) {
+        function displayResults(results, actualYesCount) {
             // Update summary
-            document.getElementById('quick-results-summary').textContent = 
+            document.getElementById('results-summary').textContent = 
                 `${actualYesCount} von ${currentGame.players.length} Spielern haben "Ja" geantwortet`;
 
             // Display individual results
-            const resultsGrid = document.getElementById('quick-results-grid');
+            const resultsGrid = document.getElementById('results-grid');
             resultsGrid.innerHTML = '';
 
             results.forEach(result => {
                 const resultItem = document.createElement('div');
-                resultItem.className = 'quick-result-item';
+                resultItem.className = 'result-item';
                 
+                const avatar = result.playerName.charAt(0).toUpperCase();
                 const answerText = result.answer ? 'Ja' : 'Nein';
                 const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
                 const sipsClass = result.sips === 0 ? 'none' : '';
 
                 resultItem.innerHTML = `
-                    <div class="quick-result-player">${result.playerName}: ${answerText} (${result.estimation})</div>
-                    <div class="quick-result-penalty ${sipsClass}">${sipsText}</div>
+                    <div class="player-result">
+                        <div class="result-avatar">${avatar}</div>
+                        <div class="player-result-info">
+                            <div class="player-result-name">${result.playerName}</div>
+                            <div class="player-answer">${answerText} • Tipp: ${result.estimation}</div>
+                        </div>
+                    </div>
+                    <div class="sips-penalty ${sipsClass}">${sipsText}</div>
                 `;
 
                 resultsGrid.appendChild(resultItem);
             });
+        }
 
-            // Show the results
-            document.getElementById('quick-results').classList.add('show');
+        function submitAnswer() {
+            if (currentAnswer === null) {
+                showNotification('Bitte wähle eine Antwort aus!', 'warning');
+                return;
+            }
+
+            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
             
-            showNotification('Ergebnisse werden angezeigt...', 'success', 1500);
+            // Save answers
+            currentGame.currentAnswers[currentPlayerName] = currentAnswer;
+            currentGame.currentEstimates[currentPlayerName] = currentEstimation;
+            
+            console.log(`📤 ${currentPlayerName} answered:`, {
+                answer: currentAnswer,
+                estimation: currentEstimation
+            });
+
+            // Move to next player or show results
+            if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
+                currentGame.currentPlayerIndex++;
+                currentAnswer = null;
+                currentEstimation = Math.floor(currentGame.players.length / 2);
+                resetPlayerUI();
+                updateGameDisplay();
+                
+                // Show player change popup
+                showPlayerChangePopup();
+            } else {
+                // All players answered, show results
+                showResults();
+            }
         }
 
         // ===== UTILITY FUNCTIONS =====
