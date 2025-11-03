@@ -3,966 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Spielen</title>
+    <title>DenkstDu - Das ultimative Schätzspiel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            overflow: hidden;
-            touch-action: manipulation;
-            position: relative;
-        }
-
-        /* Background Particles */
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            animation: float 15s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { width: 100px; height: 100px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 60px; height: 60px; left: 80%; animation-delay: 3s; }
-        .particle:nth-child(3) { width: 80px; height: 80px; left: 30%; animation-delay: 6s; }
-        .particle:nth-child(4) { width: 120px; height: 120px; left: 70%; animation-delay: 9s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            25% { transform: translateY(-30px) rotate(90deg); opacity: 0.6; }
-            50% { transform: translateY(-60px) rotate(180deg); opacity: 0.3; }
-            75% { transform: translateY(-30px) rotate(270deg); opacity: 0.6; }
-        }
-
-        .app-container {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            max-width: 450px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-
-
-
-        /* Main Content Area - Flexibel */
-        .game-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        /* Question Card - Kompakt */
-        .question-card {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(30px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            text-align: center;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
-            position: relative;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .question-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #4CAF50, #2196F3, #9C27B0);
-            background-size: 200% 100%;
-            animation: shimmer 3s ease-in-out infinite;
-        }
-
-        @keyframes shimmer {
-            0%, 100% { background-position: 200% 0; }
-            50% { background-position: -200% 0; }
-        }
-
-        .question-category {
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(76, 175, 80, 0.35));
-            border: 1px solid rgba(76, 175, 80, 0.5);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            display: inline-block;
-            margin-bottom: 10px;
-            backdrop-filter: blur(10px);
-        }
-
-        .question-text {
-            color: white;
-            font-size: 1rem;
-            font-weight: 700;
-            line-height: 1.4;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Current Player Display - Kompakt */
-        .current-player-card {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
-            flex-shrink: 0;
-        }
-
-        .player-avatar {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 800;
-            font-size: 1rem;
-            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.3);
-            flex-shrink: 0;
-        }
-
-        .player-info {
-            flex: 1;
-        }
-
-        .player-name {
-            color: white;
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 2px;
-        }
-
-        .player-status {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.8rem;
-        }
-
-        /* Answer Section - Optimiert */
-        .answer-section {
-            margin-bottom: 10px;
-            flex-shrink: 0;
-        }
-
-        .answer-title {
-            color: white;
-            font-size: 0.9rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-align: center;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .answer-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .answer-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.25);
-            color: white;
-            padding: 15px 10px;
-            border-radius: 15px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(20px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .answer-btn:active {
-            transform: scale(0.95);
-        }
-
-        .answer-btn.selected {
-            transform: scale(1.02);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .answer-btn.yes.selected {
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
-            border-color: #4CAF50;
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
-        }
-
-        .answer-btn.no.selected {
-            background: linear-gradient(135deg, rgba(244, 67, 54, 0.3), rgba(244, 67, 54, 0.4));
-            border-color: #f44336;
-            box-shadow: 0 10px 30px rgba(244, 67, 54, 0.3);
-        }
-
-        .answer-emoji {
-            font-size: 1.2rem;
-        }
-
-        /* Estimation Section - Verbessert */
-        .estimation-section {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(30px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        .estimation-title {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            flex-shrink: 0;
-        }
-
-        /* Number Grid - Verbessert */
-        .number-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
-            gap: 12px;
-            justify-items: center;
-            flex: 1;
-            align-content: center;
-        }
-
-        .number-btn {
-            width: 55px;
-            height: 55px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            font-weight: 800;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            backdrop-filter: blur(20px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .number-btn:active {
-            transform: scale(0.95);
-        }
-
-        .number-btn.selected {
-            background: linear-gradient(135deg, #4CAF50, #2196F3);
-            border-color: #4CAF50;
-            transform: scale(1.1);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
-            color: white;
-        }
-
-        /* Selected Number Display - Kompakt */
-        .current-selection {
-            text-align: center;
-            margin-bottom: 15px;
-            flex-shrink: 0;
-        }
-
-        .selection-display {
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
-            border: 2px solid rgba(76, 175, 80, 0.5);
-            border-radius: 20px;
-            padding: 12px 20px;
-            display: inline-block;
-            min-width: 140px;
-        }
-
-        .selection-number {
-            color: white;
-            font-size: 1.6rem;
-            font-weight: 800;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            margin-bottom: 2px;
-        }
-
-        .selection-label {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        /* Submit Button */
-        .submit-section {
-            flex-shrink: 0;
-        }
-
-        .submit-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 15px;
-            font-size: 1rem;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            opacity: 0.4;
-            transform: scale(0.95);
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.2);
-        }
-
-        .submit-btn.enabled {
-            opacity: 1;
-            transform: scale(1);
-            box-shadow: 0 12px 35px rgba(76, 175, 80, 0.4);
-        }
-
-        .submit-btn.enabled:active {
-            transform: scale(0.98);
-        }
-
-        /* Player Change Popup */
-        .player-change-popup {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .player-change-popup.show {
-            display: flex;
-        }
-
-        .popup-content {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(30px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 25px;
-            padding: 40px 30px;
-            text-align: center;
-            max-width: 300px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: popupSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .popup-avatar {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 800;
-            font-size: 2rem;
-            margin: 0 auto 20px;
-            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.4);
-        }
-
-        .popup-name {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .popup-message {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes popupSlideIn {
-            from {
-                opacity: 0;
-                transform: scale(0.8) translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        /* Results Section */
-        .results-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        .results-header {
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
-            border: 2px solid rgba(76, 175, 80, 0.5);
-            backdrop-filter: blur(30px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 15px;
-            text-align: center;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
-            flex-shrink: 0;
-        }
-
-        .results-summary {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .results-grid {
-            display: grid;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex: 1;
-            align-content: start;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .result-item {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .player-result {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .result-avatar {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 800;
-            font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-            flex-shrink: 0;
-        }
-
-        .player-result-info {
-            color: white;
-        }
-
-        .player-result-name {
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 3px;
-        }
-
-        .player-answer {
-            font-size: 0.85rem;
-            opacity: 0.8;
-            font-weight: 500;
-        }
-
-        .sips-penalty {
-            background: linear-gradient(135deg, rgba(244, 67, 54, 0.3), rgba(244, 67, 54, 0.4));
-            border: 1px solid #f44336;
-            color: #f44336;
-            padding: 8px 15px;
-            border-radius: 15px;
-            font-weight: 800;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2);
-        }
-
-        .sips-penalty.none {
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
-            border-color: #4CAF50;
-            color: #4CAF50;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
-        }
-
-        .results-navigation {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 15px;
-            flex-shrink: 0;
-        }
-
-        .nav-btn {
-            padding: 15px 20px;
-            border-radius: 15px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-btn.primary {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-        }
-
-        .nav-btn.secondary {
-            background: rgba(255, 255, 255, 0.12);
-            border: 2px solid rgba(255, 255, 255, 0.25);
-            color: white;
-            backdrop-filter: blur(20px);
-        }
-
-        .nav-btn:active {
-            transform: scale(0.98);
-        }
-
-        /* Final Results Section */
-        .final-results-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        .final-header {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
-            border: 2px solid rgba(255, 215, 0, 0.6);
-            backdrop-filter: blur(30px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
-            flex-shrink: 0;
-        }
-
-        .final-title {
-            color: #FFD700;
-            font-size: 1.6rem;
-            font-weight: 800;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
-        }
-
-        .final-subtitle {
-            color: rgba(255, 255, 255, 0.95);
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .leaderboard {
-            flex: 1;
-            margin-bottom: 20px;
-            min-height: 0;
-        }
-
-        .leaderboard-title {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 5px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .leaderboard-subtitle {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        #leaderboard-list {
-            display: grid;
-            gap: 12px;
-            max-height: 350px;
-            overflow-y: auto;
-        }
-
-        .leaderboard-item {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(30px);
-            border-radius: 18px;
-            padding: 18px 20px;
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .leaderboard-item.winner {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
-            border-color: #FFD700;
-            transform: scale(1.02);
-            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.3);
-        }
-
-        .rank-number {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .rank-1 { 
-            background: linear-gradient(135deg, #FFD700, #FFA500); 
-            color: white;
-            animation: goldGlow 2s ease-in-out infinite alternate;
-        }
-        .rank-2 { 
-            background: linear-gradient(135deg, #C0C0C0, #A0A0A0); 
-            color: white; 
-        }
-        .rank-3 { 
-            background: linear-gradient(135deg, #CD7F32, #B8860B); 
-            color: white; 
-        }
-        .rank-other { 
-            background: rgba(255, 255, 255, 0.2); 
-            color: white; 
-        }
-
-        @keyframes goldGlow {
-            0% { box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
-            100% { box-shadow: 0 4px 25px rgba(255, 215, 0, 0.6); }
-        }
-
-        .result-avatar {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 800;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-            flex-shrink: 0;
-        }
-
-        .player-final-stats {
-            flex: 1;
-        }
-
-        .player-final-name {
-            color: white;
-            font-weight: 700;
-            font-size: 1.2rem;
-            margin-bottom: 8px;
-            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        .player-final-details {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 1rem;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .detail-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .detail-icon {
-            font-size: 1.1rem;
-        }
-
-        .final-navigation {
-            flex-shrink: 0;
-        }
-
-        .nav-btn.large {
-            padding: 18px 25px;
-            font-size: 1.2rem;
-        }
-
-        /* Toast Notifications */
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 15px;
-            padding: 15px;
-            z-index: 10000;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-width: 300px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .toast-notification.show {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .toast-notification.success {
-            border-color: rgba(76, 175, 80, 0.5);
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
-        }
-
-        .toast-notification.warning {
-            border-color: rgba(255, 152, 0, 0.5);
-            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
-        }
-
-        .toast-notification.error {
-            border-color: rgba(244, 67, 54, 0.5);
-            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
-        }
-
-        .toast-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-        }
-
-        .toast-icon {
-            font-size: 1.2rem;
-        }
-
-        .toast-message {
-            font-weight: 600;
-            font-size: 0.8rem;
-            line-height: 1.3;
-        }
-
-        /* Exit confirmation */
-        .exit-confirmation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10001;
-        }
-
-        .exit-confirmation.show {
-            display: flex;
-        }
-
-        .exit-content {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(30px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            max-width: 320px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        .exit-title {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 800;
-            margin-bottom: 15px;
-        }
-
-        .exit-message {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
-            margin-bottom: 25px;
-            line-height: 1.4;
-        }
-
-        .exit-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .exit-btn {
-            padding: 12px 20px;
-            border-radius: 15px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-        }
-
-        .exit-btn.cancel {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .exit-btn.confirm {
-            background: linear-gradient(135deg, #f44336, #d32f2f);
-            color: white;
-        }
-
-        .exit-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* Responsive Design */
-        @media (max-height: 700px) {
-            .question-text {
-                font-size: 0.9rem;
-            }
-            
-            .number-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 0.9rem;
-            }
-
-            .estimation-section {
-                padding: 12px;
-            }
-        }
-
-        @media (max-height: 600px) {
-            .app-container {
-                padding: 8px;
-            }
-            
-            .game-header {
-                padding: 8px 15px;
-                margin-bottom: 8px;
-            }
-
-            .question-card {
-                padding: 12px 15px;
-                margin-bottom: 8px;
-            }
-
-            .current-player-card {
-                padding: 10px 12px;
-                margin-bottom: 8px;
-            }
-
-            .estimation-section {
-                padding: 10px;
-            }
-
-            .number-btn {
-                width: 35px;
-                height: 35px;
-                font-size: 0.8rem;
-            }
-
-            .answer-btn {
-                padding: 12px 8px;
-            }
-        }
-
-        /* Animations */
-        .fadeInUp {
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    <!-- Meta tags -->
+    <meta name="description" content="DenkstDu - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
+    <meta name="keywords" content="Party Spiel, Trinkspiel, Schätzspiel, Multiplayer, Online">
+    <meta name="author" content="DenkstDu Team">
+    <meta name="theme-color" content="#667eea">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
 </head>
 <body>
+    <!-- Age Verification Modal -->
+    <div class="age-modal" id="age-modal">
+        <div class="age-modal-content">
+            <div class="age-header">
+                <span class="age-icon">🛡️</span>
+                <h2>Jugendschutz & verantwortungsvoller Umgang</h2>
+            </div>
+            
+            <div class="age-warning">
+                <h3>⚠️ Hinweis: Jugendschutz & verantwortungsvoller Umgang mit Alkohol</h3>
+                <p>
+                    Dieses Spiel kann Aufgaben enthalten, die den Konsum alkoholischer Getränke erwähnen. 
+                    Alkoholische Spielvarianten richten sich <strong>ausschließlich an Volljährige (18+)</strong>. 
+                    Minderjährige oder Personen, die keinen Alkohol trinken möchten, nutzen bitte die 
+                    <strong>alkoholfreie Variante</strong>.
+                </p>
+                <p class="legal-note">
+                    Das Angebot verkauft oder schenkt keinen Alkohol aus. 
+                    (Vgl. Jugendschutzgesetz § 9 zur Abgabe von Alkohol an Minderjährige.)
+                </p>
+            </div>
+
+            <div class="age-verification">
+                <h4>Altersbestätigung (Pflicht)</h4>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="age-checkbox">
+                    <label for="age-checkbox">
+                        <strong>Ich bestätige, dass ich mindestens 18 Jahre alt bin.</strong>
+                    </label>
+                </div>
+                
+                <div class="age-buttons">
+                    <button class="btn-age primary" id="btn-18plus" disabled>
+                        🔞 Weiter (18+)
+                    </button>
+                    <div class="or-divider">— oder —</div>
+                    <button class="btn-age secondary" id="btn-alcohol-free">
+                        🚫🍺 Ohne Alkohol fortfahren
+                    </button>
+                </div>
+                
+                <p class="age-subtitle">
+                    <em>Für Minderjährige und alle, die ohne Alkohol spielen möchten.</em>
+                </p>
+            </div>
+
+            <div class="responsibility-info">
+                <h4>🚨 Verantwortungsvoller Umgang</h4>
+                <ul>
+                    <li><strong>Kein Alkohol</strong> bei Teilnahme am Straßenverkehr, in Schwangerschaft/Stillzeit, bei bestimmten Medikamenten oder gesundheitlichen Gründen.</li>
+                    <li><strong>Kein Druck auf andere</strong> und <strong>kein exzessiver Konsum.</strong></li>
+                    <li><strong>Beende das Spiel</strong> bei Unwohlsein.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h4>🆘 Hilfe & Beratung</h4>
+                <p>
+                    Brauchst du Hilfe oder Beratung? 
+                    <strong>Sucht & Drogen Hotline: 01806 313031</strong> 
+                    (täglich 24/7, anonym)
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <div class="footer-links-modal">
+                    <a href="#" onclick="showImprint()" class="modal-link">📋 Impressum</a>
+                    <a href="#" onclick="showPrivacy()" class="modal-link">🔒 Datenschutz</a>
+                    <a href="#" onclick="showYouthProtection()" class="modal-link">🛡️ Jugendschutz-Infos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Background Particles -->
     <div class="background-particles">
+        <div class="particle"></div>
         <div class="particle"></div>
         <div class="particle"></div>
         <div class="particle"></div>
@@ -970,137 +102,171 @@
     </div>
 
     <!-- App Container -->
-    <div class="app-container">
-
-
-        <!-- Main Game Content -->
-        <div class="game-content">
-            <!-- Question Card -->
-            <div class="question-card fadeInUp">
-                <div class="question-category" id="question-category">
-                    🎮 Loading...
-                </div>
-                <div class="question-text" id="question-text">
-                    Lade Frage...
-                </div>
+    <div class="app-container" id="main-app">
+        <!-- Header -->
+        <header class="site-header">
+            <div class="site-logo">
+                <div class="logo-icon">🧠</div>
+                <h1 class="logo">DenkstDu</h1>
+                <p class="site-url">Das ultimative Schätzspiel</p>
             </div>
+        </header>
 
-            <!-- Current Player -->
-            <div class="current-player-card fadeInUp">
-                <div class="player-avatar" id="current-avatar">M</div>
-                <div class="player-info">
-                    <div class="player-name" id="current-player-name">Max</div>
-                    <div class="player-status">Du bist dran! <span id="player-progress">(1/4)</span></div>
-                </div>
-            </div>
-
-            <!-- Answer Section -->
-            <div class="answer-section fadeInUp" id="answer-section">
-                <div class="answer-title">🤔 Deine Antwort</div>
-                <div class="answer-buttons">
-                    <button class="answer-btn yes" onclick="selectAnswer(true)" id="yes-btn">
-                        <div class="answer-emoji">✅</div>
-                        <div>Ja, habe ich</div>
-                    </button>
-                    <button class="answer-btn no" onclick="selectAnswer(false)" id="no-btn">
-                        <div class="answer-emoji">❌</div>
-                        <div>Nein, noch nie</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Estimation Section -->
-            <div class="estimation-section fadeInUp" id="estimation-section">
-                <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <section class="hero-section">
+                <h2 class="hero-title">Das ultimative Schätzspiel</h2>
+                <p class="hero-subtitle">Für unvergessliche Abende mit Freunden</p>
                 
-                <!-- Current Selection Display -->
-                <div class="current-selection">
-                    <div class="selection-display">
-                        <div class="selection-number" id="selected-number">1</div>
-                        <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
+                <div class="game-features">
+                    <div class="feature">
+                        <span class="feature-icon">🤔</span>
+                        <span class="feature-text">Schätze, wie viele etwas gemacht haben</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon" id="drink-icon">🍻</span>
+                        <span class="feature-text" id="drink-text">Trinke, wenn du falsch liegst</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">🎉</span>
+                        <span class="feature-text">Lache über peinliche Geständnisse</span>
                     </div>
                 </div>
 
-                <!-- Number Grid -->
-                <div class="number-grid" id="number-grid">
-                    <!-- Numbers will be generated dynamically -->
+                <!-- Scroll Indicator -->
+                <div class="scroll-indicator">
+                    <div class="scroll-text">Mehr erfahren</div>
+                    <div class="scroll-arrow">⬇️</div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Submit Button -->
-            <div class="submit-section fadeInUp" id="submit-section">
-                <button class="submit-btn" onclick="submitAnswer()" id="submit-btn">
-                    📤 Antwort bestätigen
-                </button>
-            </div>
+            <!-- Game Modes -->
+            <section class="game-modes">
+                <h3 class="section-title">Wähle deinen Spielmodus</h3>
+                
+                <div class="mode-cards">
+                    <!-- Single Device Mode -->
+                    <div class="mode-card" onclick="startSingleDevice()">
+                        <div class="mode-header">
+                            <span class="mode-icon">📱</span>
+                            <h4 class="mode-title">Ein Gerät</h4>
+                        </div>
+                        <p class="mode-description">
+                            Alle Spieler nutzen ein Handy gemeinsam.<br>
+                            Perfekt für kleine Runden (2-6 Spieler).
+                        </p>
+                        <div class="mode-features">
+                            <span class="feature-badge">✅ Sofort spielbereit</span>
+                            <span class="feature-badge">✅ Offline verfügbar</span>
+                        </div>
+                        <button class="mode-btn">
+                            🎮 Einzelgerät-Spiel starten
+                        </button>
+                    </div>
 
-            <!-- Results Section -->
-            <div class="results-section" id="results-section" style="display: none;">
-                <div class="results-header">
-                    <div class="results-summary" id="results-summary"></div>
-                </div>
+                    <!-- Multiplayer Mode -->
+                    <div class="mode-card featured" onclick="startMultiplayer()">
+                        <div class="featured-badge">🔥 Beliebt</div>
+                        <div class="mode-header">
+                            <span class="mode-icon">🌐</span>
+                            <h4 class="mode-title">Online Multiplayer</h4>
+                        </div>
+                        <p class="mode-description">
+                            Jeder Spieler nutzt sein eigenes Gerät.<br>
+                            Synchrones Spielen über das Internet.
+                        </p>
+                        <div class="mode-features">
+                            <span class="feature-badge">🚀 Bis zu 8 Spieler</span>
+                            <span class="feature-badge">📱 Jeder am eigenen Handy</span>
+                        </div>
+                        <button class="mode-btn primary">
+                            🌐 Multiplayer-Spiel erstellen
+                        </button>
+                    </div>
 
-                <div class="results-grid" id="results-grid">
-                    <!-- Results will be populated dynamically -->
-                </div>
-
-                <div class="results-navigation">
-                    <button class="nav-btn primary" onclick="nextQuestion()">
-                        ➡️ Nächste Frage
-                    </button>
-                    <button class="nav-btn secondary" onclick="endGame()">
-                        🚪 Spiel beenden
-                    </button>
-                </div>
-            </div>
-
-            <!-- Final Results Section -->
-            <div class="final-results-section" id="final-results-section" style="display: none;">
-                <div class="final-header">
-                    <div class="final-title">🏆 Spiel beendet!</div>
-                    <div class="final-subtitle">Hier sind die finalen Ergebnisse</div>
-                </div>
-
-                <div class="leaderboard">
-                    <div class="leaderboard-title">🏅 Rangliste</div>
-                    <div class="leaderboard-subtitle">Sortiert nach wenigsten Schlücken</div>
-                    <div id="leaderboard-list">
-                        <!-- Leaderboard will be populated dynamically -->
+                    <!-- Join Game -->
+                    <div class="mode-card" onclick="joinGame()">
+                        <div class="mode-header">
+                            <span class="mode-icon">🔗</span>
+                            <h4 class="mode-title">Spiel beitreten</h4>
+                        </div>
+                        <p class="mode-description">
+                            Tritt einem bestehenden Spiel bei.<br>
+                            Einfach 6-stelligen Code eingeben.
+                        </p>
+                        <div class="mode-features">
+                            <span class="feature-badge">⚡ Schneller Einstieg</span>
+                            <span class="feature-badge">🎯 Mit Code beitreten</span>
+                        </div>
+                        <button class="mode-btn">
+                            🔗 Spiel beitreten
+                        </button>
                     </div>
                 </div>
+            </section>
 
-                <div class="final-navigation">
-                    <button class="nav-btn primary large" onclick="goHome()">
-                        🏠 Spiel beenden
-                    </button>
+            <!-- How It Works -->
+            <section class="how-it-works">
+                <h3 class="section-title">So funktioniert's</h3>
+                
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h5>Frage wird gestellt</h5>
+                            <p>"Hast du schon mal...?"</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h5>Alle antworten geheim</h5>
+                            <p>Ja oder Nein - keiner sieht es</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h5>Jeder schätzt</h5>
+                            <p>Wie viele haben "Ja" gesagt?</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h5>Auflösung & Belohnung</h5>
+                            <p id="step4-text">Wer falsch lag, muss trinken!</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="#" onclick="showRules()" class="footer-link">📖 Spielregeln</a>
+                    <a href="#" onclick="showPrivacy()" class="footer-link">🔒 Datenschutz</a>
+                    <a href="#" onclick="showImprint()" class="footer-link">📋 Impressum</a>
+                    <a href="#" onclick="showYouthProtection()" class="footer-link">🛡️ Jugendschutz</a>
+                </div>
+                <div class="footer-info">
+                    <p>&copy; 2024 DenkstDu - Das ultimative Schätzspiel</p>
+                    <p class="website-badge">🧠 <strong>DenkstDu</strong></p>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Player Change Popup -->
-    <div class="player-change-popup" id="player-change-popup">
-        <div class="popup-content">
-            <div class="popup-avatar" id="popup-avatar">M</div>
-            <div class="popup-name" id="popup-name">Max</div>
-            <div class="popup-message">ist dran!</div>
-        </div>
-    </div>
-
-    <!-- Exit Confirmation -->
-    <div class="exit-confirmation" id="exit-confirmation">
-        <div class="exit-content">
-            <div class="exit-title">🚪 Spiel verlassen?</div>
-            <div class="exit-message">Möchtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.</div>
-            <div class="exit-buttons">
-                <button class="exit-btn cancel" onclick="cancelExit()">Nein, weiterspielen</button>
-                <button class="exit-btn confirm" onclick="confirmExit()">Ja, beenden</button>
-            </div>
-        </div>
+        </footer>
     </div>
 
     <script>
-        // ===== GAME STATE MANAGEMENT =====
+        // Global variables
+        let ageVerified = false;
+        let alcoholMode = false;
+        let gameState = null;
+
+        // KONSISTENTE Game State Management Klasse (gleich wie in den anderen Dateien)
         class GameState {
             constructor() {
                 this.deviceMode = null;
@@ -1117,12 +283,37 @@
                 this.loadFromStorage();
             }
 
+            saveToStorage() {
+                try {
+                    const state = {
+                        deviceMode: this.deviceMode,
+                        selectedCategories: this.selectedCategories,
+                        difficulty: this.difficulty,
+                        players: this.players,
+                        gameId: this.gameId,
+                        playerName: this.playerName,
+                        isHost: this.isHost,
+                        isGuest: this.isGuest,
+                        gameState: this.gameState,
+                        timestamp: Date.now(),
+                        version: 2
+                    };
+                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                    console.log('✅ GameState saved:', state);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Could not save game state:', error);
+                    return false;
+                }
+            }
+
             loadFromStorage() {
                 try {
                     const saved = localStorage.getItem('denkstdu_game_state');
                     if (saved) {
                         const state = JSON.parse(saved);
                         if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                            // Lade nur die relevanten Properties
                             this.deviceMode = state.deviceMode || null;
                             this.selectedCategories = state.selectedCategories || [];
                             this.difficulty = state.difficulty || null;
@@ -1150,714 +341,295 @@
             clearStorage() {
                 localStorage.removeItem('denkstdu_game_state');
             }
-        }
 
-        // ===== GLOBAL VARIABLES =====
-        let gameState = null;
-        let currentGame = {
-            players: [],
-            allQuestions: [],
-            usedQuestions: [],
-            currentQuestionNumber: 1,
-            currentPlayerIndex: 0,
-            currentAnswers: {},
-            currentEstimates: {},
-            gameHistory: []
-        };
-
-        // Questions Database
-        const questionsDatabase = {
-            fsk0: [
-                "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
-                "Ich habe schon mal... Pizza zum Frühstück gegessen", 
-                "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen",
-                "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht",
-                "Ich habe schon mal... beim Kochen das Essen anbrennen lassen",
-                "Ich habe schon mal... mein Handy in die Toilette fallen lassen",
-                "Ich habe schon mal... ein Lied komplett falsch mitgesungen",
-                "Ich habe schon mal... heimlich Süßigkeiten vor dem Abendessen gegessen",
-                "Ich habe schon mal... so getan, als würde ich schlafen",
-                "Ich habe schon mal... einen Film dreimal hintereinander geschaut",
-                "Ich habe schon mal... vergessen, wie ich nach Hause komme",
-                "Ich habe schon mal... ein Tier im Haus versteckt",
-                "Ich habe schon mal... aus Versehen Salz statt Zucker verwendet",
-                "Ich habe schon mal... eine ganze Nacht durchgespielt",
-                "Ich habe schon mal... beim Singen unter der Dusche gestört",
-                "Ich habe schon mal... Essen vom Boden aufgehoben und gegessen",
-                "Ich habe schon mal... ein Gespräch mit mir selbst geführt",
-                "Ich habe schon mal... vergessen, dass ich etwas im Ofen hatte",
-                "Ich habe schon mal... einen Tag lang nichts gesagt",
-                "Ich habe schon mal... versucht, mit Tieren zu sprechen"
-            ],
-            fsk16: [
-                "Ich habe schon mal... so getan, als wäre ich krank, um nicht zur Schule zu müssen",
-                "Ich habe schon mal... bis 3 Uhr morgens Netflix geschaut",
-                "Ich habe schon mal... ein Lied so laut gesungen, dass die Nachbarn sich beschwert haben",
-                "Ich habe schon mal... vergessen, wo ich mein Auto geparkt habe",
-                "Ich habe schon mal... bei einer Prüfung geschummelt",
-                "Ich habe schon mal... heimlich das Tagebuch von jemand anderem gelesen",
-                "Ich habe schon mal... gelogen, um aus einer Verabredung herauszukommen",
-                "Ich habe schon mal... mich richtig betrunken",
-                "Ich habe schon mal... eine ganze Nacht durchgemacht",
-                "Ich habe schon mal... heimlich geraucht",
-                "Ich habe schon mal... ein Date versetzt",
-                "Ich habe schon mal... aus dem Fenster geklettert",
-                "Ich habe schon mal... einen Rausch vorgetäuscht",
-                "Ich habe schon mal... bei einem Spiel betrogen",
-                "Ich habe schon mal... Geld geklaut",
-                "Ich habe schon mal... jemanden angelogen, um besser dazustehen",
-                "Ich habe schon mal... eine Notlüge erzählt, die völlig eskaliert ist",
-                "Ich habe schon mal... heimlich jemanden geküsst",
-                "Ich habe schon mal... mich vor der Polizei versteckt",
-                "Ich habe schon mal... etwas Illegales getan"
-            ],
-            fsk18: [
-                "Ich habe schon mal... an einem öffentlichen Ort Sex gehabt",
-                "Ich habe schon mal... eine Affäre gehabt",
-                "Ich habe schon mal... in einer Beziehung betrogen",
-                "Ich habe schon mal... einen Amateur-Porno gedreht",
-                "Ich habe schon mal... einen Porno mit mehreren Personen zusammen angesehen",
-                "Ich habe schon mal... Sex gehabt und es danach bereut",
-                "Ich habe schon mal... Analsex gehabt",
-                "Ich habe schon mal... einen Dreier gehabt",
-                "Ich habe schon mal... mich vor Oralsex geekelt",
-                "Ich habe schon mal... einen Blowjob gegeben",
-                "Ich habe schon mal... einen Blowjob bekommen",
-                "Ich habe schon mal... beim Sex gelacht",
-                "Ich habe schon mal... einen Orgasmus gefaked",
-                "Ich habe schon mal... für jemanden gestrippt",
-                "Ich habe schon mal... für Sex bezahlt",
-                "Ich habe schon mal... jemanden beim Sex verletzt",
-                "Ich habe schon mal... Sex gehabt und dabei an jemand anderen gedacht",
-                "Ich habe schon mal... mit einer verheirateten Person geschlafen",
-                "Ich habe schon mal... Sex am Arbeitsplatz gehabt",
-                "Ich habe schon mal... beim ersten Date Sex gehabt"
-            ]
-        };
-
-        let isExitDialogShown = false;
-
-        // ===== PAGE LEAVE PROTECTION =====
-        window.addEventListener('beforeunload', function(e) {
-            if (!isExitDialogShown) {
-                e.preventDefault();
-                e.returnValue = 'Möchtest du das Spiel wirklich verlassen? Der Fortschritt geht verloren.';
-                return e.returnValue;
+            setSelectedCategories(categories) {
+                this.selectedCategories = [...categories];
+                this.saveToStorage();
+                console.log('Categories set to:', categories);
             }
-        });
 
-        // Handle back button and manual navigation
-        window.addEventListener('popstate', function(e) {
-            e.preventDefault();
-            showExitConfirmation();
-            history.pushState(null, null, window.location.pathname);
-        });
-
-        // Push initial state to enable back button interception
-        history.pushState(null, null, window.location.pathname);
-
-        function showExitConfirmation() {
-            const exitDialog = document.getElementById('exit-confirmation');
-            exitDialog.classList.add('show');
-        }
-
-        function cancelExit() {
-            const exitDialog = document.getElementById('exit-confirmation');
-            exitDialog.classList.remove('show');
-        }
-
-        function confirmExit() {
-            isExitDialogShown = true;
-            localStorage.removeItem('denkstdu_game_state');
-            window.location.href = 'index.html';
-        }
-
-        // ===== DEBUG / EMERGENCY EXIT =====
-        function emergencyExit() {
-            localStorage.clear(); // Lösche alles
-            window.location.href = 'index.html';
-        }
-
-        // Emergency exit mit Tastenkombination
-        window.addEventListener('keydown', function(e) {
-            // Ctrl+Alt+E = Emergency Exit
-            if (e.ctrlKey && e.altKey && e.key === 'e') {
-                emergencyExit();
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+                this.saveToStorage();
+                console.log('Difficulty set to:', difficulty);
             }
-        });
 
-        // ===== INITIALIZATION =====
+            setPlayers(players) {
+                this.players = [...players];
+                this.saveToStorage();
+                console.log('Players set to:', players);
+            }
+
+            setDeviceMode(mode) {
+                this.deviceMode = mode;
+                this.saveToStorage();
+                console.log('Device mode set to:', mode);
+            }
+        }
+
+        // Check for existing age verification
         document.addEventListener('DOMContentLoaded', function() {
-            initializeGame();
-        });
-
-        function initializeGame() {
-            console.log('🎮 Initializing endless single device gameplay...');
+            console.log('🧠 DenkstDu Landing Page loaded');
             
-            // Load game state
+            // Initialize GameState
             gameState = new GameState();
             
-            // Validate game state
-            if (!gameState.players || gameState.players.length < 2) {
-                showNotification('Keine Spieler gefunden!', 'error');
-                setTimeout(() => window.location.href = 'player-setup.html', 2000);
-                return;
-            }
-
-            if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-                showNotification('Keine Kategorien ausgewählt!', 'error');
-                setTimeout(() => window.location.href = 'category-selection.html', 2000);
-                return;
-            }
-
-            if (!gameState.difficulty) {
-                showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
-                setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
-                return;
-            }
-
-            // Setup game
-            currentGame.players = [...gameState.players];
-            generateAllQuestions();
-            
-            // Initialize UI
-            updateGameDisplay();
-            createNumberGrid();
-            
-            // Start first question
-            startNewQuestion();
-            
-            console.log('✅ Endless game initialized:', {
-                players: currentGame.players,
-                categories: gameState.selectedCategories,
-                difficulty: gameState.difficulty,
-                totalQuestions: currentGame.allQuestions.length
-            });
-        }
-
-        function generateAllQuestions() {
-            currentGame.allQuestions = [];
-            
-            gameState.selectedCategories.forEach(category => {
-                if (questionsDatabase[category]) {
-                    questionsDatabase[category].forEach(q => {
-                        currentGame.allQuestions.push({
-                            text: q,
-                            category: category
-                        });
-                    });
-                }
-            });
-            
-            // Shuffle questions
-            currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
-        }
-
-        function getNextQuestion() {
-            // If we've used all questions, reshuffle and start over
-            if (currentGame.usedQuestions.length >= currentGame.allQuestions.length) {
-                currentGame.usedQuestions = [];
-                currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
-                showNotification('Alle Fragen gespielt! Mische neu...', 'success');
-            }
-
-            // Find a question we haven't used yet
-            for (let question of currentGame.allQuestions) {
-                if (!currentGame.usedQuestions.includes(question.text)) {
-                    currentGame.usedQuestions.push(question.text);
-                    return question;
+            const savedVerification = localStorage.getItem('denkstdu_age_verification');
+            if (savedVerification) {
+                const verification = JSON.parse(savedVerification);
+                const now = Date.now();
+                const oneDay = 24 * 60 * 60 * 1000;
+                
+                // Check if verification is still valid (24 hours)
+                if (now - verification.timestamp < oneDay) {
+                    ageVerified = verification.ageVerified;
+                    alcoholMode = verification.alcoholMode;
+                    
+                    updateUIForVerification();
+                    hideAgeModal();
+                    animateCards();
+                    return;
                 }
             }
+            
+            // Show age modal
+            showAgeModal();
+        });
 
-            // Fallback (shouldn't happen)
-            return currentGame.allQuestions[0];
+        // Age verification functions
+        function showAgeModal() {
+            document.getElementById('age-modal').style.display = 'flex';
+            document.getElementById('main-app').style.filter = 'blur(5px)';
+            document.getElementById('main-app').style.pointerEvents = 'none';
         }
 
-        function shuffleArray(array) {
-            const shuffled = [...array];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            return shuffled;
+        function hideAgeModal() {
+            document.getElementById('age-modal').style.display = 'none';
+            document.getElementById('main-app').style.filter = 'none';
+            document.getElementById('main-app').style.pointerEvents = 'auto';
         }
 
-        // ===== GAME FLOW =====
-        function updateGameDisplay() {
-            document.getElementById('total-players').textContent = currentGame.players.length;
-            
-            // Update current player
-            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-            document.getElementById('current-player-name').textContent = currentPlayerName;
-            document.getElementById('current-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
-            document.getElementById('player-progress').textContent = 
-                `(${currentGame.currentPlayerIndex + 1}/${currentGame.players.length})`;
-        }
-
-        function startNewQuestion() {
-            console.log(`🎲 Starting question ${currentGame.currentQuestionNumber}`);
-            
-            // Reset for new question
-            currentGame.currentPlayerIndex = 0;
-            currentGame.currentAnswers = {};
-            currentGame.currentEstimates = {};
-            
-            // Load next question
-            const question = getNextQuestion();
-            loadQuestion(question);
-            
-            // Reset UI
-            resetPlayerUI();
-            updateGameDisplay();
-            
-            // Show game view
-            showGameView();
-        }
-
-        // ===== NAVIGATION =====
-        function nextQuestion() {
-            currentGame.currentQuestionNumber++;
-            startNewQuestion();
-            showNotification('Neue Frage geladen! 🎮', 'success');
-        }
-
-        function endGame() {
-            showFinalResults();
-        }
-
-        function goHome() {
-            showExitConfirmation();
-        }
-
-        // ===== FINAL RESULTS =====
-        function showFinalResults() {
-            console.log('🏆 Calculating final results...');
-            
-            // Calculate player statistics
-            const playerStats = calculatePlayerStatistics();
-            
-            // Sort by fewest sips (best to worst)
-            const finalRankings = playerStats.sort((a, b) => a.totalSips - b.totalSips);
-            
-            // Display final results
-            displayFinalResults(finalRankings);
-            
-            // Switch to final results view
-            showFinalResultsView();
-        }
-
-        function calculatePlayerStatistics() {
-            const playerStats = {};
-            
-            // Initialize stats for each player
-            currentGame.players.forEach(player => {
-                playerStats[player] = {
-                    playerName: player,
-                    totalSips: 0,
-                    correctGuesses: 0,
-                    totalGuesses: 0,
-                    accuracy: 0
-                };
-            });
-
-            // Calculate stats from game history
-            currentGame.gameHistory.forEach(round => {
-                round.results.forEach(result => {
-                    const stats = playerStats[result.playerName];
-                    if (stats) {
-                        stats.totalSips += result.sips;
-                        stats.totalGuesses++;
-                        if (result.isCorrect) {
-                            stats.correctGuesses++;
-                        }
-                    }
-                });
-            });
-
-            // Calculate accuracy percentage
-            Object.values(playerStats).forEach(stats => {
-                stats.accuracy = stats.totalGuesses > 0 ? 
-                    Math.round((stats.correctGuesses / stats.totalGuesses) * 100) : 0;
-            });
-
-            return Object.values(playerStats);
-        }
-
-        function displayFinalResults(finalRankings) {
-            // Build leaderboard
-            const leaderboardList = document.getElementById('leaderboard-list');
-            leaderboardList.innerHTML = '';
-            
-            finalRankings.forEach((player, index) => {
-                const leaderboardItem = document.createElement('div');
-                leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
-                
-                const rankClass = index === 0 ? 'rank-1' : 
-                                 index === 1 ? 'rank-2' : 
-                                 index === 2 ? 'rank-3' : 'rank-other';
-                
-                const rankText = index + 1;
-                const avatar = player.playerName.charAt(0).toUpperCase();
-                
-                leaderboardItem.innerHTML = `
-                    <div class="rank-number ${rankClass}">${rankText}</div>
-                    <div class="result-avatar">${avatar}</div>
-                    <div class="player-final-stats">
-                        <div class="player-final-name">${player.playerName}</div>
-                        <div class="player-final-details">
-                            <div class="detail-item">
-                                <span class="detail-icon">🍺</span>
-                                <span>${player.totalSips} Schlücke</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-icon">🎯</span>
-                                <span>${player.accuracy}% richtig</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                leaderboardList.appendChild(leaderboardItem);
-            });
-
-            showNotification(
-                `🏆 ${finalRankings[0].playerName} hat gewonnen!`, 
-                'success', 
-                3000
-            );
-        }
-
-        function showFinalResultsView() {
-            // Hide all other sections
-            const questionCard = document.querySelector('.question-card');
-            const answerSection = document.getElementById('answer-section');
-            const estimationSection = document.getElementById('estimation-section');
-            const submitSection = document.getElementById('submit-section');
-            const currentPlayerCard = document.querySelector('.current-player-card');
-            const resultsSection = document.getElementById('results-section');
-            
-            if (questionCard) questionCard.style.display = 'none';
-            if (answerSection) answerSection.style.display = 'none';
-            if (estimationSection) estimationSection.style.display = 'none';
-            if (submitSection) submitSection.style.display = 'none';
-            if (currentPlayerCard) currentPlayerCard.style.display = 'none';
-            if (resultsSection) resultsSection.style.display = 'none';
-            
-            // Show final results
-            const finalResultsSection = document.getElementById('final-results-section');
-            if (finalResultsSection) {
-                finalResultsSection.style.display = 'flex';
-            }
-        }
-
-        function loadQuestion(question) {
-            const categoryNames = {
-                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
-                'fsk16': '🎉 Party Time',
-                'fsk18': '🔥 Heiß & Gewagt'
+        function saveVerification(isAdult, allowAlcohol) {
+            const verification = {
+                ageVerified: isAdult,
+                alcoholMode: allowAlcohol,
+                timestamp: Date.now()
             };
+            localStorage.setItem('denkstdu_age_verification', JSON.stringify(verification));
             
-            document.getElementById('question-text').textContent = question.text;
-            document.getElementById('question-category').textContent = categoryNames[question.category] || '🎮 Spiel';
+            ageVerified = isAdult;
+            alcoholMode = allowAlcohol;
         }
 
-        function resetPlayerUI() {
-            // Reset answer buttons
-            document.querySelectorAll('.answer-btn').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            
-            // Reset number selection
-            updateSelectedNumber(Math.floor(currentGame.players.length / 2));
-            updateNumberSelection();
-            updateSubmitButton();
-        }
-
-        // ===== UI CONTROLS =====
-        function createNumberGrid() {
-            const numberGrid = document.getElementById('number-grid');
-            numberGrid.innerHTML = '';
-
-            for (let i = 0; i <= currentGame.players.length; i++) {
-                const numberBtn = document.createElement('button');
-                numberBtn.className = 'number-btn';
-                numberBtn.textContent = i;
-                numberBtn.onclick = () => selectNumber(i);
-                numberBtn.id = `number-btn-${i}`;
-                
-                numberGrid.appendChild(numberBtn);
+        function updateUIForVerification() {
+            if (!alcoholMode) {
+                // Update UI for alcohol-free mode
+                document.getElementById('drink-icon').textContent = '🎯';
+                document.getElementById('drink-text').textContent = 'Sammle Punkte bei falschen Schätzungen';
+                document.getElementById('step4-text').textContent = 'Wer falsch lag, bekommt Punkte!';
             }
-            
-            updateNumberSelection();
         }
 
-        function selectNumber(number) {
-            if (number >= 0 && number <= currentGame.players.length) {
-                currentEstimation = number;
-                updateSelectedNumber(number);
-                updateNumberSelection();
-                updateSubmitButton();
+        // Age checkbox handling
+        document.addEventListener('change', function(e) {
+            if (e.target.id === 'age-checkbox') {
+                const btn18Plus = document.getElementById('btn-18plus');
+                btn18Plus.disabled = !e.target.checked;
                 
-                if (navigator.vibrate) {
-                    navigator.vibrate(50);
+                if (e.target.checked) {
+                    btn18Plus.classList.add('enabled');
+                } else {
+                    btn18Plus.classList.remove('enabled');
                 }
             }
-        }
+        });
 
-        function updateSelectedNumber(number) {
-            document.getElementById('selected-number').textContent = number;
-            
-            const selectionDisplay = document.querySelector('.selection-display');
-            selectionDisplay.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                selectionDisplay.style.transform = 'scale(1)';
-            }, 200);
-        }
-
-        function updateNumberSelection() {
-            document.querySelectorAll('.number-btn').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            
-            const selectedBtn = document.getElementById(`number-btn-${currentEstimation}`);
-            if (selectedBtn) {
-                selectedBtn.classList.add('selected');
+        // Age verification buttons
+        document.getElementById('btn-18plus').addEventListener('click', function() {
+            if (document.getElementById('age-checkbox').checked) {
+                saveVerification(true, true);
+                updateUIForVerification();
+                hideAgeModal();
+                animateCards();
+                showNotification('Spiel mit allen Inhalten verfügbar', 'success');
             }
-        }
+        });
 
-        function selectAnswer(answer) {
-            currentAnswer = answer;
-            
-            document.querySelectorAll('.answer-btn').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            
-            const selectedBtn = answer ? document.getElementById('yes-btn') : document.getElementById('no-btn');
-            selectedBtn.classList.add('selected');
-            
-            updateSubmitButton();
-        }
+        document.getElementById('btn-alcohol-free').addEventListener('click', function() {
+            saveVerification(false, false);
+            updateUIForVerification();
+            hideAgeModal();
+            animateCards();
+            showNotification('Alkoholfreie Version aktiviert', 'success');
+        });
 
-        function updateSubmitButton() {
-            const submitBtn = document.getElementById('submit-btn');
-            if (currentAnswer !== null) {
-                submitBtn.classList.add('enabled');
-                submitBtn.disabled = false;
-            } else {
-                submitBtn.classList.remove('enabled');
-                submitBtn.disabled = true;
-            }
-        }
-
-        // ===== GAME ACTIONS =====
-        let currentAnswer = null;
-        let currentEstimation = 1;
-
-        function submitAnswer() {
-            if (currentAnswer === null) {
-                showNotification('Bitte wähle eine Antwort aus!', 'warning');
+        // Game mode functions
+        function startSingleDevice() {
+            if (!ageVerified) {
+                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
                 return;
             }
-
-            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
             
-            // Save answers
-            currentGame.currentAnswers[currentPlayerName] = currentAnswer;
-            currentGame.currentEstimates[currentPlayerName] = currentEstimation;
+            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
+            gameState.setDeviceMode('single');
             
-            console.log(`📤 ${currentPlayerName} answered:`, {
-                answer: currentAnswer,
-                estimation: currentEstimation
-            });
-
-            // Move to next player or show results
-            if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
-                currentGame.currentPlayerIndex++;
-                currentAnswer = null;
-                currentEstimation = Math.floor(currentGame.players.length / 2);
-                resetPlayerUI();
-                updateGameDisplay();
-                
-                // Show player change popup
-                showPlayerChangePopup();
-            } else {
-                // All players answered, show quick results
-                showQuickResults();
-            }
+            // Store alcohol mode separately for reference
+            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
+            
+            console.log('🎮 Starting single device mode');
+            window.location.href = 'category-selection.html';
         }
 
-        // ===== PLAYER CHANGE POPUP =====
-        function showPlayerChangePopup() {
-            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-            
-            document.getElementById('popup-name').textContent = currentPlayerName;
-            document.getElementById('popup-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
-            
-            const popup = document.getElementById('player-change-popup');
-            popup.classList.add('show');
-            
-            if (navigator.vibrate) {
-                navigator.vibrate([100, 50, 100]);
-            }
-            
-            setTimeout(() => {
-                popup.classList.remove('show');
-            }, 2000);
-        }
-
-        // ===== RESULTS =====
-        function showResults() {
-            console.log('📊 Calculating results...');
-            
-            // Calculate actual yes count
-            const actualYesCount = Object.values(currentGame.currentAnswers).filter(answer => answer === true).length;
-            
-            // Calculate results for each player
-            const results = currentGame.players.map(playerName => {
-                const answer = currentGame.currentAnswers[playerName];
-                const estimation = currentGame.currentEstimates[playerName];
-                const difference = Math.abs(estimation - actualYesCount);
-                const isCorrect = difference === 0;
-                
-                // Calculate sips based on difficulty
-                let sips = 0;
-                if (!isCorrect) {
-                    const baseSips = getDifficultyMultiplier();
-                    sips = baseSips + difference;
-                }
-                
-                return {
-                    playerName: playerName,
-                    answer: answer,
-                    estimation: estimation,
-                    difference: difference,
-                    isCorrect: isCorrect,
-                    sips: sips
-                };
-            });
-            
-            // Save to game history
-            currentGame.gameHistory.push({
-                questionNumber: currentGame.currentQuestionNumber,
-                actualYesCount: actualYesCount,
-                results: results
-            });
-            
-            // Display results
-            displayResults(results, actualYesCount);
-            
-            // Switch to results view
-            showResultsView();
-        }
-
-        function showResultsView() {
-            // Hide game elements
-            document.getElementById('answer-section').style.display = 'none';
-            document.getElementById('estimation-section').style.display = 'none';
-            document.getElementById('submit-section').style.display = 'none';
-            document.querySelector('.current-player-card').style.display = 'none';
-            
-            // Show results
-            document.getElementById('results-section').style.display = 'flex';
-            
-            showNotification('Ergebnisse werden angezeigt...', 'success', 2000);
-        }
-
-        function showGameView() {
-            // Show game elements
-            document.getElementById('answer-section').style.display = 'block';
-            document.getElementById('estimation-section').style.display = 'flex';
-            document.getElementById('submit-section').style.display = 'block';
-            document.querySelector('.current-player-card').style.display = 'flex';
-            
-            // Hide results
-            document.getElementById('results-section').style.display = 'none';
-        }
-
-        function getDifficultyMultiplier() {
-            switch (gameState.difficulty) {
-                case 'easy': return 1;
-                case 'hard': return 3;
-                default: return 2; // medium
-            }
-        }
-
-        function displayResults(results, actualYesCount) {
-            // Update summary
-            document.getElementById('results-summary').textContent = 
-                `${actualYesCount} von ${currentGame.players.length} Spielern haben "Ja" geantwortet`;
-
-            // Sort results: first correct guesses, then by fewest sips
-            const sortedResults = results.sort((a, b) => {
-                // First sort by correctness (correct first)
-                if (a.isCorrect && !b.isCorrect) return -1;
-                if (!a.isCorrect && b.isCorrect) return 1;
-                // If both correct or both wrong, sort by sips (fewer first)
-                return a.sips - b.sips;
-            });
-
-            // Display individual results
-            const resultsGrid = document.getElementById('results-grid');
-            resultsGrid.innerHTML = '';
-
-            sortedResults.forEach(result => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'result-item';
-                
-                const avatar = result.playerName.charAt(0).toUpperCase();
-                const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
-                const sipsClass = result.sips === 0 ? 'none' : '';
-
-                resultItem.innerHTML = `
-                    <div class="player-result">
-                        <div class="result-avatar">${avatar}</div>
-                        <div class="player-result-info">
-                            <div class="player-result-name">${result.playerName}</div>
-                            <div class="player-answer">Tipp: ${result.estimation}</div>
-                        </div>
-                    </div>
-                    <div class="sips-penalty ${sipsClass}">${sipsText}</div>
-                `;
-
-                resultsGrid.appendChild(resultItem);
-            });
-        }
-
-        function submitAnswer() {
-            if (currentAnswer === null) {
-                showNotification('Bitte wähle eine Antwort aus!', 'warning');
+        function startMultiplayer() {
+            if (!ageVerified) {
+                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
                 return;
             }
-
-            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
             
-            // Save answers
-            currentGame.currentAnswers[currentPlayerName] = currentAnswer;
-            currentGame.currentEstimates[currentPlayerName] = currentEstimation;
+            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
+            gameState.setDeviceMode('multi');
             
-            console.log(`📤 ${currentPlayerName} answered:`, {
-                answer: currentAnswer,
-                estimation: currentEstimation
-            });
-
-            // Move to next player or show results
-            if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
-                currentGame.currentPlayerIndex++;
-                currentAnswer = null;
-                currentEstimation = Math.floor(currentGame.players.length / 2);
-                resetPlayerUI();
-                updateGameDisplay();
-                
-                // Show player change popup
-                showPlayerChangePopup();
-            } else {
-                // All players answered, show results
-                showResults();
-            }
+            // Store alcohol mode separately for reference
+            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
+            
+            console.log('🌐 Starting multiplayer mode');
+            window.location.href = 'multiplayer-category-selection.html';
         }
 
-        // ===== UTILITY FUNCTIONS =====
-        function showNotification(message, type = 'info', duration = 3000) {
+        function joinGame() {
+            if (!ageVerified) {
+                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+                return;
+            }
+            
+            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
+            gameState.setDeviceMode('multi');
+            
+            // Store alcohol mode separately for reference
+            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
+            
+            console.log('🔗 Joining multiplayer game');
+            window.location.href = 'join-game.html';
+        }
+
+        // Information functions
+        function showRules() {
+            alert(`📖 Spielregeln - DenkstDu
+
+🎯 Ziel: Schätze, wie viele Spieler etwas schon mal gemacht haben!
+
+🔄 Spielablauf:
+1️⃣ Frage wird gestellt (z.B. "Hast du schon mal nackt gebadet?")
+2️⃣ Alle antworten geheim mit Ja/Nein
+3️⃣ Alle schätzen: Wie viele haben "Ja" gesagt?
+4️⃣ Auflösung: Wer falsch lag, ${alcoholMode ? 'trinkt' : 'bekommt Punkte'}!
+
+${alcoholMode ? `🍺 Schlücke-Regeln:
+• Richtig geschätzt = 0 Schlücke 🎯
+• 1 daneben = Basis + 1 Schluck 📏
+• 2+ daneben = Basis + mehr Schlücke 📐` : `🎯 Punkte-System:
+• Richtig geschätzt = 0 Punkte 🎯
+• 1 daneben = 1 Punkt 📏
+• 2+ daneben = mehr Punkte 📐`}
+
+🎮 Modi:
+• Ein Gerät: Alle teilen sich ein Handy
+• Multiplayer: Jeder hat sein eigenes Gerät
+
+Viel Spaß! 🎉`);
+        }
+
+        function showPrivacy() {
+            alert(`🔒 Datenschutz - DenkstDu
+
+📍 Was wir sammeln:
+• Spielernamen (nur während des Spiels)
+• Spieleinstellungen (lokal im Browser)
+• Altersverifikation (lokal gespeichert)
+• Grundlegende Nutzungsstatistiken
+
+🛡️ Was wir NICHT tun:
+• Keine Werbung oder Tracking
+• Keine Datenverkäufe
+• Keine dauerhaften Profile
+
+⏰ Datenlöschung:
+• Spieldaten werden nach 24h automatisch gelöscht
+• Lokale Daten nur in deinem Browser
+• Komplette Löschung jederzeit möglich
+
+🌐 Server: Europa (DSGVO-konform)
+
+Fragen? kontakt@denkstdu.app`);
+        }
+
+        function showImprint() {
+            alert(`📋 Impressum - DenkstDu
+
+👤 Verantwortlich:
+DenkstDu Team
+Deutschland
+
+📧 Kontakt:
+E-Mail: kontakt@denkstdu.app
+Website: denkstdu.app
+
+⚖️ Rechtliches:
+Privates Projekt, alle Rechte vorbehalten.
+
+🛠️ Technologie:
+DSGVO-konform, Server in Europa`);
+        }
+
+        function showYouthProtection() {
+            alert(`🛡️ Jugendschutz-Informationen - DenkstDu
+
+⚖️ Rechtliche Grundlagen:
+• Jugendschutzgesetz (JuSchG) § 9 - Schutz vor Alkoholabgabe
+• Jugendmedienschutz-Staatsvertrag (JMStV)
+• Werberichtlinien des Deutschen Werberats
+
+🔞 Altersverifikation:
+• Obligatorische Bestätigung für alkoholbezogene Inhalte
+• Separate alkoholfreie Spielvariante verfügbar
+• Keine Ansprache von Minderjährigen für Alkoholkonsum
+
+🛡️ Schutzmaßnahmen:
+• Klare Kennzeichnung altersbeschränkter Inhalte
+• Verantwortungsvolle Darstellung von Alkoholkonsum
+• Kein Verkauf oder Ausschank von Alkohol
+• Hinweise auf Beratungsstellen
+
+📞 Hilfe & Beratung:
+• Sucht & Drogen Hotline: 01806 313031
+• Bundeszentrale für gesundheitliche Aufklärung
+• Örtliche Beratungsstellen
+
+🌐 Weitere Informationen:
+• kjm-online.de (Kommission für Jugendmedienschutz)
+• gesetze-im-internet.de (Jugendschutzgesetz)
+• bvlh.net (Bundesverband Liberaler Hilfen)`);
+        }
+
+        // Animation function
+        function animateCards() {
+            setTimeout(() => {
+                document.querySelectorAll('.mode-card').forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(30px)';
+                        card.style.transition = 'all 0.6s ease';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 100);
+                    }, index * 200);
+                });
+            }, 500);
+        }
+
+        // Notification function
+        function showNotification(message, type = 'info') {
             // Remove existing notifications
             document.querySelectorAll('.toast-notification').forEach(n => n.remove());
             
@@ -1875,7 +647,7 @@
             // Animate in
             setTimeout(() => notification.classList.add('show'), 100);
             
-            // Remove after duration
+            // Remove after 3 seconds
             setTimeout(() => {
                 notification.classList.remove('show');
                 setTimeout(() => {
@@ -1883,56 +655,781 @@
                         document.body.removeChild(notification);
                     }
                 }, 300);
-            }, duration);
+            }, 3000);
         }
 
-        // ===== DEBUG FUNCTIONS =====
-        window.debugGame = function() {
-            console.log('🔍 Game Debug Info:');
-            console.log('GameState:', gameState);
-            console.log('Current Game:', currentGame);
-        };
+        // Handle URL parameters for direct game joining
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get('gameId');
+        if (gameId) {
+            // Wait for age verification, then redirect
+            const checkVerification = setInterval(() => {
+                if (ageVerified) {
+                    clearInterval(checkVerification);
+                    window.location.href = `join-game.html?gameId=${gameId}`;
+                }
+            }, 100);
+        }
 
-        window.showGameStats = function() {
-            const totalQuestions = currentGame.gameHistory.length;
-            const totalPlayers = currentGame.players.length;
-            
-            console.log(`📊 Game Stats:`);
-            console.log(`Questions played: ${totalQuestions}`);
-            console.log(`Players: ${totalPlayers}`);
-            console.log(`Questions available: ${currentGame.allQuestions.length}`);
-            console.log(`Questions used: ${currentGame.usedQuestions.length}`);
-            
-            // Player stats
-            const playerStats = {};
-            currentGame.players.forEach(player => {
-                playerStats[player] = {
-                    totalSips: 0,
-                    correctGuesses: 0,
-                    totalGuesses: 0
-                };
-            });
-
-            currentGame.gameHistory.forEach(round => {
-                round.results.forEach(result => {
-                    const stats = playerStats[result.playerName];
-                    if (stats) {
-                        stats.totalSips += result.sips;
-                        stats.totalGuesses++;
-                        if (result.isCorrect) {
-                            stats.correctGuesses++;
-                        }
-                    }
+        // Smooth scrolling for scroll indicator
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.scroll-indicator')) {
+                document.querySelector('.game-modes').scrollIntoView({
+                    behavior: 'smooth'
                 });
-            });
-
-            console.log('Player Stats:', playerStats);
-        };
-
-        console.log('✅ Endless Single Device Gameplay loaded');
-        console.log('🎮 Debug Commands:');
-        console.log('- debugGame() - Show debug info');
-        console.log('- showGameStats() - Show game statistics');
+            }
+        });
     </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Age Modal Styles */
+        .age-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        }
+
+.age-modal-content {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .age-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .age-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .age-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .age-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .age-warning h3 {
+            color: #ffc107;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .age-warning p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .legal-note {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .age-verification {
+            margin-bottom: 25px;
+        }
+
+        .age-verification h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-container label {
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .age-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-age {
+            width: 100%;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .btn-age.primary {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            opacity: 0.5;
+        }
+
+        .btn-age.primary.enabled {
+            opacity: 1;
+        }
+
+        .btn-age.primary.enabled:hover {
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-age.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .btn-age.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .or-divider {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 10px 0;
+        }
+
+        .age-subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 10px;
+        }
+
+        .responsibility-info,
+        .help-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .responsibility-info h4,
+        .help-section h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .responsibility-info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .responsibility-info li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .responsibility-info li:last-child {
+            border-bottom: none;
+        }
+
+        .help-section p {
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        .footer-links-modal {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .modal-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .modal-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Background Particles */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 80px; height: 80px; left: 80%; animation-delay: 2s; }
+        .particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 4s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 70%; animation-delay: 6s; }
+        .particle:nth-child(5) { width: 50px; height: 50px; left: 50%; animation-delay: 8s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-30px) rotate(180deg); opacity: 0.6; }
+        }
+
+        /* Container */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .site-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .site-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+        }
+
+        .site-logo .logo {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 800;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+        }
+
+        .site-url {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            margin-bottom: 60px;
+            min-height: 50vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero-title {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+
+        .game-features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+        }
+
+        .feature-text {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            margin-top: 40px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .scroll-indicator:hover {
+            opacity: 1;
+            transform: translateY(-2px);
+        }
+
+        .scroll-text {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .scroll-arrow {
+            font-size: 1.5rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        /* Sections */
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        /* Game Modes */
+        .game-modes {
+            margin-bottom: 80px;
+        }
+
+        .mode-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .mode-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(25px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border-color: rgba(79, 172, 254, 0.5);
+        }
+
+        .mode-card.featured {
+            border: 2px solid #4facfe;
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.3);
+        }
+
+        .featured-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .mode-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .mode-icon {
+            font-size: 2.5rem;
+        }
+
+        .mode-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+        }
+
+        .mode-description {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .mode-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .feature-badge {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: #4CAF50;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .mode-btn {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .mode-btn.primary {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            border-color: #4facfe;
+        }
+
+        .mode-btn.primary:hover {
+            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* How It Works */
+        .how-it-works {
+            margin-bottom: 60px;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .step-content h5 {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .step-content p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Footer */
+        .site-footer {
+            margin-top: auto;
+            padding-top: 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .footer-content {
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .footer-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .website-badge {
+            color: #4facfe;
+            font-weight: 600;
+        }
+
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 350px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-notification.success {
+            border-color: rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
+        }
+
+        .toast-notification.warning {
+            border-color: rgba(255, 152, 0, 0.5);
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
+        }
+
+        .toast-notification.error {
+            border-color: rgba(244, 67, 54, 0.5);
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-message {
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+            }
+
+            .age-modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .age-buttons {
+                gap: 10px;
+            }
+
+            .footer-links-modal {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .game-features {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .mode-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .steps {
+                grid-template-columns: 1fr;
+            }
+
+            .step {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .hero-section {
+                min-height: 40vh;
+            }
+        }
+
+        /* Accessibility */
+        .mode-card:focus,
+        .mode-btn:focus,
+        .footer-link:focus,
+        .btn-age:focus {
+            outline: 2px solid #4facfe;
+            outline-offset: 2px;
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            
+            .scroll-arrow {
+                animation: none;
+            }
+        }
+    </style>
 </body>
 </html>
