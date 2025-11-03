@@ -453,34 +453,22 @@
         }
 
         .results-header {
-            background: rgba(255, 255, 255, 0.12);
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            border: 2px solid rgba(76, 175, 80, 0.5);
             backdrop-filter: blur(30px);
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 15px;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
             flex-shrink: 0;
         }
 
-        .results-title {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
         .results-summary {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
-            border: 1px solid rgba(76, 175, 80, 0.5);
-            border-radius: 15px;
-            padding: 12px;
-            margin-top: 10px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .results-grid {
@@ -875,7 +863,6 @@
             <!-- Results Section -->
             <div class="results-section" id="results-section" style="display: none;">
                 <div class="results-header">
-                    <div class="results-title">📊 Ergenis der letzten Frage</div>
                     <div class="results-summary" id="results-summary"></div>
                 </div>
 
@@ -1433,6 +1420,7 @@
             document.getElementById('answer-section').style.display = 'none';
             document.getElementById('estimation-section').style.display = 'none';
             document.getElementById('submit-section').style.display = 'none';
+            document.querySelector('.current-player-card').style.display = 'none';
             
             // Show results
             document.getElementById('results-section').style.display = 'flex';
@@ -1445,6 +1433,7 @@
             document.getElementById('answer-section').style.display = 'block';
             document.getElementById('estimation-section').style.display = 'flex';
             document.getElementById('submit-section').style.display = 'block';
+            document.querySelector('.current-player-card').style.display = 'flex';
             
             // Hide results
             document.getElementById('results-section').style.display = 'none';
@@ -1472,7 +1461,6 @@
                 resultItem.className = 'result-item';
                 
                 const avatar = result.playerName.charAt(0).toUpperCase();
-                const answerText = result.answer ? 'Ja' : 'Nein';
                 const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
                 const sipsClass = result.sips === 0 ? 'none' : '';
 
@@ -1481,7 +1469,7 @@
                         <div class="result-avatar">${avatar}</div>
                         <div class="player-result-info">
                             <div class="player-result-name">${result.playerName}</div>
-                            <div class="player-answer">${answerText} • Tipp: ${result.estimation}</div>
+                            <div class="player-answer">Tipp: ${result.estimation}</div>
                         </div>
                     </div>
                     <div class="sips-penalty ${sipsClass}">${sipsText}</div>
