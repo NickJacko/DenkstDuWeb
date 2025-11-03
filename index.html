@@ -1272,6 +1272,20 @@
             window.location.href = 'index.html';
         }
 
+        // ===== DEBUG / EMERGENCY EXIT =====
+        function emergencyExit() {
+            localStorage.clear(); // Lösche alles
+            window.location.href = 'index.html';
+        }
+
+        // Emergency exit mit Tastenkombination
+        window.addEventListener('keydown', function(e) {
+            // Ctrl+Alt+E = Emergency Exit
+            if (e.ctrlKey && e.altKey && e.key === 'e') {
+                emergencyExit();
+            }
+        });
+
         // ===== INITIALIZATION =====
         document.addEventListener('DOMContentLoaded', function() {
             initializeGame();
