@@ -5,6 +5,12 @@ class FirebaseGameService {
         this.database = null;
         this.isInitialized = false;
         this.isConnected = false;
+        this.gameRef = null;
+        this.playersRef = null;
+        this.settingsRef = null;
+        this.currentRoundRef = null;
+        this.currentGameId = null;
+        this.listeners = [];
         
         this.config = {
             apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
@@ -18,10 +24,10 @@ class FirebaseGameService {
         };
     }
 
-    async initialize() {
+    async initialize(gameId = null, callbacks = {}) {
         try {
             console.log('🔥 Firebase init...');
-            
+
             if (typeof firebase === 'undefined') {
                 throw new Error('Firebase SDK missing');
             }
@@ -33,19 +39,27 @@ class FirebaseGameService {
             }
 
             this.database = firebase.database();
-            
+
             // Connection test
             const testRef = this.database.ref('.info/connected');
             const snapshot = await Promise.race([
                 testRef.once('value'),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
             ]);
-            
+
             this.isConnected = snapshot.val() === true;
+
+            let connectSuccess = true;
             this.isInitialized = this.isConnected;
-            
-            console.log(`✅ Firebase: ${this.isConnected ? 'connected' : 'failed'}`);
-            return this.isConnected;
+
+            if (this.isConnected && gameId) {
+                connectSuccess = await this.connectToGame(gameId, callbacks);
+            }
+
+            this.isInitialized = this.isConnected && connectSuccess;
+
+            console.log(`✅ Firebase: ${this.isInitialized ? 'connected' : 'failed'}`);
+            return this.isInitialized;
 
         } catch (error) {
             console.error('❌ Firebase init failed:', error);
@@ -213,26 +227,14 @@ class FirebaseGameService {
 
     // ===== REAL-TIME LISTENER =====
     listenToGame(gameId, callback) {
-        if (!this.isConnected) {
-            console.error('❌ Cannot listen - not connected');
-            return null;
-        }
+        if (!this.isInitialized) return null;
 
         try {
-            console.log(`🎧 Setting up listener for: ${gameId}`);
-            
             const gameRef = this.database.ref(`games/${gameId}`);
-            
             const listener = gameRef.on('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    const gameData = snapshot.val();
-                    console.log('🔄 Game update received:', {
-                        gameState: gameData.gameState,
-                        playerCount: gameData.players ? Object.keys(gameData.players).length : 0
-                    });
-                    callback(gameData);
+                    callback(snapshot.val());
                 } else {
-                    console.log('❌ Game no longer exists');
                     callback(null);
                 }
             }, (error) => {
@@ -240,11 +242,8 @@ class FirebaseGameService {
                 callback(null);
             });
 
-            return () => {
-                console.log(`🔇 Removing listener for: ${gameId}`);
-                gameRef.off('value', listener);
-            };
-
+            this.listeners.push({ ref: gameRef, type: 'value', listener });
+            return gameRef;
         } catch (error) {
             console.error('❌ Listener setup failed:', error);
             return null;
@@ -326,6 +325,137 @@ class FirebaseGameService {
             console.error('❌ Delete game failed:', error);
             return false;
         }
+    }
+
+    // ===== GAME OPERATIONS =====
+    async connectToGame(gameId, callbacks = {}) {
+        if (!this.isInitialized) return false;
+
+        try {
+            this.currentGameId = gameId;
+            this.gameRef = this.database.ref(`games/${gameId}`);
+            this.playersRef = this.database.ref(`games/${gameId}/players`);
+            this.settingsRef = this.database.ref(`games/${gameId}/settings`);
+
+            if (callbacks.onPlayers) {
+                const playerListener = this.playersRef.on('value', (snapshot) => {
+                    const players = snapshot.val() || {};
+                    callbacks.onPlayers(players);
+                });
+                this.listeners.push({ ref: this.playersRef, type: 'value', listener: playerListener });
+            }
+
+            if (callbacks.onSettings) {
+                const settingsListener = this.settingsRef.on('value', (snapshot) => {
+                    const settings = snapshot.val();
+                    if (settings) callbacks.onSettings(settings);
+                });
+                this.listeners.push({ ref: this.settingsRef, type: 'value', listener: settingsListener });
+            }
+
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to connect to game:', error);
+            return false;
+        }
+    }
+
+    async updateDifficulty(difficulty) {
+        if (!this.settingsRef) return false;
+        try {
+            await this.settingsRef.child('difficulty').set(difficulty);
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to sync difficulty:', error);
+            return false;
+        }
+    }
+
+    async updateGameSettings(settings) {
+        if (!this.settingsRef) return false;
+        try {
+            const updateData = { ...settings, lastUpdated: Date.now() };
+            await this.settingsRef.update(updateData);
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to sync game settings:', error);
+            return false;
+        }
+    }
+
+    setupGameRef(gameId) {
+        this.gameRef = this.database.ref(`games/${gameId}`);
+        return this.gameRef;
+    }
+
+    async submitAnswer(gameId, roundNumber, playerId, answerData) {
+        if (!this.isInitialized) throw new Error('Firebase not initialized');
+        try {
+            const answerRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}/answers/${playerId}`);
+            await answerRef.set({
+                ...answerData,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            return true;
+        } catch (error) {
+            console.error('❌ Error submitting answer:', error);
+            throw error;
+        }
+    }
+
+    async startNewRound(gameId, roundNumber, question) {
+        if (!this.isInitialized) throw new Error('Firebase not initialized');
+        try {
+            const roundRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}`);
+            await roundRef.set({
+                roundNumber,
+                question,
+                answers: {},
+                results: null,
+                startedAt: firebase.database.ServerValue.TIMESTAMP,
+                status: 'active'
+            });
+            await this.database.ref(`games/${gameId}/currentRound`).set(roundNumber);
+            return true;
+        } catch (error) {
+            console.error('❌ Error starting round:', error);
+            throw error;
+        }
+    }
+
+    async endGame(gameId, finalResults) {
+        if (!this.isInitialized) throw new Error('Firebase not initialized');
+        try {
+            await this.database.ref(`games/${gameId}`).update({
+                gameState: 'finished',
+                finishedAt: firebase.database.ServerValue.TIMESTAMP,
+                finalResults
+            });
+            return true;
+        } catch (error) {
+            console.error('❌ Error ending game:', error);
+            throw error;
+        }
+    }
+
+    listenToRound(gameId, roundNumber, callback) {
+        if (!this.isInitialized) return null;
+        const roundRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}`);
+        const listener = roundRef.on('value', callback);
+        this.listeners.push({ ref: roundRef, type: 'value', listener });
+        return roundRef;
+    }
+
+    cleanup() {
+        this.listeners.forEach(({ ref, type, listener }) => {
+            ref.off(type, listener);
+        });
+        this.listeners = [];
+        this.gameRef = null;
+        this.playersRef = null;
+        this.settingsRef = null;
+        this.currentRoundRef = null;
+        this.currentGameId = null;
     }
 
     // ===== CONNECTION STATUS =====
