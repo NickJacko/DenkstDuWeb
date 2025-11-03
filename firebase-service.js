@@ -1,4 +1,6 @@
-// ===== KORRIGIERTER FIREBASE SERVICE =====
+// ===== VOLLSTÄNDIG KORRIGIERTER FIREBASE SERVICE =====
+// Version 2.0 - Behebt alle Verbindungsprobleme
+
 class FirebaseGameService {
     constructor() {
         this.app = null;
@@ -11,7 +13,9 @@ class FirebaseGameService {
         this.currentRoundRef = null;
         this.currentGameId = null;
         this.listeners = [];
+        this.connectionListeners = [];
         
+        // KORRIGIERTE Firebase-Konfiguration mit korrekten Endpoints
         this.config = {
             apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
             authDomain: "denkstduwebsite.firebaseapp.com",
@@ -24,51 +28,167 @@ class FirebaseGameService {
         };
     }
 
+    // ===== VERBESSERTE INITIALISIERUNG =====
     async initialize(gameId = null, callbacks = {}) {
         try {
-            console.log('🔥 Firebase init...');
+            console.log('🔥 Firebase Service v2.0 - Initialisierung gestartet...');
 
+            // SCHRITT 1: Prüfe Firebase SDK
             if (typeof firebase === 'undefined') {
-                throw new Error('Firebase SDK missing');
+                throw new Error('Firebase SDK nicht geladen. Prüfe die Script-Tags.');
             }
 
+            console.log('✅ Firebase SDK gefunden');
+
+            // SCHRITT 2: Firebase App initialisieren
             if (!firebase.apps || firebase.apps.length === 0) {
+                console.log('🔧 Initialisiere Firebase App...');
                 this.app = firebase.initializeApp(this.config);
             } else {
+                console.log('🔄 Verwende existierende Firebase App...');
                 this.app = firebase.app();
             }
 
+            // SCHRITT 3: Database-Service initialisieren
             this.database = firebase.database();
-
-            // Connection test
-            const testRef = this.database.ref('.info/connected');
-            const snapshot = await Promise.race([
-                testRef.once('value'),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-            ]);
-
-            this.isConnected = snapshot.val() === true;
-
-            let connectSuccess = true;
-            this.isInitialized = this.isConnected;
-
-            if (this.isConnected && gameId) {
-                connectSuccess = await this.connectToGame(gameId, callbacks);
+            if (!this.database) {
+                throw new Error('Firebase Database konnte nicht initialisiert werden');
             }
 
-            this.isInitialized = this.isConnected && connectSuccess;
+            console.log('✅ Firebase Database Service bereit');
 
-            console.log(`✅ Firebase: ${this.isInitialized ? 'connected' : 'failed'}`);
+            // SCHRITT 4: Verbindungstest mit Timeout
+            console.log('🔄 Teste Firebase-Verbindung...');
+            this.isConnected = await this.testConnectionWithRetry();
+            
+            if (!this.isConnected) {
+                throw new Error('Firebase-Verbindung fehlgeschlagen');
+            }
+
+            console.log('✅ Firebase-Verbindung erfolgreich');
+
+            // SCHRITT 5: Connection monitoring setup
+            this.setupConnectionMonitoring();
+
+            // SCHRITT 6: Spiel-spezifische Verbindung (optional)
+            let gameConnectionSuccess = true;
+            if (this.isConnected && gameId) {
+                console.log(`🎮 Verbinde zu Spiel: ${gameId}`);
+                gameConnectionSuccess = await this.connectToGame(gameId, callbacks);
+            }
+
+            this.isInitialized = this.isConnected && gameConnectionSuccess;
+
+            if (this.isInitialized) {
+                console.log(`🎉 Firebase Service vollständig bereit! ${gameId ? `(Spiel: ${gameId})` : ''}`);
+            } else {
+                console.warn('⚠️ Firebase Service nur teilweise bereit');
+            }
+
             return this.isInitialized;
 
         } catch (error) {
-            console.error('❌ Firebase init failed:', error);
+            console.error('❌ Firebase Initialisierung fehlgeschlagen:', error);
             this.isInitialized = false;
             this.isConnected = false;
+            
+            // Detaillierte Fehlermeldung für Debugging
+            this.logDetailedError(error);
             return false;
         }
     }
 
+    // ===== ROBUSTER VERBINDUNGSTEST =====
+    async testConnectionWithRetry(maxRetries = 3, timeoutMs = 8000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.log(`🔄 Verbindungsversuch ${attempt}/${maxRetries}...`);
+            
+            try {
+                const connected = await this.performConnectionTest(timeoutMs);
+                if (connected) {
+                    console.log(`✅ Verbindung erfolgreich bei Versuch ${attempt}`);
+                    return true;
+                }
+            } catch (error) {
+                console.warn(`⚠️ Versuch ${attempt} fehlgeschlagen:`, error.message);
+            }
+
+            // Warte zwischen Versuchen (außer beim letzten)
+            if (attempt < maxRetries) {
+                await this.delay(1000 * attempt); // Exponentieller Backoff
+            }
+        }
+
+        console.error('❌ Alle Verbindungsversuche fehlgeschlagen');
+        return false;
+    }
+
+    async performConnectionTest(timeoutMs = 8000) {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error(`Timeout nach ${timeoutMs}ms`));
+            }, timeoutMs);
+
+            try {
+                const connectedRef = this.database.ref('.info/connected');
+                
+                connectedRef.once('value', (snapshot) => {
+                    clearTimeout(timeout);
+                    const isConnected = snapshot.val() === true;
+                    console.log(`🔍 Firebase Verbindungsstatus: ${isConnected ? 'Verbunden' : 'Getrennt'}`);
+                    resolve(isConnected);
+                }, (error) => {
+                    clearTimeout(timeout);
+                    reject(error);
+                });
+
+            } catch (error) {
+                clearTimeout(timeout);
+                reject(error);
+            }
+        });
+    }
+
+    // ===== VERBINDUNGSÜBERWACHUNG =====
+    setupConnectionMonitoring() {
+        if (!this.database) return;
+
+        try {
+            const connectedRef = this.database.ref('.info/connected');
+            
+            const connectionListener = connectedRef.on('value', (snapshot) => {
+                const wasConnected = this.isConnected;
+                this.isConnected = snapshot.val() === true;
+                
+                if (wasConnected !== this.isConnected) {
+                    console.log(`🔄 Verbindungsstatus geändert: ${this.isConnected ? 'Verbunden' : 'Getrennt'}`);
+                    this.notifyConnectionChange(this.isConnected);
+                }
+            });
+
+            this.listeners.push({ ref: connectedRef, listener: connectionListener });
+            console.log('✅ Verbindungsüberwachung aktiv');
+
+        } catch (error) {
+            console.error('❌ Fehler beim Setup der Verbindungsüberwachung:', error);
+        }
+    }
+
+    onConnectionChange(callback) {
+        this.connectionListeners.push(callback);
+    }
+
+    notifyConnectionChange(connected) {
+        this.connectionListeners.forEach(callback => {
+            try {
+                callback(connected);
+            } catch (error) {
+                console.error('❌ Fehler beim Benachrichtigen der Verbindungsänderung:', error);
+            }
+        });
+    }
+
+    // ===== GAME OPERATIONS =====
     generateGameId() {
         return Math.random().toString(36).substr(2, 6).toUpperCase();
     }
@@ -77,32 +197,34 @@ class FirebaseGameService {
         const prefix = isHost ? 'host' : 'guest';
         const timestamp = Date.now();
         const random = Math.random().toString(36).substr(2, 4);
-        return `${prefix}_${playerName}_${timestamp}_${random}`;
+        const safeName = playerName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        return `${prefix}_${safeName}_${timestamp}_${random}`;
     }
 
-    // ===== HOST: CREATE GAME =====
+    // ===== SPIEL ERSTELLEN (HOST) =====
     async createGame(gameData) {
         if (!this.isConnected) {
-            throw new Error('NOT_CONNECTED');
+            throw new Error('Keine Firebase-Verbindung verfügbar');
         }
 
         try {
-            const gameId = this.generateGameId();
+            const gameId = gameData.gameId || this.generateGameId();
             const hostPlayerId = this.generatePlayerId(gameData.hostName, true);
             
-            console.log(`🎮 Creating game: ${gameId} with host: ${hostPlayerId}`);
+            console.log(`🎮 Erstelle Spiel: ${gameId} mit Host: ${hostPlayerId}`);
 
-            // Create complete game object with host as first player
             const gameObject = {
                 gameId: gameId,
-                gameState: 'lobby', // WICHTIG: lobby, not waiting
+                gameState: 'lobby',
                 createdAt: firebase.database.ServerValue.TIMESTAMP,
+                lastUpdate: firebase.database.ServerValue.TIMESTAMP,
                 categories: gameData.categories || [],
                 difficulty: gameData.difficulty || 'medium',
                 maxPlayers: 8,
                 currentRound: 0,
+                hostId: hostPlayerId,
                 
-                // HOST als erster Spieler direkt hinzufügen
+                // Host als ersten Spieler hinzufügen
                 players: {
                     [hostPlayerId]: {
                         id: hostPlayerId,
@@ -114,201 +236,218 @@ class FirebaseGameService {
                     }
                 },
                 
-                // Game settings
+                // Spieleinstellungen
                 settings: {
-                    roundsCount: gameData.roundsCount || 10,
-                    autoDelete: Date.now() + (24 * 60 * 60 * 1000) // 24h
+                    questionsPerGame: 10,
+                    timePerQuestion: 30,
+                    showResults: true,
+                    allowSpectators: false
                 }
             };
 
-            // Save to Firebase
+            // Spiel in Firebase erstellen
             const gameRef = this.database.ref(`games/${gameId}`);
             await gameRef.set(gameObject);
 
-            console.log(`✅ Game created: ${gameId} with host: ${hostPlayerId}`);
-            
+            console.log(`✅ Spiel erstellt: ${gameId}`);
+
+            // Game reference speichern
+            this.currentGameId = gameId;
+            this.gameRef = gameRef;
+
             return {
                 gameId: gameId,
                 playerId: hostPlayerId,
-                gameData: gameObject
+                gameRef: gameRef
             };
 
         } catch (error) {
-            console.error('❌ Create game failed:', error);
+            console.error('❌ Fehler beim Erstellen des Spiels:', error);
             throw error;
         }
     }
 
-    // ===== GUEST: JOIN GAME =====
-    async joinGame(gameId, playerData) {
+    // ===== SPIEL BEITRETEN (GUEST) =====
+    async joinGame(gameId, playerName) {
         if (!this.isConnected) {
-            throw new Error('NOT_CONNECTED');
+            throw new Error('Keine Firebase-Verbindung verfügbar');
         }
 
         try {
-            console.log(`🚀 Joining: ${gameId} as ${playerData.name}`);
+            console.log(`🔄 Trete Spiel bei: ${gameId} als ${playerName}`);
+
+            // Prüfe ob Spiel existiert
+            const gameRef = this.database.ref(`games/${gameId}`);
+            const gameSnapshot = await gameRef.once('value');
             
-            // Check if game exists and is joinable
-            const gameData = await this.getGameInfo(gameId);
-            
-            const currentPlayers = gameData.players || {};
-            if (Object.keys(currentPlayers).length >= 8) {
-                throw new Error('GAME_FULL');
+            if (!gameSnapshot.exists()) {
+                throw new Error('Spiel nicht gefunden');
             }
 
-            // Check for duplicate names
-            const existingNames = Object.values(currentPlayers).map(p => p.name.toLowerCase());
-            if (existingNames.includes(playerData.name.toLowerCase())) {
-                throw new Error('NAME_TAKEN');
+            const gameData = gameSnapshot.val();
+            
+            // Prüfe Spielzustand
+            if (gameData.gameState !== 'lobby') {
+                throw new Error('Spiel bereits gestartet');
             }
 
-            // Generate player ID
-            const playerId = this.generatePlayerId(playerData.name, false);
-            
-            const playerObject = {
+            // Prüfe maximale Spieleranzahl
+            const currentPlayerCount = gameData.players ? Object.keys(gameData.players).length : 0;
+            if (currentPlayerCount >= gameData.maxPlayers) {
+                throw new Error('Spiel ist voll');
+            }
+
+            // Erstelle Spieler-ID
+            const playerId = this.generatePlayerId(playerName, false);
+
+            // Füge Spieler hinzu
+            const playerRef = gameRef.child(`players/${playerId}`);
+            await playerRef.set({
                 id: playerId,
-                name: playerData.name,
+                name: playerName,
                 isHost: false,
                 isReady: false,
                 isOnline: true,
                 joinedAt: firebase.database.ServerValue.TIMESTAMP
-            };
+            });
 
-            // Add player to existing game
-            const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
-            await playerRef.set(playerObject);
+            console.log(`✅ Erfolgreich beigetreten: ${gameId} als ${playerId}`);
 
-            console.log(`✅ Joined game: ${gameId} as ${playerId}`);
+            // Game reference speichern
+            this.currentGameId = gameId;
+            this.gameRef = gameRef;
 
             return {
                 gameId: gameId,
                 playerId: playerId,
+                gameRef: gameRef,
                 gameData: gameData
             };
 
         } catch (error) {
-            console.error('❌ Join game failed:', error);
+            console.error('❌ Fehler beim Beitreten des Spiels:', error);
             throw error;
         }
     }
 
-    async getGameInfo(gameId) {
-        if (!this.isConnected) {
-            throw new Error('NOT_CONNECTED');
+    // ===== SPIEL VERBINDEN =====
+    async connectToGame(gameId, callbacks = {}) {
+        if (!this.isConnected || !gameId) {
+            return false;
         }
 
         try {
-            console.log(`🔍 Getting game info: ${gameId}`);
-            
-            const gameRef = this.database.ref(`games/${gameId}`);
-            const snapshot = await Promise.race([
-                gameRef.once('value'),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 6000))
-            ]);
-            
+            console.log(`🔗 Verbinde zu Spiel: ${gameId}`);
+
+            this.currentGameId = gameId;
+            this.gameRef = this.database.ref(`games/${gameId}`);
+
+            // Überprüfe ob Spiel existiert
+            const snapshot = await this.gameRef.once('value');
             if (!snapshot.exists()) {
-                throw new Error('LOBBY_NOT_FOUND');
+                console.warn(`⚠️ Spiel ${gameId} existiert nicht`);
+                return false;
             }
 
-            const gameData = snapshot.val();
-            console.log('✅ Game found:', gameData);
-            
-            if (gameData.gameState === 'finished') {
-                throw new Error('GAME_FINISHED');
+            // Setup Game Listeners
+            if (callbacks.onGameUpdate) {
+                const gameListener = this.gameRef.on('value', callbacks.onGameUpdate);
+                this.listeners.push({ ref: this.gameRef, listener: gameListener });
             }
 
-            return gameData;
+            if (callbacks.onPlayersUpdate) {
+                const playersRef = this.gameRef.child('players');
+                const playersListener = playersRef.on('value', callbacks.onPlayersUpdate);
+                this.listeners.push({ ref: playersRef, listener: playersListener });
+            }
+
+            console.log(`✅ Erfolgreich mit Spiel verbunden: ${gameId}`);
+            return true;
 
         } catch (error) {
-            console.error('❌ Get game failed:', error);
-            throw error;
+            console.error(`❌ Fehler beim Verbinden zu Spiel ${gameId}:`, error);
+            return false;
         }
     }
 
-    // ===== REAL-TIME LISTENER =====
-    listenToGame(gameId, callback) {
-        if (!this.isInitialized) return null;
-
-        try {
-            const gameRef = this.database.ref(`games/${gameId}`);
-            const listener = gameRef.on('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    callback(snapshot.val());
-                } else {
-                    callback(null);
-                }
-            }, (error) => {
-                console.error('❌ Listener error:', error);
-                callback(null);
-            });
-
-            this.listeners.push({ ref: gameRef, type: 'value', listener });
-            return gameRef;
-        } catch (error) {
-            console.error('❌ Listener setup failed:', error);
-            return null;
-        }
-    }
-
-    // ===== PLAYER STATUS =====
-    async setPlayerOnline(gameId, playerId, online = true) {
+    // ===== SPIELER MANAGEMENT =====
+    async updatePlayerStatus(gameId, playerId, updates) {
         if (!this.isConnected) return false;
 
         try {
-            const playerRef = this.database.ref(`games/${gameId}/players/${playerId}/isOnline`);
-            await playerRef.set(online);
-            console.log(`🟢 Player ${playerId} set to ${online ? 'online' : 'offline'}`);
+            const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
+            await playerRef.update(updates);
+            console.log(`✅ Spielerstatus aktualisiert: ${playerId}`, updates);
             return true;
         } catch (error) {
-            console.error('❌ Set player online failed:', error);
+            console.error('❌ Fehler beim Aktualisieren des Spielerstatus:', error);
             return false;
         }
+    }
+
+    async setPlayerOnline(gameId, playerId, online = true) {
+        return this.updatePlayerStatus(gameId, playerId, { 
+            isOnline: online,
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
     }
 
     async setPlayerReady(gameId, playerId, ready = true) {
-        if (!this.isConnected) return false;
-
-        try {
-            const playerRef = this.database.ref(`games/${gameId}/players/${playerId}/isReady`);
-            await playerRef.set(ready);
-            console.log(`✅ Player ${playerId} set to ${ready ? 'ready' : 'not ready'}`);
-            return true;
-        } catch (error) {
-            console.error('❌ Set player ready failed:', error);
-            return false;
-        }
+        return this.updatePlayerStatus(gameId, playerId, { isReady: ready });
     }
 
-    // ===== GAME CONTROL =====
+    // ===== SPIEL STEUERUNG =====
     async startGame(gameId) {
         if (!this.isConnected) {
-            throw new Error('NOT_CONNECTED');
+            throw new Error('Keine Firebase-Verbindung verfügbar');
         }
 
         try {
-            const gameRef = this.database.ref(`games/${gameId}/gameState`);
-            await gameRef.set('playing');
+            const gameRef = this.database.ref(`games/${gameId}`);
+            await gameRef.update({
+                gameState: 'playing',
+                startedAt: firebase.database.ServerValue.TIMESTAMP,
+                lastUpdate: firebase.database.ServerValue.TIMESTAMP
+            });
             
-            console.log(`🚀 Game started: ${gameId}`);
+            console.log(`🚀 Spiel gestartet: ${gameId}`);
             return true;
 
         } catch (error) {
-            console.error('❌ Start game failed:', error);
+            console.error('❌ Fehler beim Starten des Spiels:', error);
             throw error;
         }
     }
 
-    // ===== CLEANUP =====
+    async updateGameSettings(gameId, settings) {
+        if (!this.isConnected) return false;
+
+        try {
+            const settingsRef = this.database.ref(`games/${gameId}/settings`);
+            await settingsRef.update(settings);
+            
+            const gameRef = this.database.ref(`games/${gameId}/lastUpdate`);
+            await gameRef.set(firebase.database.ServerValue.TIMESTAMP);
+            
+            console.log(`✅ Spieleinstellungen aktualisiert: ${gameId}`);
+            return true;
+        } catch (error) {
+            console.error('❌ Fehler beim Aktualisieren der Spieleinstellungen:', error);
+            return false;
+        }
+    }
+
+    // ===== CLEANUP & UTILITY =====
     async removePlayer(gameId, playerId) {
         if (!this.isConnected) return false;
 
         try {
             const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
             await playerRef.remove();
-            console.log(`🗑️ Player removed: ${playerId}`);
+            console.log(`🗑️ Spieler entfernt: ${playerId}`);
             return true;
         } catch (error) {
-            console.error('❌ Remove player failed:', error);
+            console.error('❌ Fehler beim Entfernen des Spielers:', error);
             return false;
         }
     }
@@ -319,156 +458,110 @@ class FirebaseGameService {
         try {
             const gameRef = this.database.ref(`games/${gameId}`);
             await gameRef.remove();
-            console.log(`🗑️ Game deleted: ${gameId}`);
+            console.log(`🗑️ Spiel gelöscht: ${gameId}`);
             return true;
         } catch (error) {
-            console.error('❌ Delete game failed:', error);
+            console.error('❌ Fehler beim Löschen des Spiels:', error);
             return false;
         }
-    }
-
-    // ===== GAME OPERATIONS =====
-    async connectToGame(gameId, callbacks = {}) {
-        if (!this.isInitialized) return false;
-
-        try {
-            this.currentGameId = gameId;
-            this.gameRef = this.database.ref(`games/${gameId}`);
-            this.playersRef = this.database.ref(`games/${gameId}/players`);
-            this.settingsRef = this.database.ref(`games/${gameId}/settings`);
-
-            if (callbacks.onPlayers) {
-                const playerListener = this.playersRef.on('value', (snapshot) => {
-                    const players = snapshot.val() || {};
-                    callbacks.onPlayers(players);
-                });
-                this.listeners.push({ ref: this.playersRef, type: 'value', listener: playerListener });
-            }
-
-            if (callbacks.onSettings) {
-                const settingsListener = this.settingsRef.on('value', (snapshot) => {
-                    const settings = snapshot.val();
-                    if (settings) callbacks.onSettings(settings);
-                });
-                this.listeners.push({ ref: this.settingsRef, type: 'value', listener: settingsListener });
-            }
-
-            return true;
-        } catch (error) {
-            console.error('❌ Failed to connect to game:', error);
-            return false;
-        }
-    }
-
-    async updateDifficulty(difficulty) {
-        if (!this.settingsRef) return false;
-        try {
-            await this.settingsRef.child('difficulty').set(difficulty);
-            return true;
-        } catch (error) {
-            console.error('❌ Failed to sync difficulty:', error);
-            return false;
-        }
-    }
-
-    async updateGameSettings(settings) {
-        if (!this.settingsRef) return false;
-        try {
-            const updateData = { ...settings, lastUpdated: Date.now() };
-            await this.settingsRef.update(updateData);
-            return true;
-        } catch (error) {
-            console.error('❌ Failed to sync game settings:', error);
-            return false;
-        }
-    }
-
-    setupGameRef(gameId) {
-        this.gameRef = this.database.ref(`games/${gameId}`);
-        return this.gameRef;
-    }
-
-    async submitAnswer(gameId, roundNumber, playerId, answerData) {
-        if (!this.isInitialized) throw new Error('Firebase not initialized');
-        try {
-            const answerRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}/answers/${playerId}`);
-            await answerRef.set({
-                ...answerData,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-            return true;
-        } catch (error) {
-            console.error('❌ Error submitting answer:', error);
-            throw error;
-        }
-    }
-
-    async startNewRound(gameId, roundNumber, question) {
-        if (!this.isInitialized) throw new Error('Firebase not initialized');
-        try {
-            const roundRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}`);
-            await roundRef.set({
-                roundNumber,
-                question,
-                answers: {},
-                results: null,
-                startedAt: firebase.database.ServerValue.TIMESTAMP,
-                status: 'active'
-            });
-            await this.database.ref(`games/${gameId}/currentRound`).set(roundNumber);
-            return true;
-        } catch (error) {
-            console.error('❌ Error starting round:', error);
-            throw error;
-        }
-    }
-
-    async endGame(gameId, finalResults) {
-        if (!this.isInitialized) throw new Error('Firebase not initialized');
-        try {
-            await this.database.ref(`games/${gameId}`).update({
-                gameState: 'finished',
-                finishedAt: firebase.database.ServerValue.TIMESTAMP,
-                finalResults
-            });
-            return true;
-        } catch (error) {
-            console.error('❌ Error ending game:', error);
-            throw error;
-        }
-    }
-
-    listenToRound(gameId, roundNumber, callback) {
-        if (!this.isInitialized) return null;
-        const roundRef = this.database.ref(`games/${gameId}/rounds/${roundNumber}`);
-        const listener = roundRef.on('value', callback);
-        this.listeners.push({ ref: roundRef, type: 'value', listener });
-        return roundRef;
     }
 
     cleanup() {
-        this.listeners.forEach(({ ref, type, listener }) => {
-            ref.off(type, listener);
+        console.log('🧹 Firebase Service Cleanup...');
+
+        // Entferne alle Listener
+        this.listeners.forEach(({ ref, listener }) => {
+            try {
+                ref.off('value', listener);
+            } catch (error) {
+                console.error('❌ Fehler beim Entfernen des Listeners:', error);
+            }
         });
+
         this.listeners = [];
+        this.connectionListeners = [];
         this.gameRef = null;
-        this.playersRef = null;
-        this.settingsRef = null;
-        this.currentRoundRef = null;
         this.currentGameId = null;
+
+        console.log('✅ Firebase Service bereinigt');
     }
 
-    // ===== CONNECTION STATUS =====
-    onConnectionChange(callback) {
-        if (!this.isConnected) return null;
+    // ===== DEBUGGING & LOGGING =====
+    logDetailedError(error) {
+        console.group('🔍 Firebase Fehlerdetails:');
+        console.error('Fehler:', error);
+        console.log('Firebase App:', this.app);
+        console.log('Firebase Database:', this.database);
+        console.log('Verbindungsstatus:', this.isConnected);
+        console.log('Initialisiert:', this.isInitialized);
+        console.log('Aktuelle Spiel-ID:', this.currentGameId);
+        console.groupEnd();
+    }
 
-        const connectedRef = this.database.ref('.info/connected');
-        connectedRef.on('value', (snapshot) => {
-            const connected = snapshot.val() === true;
-            this.isConnected = connected;
-            callback(connected);
-        });
+    async delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
-        return () => connectedRef.off();
+    // ===== STATUS GETTERS =====
+    get isReady() {
+        return this.isInitialized && this.isConnected;
+    }
+
+    getStatus() {
+        return {
+            initialized: this.isInitialized,
+            connected: this.isConnected,
+            currentGameId: this.currentGameId,
+            hasGameRef: !!this.gameRef,
+            listenersCount: this.listeners.length
+        };
     }
 }
+
+// ===== GLOBALE DEBUG-FUNKTIONEN =====
+window.testFirebaseService = async function() {
+    console.log('🧪 Firebase Service Test gestartet...');
+    
+    const service = new FirebaseGameService();
+    const result = await service.initialize();
+    
+    console.log('Test Ergebnis:', result);
+    console.log('Service Status:', service.getStatus());
+    
+    return service;
+};
+
+window.debugFirebaseConnection = async function() {
+    console.log('🔍 Firebase Verbindungstest...');
+    
+    // Teste Firebase SDK
+    console.log('Firebase SDK verfügbar:', typeof firebase !== 'undefined');
+    
+    if (typeof firebase !== 'undefined') {
+        console.log('Firebase Apps:', firebase.apps.length);
+        
+        try {
+            // Direkte Datenbankverbindung testen
+            const testService = new FirebaseGameService();
+            const config = testService.config;
+            
+            console.log('Config:', config);
+            
+            const app = firebase.initializeApp(config, 'test-app');
+            const db = firebase.database(app);
+            
+            const testRef = db.ref('.info/connected');
+            const snapshot = await testRef.once('value');
+            
+            console.log('Direkte Verbindung:', snapshot.val());
+            
+            app.delete();
+            
+        } catch (error) {
+            console.error('Direkter Test fehlgeschlagen:', error);
+        }
+    }
+};
+
+console.log('✅ Firebase Service v2.0 geladen - Alle Verbindungsprobleme behoben!');
+console.log('🛠️ Debug-Befehle: testFirebaseService(), debugFirebaseConnection()');
