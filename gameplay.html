@@ -663,131 +663,143 @@
             margin-bottom: 15px;
         }
 
-        #leaderboard-list {
-            display: grid;
-            gap: 15px;
-            max-height: 350px;
-            overflow-y: auto;
-            overflow-x: hidden;
+        /* Final Results Section - Clean & Responsive */
+        .final-results-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding: 0;
+            overflow: hidden;
             width: 100%;
-            padding: 5px;
+        }
+
+        .final-header {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border: 2px solid rgba(255, 215, 0, 0.6);
+            backdrop-filter: blur(30px);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+        }
+
+        .final-title {
+            color: #FFD700;
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .final-subtitle {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .leaderboard {
+            flex: 1;
+            margin-bottom: 15px;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .leaderboard-title {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 3px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .leaderboard-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        #leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            overflow: hidden;
         }
 
         .leaderboard-item {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 20px;
-            padding: 18px;
+            border-radius: 18px;
+            padding: 15px;
             display: flex;
             align-items: center;
-            gap: 18px;
-            border: 2px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            gap: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             width: 100%;
             min-width: 0;
-            overflow: hidden;
-            position: relative;
+            flex-shrink: 0;
         }
 
-        .leaderboard-item.winner {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.4));
-            border: 3px solid #FFD700;
-            transform: scale(1.03);
-            box-shadow: 
-                0 15px 40px rgba(255, 215, 0, 0.4),
-                0 0 0 1px rgba(255, 215, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            margin: 3px;
+        /* Spezielle Styles für die ersten 3 Plätze */
+        .leaderboard-item:first-child {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 193, 7, 0.35));
+            border: 2px solid #FFD700;
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.3);
         }
 
-        .leaderboard-item.winner::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700, #FFA500);
-            border-radius: 22px;
-            z-index: -1;
-            animation: goldenBorder 3s ease-in-out infinite;
+        .leaderboard-item:nth-child(2) {
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(160, 160, 160, 0.3));
+            border: 2px solid #C0C0C0;
+            box-shadow: 0 10px 30px rgba(192, 192, 192, 0.2);
         }
 
-        @keyframes goldenBorder {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 1; }
+        .leaderboard-item:nth-child(3) {
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(184, 134, 11, 0.3));
+            border: 2px solid #CD7F32;
+            box-shadow: 0 10px 30px rgba(205, 127, 50, 0.2);
         }
 
         .rank-number {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             flex-shrink: 0;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .rank-1 { 
             background: linear-gradient(135deg, #FFD700, #FFA500); 
             color: white;
-            animation: goldPulse 2s ease-in-out infinite alternate;
-            box-shadow: 
-                0 6px 20px rgba(255, 215, 0, 0.5),
-                0 0 30px rgba(255, 215, 0, 0.3);
         }
-
-        .rank-1::before {
-            content: '👑';
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            font-size: 1.2rem;
-            animation: crownBounce 2s ease-in-out infinite;
-        }
-
-        @keyframes goldPulse {
-            0% { 
-                box-shadow: 
-                    0 6px 20px rgba(255, 215, 0, 0.5),
-                    0 0 30px rgba(255, 215, 0, 0.3);
-            }
-            100% { 
-                box-shadow: 
-                    0 8px 25px rgba(255, 215, 0, 0.7),
-                    0 0 40px rgba(255, 215, 0, 0.5);
-            }
-        }
-
-        @keyframes crownBounce {
-            0%, 100% { transform: translateY(0px) rotate(-10deg); }
-            50% { transform: translateY(-3px) rotate(10deg); }
-        }
-
         .rank-2 { 
             background: linear-gradient(135deg, #C0C0C0, #A0A0A0); 
-            color: white;
-            box-shadow: 0 6px 20px rgba(192, 192, 192, 0.4);
+            color: white; 
         }
         .rank-3 { 
             background: linear-gradient(135deg, #CD7F32, #B8860B); 
-            color: white;
-            box-shadow: 0 6px 20px rgba(205, 127, 50, 0.4);
+            color: white; 
         }
         .rank-other { 
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15)); 
-            color: white;
-            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
+            color: white; 
         }
 
         .result-avatar {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             background: linear-gradient(135deg, #4facfe, #00f2fe);
             border-radius: 50%;
             display: flex;
@@ -795,59 +807,87 @@
             justify-content: center;
             color: white;
             font-weight: 800;
-            font-size: 1.2rem;
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
             flex-shrink: 0;
-            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .player-final-stats {
             flex: 1;
             min-width: 0;
-            overflow: hidden;
         }
 
         .player-final-name {
             color: white;
-            font-weight: 800;
-            font-size: 1.3rem;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .leaderboard-item.winner .player-final-name {
+        .leaderboard-item:first-child .player-final-name {
             color: #FFD700;
-            text-shadow: 
-                0 2px 10px rgba(0, 0, 0, 0.4),
-                0 0 20px rgba(255, 215, 0, 0.5);
+            font-size: 1.2rem;
         }
 
         .player-final-details {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 0.9rem;
             display: flex;
-            gap: 25px;
+            gap: 15px;
             align-items: center;
-            flex-wrap: wrap;
         }
 
         .detail-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 5px;
             white-space: nowrap;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 6px 12px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
         }
 
         .detail-icon {
-            font-size: 1.2rem;
+            font-size: 1rem;
             flex-shrink: 0;
+        }
+
+        .final-navigation {
+            flex-shrink: 0;
+            width: 100%;
+        }
+
+        .nav-btn.large {
+            padding: 16px 20px;
+            font-size: 1.1rem;
+            width: 100%;
+        }
+
+        /* Responsive: Bei vielen Spielern kleinere Items */
+        .leaderboard-item.compact {
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .leaderboard-item.compact .rank-number {
+            width: 35px;
+            height: 35px;
+            font-size: 1rem;
+        }
+
+        .leaderboard-item.compact .result-avatar {
+            width: 35px;
+            height: 35px;
+            font-size: 0.9rem;
+        }
+
+        .leaderboard-item.compact .player-final-name {
+            font-size: 1rem;
+        }
+
+        .leaderboard-item.compact .player-final-details {
+            font-size: 0.8rem;
         }
 
         .final-navigation {
