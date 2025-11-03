@@ -586,6 +586,194 @@
             transform: scale(0.98);
         }
 
+        /* Final Results Section */
+        .final-results-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .final-header {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border: 2px solid rgba(255, 215, 0, 0.6);
+            backdrop-filter: blur(30px);
+            border-radius: 25px;
+            padding: 25px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+        }
+
+        .final-title {
+            color: #FFD700;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .final-subtitle {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .final-stats {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .leaderboard {
+            flex: 1;
+            margin-bottom: 20px;
+            min-height: 0;
+        }
+
+        .leaderboard-title {
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .leaderboard-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #leaderboard-list {
+            display: grid;
+            gap: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-item {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .leaderboard-item.winner {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border-color: #FFD700;
+            transform: scale(1.02);
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.3);
+        }
+
+        .rank-number {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .rank-1 { 
+            background: linear-gradient(135deg, #FFD700, #FFA500); 
+            color: white;
+            animation: goldGlow 2s ease-in-out infinite alternate;
+        }
+        .rank-2 { 
+            background: linear-gradient(135deg, #C0C0C0, #A0A0A0); 
+            color: white; 
+        }
+        .rank-3 { 
+            background: linear-gradient(135deg, #CD7F32, #B8860B); 
+            color: white; 
+        }
+        .rank-other { 
+            background: rgba(255, 255, 255, 0.2); 
+            color: white; 
+        }
+
+        @keyframes goldGlow {
+            0% { box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
+            100% { box-shadow: 0 4px 25px rgba(255, 215, 0, 0.6); }
+        }
+
+        .player-final-stats {
+            flex: 1;
+        }
+
+        .player-final-name {
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-final-details {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 0.95rem;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .detail-icon {
+            font-size: 1.1rem;
+        }
+
+        .final-navigation {
+            flex-shrink: 0;
+        }
+
+        .nav-btn.large {
+            padding: 18px 25px;
+            font-size: 1.2rem;
+        }
+
         /* Toast Notifications */
         .toast-notification {
             position: fixed;
@@ -876,6 +1064,39 @@
                     </button>
                     <button class="nav-btn secondary" onclick="endGame()">
                         🚪 Spiel beenden
+                    </button>
+                </div>
+            </div>
+
+            <!-- Final Results Section -->
+            <div class="final-results-section" id="final-results-section" style="display: none;">
+                <div class="final-header">
+                    <div class="final-title">🏆 Spiel beendet!</div>
+                    <div class="final-subtitle">Hier sind die finalen Ergebnisse</div>
+                </div>
+
+                <div class="final-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-questions-played">0</div>
+                        <div class="stat-label">Fragen gespielt</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-players-count">0</div>
+                        <div class="stat-label">Spieler</div>
+                    </div>
+                </div>
+
+                <div class="leaderboard">
+                    <div class="leaderboard-title">🏅 Rangliste</div>
+                    <div class="leaderboard-subtitle">Sortiert nach wenigsten Schlücken</div>
+                    <div id="leaderboard-list">
+                        <!-- Leaderboard will be populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="final-navigation">
+                    <button class="nav-btn primary large" onclick="goHome()">
+                        🏠 Spiel beenden
                     </button>
                 </div>
             </div>
@@ -1212,7 +1433,125 @@
         }
 
         function endGame() {
+            showFinalResults();
+        }
+
+        function goHome() {
             showExitConfirmation();
+        }
+
+        // ===== FINAL RESULTS =====
+        function showFinalResults() {
+            console.log('🏆 Calculating final results...');
+            
+            // Calculate player statistics
+            const playerStats = calculatePlayerStatistics();
+            
+            // Sort by fewest sips (best to worst)
+            const finalRankings = playerStats.sort((a, b) => a.totalSips - b.totalSips);
+            
+            // Display final results
+            displayFinalResults(finalRankings);
+            
+            // Switch to final results view
+            showFinalResultsView();
+        }
+
+        function calculatePlayerStatistics() {
+            const playerStats = {};
+            
+            // Initialize stats for each player
+            currentGame.players.forEach(player => {
+                playerStats[player] = {
+                    playerName: player,
+                    totalSips: 0,
+                    correctGuesses: 0,
+                    totalGuesses: 0,
+                    accuracy: 0
+                };
+            });
+
+            // Calculate stats from game history
+            currentGame.gameHistory.forEach(round => {
+                round.results.forEach(result => {
+                    const stats = playerStats[result.playerName];
+                    if (stats) {
+                        stats.totalSips += result.sips;
+                        stats.totalGuesses++;
+                        if (result.isCorrect) {
+                            stats.correctGuesses++;
+                        }
+                    }
+                });
+            });
+
+            // Calculate accuracy percentage
+            Object.values(playerStats).forEach(stats => {
+                stats.accuracy = stats.totalGuesses > 0 ? 
+                    Math.round((stats.correctGuesses / stats.totalGuesses) * 100) : 0;
+            });
+
+            return Object.values(playerStats);
+        }
+
+        function displayFinalResults(finalRankings) {
+            // Update stats
+            document.getElementById('total-questions-played').textContent = currentGame.gameHistory.length;
+            document.getElementById('total-players-count').textContent = currentGame.players.length;
+            
+            // Build leaderboard
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '';
+            
+            finalRankings.forEach((player, index) => {
+                const leaderboardItem = document.createElement('div');
+                leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
+                
+                const rankClass = index === 0 ? 'rank-1' : 
+                                 index === 1 ? 'rank-2' : 
+                                 index === 2 ? 'rank-3' : 'rank-other';
+                
+                const rankText = index + 1;
+                const avatar = player.playerName.charAt(0).toUpperCase();
+                
+                leaderboardItem.innerHTML = `
+                    <div class="rank-number ${rankClass}">${rankText}</div>
+                    <div class="result-avatar">${avatar}</div>
+                    <div class="player-final-stats">
+                        <div class="player-final-name">${player.playerName}</div>
+                        <div class="player-final-details">
+                            <div class="detail-item">
+                                <span class="detail-icon">🍺</span>
+                                <span>${player.totalSips} Schlücke</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-icon">🎯</span>
+                                <span>${player.accuracy}% richtig</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                leaderboardList.appendChild(leaderboardItem);
+            });
+
+            showNotification(
+                `🏆 ${finalRankings[0].playerName} hat gewonnen!`, 
+                'success', 
+                3000
+            );
+        }
+
+        function showFinalResultsView() {
+            // Hide all other sections
+            document.getElementById('answer-section').style.display = 'none';
+            document.getElementById('estimation-section').style.display = 'none';
+            document.getElementById('submit-section').style.display = 'none';
+            document.querySelector('.current-player-card').style.display = 'none';
+            document.getElementById('results-section').style.display = 'none';
+            
+            // Show final results
+            document.getElementById('final-results-section').style.display = 'flex';
         }
 
         function loadQuestion(question) {
