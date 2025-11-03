@@ -1544,14 +1544,23 @@
 
         function showFinalResultsView() {
             // Hide all other sections
-            document.getElementById('answer-section').style.display = 'none';
-            document.getElementById('estimation-section').style.display = 'none';
-            document.getElementById('submit-section').style.display = 'none';
-            document.querySelector('.current-player-card').style.display = 'none';
-            document.getElementById('results-section').style.display = 'none';
+            const answerSection = document.getElementById('answer-section');
+            const estimationSection = document.getElementById('estimation-section');
+            const submitSection = document.getElementById('submit-section');
+            const currentPlayerCard = document.querySelector('.current-player-card');
+            const resultsSection = document.getElementById('results-section');
+            
+            if (answerSection) answerSection.style.display = 'none';
+            if (estimationSection) estimationSection.style.display = 'none';
+            if (submitSection) submitSection.style.display = 'none';
+            if (currentPlayerCard) currentPlayerCard.style.display = 'none';
+            if (resultsSection) resultsSection.style.display = 'none';
             
             // Show final results
-            document.getElementById('final-results-section').style.display = 'flex';
+            const finalResultsSection = document.getElementById('final-results-section');
+            if (finalResultsSection) {
+                finalResultsSection.style.display = 'flex';
+            }
         }
 
         function loadQuestion(question) {
