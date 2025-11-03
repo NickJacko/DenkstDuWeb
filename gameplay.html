@@ -602,102 +602,112 @@
             transform: scale(0.98);
         }
 
-        /* Final Results Section - Kompakt für mobile */
+        /* Final Results Section - Kein horizontales Scrollen */
         .final-results-section {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 0;
-            padding: 0 5px;
+            padding: 0;
+            overflow-x: hidden;
+            width: 100%;
         }
 
         .final-header {
             background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
             border: 2px solid rgba(255, 215, 0, 0.6);
             backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 12px 15px;
-            margin-bottom: 12px;
+            border-radius: 20px;
+            padding: 20px 15px;
+            margin-bottom: 15px;
             text-align: center;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             flex-shrink: 0;
         }
 
         .final-title {
             color: #FFD700;
-            font-size: 1.3rem;
+            font-size: 1.5rem;
             font-weight: 800;
-            margin-bottom: 4px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            margin-bottom: 8px;
+            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
         }
 
         .final-subtitle {
             color: rgba(255, 255, 255, 0.95);
-            font-size: 0.85rem;
+            font-size: 0.95rem;
             font-weight: 600;
         }
 
         .leaderboard {
             flex: 1;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             min-height: 0;
+            overflow-x: hidden;
         }
 
         .leaderboard-title {
             color: white;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .leaderboard-subtitle {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             font-weight: 500;
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
         #leaderboard-list {
             display: grid;
-            gap: 8px;
-            max-height: 280px;
+            gap: 12px;
+            max-height: 320px;
             overflow-y: auto;
+            overflow-x: hidden;
+            width: 100%;
+            padding-right: 5px;
         }
 
         .leaderboard-item {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 12px 15px;
+            border-radius: 18px;
+            padding: 15px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
             border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .leaderboard-item.winner {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 215, 0, 0.35));
             border-color: #FFD700;
-            transform: scale(1.01);
-            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+            border-width: 2px;
+            transform: scale(1.02);
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
         }
 
         .rank-number {
-            width: 35px;
-            height: 35px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 1.2rem;
             flex-shrink: 0;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .rank-1 { 
@@ -719,13 +729,13 @@
         }
 
         @keyframes goldGlow {
-            0% { box-shadow: 0 3px 12px rgba(255, 215, 0, 0.3); }
-            100% { box-shadow: 0 3px 18px rgba(255, 215, 0, 0.6); }
+            0% { box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
+            100% { box-shadow: 0 4px 25px rgba(255, 215, 0, 0.6); }
         }
 
         .result-avatar {
-            width: 35px;
-            height: 35px;
+            width: 45px;
+            height: 45px;
             background: linear-gradient(135deg, #4facfe, #00f2fe);
             border-radius: 50%;
             display: flex;
@@ -733,48 +743,59 @@
             justify-content: center;
             color: white;
             font-weight: 800;
-            font-size: 0.9rem;
-            box-shadow: 0 3px 12px rgba(79, 172, 254, 0.3);
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
             flex-shrink: 0;
         }
 
         .player-final-stats {
             flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .player-final-name {
             color: white;
             font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 4px;
+            font-size: 1.2rem;
+            margin-bottom: 6px;
             text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .player-final-details {
             color: rgba(255, 255, 255, 0.85);
-            font-size: 0.8rem;
+            font-size: 0.95rem;
             display: flex;
-            gap: 15px;
+            gap: 20px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .detail-item {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+            white-space: nowrap;
         }
 
         .detail-icon {
-            font-size: 0.9rem;
+            font-size: 1.1rem;
+            flex-shrink: 0;
         }
 
         .final-navigation {
             flex-shrink: 0;
+            width: 100%;
         }
 
         .nav-btn.large {
-            padding: 14px 20px;
-            font-size: 1rem;
+            padding: 18px 25px;
+            font-size: 1.2rem;
+            width: 100%;
+            max-width: 100%;
         }
 
         /* Toast Notifications */
