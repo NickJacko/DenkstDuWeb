@@ -665,77 +665,129 @@
 
         #leaderboard-list {
             display: grid;
-            gap: 12px;
-            max-height: 320px;
+            gap: 15px;
+            max-height: 350px;
             overflow-y: auto;
             overflow-x: hidden;
             width: 100%;
-            padding-right: 5px;
+            padding: 5px;
         }
 
         .leaderboard-item {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 18px;
-            padding: 15px;
+            border-radius: 20px;
+            padding: 18px;
             display: flex;
             align-items: center;
-            gap: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            gap: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             width: 100%;
             min-width: 0;
             overflow: hidden;
+            position: relative;
         }
 
         .leaderboard-item.winner {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 215, 0, 0.35));
-            border-color: #FFD700;
-            border-width: 2px;
-            transform: scale(1.02);
-            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.4));
+            border: 3px solid #FFD700;
+            transform: scale(1.03);
+            box-shadow: 
+                0 15px 40px rgba(255, 215, 0, 0.4),
+                0 0 0 1px rgba(255, 215, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            margin: 3px;
+        }
+
+        .leaderboard-item.winner::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700, #FFA500);
+            border-radius: 22px;
+            z-index: -1;
+            animation: goldenBorder 3s ease-in-out infinite;
+        }
+
+        @keyframes goldenBorder {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
         }
 
         .rank-number {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             flex-shrink: 0;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
 
         .rank-1 { 
             background: linear-gradient(135deg, #FFD700, #FFA500); 
             color: white;
-            animation: goldGlow 2s ease-in-out infinite alternate;
+            animation: goldPulse 2s ease-in-out infinite alternate;
+            box-shadow: 
+                0 6px 20px rgba(255, 215, 0, 0.5),
+                0 0 30px rgba(255, 215, 0, 0.3);
         }
+
+        .rank-1::before {
+            content: '👑';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 1.2rem;
+            animation: crownBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes goldPulse {
+            0% { 
+                box-shadow: 
+                    0 6px 20px rgba(255, 215, 0, 0.5),
+                    0 0 30px rgba(255, 215, 0, 0.3);
+            }
+            100% { 
+                box-shadow: 
+                    0 8px 25px rgba(255, 215, 0, 0.7),
+                    0 0 40px rgba(255, 215, 0, 0.5);
+            }
+        }
+
+        @keyframes crownBounce {
+            0%, 100% { transform: translateY(0px) rotate(-10deg); }
+            50% { transform: translateY(-3px) rotate(10deg); }
+        }
+
         .rank-2 { 
             background: linear-gradient(135deg, #C0C0C0, #A0A0A0); 
-            color: white; 
+            color: white;
+            box-shadow: 0 6px 20px rgba(192, 192, 192, 0.4);
         }
         .rank-3 { 
             background: linear-gradient(135deg, #CD7F32, #B8860B); 
-            color: white; 
+            color: white;
+            box-shadow: 0 6px 20px rgba(205, 127, 50, 0.4);
         }
         .rank-other { 
-            background: rgba(255, 255, 255, 0.2); 
-            color: white; 
-        }
-
-        @keyframes goldGlow {
-            0% { box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
-            100% { box-shadow: 0 4px 25px rgba(255, 215, 0, 0.6); }
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15)); 
+            color: white;
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
         }
 
         .result-avatar {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             background: linear-gradient(135deg, #4facfe, #00f2fe);
             border-radius: 50%;
             display: flex;
@@ -743,9 +795,10 @@
             justify-content: center;
             color: white;
             font-weight: 800;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            font-size: 1.2rem;
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
             flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .player-final-stats {
@@ -756,20 +809,27 @@
 
         .player-final-name {
             color: white;
-            font-weight: 700;
-            font-size: 1.2rem;
-            margin-bottom: 6px;
-            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+            font-weight: 800;
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
+        .leaderboard-item.winner .player-final-name {
+            color: #FFD700;
+            text-shadow: 
+                0 2px 10px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
         .player-final-details {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
             display: flex;
-            gap: 20px;
+            gap: 25px;
             align-items: center;
             flex-wrap: wrap;
         }
@@ -777,12 +837,16 @@
         .detail-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             white-space: nowrap;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
         }
 
         .detail-icon {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             flex-shrink: 0;
         }
 
