@@ -66,59 +66,7 @@
             z-index: 1;
         }
 
-        /* Header - Kompakt */
-        .game-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(25px);
-            border-radius: 20px;
-            padding: 12px 20px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            flex-shrink: 0;
-        }
 
-        .game-info {
-            color: white;
-        }
-
-        .device-mode {
-            font-size: 0.7rem;
-            opacity: 0.9;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .question-counter {
-            font-size: 0.9rem;
-            font-weight: 800;
-        }
-
-        .players-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: white;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .players-indicator {
-            width: 8px;
-            height: 8px;
-            background: linear-gradient(45deg, #4CAF50, #8BC34A);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.2); }
-        }
 
         /* Main Content Area - Flexibel */
         .game-content {
@@ -292,12 +240,12 @@
             font-size: 1.2rem;
         }
 
-        /* Estimation Section - Flexibel */
+        /* Estimation Section - Verbessert */
         .estimation-section {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 15px;
+            border-radius: 20px;
+            padding: 20px;
             margin-bottom: 10px;
             border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
@@ -309,62 +257,32 @@
 
         .estimation-title {
             color: white;
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             flex-shrink: 0;
         }
 
-        /* Current Selection Display */
-        .current-selection {
-            text-align: center;
-            margin-bottom: 15px;
-            flex-shrink: 0;
-        }
-
-        .selection-display {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            padding: 12px;
-            display: inline-block;
-            min-width: 120px;
-        }
-
-        .selection-number {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 800;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            margin-bottom: 2px;
-        }
-
-        .selection-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        /* Number Grid - Flexibel */
+        /* Number Grid - Verbessert */
         .number-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
-            gap: 8px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
+            gap: 12px;
+            justify-items: center;
             flex: 1;
-            align-content: start;
+            align-content: center;
         }
 
         .number-btn {
-            width: 45px;
-            height: 45px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.25);
+            width: 55px;
+            height: 55px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
             border-radius: 50%;
-            font-size: 1rem;
+            font-size: 1.2rem;
             font-weight: 800;
             cursor: pointer;
             display: flex;
@@ -372,18 +290,49 @@
             justify-content: center;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             backdrop-filter: blur(20px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .number-btn:active {
-            transform: scale(0.9);
+            transform: scale(0.95);
         }
 
         .number-btn.selected {
             background: linear-gradient(135deg, #4CAF50, #2196F3);
             border-color: #4CAF50;
-            transform: scale(1.05);
+            transform: scale(1.1);
             box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
             color: white;
+        }
+
+        /* Selected Number Display - Kompakt */
+        .current-selection {
+            text-align: center;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .selection-display {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            border: 2px solid rgba(76, 175, 80, 0.5);
+            border-radius: 20px;
+            padding: 12px 20px;
+            display: inline-block;
+            min-width: 140px;
+        }
+
+        .selection-number {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 800;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 2px;
+        }
+
+        .selection-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.85rem;
+            font-weight: 600;
         }
 
         /* Submit Button */
@@ -780,17 +729,7 @@
 
     <!-- App Container -->
     <div class="app-container">
-        <!-- Game Header -->
-        <div class="game-header fadeInUp">
-            <div class="game-info">
-                <div class="device-mode">📱 Ein Gerät</div>
-                <div class="question-counter">Frage <span id="question-number">1</span></div>
-            </div>
-            <div class="players-info">
-                <div class="players-indicator"></div>
-                <span id="players-count">0 Spieler</span>
-            </div>
-        </div>
+
 
         <!-- Main Game Content -->
         <div class="game-content">
@@ -1154,8 +1093,6 @@
 
         // ===== GAME FLOW =====
         function updateGameDisplay() {
-            document.getElementById('question-number').textContent = currentGame.currentQuestionNumber;
-            document.getElementById('players-count').textContent = `${currentGame.players.length} Spieler`;
             document.getElementById('total-players').textContent = currentGame.players.length;
             
             // Update current player
