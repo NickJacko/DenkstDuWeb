@@ -11,7 +11,6 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="firebase-service.js"></script>
 
     <style>
         * {
@@ -585,10 +584,245 @@
 </div>
 
 <script>
-    // ===== SERVICES WERDEN AUS FIREBASE-SERVICE.JS GELADEN =====
-    // Die Klassen GameState und FirebaseGameService sind bereits
-    // über firebase-service.js verfügbar und müssen hier nicht
-    // nochmal definiert werden.
+    // ===== GAMESTATE CLASS =====
+    class GameState {
+        constructor() {
+            this.deviceMode = null;
+            this.selectedCategories = [];
+            this.difficulty = null;
+            this.playerName = '';
+            this.gameId = null;
+            this.playerId = null;
+            this.isHost = false;
+            this.isGuest = false;
+            this.gamePhase = 'difficulty_selection';
+            this.timestamp = Date.now();
+            this.load();
+        }
+
+        setDifficulty(difficulty) {
+            this.difficulty = difficulty;
+            this.save();
+            this.log(`Difficulty set: ${difficulty}`);
+        }
+
+        save() {
+            try {
+                const state = {
+                    deviceMode: this.deviceMode,
+                    selectedCategories: this.selectedCategories,
+                    difficulty: this.difficulty,
+                    playerName: this.playerName,
+                    gameId: this.gameId,
+                    playerId: this.playerId,
+                    isHost: this.isHost,
+                    isGuest: this.isGuest,
+                    gamePhase: this.gamePhase,
+                    timestamp: Date.now(),
+                    version: 3
+                };
+                localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                this.log('✅ State saved successfully');
+                return true;
+            } catch (error) {
+                this.log(`❌ Save failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        load() {
+            try {
+                const saved = localStorage.getItem('denkstdu_game_state');
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                        this.deviceMode = state.deviceMode || null;
+                        this.selectedCategories = state.selectedCategories || [];
+                        this.difficulty = state.difficulty || null;
+                        this.playerName = state.playerName || '';
+                        this.gameId = state.gameId || null;
+                        this.playerId = state.playerId || null;
+                        this.isHost = state.isHost || false;
+                        this.isGuest = state.isGuest || false;
+                        this.gamePhase = state.gamePhase || 'difficulty_selection';
+                        this.timestamp = state.timestamp || Date.now();
+                        this.log('✅ State loaded from localStorage');
+                    } else {
+                        this.log('⚠️ Saved state too old, cleared');
+                        this.clearStorage();
+                    }
+                } else {
+                    this.log('ℹ️ No saved state found');
+                }
+            } catch (error) {
+                this.log(`❌ Load failed: ${error.message}`, 'error');
+                this.clearStorage();
+            }
+        }
+
+        clearStorage() {
+            localStorage.removeItem('denkstdu_game_state');
+            this.log('🗑️ Storage cleared');
+        }
+
+        isValidForMultiplayer() {
+            return this.deviceMode === 'multi' &&
+                this.selectedCategories.length > 0 &&
+                this.gameId &&
+                this.difficulty;
+        }
+
+        getDebugInfo() {
+            return {
+                deviceMode: this.deviceMode,
+                isHost: this.isHost,
+                gameId: this.gameId,
+                playerId: this.playerId,
+                categories: this.selectedCategories,
+                difficulty: this.difficulty,
+                playerName: this.playerName,
+                gamePhase: this.gamePhase,
+                valid: this.isValidForMultiplayer(),
+                timestamp: this.timestamp
+            };
+        }
+
+        log(message, type = 'info') {
+            console.log(`[GameState] ${message}`);
+        }
+    }
+
+    // ===== FIREBASE SERVICE CLASS =====
+    class FirebaseGameService {
+        constructor() {
+            this.app = null;
+            this.database = null;
+            this.isInitialized = false;
+            this.isConnected = false;
+            this.currentGameId = null;
+            this.listeners = [];
+            this.connectionListeners = [];
+
+            this.config = {
+                apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+                authDomain: "denkstduwebsite.firebaseapp.com",
+                databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                projectId: "denkstduwebsite",
+                storageBucket: "denkstduwebsite.appspot.com",
+                messagingSenderId: "27029260611",
+                appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+                measurementId: "G-BNKNW95HK8"
+            };
+        }
+
+        async initialize() {
+            try {
+                this.log('🔥 Firebase Service - Initialisierung...');
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK nicht geladen');
+                }
+                if (!firebase.apps || firebase.apps.length === 0) {
+                    this.app = firebase.initializeApp(this.config);
+                } else {
+                    this.app = firebase.app();
+                }
+                this.database = firebase.database();
+                this.isConnected = await this.testConnection();
+                if (this.isConnected) {
+                    this.setupConnectionMonitoring();
+                    this.isInitialized = true;
+                    this.log('✅ Firebase Service bereit');
+                } else {
+                    this.log('⚠️ Firebase-Verbindung fehlgeschlagen');
+                }
+                return this.isInitialized;
+            } catch (error) {
+                this.log(`❌ Firebase Initialisierung fehlgeschlagen: ${error.message}`, 'error');
+                this.isInitialized = false;
+                this.isConnected = false;
+                return false;
+            }
+        }
+
+        async testConnection() {
+            try {
+                const connectedRef = this.database.ref('.info/connected');
+                const snapshot = await connectedRef.once('value');
+                return snapshot.val() === true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        setupConnectionMonitoring() {
+            try {
+                const connectedRef = this.database.ref('.info/connected');
+                const connectionListener = connectedRef.on('value', (snapshot) => {
+                    const wasConnected = this.isConnected;
+                    this.isConnected = snapshot.val() === true;
+                    if (wasConnected !== this.isConnected) {
+                        this.log(`🔄 Verbindungsstatus: ${this.isConnected ? 'Verbunden' : 'Getrennt'}`);
+                        this.notifyConnectionChange(this.isConnected);
+                    }
+                });
+                this.listeners.push({ ref: connectedRef, listener: connectionListener });
+            } catch (error) {
+                this.log(`❌ Fehler beim Setup der Verbindungsüberwachung: ${error.message}`, 'error');
+            }
+        }
+
+        onConnectionChange(callback) {
+            this.connectionListeners.push(callback);
+        }
+
+        notifyConnectionChange(connected) {
+            this.connectionListeners.forEach(callback => {
+                try {
+                    callback(connected);
+                } catch (error) {
+                    this.log(`❌ Fehler beim Benachrichtigen: ${error.message}`, 'error');
+                }
+            });
+        }
+
+        async updateGameSettings(gameId, settings) {
+            if (!this.isConnected || !gameId) return false;
+            try {
+                const gameRef = this.database.ref(`games/${gameId}`);
+                await gameRef.update({
+                    ...settings,
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                });
+                this.log(`✅ Spieleinstellungen aktualisiert: ${gameId}`);
+                return true;
+            } catch (error) {
+                this.log(`❌ Fehler beim Aktualisieren: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        cleanup() {
+            this.log('🧹 Firebase Service Cleanup...');
+            this.listeners.forEach(({ ref, listener }) => {
+                try {
+                    ref.off('value', listener);
+                } catch (error) {
+                    this.log(`❌ Fehler beim Entfernen des Listeners: ${error.message}`, 'error');
+                }
+            });
+            this.listeners = [];
+            this.connectionListeners = [];
+            this.currentGameId = null;
+        }
+
+        get isReady() {
+            return this.isInitialized && this.isConnected;
+        }
+
+        log(message, type = 'info') {
+            console.log(`[Firebase] ${message}`);
+        }
+    }
 
     // ===== GLOBAL VARIABLES =====
     let gameState = null;
@@ -623,7 +857,7 @@
         log('🎯 Multiplayer Difficulty Selection - Initialisierung gestartet...');
 
         try {
-            // SCHRITT 1: Services initialisieren (OHNE Loading-Screen)
+            // SCHRITT 1: Services initialisieren
             gameState = new GameState();
             firebaseService = new FirebaseGameService();
 
@@ -930,7 +1164,7 @@
         console.log('LocalStorage:', localStorage.getItem('denkstdu_game_state'));
     };
 
-    log('✅ Multiplayer Difficulty Selection v3.2 vollständig geladen!');
+    log('✅ Multiplayer Difficulty Selection v4.0 STANDALONE - vollständig geladen!');
     log('🛠️ Debug: debugDifficultySelection()');
 </script>
 </body>
