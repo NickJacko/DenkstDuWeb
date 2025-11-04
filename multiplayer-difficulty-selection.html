@@ -745,9 +745,12 @@
                 this.database = firebase.database();
                 this.log('✅ Database-Referenz erhalten');
 
+                // Warte kurz, damit Database vollständig initialisiert ist
+                await new Promise(resolve => setTimeout(resolve, 300));
+
                 // Test connection with timeout
                 this.log('🔧 Teste Verbindung...');
-                this.isConnected = await this.testConnectionWithTimeout(5000);
+                this.isConnected = await this.testConnectionWithTimeout(10000);
 
                 if (this.isConnected) {
                     this.log('✅ Firebase-Verbindung erfolgreich!');
@@ -770,10 +773,10 @@
             }
         }
 
-        async testConnectionWithTimeout(timeout = 5000) {
+        async testConnectionWithTimeout(timeout = 10000) {
             return new Promise(async (resolve) => {
                 const timeoutId = setTimeout(() => {
-                    this.log('⚠️ Verbindungstest Timeout', 'warning');
+                    this.log('⚠️ Verbindungstest Timeout nach 10 Sekunden', 'warning');
                     resolve(false);
                 }, timeout);
 
@@ -947,7 +950,17 @@
             log('🔥 Starte Firebase-Initialisierung...');
             updateConnectionStatus('connecting', '🔄 Verbinde mit Firebase...');
 
-            const firebaseReady = await firebaseService.initialize();
+            // Warte kurz, damit Firebase SDK vollständig geladen ist
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            let firebaseReady = await firebaseService.initialize();
+
+            // Wenn fehlgeschlagen, automatisch retry
+            if (!firebaseReady && firebaseService.retryAttempts < firebaseService.maxRetries) {
+                log('🔄 Erster Versuch fehlgeschlagen, starte automatisches Retry...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                firebaseReady = await firebaseService.retry();
+            }
 
             if (firebaseReady) {
                 log('✅ Firebase bereit und verbunden!');
