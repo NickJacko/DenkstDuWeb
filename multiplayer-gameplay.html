@@ -105,9 +105,34 @@
             margin: 0 auto;
             position: relative;
             z-index: 1;
+            padding-top: 70px;
         }
 
-        /* Header */
+        /* Small Game Info Top */
+        .game-info-top {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .info-text {
+            color: white;
+        }
+
+        .info-separator {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Header - ENTFERNT */
         .game-header {
             display: flex;
             justify-content: space-between;
@@ -691,6 +716,144 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
+        /* Player Waiting (without card - centered text) */
+        .player-waiting {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .waiting-host-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            font-weight: 600;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Overall Results Phase */
+        .overall-results-screen {
+            padding: 10px 0;
+        }
+
+        .overall-header {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            backdrop-filter: blur(30px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .overall-title {
+            color: #FFD700;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .overall-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .overall-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .stat-number {
+            color: white;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .overall-leaderboard {
+            margin-bottom: 20px;
+        }
+
+        .leaderboard-title {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .leaderboard-item {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            border-radius: 15px;
+            padding: 15px 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .leaderboard-item.winner {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
+            border-color: #FFD700;
+        }
+
+        .rank-badge {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); }
+        .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32, #B8860B); }
+        .rank-other { background: rgba(255, 255, 255, 0.2); }
+
+        .leaderboard-player-info {
+            flex: 1;
+        }
+
+        .leaderboard-player-name {
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .leaderboard-player-stats {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+            display: flex;
+            gap: 12px;
+        }
+
         .nav-btn.primary {
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
@@ -871,15 +1034,11 @@
 
 <!-- App Container -->
 <div class="app-container">
-    <!-- Game Header -->
-    <div class="game-header fadeInUp">
-        <div class="game-info">
-            <div class="game-id">ID: <span id="game-id-display">LOADING</span></div>
-        </div>
-        <div class="players-online">
-            <div class="online-indicator"></div>
-            <span id="players-count">0 Spieler</span>
-        </div>
+    <!-- Small Game Info (no card) -->
+    <div class="game-info-top fadeInUp">
+        <span class="info-text">ID: <span id="game-id-display">LOADING</span></span>
+        <span class="info-separator">•</span>
+        <span class="info-text"><span id="players-count">0 Spieler</span></span>
     </div>
 
     <!-- PHASE 1: Question & Answer -->
@@ -993,24 +1152,67 @@
                     <button class="nav-btn primary" onclick="nextQuestion()">
                         ➡️ Nächste Frage
                     </button>
-                    <button class="nav-btn secondary" onclick="goBack()">
-                        🏠 Zur Lobby
+                    <button class="nav-btn secondary" onclick="showOverallResults()">
+                        📊 Gesamtergebnisse
                     </button>
                 </div>
             </div>
 
             <!-- Player Controls (for non-hosts) -->
-            <div class="nav-buttons fadeInUp" id="player-controls">
-                <button class="nav-btn secondary" onclick="waitForHost()">
-                    ⏳ Warten auf Host...
-                </button>
+            <div class="player-waiting fadeInUp" id="player-controls">
+                <p class="waiting-host-text">⏳ Warten auf Host...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHASE 4: Overall Results (Gesamtergebnisse) -->
+    <div class="game-phase" id="overall-results-phase">
+        <div class="overall-results-screen">
+            <div class="overall-header fadeInUp">
+                <div class="overall-title">🏆 Gesamtergebnisse</div>
+                <div class="overall-subtitle">Alle Runden abgeschlossen</div>
+            </div>
+
+            <div class="overall-stats fadeInUp">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-rounds">0</div>
+                    <div class="stat-label">Runden gespielt</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-players-overall">0</div>
+                    <div class="stat-label">Spieler</div>
+                </div>
+            </div>
+
+            <div class="overall-leaderboard fadeInUp">
+                <div class="leaderboard-title">🏅 Bestenliste</div>
+                <div id="overall-leaderboard-list">
+                    <!-- Leaderboard populated by JS -->
+                </div>
+            </div>
+
+            <!-- Host Controls -->
+            <div class="host-controls fadeInUp" id="overall-host-controls" style="display: none;">
+                <div class="host-title">👑 Host-Kontrollen</div>
+                <div class="nav-buttons">
+                    <button class="nav-btn primary" onclick="continueGame()">
+                        ▶️ Spiel fortfahren
+                    </button>
+                    <button class="nav-btn danger" onclick="endGameForAll()">
+                        🛑 Spiel beenden
+                    </button>
+                </div>
+            </div>
+
+            <!-- Player Waiting -->
+            <div class="player-waiting fadeInUp" id="overall-player-controls">
+                <p class="waiting-host-text">⏳ Warten auf Host...</p>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-
     class GameState {
         constructor() {
             this.deviceMode = null;
@@ -1352,6 +1554,12 @@
     let currentQuestionNumber = 1;
     let currentPhase = 'question';
 
+    // Overall stats tracking
+    let overallStats = {
+        totalRounds: 0,
+        playerStats: {}
+    };
+
     const categoryNames = {
         'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
         'fsk16': '🎉 Party Time',
@@ -1477,8 +1685,37 @@
                 currentPlayers = currentGameData.players || {};
                 updatePlayersCount();
 
+                // Check for overall results trigger
+                if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
+                    log('📊 Overall results triggered by host');
+
+                    // Load overall stats if available
+                    if (currentGameData.overallStats) {
+                        overallStats = currentGameData.overallStats;
+                    }
+
+                    displayOverallResults();
+                }
+
+                // Check if overall results were closed (continue game)
+                if (currentGameData.showOverallResults === false && currentPhase === 'overall-results') {
+                    log('▶️ Game continues - triggered by host');
+                    handleNewRound(currentGameData.currentRound);
+                }
+
+                // Check for game end
+                if (currentGameData.gameState === 'finished') {
+                    log('🛑 Game finished by host');
+                    showNotification('Spiel wurde vom Host beendet! 👋', 'info');
+
+                    setTimeout(() => {
+                        cleanup();
+                        window.location.href = 'index.html';
+                    }, 3000);
+                }
+
                 // Check for round changes
-                if (currentGameData.currentRound && currentGameData.currentRound !== currentQuestionNumber) {
+                if (currentGameData.currentRound && currentGameData.currentRound !== currentQuestionNumber && currentPhase !== 'overall-results') {
                     handleNewRound(currentGameData.currentRound);
                 }
             }
@@ -1895,6 +2132,27 @@
         // SORT BY SIPS (DESCENDING - Most sips first)
         results.sort((a, b) => b.sips - a.sips);
 
+        // UPDATE OVERALL STATS
+        overallStats.totalRounds = currentQuestionNumber;
+
+        results.forEach(result => {
+            if (!overallStats.playerStats[result.playerId]) {
+                overallStats.playerStats[result.playerId] = {
+                    name: result.playerName,
+                    totalSips: 0,
+                    correctGuesses: 0,
+                    totalGuesses: 0
+                };
+            }
+
+            const playerStats = overallStats.playerStats[result.playerId];
+            playerStats.totalSips += result.sips;
+            playerStats.totalGuesses++;
+            if (result.isCorrect) {
+                playerStats.correctGuesses++;
+            }
+        });
+
         displayRoundResults(results, actualYesCount);
         showPhase('results');
 
@@ -1992,15 +2250,157 @@
         showNotification('Neue Frage geladen! 🎮', 'success');
     }
 
-    function waitForHost() {
-        showNotification('Warte auf den Host...', 'info');
+    async function showOverallResults() {
+        if (!gameState.isHost) {
+            showNotification('Nur der Host kann die Gesamtergebnisse zeigen!', 'warning');
+            return;
+        }
+
+        log('📊 Showing overall results...');
+
+        // Notify all players via Firebase
+        if (firebaseService.isReady) {
+            try {
+                const gameRef = firebaseService.database.ref(`games/${gameState.gameId}`);
+                await gameRef.update({
+                    showOverallResults: true,
+                    overallStats: overallStats,
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                log('✅ Overall results notification sent to all players');
+            } catch (error) {
+                log(`❌ Error sending notification: ${error.message}`, 'error');
+            }
+        }
+
+        // Show for host
+        displayOverallResults();
     }
 
-    function goBack() {
-        if (confirm('Zurück zur Lobby?')) {
-            cleanup();
-            window.location.href = 'multiplayer-lobby.html';
+    function displayOverallResults() {
+        log('🏆 Displaying overall results');
+
+        // Update stats
+        document.getElementById('total-rounds').textContent = overallStats.totalRounds;
+        document.getElementById('total-players-overall').textContent = Object.keys(overallStats.playerStats).length;
+
+        // Create leaderboard
+        const leaderboardList = document.getElementById('overall-leaderboard-list');
+        leaderboardList.innerHTML = '';
+
+        // Convert to array and sort by total sips (ascending - least sips = winner)
+        const leaderboard = Object.values(overallStats.playerStats).sort((a, b) => a.totalSips - b.totalSips);
+
+        leaderboard.forEach((player, index) => {
+            const leaderboardItem = document.createElement('div');
+            leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
+
+            const rankClass = index === 0 ? 'rank-1' :
+                index === 1 ? 'rank-2' :
+                    index === 2 ? 'rank-3' : 'rank-other';
+
+            const accuracy = player.totalGuesses > 0 ?
+                Math.round((player.correctGuesses / player.totalGuesses) * 100) : 0;
+
+            leaderboardItem.innerHTML = `
+                    <div class="rank-badge ${rankClass}">${index + 1}</div>
+                    <div class="leaderboard-player-info">
+                        <div class="leaderboard-player-name">${player.name}</div>
+                        <div class="leaderboard-player-stats">
+                            <span>🍺 ${player.totalSips} Schlücke</span>
+                            <span>🎯 ${accuracy}% genau</span>
+                        </div>
+                    </div>
+                `;
+
+            leaderboardList.appendChild(leaderboardItem);
+        });
+
+        // Show/hide controls
+        if (gameState.isHost) {
+            document.getElementById('overall-host-controls').style.display = 'block';
+            document.getElementById('overall-player-controls').style.display = 'none';
+        } else {
+            document.getElementById('overall-host-controls').style.display = 'none';
+            document.getElementById('overall-player-controls').style.display = 'block';
         }
+
+        showPhase('overall-results');
+    }
+
+    async function continueGame() {
+        if (!gameState.isHost) {
+            showNotification('Nur der Host kann das Spiel fortfahren!', 'warning');
+            return;
+        }
+
+        log('▶️ Continuing game...');
+
+        // Clear overall results flag
+        if (firebaseService.isReady) {
+            try {
+                const gameRef = firebaseService.database.ref(`games/${gameState.gameId}`);
+                await gameRef.update({
+                    showOverallResults: false,
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                });
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Start next question
+        currentQuestionNumber++;
+        updateGameDisplay();
+        resetForNewQuestion();
+        showPhase('question');
+
+        await startNewRound();
+        showNotification('Spiel wird fortgesetzt! 🎮', 'success');
+    }
+
+    async function endGameForAll() {
+        if (!gameState.isHost) {
+            showNotification('Nur der Host kann das Spiel beenden!', 'warning');
+            return;
+        }
+
+        if (!confirm('Spiel wirklich für ALLE Spieler beenden?')) {
+            return;
+        }
+
+        log('🛑 Ending game for all players...');
+
+        if (firebaseService.isReady) {
+            try {
+                const gameRef = firebaseService.database.ref(`games/${gameState.gameId}`);
+                await gameRef.update({
+                    gameState: 'finished',
+                    endedAt: firebase.database.ServerValue.TIMESTAMP,
+                    finalStats: overallStats
+                });
+
+                showNotification('Spiel wurde beendet! 👋', 'success');
+
+                setTimeout(() => {
+                    cleanup();
+                    window.location.href = 'index.html';
+                }, 2000);
+
+            } catch (error) {
+                log(`❌ Error ending game: ${error.message}`, 'error');
+                showNotification('Fehler beim Beenden', 'error');
+            }
+        } else {
+            // Offline fallback
+            cleanup();
+            window.location.href = 'index.html';
+        }
+    }
+
+    function waitForHost() {
+        showNotification('Warte auf den Host...', 'info');
     }
 
     function cleanup() {
