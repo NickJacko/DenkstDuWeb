@@ -1336,7 +1336,8 @@
         const startBtn = document.getElementById('start-btn');
         const playerCount = Object.keys(players || {}).length;
 
-        if (gameState.isHost && playerCount >= 1) {
+        // MINDESTENS 2 SPIELER ERFORDERLICH
+        if (gameState.isHost && playerCount >= 2) {
             startBtn.disabled = false;
             startBtn.classList.add('enabled');
             startBtn.textContent = `🚀 Spiel starten (${playerCount} Spieler)`;
@@ -1344,7 +1345,11 @@
             startBtn.disabled = true;
             startBtn.classList.remove('enabled');
             if (gameState.isHost) {
-                startBtn.textContent = 'Warte auf Spieler...';
+                if (playerCount < 2) {
+                    startBtn.textContent = `⏳ Warte auf Spieler (${playerCount}/2 min.)`;
+                } else {
+                    startBtn.textContent = `🚀 Spiel starten (${playerCount} Spieler)`;
+                }
             } else {
                 startBtn.textContent = 'Warte auf Host...';
             }
