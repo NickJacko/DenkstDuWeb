@@ -8,6 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Firebase SDK - WICHTIG: VOR deinem eigenen Code! -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <!-- Meta tags -->
     <meta name="description" content="No-Cap - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
     <meta name="keywords" content="Party Spiel, Trinkspiel, Schätzspiel, Multiplayer, Online">
@@ -260,15 +265,17 @@
     </footer>
 </div>
 
+<!-- WICHTIG: firebase-auth.js NACH Firebase SDK aber VOR deinem Code laden -->
+<script src="firebase-auth.js"></script>
+
 <script>
     // Global variables
     let ageVerified = false;
     let isAdult = false;
     let alcoholMode = false;
     let gameState = null;
-    let userProfile = null; // Für Login/Firebase vorbereitet
 
-    // KONSISTENTE Game State Management Klasse
+    // GameState Management Klasse
     class GameState {
         constructor() {
             this.deviceMode = null;
@@ -346,118 +353,60 @@
         setSelectedCategories(categories) {
             this.selectedCategories = [...categories];
             this.saveToStorage();
-            console.log('Categories set to:', categories);
         }
 
         setDifficulty(difficulty) {
             this.difficulty = difficulty;
             this.saveToStorage();
-            console.log('Difficulty set to:', difficulty);
         }
 
         setPlayers(players) {
             this.players = [...players];
             this.saveToStorage();
-            console.log('Players set to:', players);
         }
 
         setDeviceMode(mode) {
             this.deviceMode = mode;
             this.saveToStorage();
-            console.log('Device mode set to:', mode);
         }
     }
 
-    // User Profile Management für Login/Käufe/Cosmetics
-    class UserProfile {
-        constructor() {
-            this.userId = null;
-            this.isAdult = false;
-            this.purchases = [];
-            this.cosmetics = [];
-            this.loadFromStorage();
-        }
-
-        saveToStorage() {
-            try {
-                const profile = {
-                    userId: this.userId,
-                    isAdult: this.isAdult,
-                    purchases: this.purchases,
-                    cosmetics: this.cosmetics,
-                    timestamp: Date.now()
-                };
-                localStorage.setItem('nocap_user_profile', JSON.stringify(profile));
-                console.log('✅ UserProfile saved:', profile);
-                return true;
-            } catch (error) {
-                console.error('❌ Could not save user profile:', error);
-                return false;
-            }
-        }
-
-        loadFromStorage() {
-            try {
-                const saved = localStorage.getItem('nocap_user_profile');
-                if (saved) {
-                    const profile = JSON.parse(saved);
-                    this.userId = profile.userId || null;
-                    this.isAdult = profile.isAdult || false;
-                    this.purchases = profile.purchases || [];
-                    this.cosmetics = profile.cosmetics || [];
-                    console.log('✅ UserProfile loaded:', this);
-                    return true;
-                }
-            } catch (error) {
-                console.error('❌ Could not load user profile:', error);
-            }
-            return false;
-        }
-
-        setUserId(id) {
-            this.userId = id;
-            this.saveToStorage();
-        }
-
-        setIsAdult(isAdult) {
-            this.isAdult = isAdult;
-            this.saveToStorage();
-        }
-
-        addPurchase(purchase) {
-            this.purchases.push({
-                id: purchase.id,
-                name: purchase.name,
-                timestamp: Date.now()
-            });
-            this.saveToStorage();
-        }
-
-        addCosmetic(cosmetic) {
-            this.cosmetics.push({
-                id: cosmetic.id,
-                name: cosmetic.name,
-                timestamp: Date.now()
-            });
-            this.saveToStorage();
-        }
-    }
-
-    // Check for existing age verification
-    document.addEventListener('DOMContentLoaded', function() {
+    // Firebase Auth initialisieren beim Laden der Seite
+    document.addEventListener('DOMContentLoaded', async function() {
         console.log('🧢 No-Cap Landing Page loaded');
 
-        // Initialize GameState and UserProfile
+        // Initialize GameState
         gameState = new GameState();
-        userProfile = new UserProfile();
 
+        // WICHTIG: Firebase Auth initialisieren
+        try {
+            await authService.initialize();
+            console.log('✅ Firebase Auth initialized');
+
+            // Prüfe ob User bereits eingeloggt ist
+            if (!authService.isUserAuthenticated()) {
+                // Automatisch anonym einloggen für sofortiges Spielen
+                const result = await authService.signInAnonymously();
+                if (result.success) {
+                    console.log('✅ Anonymous user created:', result.userId);
+                } else {
+                    console.error('❌ Anonymous sign-in failed');
+                }
+            } else {
+                console.log('✅ User already authenticated:', authService.getUserId());
+            }
+        } catch (error) {
+            console.error('❌ Firebase initialization error:', error);
+            // App funktioniert trotzdem im Offline-Modus
+        }
+
+        // Check for existing age verification
         const savedVerification = localStorage.getItem('nocap_age_verification');
         if (savedVerification) {
             const verification = JSON.parse(savedVerification);
             const now = Date.now();
             const oneDay = 24 * 60 * 60 * 1000;
 
-            // Check if verification is still valid (24 hours)
             if (now - verification.timestamp < oneDay) {
                 ageVerified = verification.ageVerified;
                 isAdult = verification.isAdult;
@@ -499,9 +448,6 @@
         ageVerified = true;
         isAdult = isAdultUser;
         alcoholMode = allowAlcohol;
-
-        // Update UserProfile
-        userProfile.setIsAdult(isAdultUser);
     }
 
     function updateUIForVerification() {
@@ -539,7 +485,6 @@
     });
 
     document.getElementById('btn-under-18').addEventListener('click', function() {
-        // Unter 18 - setze nur Tag, keine Blockierung
         saveVerification(false, false);
         updateUIForVerification();
         hideAgeModal();
@@ -554,10 +499,7 @@
             return;
         }
 
-        // Set device mode using GameState
         gameState.setDeviceMode('single');
-
-        // Store age verification info
         localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
         localStorage.setItem('nocap_is_adult', isAdult.toString());
 
@@ -571,10 +513,7 @@
             return;
         }
 
-        // Set device mode using GameState
         gameState.setDeviceMode('multi');
-
-        // Store age verification info
         localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
         localStorage.setItem('nocap_is_adult', isAdult.toString());
 
@@ -588,10 +527,7 @@
             return;
         }
 
-        // Set device mode using GameState
         gameState.setDeviceMode('multi');
-
-        // Store age verification info
         localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
         localStorage.setItem('nocap_is_adult', isAdult.toString());
 
@@ -618,7 +554,6 @@
 
     // Notification function
     function showNotification(message, type = 'info') {
-        // Remove existing notifications
         document.querySelectorAll('.toast-notification').forEach(n => n.remove());
 
         const notification = document.createElement('div');
@@ -631,11 +566,8 @@
             `;
 
         document.body.appendChild(notification);
-
-        // Animate in
         setTimeout(() => notification.classList.add('show'), 100);
 
-        // Remove after 3 seconds
         setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => {
@@ -650,7 +582,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('gameId');
     if (gameId) {
-        // Wait for age verification, then redirect
         const checkVerification = setInterval(() => {
             if (ageVerified) {
                 clearInterval(checkVerification);
