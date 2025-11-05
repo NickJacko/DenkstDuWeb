@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Schwierigkeitsgrad wählen</title>
+    <title>No-Cap - Schwierigkeit wählen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Favicon - Kappe Emoji -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
     <style>
         * {
             margin: 0;
@@ -291,6 +295,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             min-width: 140px;
+            font-family: inherit;
         }
 
         .btn-primary {
@@ -380,375 +385,439 @@
     </style>
 </head>
 <body>
-    <!-- Background Particles -->
-    <div class="background-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
+<!-- Background Particles -->
+<div class="background-particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
 
-    <!-- Back Button -->
-    <button class="back-button" onclick="goBack()">← Zurück</button>
+<!-- Back Button -->
+<button class="back-button" onclick="goBack()">← Zurück</button>
 
-    <!-- Loading Spinner -->
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-    </div>
+<!-- Loading Spinner -->
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+</div>
 
-    <!-- Notification -->
-    <div class="notification" id="notification"></div>
+<!-- Notification -->
+<div class="notification" id="notification"></div>
 
-    <!-- App Container -->
-    <div class="app-container">
-        <div class="screen active">
-            <div class="content-area">
-                <h2 class="screen-title">⚡ Schwierigkeitsgrad</h2>
-                
-                <p class="selection-description">
-                    Wie hart soll es werden?<br>
-                    <small>Bestimmt die Anzahl der Schlücke bei falschen Schätzungen</small>
-                </p>
-                
-                <div class="difficulty-grid">
-                    <!-- Easy -->
-                    <div class="difficulty-card easy" data-difficulty="easy" onclick="selectDifficulty(this)">
-                        <div class="difficulty-header">
-                            <div class="difficulty-left">
-                                <div class="sips-indicator">🍷</div>
-                                <div class="difficulty-info">
-                                    <h3>Entspannt</h3>
-                                    <div class="difficulty-badge easy-badge">LEICHT</div>
-                                </div>
+<!-- App Container -->
+<div class="app-container">
+    <div class="screen active">
+        <div class="content-area">
+            <h2 class="screen-title">⚡ Schwierigkeitsgrad</h2>
+
+            <p class="selection-description">
+                Wie hart soll es werden?<br>
+                <small id="description-subtitle">Bestimmt die Konsequenz bei falschen Schätzungen</small>
+            </p>
+
+            <div class="difficulty-grid">
+                <!-- Easy -->
+                <div class="difficulty-card easy" data-difficulty="easy" onclick="selectDifficulty(this)">
+                    <div class="difficulty-header">
+                        <div class="difficulty-left">
+                            <div class="sips-indicator" id="easy-icon">💧</div>
+                            <div class="difficulty-info">
+                                <h3>Entspannt</h3>
+                                <div class="difficulty-badge easy-badge">LEICHT</div>
                             </div>
-                        </div>
-                        
-                        <div class="sips-explanation">
-                            <div class="base-sips">1 Grundschluck</div>
-                            <div class="sips-formula">
-                                + Abweichung bei falscher Schätzung<br>
-                                Perfekt für entspannte Runden
-                            </div>
-                        </div>
-                        
-                        <div class="difficulty-description">
-                            Für gemütliche Runden mit Familie und Freunden. 
-                            Weniger Bestrafung, mehr Spaß am Raten und Kennenlernen.
                         </div>
                     </div>
 
-                    <!-- Medium -->
-                    <div class="difficulty-card medium" data-difficulty="medium" onclick="selectDifficulty(this)">
-                        <div class="difficulty-header">
-                            <div class="difficulty-left">
-                                <div class="sips-indicator">🍺</div>
-                                <div class="difficulty-info">
-                                    <h3>Normal</h3>
-                                    <div class="difficulty-badge medium-badge">MITTEL</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="sips-explanation">
-                            <div class="base-sips">2 Grundschlücke</div>
-                            <div class="sips-formula">
-                                + Abweichung bei falscher Schätzung<br>
-                                Der Standard für lustige Partyabende
-                            </div>
-                        </div>
-                        
-                        <div class="difficulty-description">
-                            Die perfekte Balance zwischen Spaß und Herausforderung. 
-                            Ideal für die meisten Partys und Spieleabende.
+                    <div class="sips-explanation">
+                        <div class="base-sips" id="easy-base">1 Grundpunkt bei falscher Antwort</div>
+                        <div class="sips-formula" id="easy-formula">
+                            Punkte = Abweichung der Schätzung<br>
+                            Perfekt für entspannte Runden
                         </div>
                     </div>
 
-                    <!-- Hard -->
-                    <div class="difficulty-card hard" data-difficulty="hard" onclick="selectDifficulty(this)">
-                        <div class="difficulty-header">
-                            <div class="difficulty-left">
-                                <div class="sips-indicator">🔥</div>
-                                <div class="difficulty-info">
-                                    <h3>Hardcore</h3>
-                                    <div class="difficulty-badge hard-badge">SCHWER</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="sips-explanation">
-                            <div class="base-sips">3 Grundschlücke</div>
-                            <div class="sips-formula">
-                                + Abweichung bei falscher Schätzung<br>
-                                Nur für erfahrene Spieler!
-                            </div>
-                        </div>
-                        
-                        <div class="difficulty-description">
-                            Für Profis und mutige Gruppen. Hohe Strafen machen jede 
-                            falsche Schätzung richtig teuer - seid ihr bereit?
-                        </div>
+                    <div class="difficulty-description">
+                        Für gemütliche Runden mit Familie und Freunden.
+                        Weniger Bestrafung, mehr Spaß am Raten und Kennenlernen.
                     </div>
                 </div>
 
-                <div class="controls">
-                    <button class="btn btn-primary" id="continueBtn" onclick="proceedToDifficulty()" disabled>
-                        Weiter
-                    </button>
+                <!-- Medium -->
+                <div class="difficulty-card medium" data-difficulty="medium" onclick="selectDifficulty(this)">
+                    <div class="difficulty-header">
+                        <div class="difficulty-left">
+                            <div class="sips-indicator" id="medium-icon">🎉</div>
+                            <div class="difficulty-info">
+                                <h3>Normal</h3>
+                                <div class="difficulty-badge medium-badge">MITTEL</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sips-explanation">
+                        <div class="base-sips" id="medium-base">Abweichung = Punkte</div>
+                        <div class="sips-formula" id="medium-formula">
+                            Punkte = Abweichung der Schätzung<br>
+                            Der Standard für lustige Partyabende
+                        </div>
+                    </div>
+
+                    <div class="difficulty-description">
+                        Die perfekte Balance zwischen Spaß und Herausforderung.
+                        Ideal für die meisten Partys und Spieleabende.
+                    </div>
                 </div>
+
+                <!-- Hard -->
+                <div class="difficulty-card hard" data-difficulty="hard" onclick="selectDifficulty(this)">
+                    <div class="difficulty-header">
+                        <div class="difficulty-left">
+                            <div class="sips-indicator" id="hard-icon">🔥</div>
+                            <div class="difficulty-info">
+                                <h3>Hardcore</h3>
+                                <div class="difficulty-badge hard-badge">SCHWER</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sips-explanation">
+                        <div class="base-sips" id="hard-base">Doppelte Abweichung!</div>
+                        <div class="sips-formula" id="hard-formula">
+                            Punkte = Abweichung × 2<br>
+                            Nur für erfahrene Spieler!
+                        </div>
+                    </div>
+
+                    <div class="difficulty-description">
+                        Für Profis und mutige Gruppen. Hohe Strafen machen jede
+                        falsche Schätzung richtig teuer - seid ihr bereit?
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" id="continueBtn" onclick="proceedToDifficulty()" disabled>
+                    Weiter
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // Game state instance
-        let gameState;
-        let selectedDifficulty = null;
+<script>
+    // Game state instance
+    let gameState;
+    let selectedDifficulty = null;
+    let alcoholMode = false;
 
-        // KONSISTENTE Game State Management Klasse (gleich wie in category-selection)
-        class GameState {
-            constructor() {
-                this.deviceMode = null;
-                this.selectedCategories = [];
-                this.difficulty = null;
-                this.players = [];
-                this.gameId = null;
-                this.playerName = null;
-                this.isHost = false;
-                this.isGuest = false;
-                this.gameState = 'setup';
-                this.timestamp = Date.now();
-                
-                this.loadFromStorage();
-            }
+    // KONSISTENTE Game State Management Klasse
+    class GameState {
+        constructor() {
+            this.deviceMode = null;
+            this.selectedCategories = [];
+            this.difficulty = null;
+            this.players = [];
+            this.gameId = null;
+            this.playerName = null;
+            this.isHost = false;
+            this.isGuest = false;
+            this.gameState = 'setup';
+            this.timestamp = Date.now();
 
-            saveToStorage() {
-                try {
-                    const state = {
-                        deviceMode: this.deviceMode,
-                        selectedCategories: this.selectedCategories,
-                        difficulty: this.difficulty,
-                        players: this.players,
-                        gameId: this.gameId,
-                        playerName: this.playerName,
-                        isHost: this.isHost,
-                        isGuest: this.isGuest,
-                        gameState: this.gameState,
-                        timestamp: Date.now(),
-                        version: 2
-                    };
-                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
-                    console.log('✅ GameState saved:', state);
-                    return true;
-                } catch (error) {
-                    console.error('❌ Could not save game state:', error);
-                    return false;
-                }
-            }
+            this.loadFromStorage();
+        }
 
-            loadFromStorage() {
-                try {
-                    const saved = localStorage.getItem('denkstdu_game_state');
-                    if (saved) {
-                        const state = JSON.parse(saved);
-                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                            // Lade nur die relevanten Properties
-                            this.deviceMode = state.deviceMode || null;
-                            this.selectedCategories = state.selectedCategories || [];
-                            this.difficulty = state.difficulty || null;
-                            this.players = state.players || [];
-                            this.gameId = state.gameId || null;
-                            this.playerName = state.playerName || null;
-                            this.isHost = state.isHost || false;
-                            this.isGuest = state.isGuest || false;
-                            this.gameState = state.gameState || 'setup';
-                            
-                            console.log('✅ GameState loaded from storage:', this);
-                            return true;
-                        } else {
-                            console.log('⚠️ GameState expired, clearing storage');
-                            this.clearStorage();
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Could not load game state:', error);
-                    this.clearStorage();
-                }
+        saveToStorage() {
+            try {
+                const state = {
+                    deviceMode: this.deviceMode,
+                    selectedCategories: this.selectedCategories,
+                    difficulty: this.difficulty,
+                    players: this.players,
+                    gameId: this.gameId,
+                    playerName: this.playerName,
+                    isHost: this.isHost,
+                    isGuest: this.isGuest,
+                    gameState: this.gameState,
+                    timestamp: Date.now(),
+                    version: 2
+                };
+                localStorage.setItem('nocap_game_state', JSON.stringify(state));
+                console.log('✅ GameState saved:', state);
+                return true;
+            } catch (error) {
+                console.error('❌ Could not save game state:', error);
                 return false;
             }
+        }
 
-            clearStorage() {
-                localStorage.removeItem('denkstdu_game_state');
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('nocap_game_state');
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                        this.deviceMode = state.deviceMode || null;
+                        this.selectedCategories = state.selectedCategories || [];
+                        this.difficulty = state.difficulty || null;
+                        this.players = state.players || [];
+                        this.gameId = state.gameId || null;
+                        this.playerName = state.playerName || null;
+                        this.isHost = state.isHost || false;
+                        this.isGuest = state.isGuest || false;
+                        this.gameState = state.gameState || 'setup';
+
+                        console.log('✅ GameState loaded from storage:', this);
+                        return true;
+                    } else {
+                        console.log('⚠️ GameState expired, clearing storage');
+                        this.clearStorage();
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Could not load game state:', error);
+                this.clearStorage();
             }
+            return false;
+        }
 
-            setSelectedCategories(categories) {
-                this.selectedCategories = [...categories];
-                this.saveToStorage();
-                console.log('Categories set to:', categories);
-            }
+        clearStorage() {
+            localStorage.removeItem('nocap_game_state');
+        }
 
-            setDifficulty(difficulty) {
-                this.difficulty = difficulty;
-                this.saveToStorage();
-                console.log('Difficulty set to:', difficulty);
-            }
+        setSelectedCategories(categories) {
+            this.selectedCategories = [...categories];
+            this.saveToStorage();
+            console.log('Categories set to:', categories);
+        }
 
-            setPlayers(players) {
-                this.players = [...players];
-                this.saveToStorage();
-                console.log('Players set to:', players);
-            }
+        setDifficulty(difficulty) {
+            this.difficulty = difficulty;
+            this.saveToStorage();
+            console.log('Difficulty set to:', difficulty);
+        }
 
-            setDeviceMode(mode) {
-                this.deviceMode = mode;
-                this.saveToStorage();
-                console.log('Device mode set to:', mode);
+        setPlayers(players) {
+            this.players = [...players];
+            this.saveToStorage();
+            console.log('Players set to:', players);
+        }
+
+        setDeviceMode(mode) {
+            this.deviceMode = mode;
+            this.saveToStorage();
+            console.log('Device mode set to:', mode);
+        }
+    }
+
+    // Check alcohol mode and update UI
+    function checkAlcoholMode() {
+        try {
+            const alcoholModeStr = localStorage.getItem('nocap_alcohol_mode');
+            alcoholMode = alcoholModeStr === 'true';
+            console.log('🍺 Alcohol mode:', alcoholMode);
+
+            updateUIForAlcoholMode();
+        } catch (error) {
+            console.error('❌ Error checking alcohol mode:', error);
+            alcoholMode = false;
+            updateUIForAlcoholMode();
+        }
+    }
+
+    // Update UI based on alcohol mode
+    function updateUIForAlcoholMode() {
+        if (alcoholMode) {
+            // Alkohol-Modus: Schlücke und Alkohol-Icons
+            document.getElementById('description-subtitle').textContent = 'Bestimmt die Anzahl der Schlücke bei falschen Schätzungen';
+
+            // Easy
+            document.getElementById('easy-icon').textContent = '🍷';
+            document.getElementById('easy-base').textContent = '1 Grundschluck bei falscher Antwort';
+            document.getElementById('easy-formula').innerHTML = 'Schlücke = Abweichung der Schätzung<br>Perfekt für entspannte Runden';
+
+            // Medium
+            document.getElementById('medium-icon').textContent = '🍺';
+            document.getElementById('medium-base').textContent = 'Abweichung = Schlücke';
+            document.getElementById('medium-formula').innerHTML = 'Schlücke = Abweichung der Schätzung<br>Der Standard für lustige Partyabende';
+
+            // Hard
+            document.getElementById('hard-icon').textContent = '🔥';
+            document.getElementById('hard-base').textContent = 'Doppelte Abweichung!';
+            document.getElementById('hard-formula').innerHTML = 'Schlücke = Abweichung × 2<br>Nur für erfahrene Spieler!';
+
+            console.log('✅ UI updated for alcohol mode');
+        } else {
+            // Alkoholfrei-Modus: Punkte und alternative Icons
+            document.getElementById('description-subtitle').textContent = 'Bestimmt die Konsequenz bei falschen Schätzungen';
+
+            // Easy
+            document.getElementById('easy-icon').textContent = '💧';
+            document.getElementById('easy-base').textContent = '1 Grundpunkt bei falscher Antwort';
+            document.getElementById('easy-formula').innerHTML = 'Punkte = Abweichung der Schätzung<br>Perfekt für entspannte Runden';
+
+            // Medium
+            document.getElementById('medium-icon').textContent = '🎉';
+            document.getElementById('medium-base').textContent = 'Abweichung = Punkte';
+            document.getElementById('medium-formula').innerHTML = 'Punkte = Abweichung der Schätzung<br>Der Standard für lustige Partyabende';
+
+            // Hard
+            document.getElementById('hard-icon').textContent = '🔥';
+            document.getElementById('hard-base').textContent = 'Doppelte Abweichung!';
+            document.getElementById('hard-formula').innerHTML = 'Punkte = Abweichung × 2<br>Nur für erfahrene Spieler!';
+
+            console.log('✅ UI updated for alcohol-free mode');
+        }
+    }
+
+    // Initialize page
+    window.addEventListener('DOMContentLoaded', function() {
+        console.log('⚡ Initializing difficulty selection...');
+
+        // Check alcohol mode first
+        checkAlcoholMode();
+
+        // Initialize game state
+        gameState = new GameState();
+
+        // Load previously selected difficulty if any
+        if (gameState.difficulty) {
+            selectedDifficulty = gameState.difficulty;
+            const card = document.querySelector(`[data-difficulty="${selectedDifficulty}"]`);
+            if (card) {
+                card.classList.add('selected');
+                updateContinueButton();
             }
         }
 
-        // Initialize page
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('⚡ Initializing difficulty selection...');
-            
-            // Initialize game state
-            gameState = new GameState();
-            
-            // Load previously selected difficulty if any
-            if (gameState.difficulty) {
-                selectedDifficulty = gameState.difficulty;
-                const card = document.querySelector(`[data-difficulty="${selectedDifficulty}"]`);
-                if (card) {
-                    card.classList.add('selected');
-                    updateContinueButton();
-                }
-            }
-            
-            console.log('📋 Current game state:', {
-                deviceMode: gameState.deviceMode,
-                categories: gameState.selectedCategories,
-                difficulty: gameState.difficulty
-            });
-
-            // Validation: Check if categories are selected
-            if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-                console.warn('⚠️ No categories selected, redirecting...');
-                showNotification('Keine Kategorien ausgewählt! Weiterleitung...', 'warning');
-                setTimeout(() => {
-                    window.location.href = 'category-selection.html';
-                }, 2000);
-                return;
-            }
+        console.log('📋 Current game state:', {
+            deviceMode: gameState.deviceMode,
+            categories: gameState.selectedCategories,
+            difficulty: gameState.difficulty,
+            alcoholMode: alcoholMode
         });
 
-        // Select difficulty
-        function selectDifficulty(element) {
-            const difficulty = element.dataset.difficulty;
-            
-            // Remove previous selection
-            document.querySelectorAll('.difficulty-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
-            // Add selection to clicked card
-            element.classList.add('selected');
-            selectedDifficulty = difficulty;
-            
-            // Save to game state
-            gameState.setDifficulty(difficulty);
-            
-            // Update continue button
-            updateContinueButton();
-            
-            // Show success notification
-            const difficultyNames = {
-                easy: 'Entspannt',
-                medium: 'Normal', 
-                hard: 'Hardcore'
-            };
-            showNotification(`${difficultyNames[difficulty]} Modus gewählt!`, 'success');
-            
-            console.log('Selected difficulty:', difficulty);
-        }
-
-        // Update continue button state
-        function updateContinueButton() {
-            const continueBtn = document.getElementById('continueBtn');
-            if (selectedDifficulty) {
-                continueBtn.disabled = false;
-                continueBtn.textContent = 'Weiter';
-            } else {
-                continueBtn.disabled = true;
-                continueBtn.textContent = 'Schwierigkeitsgrad wählen';
-            }
-        }
-
-        // Proceed to next step
-        function proceedToDifficulty() {
-            if (!selectedDifficulty) {
-                showNotification('Bitte wähle einen Schwierigkeitsgrad aus', 'warning');
-                return;
-            }
-
-            showLoading();
-            
-            // Save difficulty to game state
-            gameState.setDifficulty(selectedDifficulty);
-            
-            setTimeout(() => {
-                // Route based on device mode
-                if (gameState.deviceMode === 'single') {
-                    // Single device: go to player setup
-                    window.location.href = 'player-setup.html';
-                } else if (gameState.deviceMode === 'multi') {
-                    // Multiplayer: go to multiplayer lobby
-                    window.location.href = 'multiplayer-lobby.html';
-                } else {
-                    // Fallback if deviceMode is not set
-                    console.warn('Device mode not set, defaulting to single device');
-                    window.location.href = 'player-setup.html';
-                }
-            }, 500);
-        }
-
-        // Go back to previous page
-        function goBack() {
-            showLoading();
+        // Validation: Check if categories are selected
+        if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+            console.warn('⚠️ No categories selected, redirecting...');
+            showNotification('Keine Kategorien ausgewählt! Weiterleitung...', 'warning');
             setTimeout(() => {
                 window.location.href = 'category-selection.html';
-            }, 300);
+            }, 2000);
+            return;
         }
+    });
 
-        // Utility Functions
-        function showLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.classList.add('show');
-            }
-        }
+    // Select difficulty
+    function selectDifficulty(element) {
+        const difficulty = element.dataset.difficulty;
 
-        function hideLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.classList.remove('show');
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            if (notification) {
-                notification.textContent = message;
-                notification.className = `notification ${type} show`;
-                
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 3000);
-            }
-        }
-
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            hideLoading();
+        // Remove previous selection
+        document.querySelectorAll('.difficulty-card').forEach(card => {
+            card.classList.remove('selected');
         });
-    </script>
+
+        // Add selection to clicked card
+        element.classList.add('selected');
+        selectedDifficulty = difficulty;
+
+        // Save to game state
+        gameState.setDifficulty(difficulty);
+
+        // Update continue button
+        updateContinueButton();
+
+        // Show success notification
+        const difficultyNames = {
+            easy: 'Entspannt',
+            medium: 'Normal',
+            hard: 'Hardcore'
+        };
+        showNotification(`${difficultyNames[difficulty]} Modus gewählt!`, 'success');
+
+        console.log('Selected difficulty:', difficulty);
+    }
+
+    // Update continue button state
+    function updateContinueButton() {
+        const continueBtn = document.getElementById('continueBtn');
+        if (selectedDifficulty) {
+            continueBtn.disabled = false;
+            continueBtn.textContent = 'Weiter';
+        } else {
+            continueBtn.disabled = true;
+            continueBtn.textContent = 'Schwierigkeitsgrad wählen';
+        }
+    }
+
+    // Proceed to next step
+    function proceedToDifficulty() {
+        if (!selectedDifficulty) {
+            showNotification('Bitte wähle einen Schwierigkeitsgrad aus', 'warning');
+            return;
+        }
+
+        showLoading();
+
+        // Save difficulty to game state
+        gameState.setDifficulty(selectedDifficulty);
+
+        setTimeout(() => {
+            // Route based on device mode
+            if (gameState.deviceMode === 'single') {
+                // Single device: go to player setup
+                window.location.href = 'player-setup.html';
+            } else if (gameState.deviceMode === 'multi') {
+                // Multiplayer: go to multiplayer lobby
+                window.location.href = 'multiplayer-lobby.html';
+            } else {
+                // Fallback if deviceMode is not set
+                console.warn('Device mode not set, defaulting to single device');
+                window.location.href = 'player-setup.html';
+            }
+        }, 500);
+    }
+
+    // Go back to previous page
+    function goBack() {
+        showLoading();
+        setTimeout(() => {
+            window.location.href = 'category-selection.html';
+        }, 300);
+    }
+
+    // Utility Functions
+    function showLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.classList.add('show');
+        }
+    }
+
+    function hideLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.classList.remove('show');
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        const notification = document.getElementById('notification');
+        if (notification) {
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        hideLoading();
+    });
+</script>
 </body>
 </html>
