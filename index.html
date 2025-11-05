@@ -3,1433 +3,1424 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Das ultimative Schätzspiel</title>
+    <title>No-Cap - Das ultimative Schätzspiel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Meta tags -->
-    <meta name="description" content="DenkstDu - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
+    <meta name="description" content="No-Cap - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
     <meta name="keywords" content="Party Spiel, Trinkspiel, Schätzspiel, Multiplayer, Online">
-    <meta name="author" content="DenkstDu Team">
+    <meta name="author" content="No-Cap Team">
     <meta name="theme-color" content="#667eea">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+
+    <!-- Favicon - Kappe Emoji -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 </head>
 <body>
-    <!-- Age Verification Modal -->
-    <div class="age-modal" id="age-modal">
-        <div class="age-modal-content">
-            <div class="age-header">
-                <span class="age-icon">🛡️</span>
-                <h2>Jugendschutz & verantwortungsvoller Umgang</h2>
-            </div>
-            
-            <div class="age-warning">
-                <h3>⚠️ Hinweis: Jugendschutz & verantwortungsvoller Umgang mit Alkohol</h3>
-                <p>
-                    Dieses Spiel kann Aufgaben enthalten, die den Konsum alkoholischer Getränke erwähnen. 
-                    Alkoholische Spielvarianten richten sich <strong>ausschließlich an Volljährige (18+)</strong>. 
-                    Minderjährige oder Personen, die keinen Alkohol trinken möchten, nutzen bitte die 
-                    <strong>alkoholfreie Variante</strong>.
-                </p>
-                <p class="legal-note">
-                    Das Angebot verkauft oder schenkt keinen Alkohol aus. 
-                    (Vgl. Jugendschutzgesetz § 9 zur Abgabe von Alkohol an Minderjährige.)
-                </p>
+<!-- Age Verification Modal -->
+<div class="age-modal" id="age-modal">
+    <div class="age-modal-content">
+        <div class="age-header">
+            <span class="age-icon">🛡️</span>
+            <h2>Jugendschutz & verantwortungsvoller Umgang</h2>
+        </div>
+
+        <div class="age-warning">
+            <h3>⚠️ Hinweis: Jugendschutz & verantwortungsvoller Umgang mit Alkohol</h3>
+            <p>
+                Dieses Spiel kann Aufgaben enthalten, die den Konsum alkoholischer Getränke erwähnen.
+                Alkoholische Spielvarianten richten sich <strong>ausschließlich an Volljährige (18+)</strong>.
+                Minderjährige oder Personen, die keinen Alkohol trinken möchten, nutzen bitte die
+                <strong>alkoholfreie Variante</strong>.
+            </p>
+            <p class="legal-note">
+                Das Angebot verkauft oder schenkt keinen Alkohol aus.
+                (Vgl. Jugendschutzgesetz § 9 zur Abgabe von Alkohol an Minderjährige.)
+            </p>
+        </div>
+
+        <div class="age-verification">
+            <h4>Altersbestätigung (Pflicht)</h4>
+            <div class="checkbox-container">
+                <input type="checkbox" id="age-checkbox">
+                <label for="age-checkbox">
+                    <strong>Ich bestätige, dass ich mindestens 18 Jahre alt bin.</strong>
+                </label>
             </div>
 
-            <div class="age-verification">
-                <h4>Altersbestätigung (Pflicht)</h4>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="age-checkbox">
-                    <label for="age-checkbox">
-                        <strong>Ich bestätige, dass ich mindestens 18 Jahre alt bin.</strong>
-                    </label>
-                </div>
-                
-                <div class="age-buttons">
-                    <button class="btn-age primary" id="btn-18plus" disabled>
-                        🔞 Weiter (18+)
-                    </button>
-                    <div class="or-divider">— oder —</div>
-                    <button class="btn-age secondary" id="btn-alcohol-free">
-                        🚫🍺 Ohne Alkohol fortfahren
-                    </button>
-                </div>
-                
-                <p class="age-subtitle">
-                    <em>Für Minderjährige und alle, die ohne Alkohol spielen möchten.</em>
-                </p>
+            <div class="age-buttons">
+                <button class="btn-age primary" id="btn-18plus" disabled>
+                    🔞 Weiter (18+)
+                </button>
+                <div class="or-divider">— oder —</div>
+                <button class="btn-age secondary" id="btn-under-18">
+                    👶 Ich bin unter 18
+                </button>
             </div>
 
-            <div class="responsibility-info">
-                <h4>🚨 Verantwortungsvoller Umgang</h4>
-                <ul>
-                    <li><strong>Kein Alkohol</strong> bei Teilnahme am Straßenverkehr, in Schwangerschaft/Stillzeit, bei bestimmten Medikamenten oder gesundheitlichen Gründen.</li>
-                    <li><strong>Kein Druck auf andere</strong> und <strong>kein exzessiver Konsum.</strong></li>
-                    <li><strong>Beende das Spiel</strong> bei Unwohlsein.</li>
-                </ul>
-            </div>
+            <p class="age-subtitle">
+                <em>Für Minderjährige und alle, die ohne Alkohol spielen möchten.</em>
+            </p>
+        </div>
 
-            <div class="help-section">
-                <h4>🆘 Hilfe & Beratung</h4>
-                <p>
-                    Brauchst du Hilfe oder Beratung? 
-                    <strong>Sucht & Drogen Hotline: 01806 313031</strong> 
-                    (täglich 24/7, anonym)
-                </p>
-            </div>
+        <div class="responsibility-info">
+            <h4>🚨 Verantwortungsvoller Umgang</h4>
+            <ul>
+                <li><strong>Kein Alkohol</strong> bei Teilnahme am Straßenverkehr, in Schwangerschaft/Stillzeit, bei bestimmten Medikamenten oder gesundheitlichen Gründen.</li>
+                <li><strong>Kein Druck auf andere</strong> und <strong>kein exzessiver Konsum.</strong></li>
+                <li><strong>Beende das Spiel</strong> bei Unwohlsein.</li>
+            </ul>
+        </div>
 
-            <div class="modal-footer">
-                <div class="footer-links-modal">
-                    <a href="#" onclick="showImprint()" class="modal-link">📋 Impressum</a>
-                    <a href="#" onclick="showPrivacy()" class="modal-link">🔒 Datenschutz</a>
-                    <a href="#" onclick="showYouthProtection()" class="modal-link">🛡️ Jugendschutz-Infos</a>
-                </div>
+        <div class="help-section">
+            <h4>🆘 Hilfe & Beratung</h4>
+            <p>
+                Brauchst du Hilfe oder Beratung?
+                <strong>Sucht & Drogen Hotline: 01806 313031</strong>
+                (täglich 24/7, anonym)
+            </p>
+        </div>
+
+        <div class="modal-footer">
+            <div class="footer-links-modal">
+                <a href="imprint.html" class="modal-link">📋 Impressum</a>
+                <a href="privacy.html" class="modal-link">🔒 Datenschutz</a>
+                <a href="youthprotection.html" class="modal-link">🛡️ Jugendschutz-Infos</a>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Background Particles -->
-    <div class="background-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
+<!-- Background Particles -->
+<div class="background-particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
 
-    <!-- App Container -->
-    <div class="app-container" id="main-app">
-        <!-- Header -->
-        <header class="site-header">
-            <div class="site-logo">
-                <div class="logo-icon">🧠</div>
-                <h1 class="logo">DenkstDu</h1>
-                <p class="site-url">Das ultimative Schätzspiel</p>
-            </div>
-        </header>
+<!-- App Container -->
+<div class="app-container" id="main-app">
+    <!-- Header -->
+    <header class="site-header">
+        <div class="site-logo">
+            <div class="logo-icon">🧢</div>
+            <h1 class="logo">No-Cap</h1>
+            <p class="site-url">Das ultimative Schätzspiel</p>
+        </div>
+    </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Hero Section -->
-            <section class="hero-section">
-                <h2 class="hero-title">Das ultimative Schätzspiel</h2>
-                <p class="hero-subtitle">Für unvergessliche Abende mit Freunden</p>
-                
-                <div class="game-features">
-                    <div class="feature">
-                        <span class="feature-icon">🤔</span>
-                        <span class="feature-text">Schätze, wie viele etwas gemacht haben</span>
-                    </div>
-                    <div class="feature">
-                        <span class="feature-icon" id="drink-icon">🍻</span>
-                        <span class="feature-text" id="drink-text">Trinke, wenn du falsch liegst</span>
-                    </div>
-                    <div class="feature">
-                        <span class="feature-icon">🎉</span>
-                        <span class="feature-text">Lache über peinliche Geständnisse</span>
-                    </div>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h2 class="hero-title">Das ultimative Schätzspiel</h2>
+            <p class="hero-subtitle">Für unvergessliche Abende mit Freunden</p>
+
+            <div class="game-features">
+                <div class="feature">
+                    <span class="feature-icon">🤔</span>
+                    <span class="feature-text">Schätze, wie viele etwas gemacht haben</span>
                 </div>
-
-                <!-- Scroll Indicator -->
-                <div class="scroll-indicator">
-                    <div class="scroll-text">Mehr erfahren</div>
-                    <div class="scroll-arrow">⬇️</div>
+                <div class="feature">
+                    <span class="feature-icon" id="drink-icon">🍻</span>
+                    <span class="feature-text" id="drink-text">Trinke, wenn du falsch liegst</span>
                 </div>
-            </section>
-
-            <!-- Game Modes -->
-            <section class="game-modes">
-                <h3 class="section-title">Wähle deinen Spielmodus</h3>
-                
-                <div class="mode-cards">
-                    <!-- Single Device Mode -->
-                    <div class="mode-card" onclick="startSingleDevice()">
-                        <div class="mode-header">
-                            <span class="mode-icon">📱</span>
-                            <h4 class="mode-title">Ein Gerät</h4>
-                        </div>
-                        <p class="mode-description">
-                            Alle Spieler nutzen ein Handy gemeinsam.<br>
-                            Perfekt für kleine Runden (2-6 Spieler).
-                        </p>
-                        <div class="mode-features">
-                            <span class="feature-badge">✅ Sofort spielbereit</span>
-                            <span class="feature-badge">✅ Offline verfügbar</span>
-                        </div>
-                        <button class="mode-btn">
-                            🎮 Einzelgerät-Spiel starten
-                        </button>
-                    </div>
-
-                    <!-- Multiplayer Mode -->
-                    <div class="mode-card featured" onclick="startMultiplayer()">
-                        <div class="featured-badge">🔥 Beliebt</div>
-                        <div class="mode-header">
-                            <span class="mode-icon">🌐</span>
-                            <h4 class="mode-title">Online Multiplayer</h4>
-                        </div>
-                        <p class="mode-description">
-                            Jeder Spieler nutzt sein eigenes Gerät.<br>
-                            Synchrones Spielen über das Internet.
-                        </p>
-                        <div class="mode-features">
-                            <span class="feature-badge">🚀 Bis zu 8 Spieler</span>
-                            <span class="feature-badge">📱 Jeder am eigenen Handy</span>
-                        </div>
-                        <button class="mode-btn primary">
-                            🌐 Multiplayer-Spiel erstellen
-                        </button>
-                    </div>
-
-                    <!-- Join Game -->
-                    <div class="mode-card" onclick="joinGame()">
-                        <div class="mode-header">
-                            <span class="mode-icon">🔗</span>
-                            <h4 class="mode-title">Spiel beitreten</h4>
-                        </div>
-                        <p class="mode-description">
-                            Tritt einem bestehenden Spiel bei.<br>
-                            Einfach 6-stelligen Code eingeben.
-                        </p>
-                        <div class="mode-features">
-                            <span class="feature-badge">⚡ Schneller Einstieg</span>
-                            <span class="feature-badge">🎯 Mit Code beitreten</span>
-                        </div>
-                        <button class="mode-btn">
-                            🔗 Spiel beitreten
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- How It Works -->
-            <section class="how-it-works">
-                <h3 class="section-title">So funktioniert's</h3>
-                
-                <div class="steps">
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <div class="step-content">
-                            <h5>Frage wird gestellt</h5>
-                            <p>"Hast du schon mal...?"</p>
-                        </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <div class="step-content">
-                            <h5>Alle antworten geheim</h5>
-                            <p>Ja oder Nein - keiner sieht es</p>
-                        </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <div class="step-content">
-                            <h5>Jeder schätzt</h5>
-                            <p>Wie viele haben "Ja" gesagt?</p>
-                        </div>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">4</div>
-                        <div class="step-content">
-                            <h5>Auflösung & Belohnung</h5>
-                            <p id="step4-text">Wer falsch lag, muss trinken!</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Footer -->
-        <footer class="site-footer">
-            <div class="footer-content">
-                <div class="footer-links">
-                    <a href="#" onclick="showRules()" class="footer-link">📖 Spielregeln</a>
-                    <a href="#" onclick="showPrivacy()" class="footer-link">🔒 Datenschutz</a>
-                    <a href="#" onclick="showImprint()" class="footer-link">📋 Impressum</a>
-                    <a href="#" onclick="showYouthProtection()" class="footer-link">🛡️ Jugendschutz</a>
-                </div>
-                <div class="footer-info">
-                    <p>&copy; 2024 DenkstDu - Das ultimative Schätzspiel</p>
-                    <p class="website-badge">🧠 <strong>DenkstDu</strong></p>
+                <div class="feature">
+                    <span class="feature-icon">🎉</span>
+                    <span class="feature-text">Lache über peinliche Geständnisse</span>
                 </div>
             </div>
-        </footer>
-    </div>
 
-    <script>
-        // Global variables
-        let ageVerified = false;
-        let alcoholMode = false;
-        let gameState = null;
+            <!-- Scroll Indicator -->
+            <div class="scroll-indicator">
+                <div class="scroll-text">Mehr erfahren</div>
+                <div class="scroll-arrow">⬇️</div>
+            </div>
+        </section>
 
-        // KONSISTENTE Game State Management Klasse (gleich wie in den anderen Dateien)
-        class GameState {
-            constructor() {
-                this.deviceMode = null;
-                this.selectedCategories = [];
-                this.difficulty = null;
-                this.players = [];
-                this.gameId = null;
-                this.playerName = null;
-                this.isHost = false;
-                this.isGuest = false;
-                this.gameState = 'setup';
-                this.timestamp = Date.now();
-                
-                this.loadFromStorage();
-            }
+        <!-- Game Modes -->
+        <section class="game-modes">
+            <h3 class="section-title">Wähle deinen Spielmodus</h3>
 
-            saveToStorage() {
-                try {
-                    const state = {
-                        deviceMode: this.deviceMode,
-                        selectedCategories: this.selectedCategories,
-                        difficulty: this.difficulty,
-                        players: this.players,
-                        gameId: this.gameId,
-                        playerName: this.playerName,
-                        isHost: this.isHost,
-                        isGuest: this.isGuest,
-                        gameState: this.gameState,
-                        timestamp: Date.now(),
-                        version: 2
-                    };
-                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
-                    console.log('✅ GameState saved:', state);
-                    return true;
-                } catch (error) {
-                    console.error('❌ Could not save game state:', error);
-                    return false;
-                }
-            }
+            <div class="mode-cards">
+                <!-- Single Device Mode -->
+                <div class="mode-card" onclick="startSingleDevice()">
+                    <div class="mode-header">
+                        <span class="mode-icon">📱</span>
+                        <h4 class="mode-title">Ein Gerät</h4>
+                    </div>
+                    <p class="mode-description">
+                        Alle Spieler nutzen ein Handy gemeinsam.<br>
+                        Perfekt für kleine Runden (2-6 Spieler).
+                    </p>
+                    <div class="mode-features">
+                        <span class="feature-badge">✅ Sofort spielbereit</span>
+                        <span class="feature-badge">✅ Offline verfügbar</span>
+                    </div>
+                    <button class="mode-btn">
+                        🎮 Einzelgerät-Spiel starten
+                    </button>
+                </div>
 
-            loadFromStorage() {
-                try {
-                    const saved = localStorage.getItem('denkstdu_game_state');
-                    if (saved) {
-                        const state = JSON.parse(saved);
-                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                            // Lade nur die relevanten Properties
-                            this.deviceMode = state.deviceMode || null;
-                            this.selectedCategories = state.selectedCategories || [];
-                            this.difficulty = state.difficulty || null;
-                            this.players = state.players || [];
-                            this.gameId = state.gameId || null;
-                            this.playerName = state.playerName || null;
-                            this.isHost = state.isHost || false;
-                            this.isGuest = state.isGuest || false;
-                            this.gameState = state.gameState || 'setup';
-                            
-                            console.log('✅ GameState loaded from storage:', this);
-                            return true;
-                        } else {
-                            console.log('⚠️ GameState expired, clearing storage');
-                            this.clearStorage();
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Could not load game state:', error);
-                    this.clearStorage();
-                }
+                <!-- Multiplayer Mode -->
+                <div class="mode-card featured" onclick="startMultiplayer()">
+                    <div class="featured-badge">🔥 Beliebt</div>
+                    <div class="mode-header">
+                        <span class="mode-icon">🌐</span>
+                        <h4 class="mode-title">Online Multiplayer</h4>
+                    </div>
+                    <p class="mode-description">
+                        Jeder Spieler nutzt sein eigenes Gerät.<br>
+                        Synchrones Spielen über das Internet.
+                    </p>
+                    <div class="mode-features">
+                        <span class="feature-badge">🚀 Bis zu 8 Spieler</span>
+                        <span class="feature-badge">📱 Jeder am eigenen Handy</span>
+                    </div>
+                    <button class="mode-btn primary">
+                        🌐 Multiplayer-Spiel erstellen
+                    </button>
+                </div>
+
+                <!-- Join Game -->
+                <div class="mode-card" onclick="joinGame()">
+                    <div class="mode-header">
+                        <span class="mode-icon">🔗</span>
+                        <h4 class="mode-title">Spiel beitreten</h4>
+                    </div>
+                    <p class="mode-description">
+                        Tritt einem bestehenden Spiel bei.<br>
+                        Einfach 6-stelligen Code eingeben.
+                    </p>
+                    <div class="mode-features">
+                        <span class="feature-badge">⚡ Schneller Einstieg</span>
+                        <span class="feature-badge">🎯 Mit Code beitreten</span>
+                    </div>
+                    <button class="mode-btn">
+                        🔗 Spiel beitreten
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="how-it-works">
+            <h3 class="section-title">So funktioniert's</h3>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h5>Frage wird gestellt</h5>
+                        <p>"Ich habe noch nie...?"</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h5>Alle antworten geheim</h5>
+                        <p>Ja oder Nein - keiner sieht es</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h5>Jeder schätzt</h5>
+                        <p>Wie viele haben "Ja" gesagt?</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h5>Auflösung & Konsequenz</h5>
+                        <p id="step4-text">Wer falsch lag, muss trinken!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="rules.html" class="footer-link">📖 Spielregeln</a>
+                <a href="privacy.html" class="footer-link">🔒 Datenschutz</a>
+                <a href="imprint.html" class="footer-link">📋 Impressum</a>
+                <a href="youthprotection.html" class="footer-link">🛡️ Jugendschutz</a>
+            </div>
+            <div class="footer-info">
+                <p>&copy; 2024 No-Cap - Das ultimative Schätzspiel</p>
+                <p class="website-badge">🧢 <strong>No-Cap</strong></p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<script>
+    // Global variables
+    let ageVerified = false;
+    let isAdult = false;
+    let alcoholMode = false;
+    let gameState = null;
+    let userProfile = null; // Für Login/Firebase vorbereitet
+
+    // KONSISTENTE Game State Management Klasse
+    class GameState {
+        constructor() {
+            this.deviceMode = null;
+            this.selectedCategories = [];
+            this.difficulty = null;
+            this.players = [];
+            this.gameId = null;
+            this.playerName = null;
+            this.isHost = false;
+            this.isGuest = false;
+            this.gameState = 'setup';
+            this.timestamp = Date.now();
+
+            this.loadFromStorage();
+        }
+
+        saveToStorage() {
+            try {
+                const state = {
+                    deviceMode: this.deviceMode,
+                    selectedCategories: this.selectedCategories,
+                    difficulty: this.difficulty,
+                    players: this.players,
+                    gameId: this.gameId,
+                    playerName: this.playerName,
+                    isHost: this.isHost,
+                    isGuest: this.isGuest,
+                    gameState: this.gameState,
+                    timestamp: Date.now(),
+                    version: 2
+                };
+                localStorage.setItem('nocap_game_state', JSON.stringify(state));
+                console.log('✅ GameState saved:', state);
+                return true;
+            } catch (error) {
+                console.error('❌ Could not save game state:', error);
                 return false;
             }
-
-            clearStorage() {
-                localStorage.removeItem('denkstdu_game_state');
-            }
-
-            setSelectedCategories(categories) {
-                this.selectedCategories = [...categories];
-                this.saveToStorage();
-                console.log('Categories set to:', categories);
-            }
-
-            setDifficulty(difficulty) {
-                this.difficulty = difficulty;
-                this.saveToStorage();
-                console.log('Difficulty set to:', difficulty);
-            }
-
-            setPlayers(players) {
-                this.players = [...players];
-                this.saveToStorage();
-                console.log('Players set to:', players);
-            }
-
-            setDeviceMode(mode) {
-                this.deviceMode = mode;
-                this.saveToStorage();
-                console.log('Device mode set to:', mode);
-            }
         }
 
-        // Check for existing age verification
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🧠 DenkstDu Landing Page loaded');
-            
-            // Initialize GameState
-            gameState = new GameState();
-            
-            const savedVerification = localStorage.getItem('denkstdu_age_verification');
-            if (savedVerification) {
-                const verification = JSON.parse(savedVerification);
-                const now = Date.now();
-                const oneDay = 24 * 60 * 60 * 1000;
-                
-                // Check if verification is still valid (24 hours)
-                if (now - verification.timestamp < oneDay) {
-                    ageVerified = verification.ageVerified;
-                    alcoholMode = verification.alcoholMode;
-                    
-                    updateUIForVerification();
-                    hideAgeModal();
-                    animateCards();
-                    return;
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('nocap_game_state');
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                        this.deviceMode = state.deviceMode || null;
+                        this.selectedCategories = state.selectedCategories || [];
+                        this.difficulty = state.difficulty || null;
+                        this.players = state.players || [];
+                        this.gameId = state.gameId || null;
+                        this.playerName = state.playerName || null;
+                        this.isHost = state.isHost || false;
+                        this.isGuest = state.isGuest || false;
+                        this.gameState = state.gameState || 'setup';
+
+                        console.log('✅ GameState loaded from storage:', this);
+                        return true;
+                    } else {
+                        console.log('⚠️ GameState expired, clearing storage');
+                        this.clearStorage();
+                    }
                 }
+            } catch (error) {
+                console.error('❌ Could not load game state:', error);
+                this.clearStorage();
             }
-            
-            // Show age modal
-            showAgeModal();
-        });
-
-        // Age verification functions
-        function showAgeModal() {
-            document.getElementById('age-modal').style.display = 'flex';
-            document.getElementById('main-app').style.filter = 'blur(5px)';
-            document.getElementById('main-app').style.pointerEvents = 'none';
+            return false;
         }
 
-        function hideAgeModal() {
-            document.getElementById('age-modal').style.display = 'none';
-            document.getElementById('main-app').style.filter = 'none';
-            document.getElementById('main-app').style.pointerEvents = 'auto';
+        clearStorage() {
+            localStorage.removeItem('nocap_game_state');
         }
 
-        function saveVerification(isAdult, allowAlcohol) {
-            const verification = {
-                ageVerified: isAdult,
-                alcoholMode: allowAlcohol,
+        setSelectedCategories(categories) {
+            this.selectedCategories = [...categories];
+            this.saveToStorage();
+            console.log('Categories set to:', categories);
+        }
+
+        setDifficulty(difficulty) {
+            this.difficulty = difficulty;
+            this.saveToStorage();
+            console.log('Difficulty set to:', difficulty);
+        }
+
+        setPlayers(players) {
+            this.players = [...players];
+            this.saveToStorage();
+            console.log('Players set to:', players);
+        }
+
+        setDeviceMode(mode) {
+            this.deviceMode = mode;
+            this.saveToStorage();
+            console.log('Device mode set to:', mode);
+        }
+    }
+
+    // User Profile Management für Login/Käufe/Cosmetics
+    class UserProfile {
+        constructor() {
+            this.userId = null;
+            this.isAdult = false;
+            this.purchases = [];
+            this.cosmetics = [];
+            this.loadFromStorage();
+        }
+
+        saveToStorage() {
+            try {
+                const profile = {
+                    userId: this.userId,
+                    isAdult: this.isAdult,
+                    purchases: this.purchases,
+                    cosmetics: this.cosmetics,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('nocap_user_profile', JSON.stringify(profile));
+                console.log('✅ UserProfile saved:', profile);
+                return true;
+            } catch (error) {
+                console.error('❌ Could not save user profile:', error);
+                return false;
+            }
+        }
+
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('nocap_user_profile');
+                if (saved) {
+                    const profile = JSON.parse(saved);
+                    this.userId = profile.userId || null;
+                    this.isAdult = profile.isAdult || false;
+                    this.purchases = profile.purchases || [];
+                    this.cosmetics = profile.cosmetics || [];
+                    console.log('✅ UserProfile loaded:', this);
+                    return true;
+                }
+            } catch (error) {
+                console.error('❌ Could not load user profile:', error);
+            }
+            return false;
+        }
+
+        setUserId(id) {
+            this.userId = id;
+            this.saveToStorage();
+        }
+
+        setIsAdult(isAdult) {
+            this.isAdult = isAdult;
+            this.saveToStorage();
+        }
+
+        addPurchase(purchase) {
+            this.purchases.push({
+                id: purchase.id,
+                name: purchase.name,
                 timestamp: Date.now()
-            };
-            localStorage.setItem('denkstdu_age_verification', JSON.stringify(verification));
-            
-            ageVerified = isAdult;
-            alcoholMode = allowAlcohol;
+            });
+            this.saveToStorage();
         }
 
-        function updateUIForVerification() {
-            if (!alcoholMode) {
-                // Update UI for alcohol-free mode
-                document.getElementById('drink-icon').textContent = '🎯';
-                document.getElementById('drink-text').textContent = 'Sammle Punkte bei falschen Schätzungen';
-                document.getElementById('step4-text').textContent = 'Wer falsch lag, bekommt Punkte!';
-            }
+        addCosmetic(cosmetic) {
+            this.cosmetics.push({
+                id: cosmetic.id,
+                name: cosmetic.name,
+                timestamp: Date.now()
+            });
+            this.saveToStorage();
         }
+    }
 
-        // Age checkbox handling
-        document.addEventListener('change', function(e) {
-            if (e.target.id === 'age-checkbox') {
-                const btn18Plus = document.getElementById('btn-18plus');
-                btn18Plus.disabled = !e.target.checked;
-                
-                if (e.target.checked) {
-                    btn18Plus.classList.add('enabled');
-                } else {
-                    btn18Plus.classList.remove('enabled');
-                }
-            }
-        });
+    // Check for existing age verification
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🧢 No-Cap Landing Page loaded');
 
-        // Age verification buttons
-        document.getElementById('btn-18plus').addEventListener('click', function() {
-            if (document.getElementById('age-checkbox').checked) {
-                saveVerification(true, true);
+        // Initialize GameState and UserProfile
+        gameState = new GameState();
+        userProfile = new UserProfile();
+
+        const savedVerification = localStorage.getItem('nocap_age_verification');
+        if (savedVerification) {
+            const verification = JSON.parse(savedVerification);
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            // Check if verification is still valid (24 hours)
+            if (now - verification.timestamp < oneDay) {
+                ageVerified = verification.ageVerified;
+                isAdult = verification.isAdult;
+                alcoholMode = verification.alcoholMode;
+
                 updateUIForVerification();
                 hideAgeModal();
                 animateCards();
-                showNotification('Spiel mit allen Inhalten verfügbar', 'success');
+                return;
             }
-        });
+        }
 
-        document.getElementById('btn-alcohol-free').addEventListener('click', function() {
-            saveVerification(false, false);
+        // Show age modal
+        showAgeModal();
+    });
+
+    // Age verification functions
+    function showAgeModal() {
+        document.getElementById('age-modal').style.display = 'flex';
+        document.getElementById('main-app').style.filter = 'blur(5px)';
+        document.getElementById('main-app').style.pointerEvents = 'none';
+    }
+
+    function hideAgeModal() {
+        document.getElementById('age-modal').style.display = 'none';
+        document.getElementById('main-app').style.filter = 'none';
+        document.getElementById('main-app').style.pointerEvents = 'auto';
+    }
+
+    function saveVerification(isAdultUser, allowAlcohol) {
+        const verification = {
+            ageVerified: true,
+            isAdult: isAdultUser,
+            alcoholMode: allowAlcohol,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('nocap_age_verification', JSON.stringify(verification));
+
+        ageVerified = true;
+        isAdult = isAdultUser;
+        alcoholMode = allowAlcohol;
+
+        // Update UserProfile
+        userProfile.setIsAdult(isAdultUser);
+    }
+
+    function updateUIForVerification() {
+        if (!alcoholMode) {
+            // Update UI for alcohol-free mode
+            document.getElementById('drink-icon').textContent = '🎯';
+            document.getElementById('drink-text').textContent = 'Bekomme Challenges bei falschen Schätzungen';
+            document.getElementById('step4-text').textContent = 'Wer falsch lag, bekommt eine Challenge!';
+        }
+    }
+
+    // Age checkbox handling
+    document.addEventListener('change', function(e) {
+        if (e.target.id === 'age-checkbox') {
+            const btn18Plus = document.getElementById('btn-18plus');
+            btn18Plus.disabled = !e.target.checked;
+
+            if (e.target.checked) {
+                btn18Plus.classList.add('enabled');
+            } else {
+                btn18Plus.classList.remove('enabled');
+            }
+        }
+    });
+
+    // Age verification buttons
+    document.getElementById('btn-18plus').addEventListener('click', function() {
+        if (document.getElementById('age-checkbox').checked) {
+            saveVerification(true, true);
             updateUIForVerification();
             hideAgeModal();
             animateCards();
-            showNotification('Alkoholfreie Version aktiviert', 'success');
-        });
+            showNotification('Spiel mit allen Inhalten verfügbar', 'success');
+        }
+    });
 
-        // Game mode functions
-        function startSingleDevice() {
-            if (!ageVerified) {
-                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
-                return;
-            }
-            
-            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
-            gameState.setDeviceMode('single');
-            
-            // Store alcohol mode separately for reference
-            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
-            
-            console.log('🎮 Starting single device mode');
-            window.location.href = 'category-selection.html';
+    document.getElementById('btn-under-18').addEventListener('click', function() {
+        // Unter 18 - setze nur Tag, keine Blockierung
+        saveVerification(false, false);
+        updateUIForVerification();
+        hideAgeModal();
+        animateCards();
+        showNotification('Jugendschutz-Modus aktiviert - FSK 18+ Inhalte sind ausgeblendet', 'info');
+    });
+
+    // Game mode functions
+    function startSingleDevice() {
+        if (!ageVerified) {
+            showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+            return;
         }
 
-        function startMultiplayer() {
-            if (!ageVerified) {
-                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
-                return;
-            }
-            
-            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
-            gameState.setDeviceMode('multi');
-            
-            // Store alcohol mode separately for reference
-            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
-            
-            console.log('🌐 Starting multiplayer mode');
-            window.location.href = 'multiplayer-category-selection.html';
+        // Set device mode using GameState
+        gameState.setDeviceMode('single');
+
+        // Store age verification info
+        localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+        localStorage.setItem('nocap_is_adult', isAdult.toString());
+
+        console.log('🎮 Starting single device mode');
+        window.location.href = 'category-selection.html';
+    }
+
+    function startMultiplayer() {
+        if (!ageVerified) {
+            showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+            return;
         }
 
-        function joinGame() {
-            if (!ageVerified) {
-                showNotification('Bitte bestätige zuerst dein Alter', 'warning');
-                return;
-            }
-            
-            // Set device mode using GameState (WICHTIG: Konsistente Speicherung!)
-            gameState.setDeviceMode('multi');
-            
-            // Store alcohol mode separately for reference
-            localStorage.setItem('denkstdu_alcohol_mode', alcoholMode.toString());
-            
-            console.log('🔗 Joining multiplayer game');
-            window.location.href = 'join-game.html';
+        // Set device mode using GameState
+        gameState.setDeviceMode('multi');
+
+        // Store age verification info
+        localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+        localStorage.setItem('nocap_is_adult', isAdult.toString());
+
+        console.log('🌐 Starting multiplayer mode');
+        window.location.href = 'multiplayer-category-selection.html';
+    }
+
+    function joinGame() {
+        if (!ageVerified) {
+            showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+            return;
         }
 
-        // Information functions
-        function showRules() {
-            alert(`📖 Spielregeln - DenkstDu
+        // Set device mode using GameState
+        gameState.setDeviceMode('multi');
 
-🎯 Ziel: Schätze, wie viele Spieler etwas schon mal gemacht haben!
+        // Store age verification info
+        localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+        localStorage.setItem('nocap_is_adult', isAdult.toString());
 
-🔄 Spielablauf:
-1️⃣ Frage wird gestellt (z.B. "Hast du schon mal nackt gebadet?")
-2️⃣ Alle antworten geheim mit Ja/Nein
-3️⃣ Alle schätzen: Wie viele haben "Ja" gesagt?
-4️⃣ Auflösung: Wer falsch lag, ${alcoholMode ? 'trinkt' : 'bekommt Punkte'}!
+        console.log('🔗 Joining multiplayer game');
+        window.location.href = 'join-game.html';
+    }
 
-${alcoholMode ? `🍺 Schlücke-Regeln:
-• Richtig geschätzt = 0 Schlücke 🎯
-• 1 daneben = Basis + 1 Schluck 📏
-• 2+ daneben = Basis + mehr Schlücke 📐` : `🎯 Punkte-System:
-• Richtig geschätzt = 0 Punkte 🎯
-• 1 daneben = 1 Punkt 📏
-• 2+ daneben = mehr Punkte 📐`}
-
-🎮 Modi:
-• Ein Gerät: Alle teilen sich ein Handy
-• Multiplayer: Jeder hat sein eigenes Gerät
-
-Viel Spaß! 🎉`);
-        }
-
-        function showPrivacy() {
-            alert(`🔒 Datenschutz - DenkstDu
-
-📍 Was wir sammeln:
-• Spielernamen (nur während des Spiels)
-• Spieleinstellungen (lokal im Browser)
-• Altersverifikation (lokal gespeichert)
-• Grundlegende Nutzungsstatistiken
-
-🛡️ Was wir NICHT tun:
-• Keine Werbung oder Tracking
-• Keine Datenverkäufe
-• Keine dauerhaften Profile
-
-⏰ Datenlöschung:
-• Spieldaten werden nach 24h automatisch gelöscht
-• Lokale Daten nur in deinem Browser
-• Komplette Löschung jederzeit möglich
-
-🌐 Server: Europa (DSGVO-konform)
-
-Fragen? kontakt@denkstdu.app`);
-        }
-
-        function showImprint() {
-            alert(`📋 Impressum - DenkstDu
-
-👤 Verantwortlich:
-DenkstDu Team
-Deutschland
-
-📧 Kontakt:
-E-Mail: kontakt@denkstdu.app
-Website: denkstdu.app
-
-⚖️ Rechtliches:
-Privates Projekt, alle Rechte vorbehalten.
-
-🛠️ Technologie:
-DSGVO-konform, Server in Europa`);
-        }
-
-        function showYouthProtection() {
-            alert(`🛡️ Jugendschutz-Informationen - DenkstDu
-
-⚖️ Rechtliche Grundlagen:
-• Jugendschutzgesetz (JuSchG) § 9 - Schutz vor Alkoholabgabe
-• Jugendmedienschutz-Staatsvertrag (JMStV)
-• Werberichtlinien des Deutschen Werberats
-
-🔞 Altersverifikation:
-• Obligatorische Bestätigung für alkoholbezogene Inhalte
-• Separate alkoholfreie Spielvariante verfügbar
-• Keine Ansprache von Minderjährigen für Alkoholkonsum
-
-🛡️ Schutzmaßnahmen:
-• Klare Kennzeichnung altersbeschränkter Inhalte
-• Verantwortungsvolle Darstellung von Alkoholkonsum
-• Kein Verkauf oder Ausschank von Alkohol
-• Hinweise auf Beratungsstellen
-
-📞 Hilfe & Beratung:
-• Sucht & Drogen Hotline: 01806 313031
-• Bundeszentrale für gesundheitliche Aufklärung
-• Örtliche Beratungsstellen
-
-🌐 Weitere Informationen:
-• kjm-online.de (Kommission für Jugendmedienschutz)
-• gesetze-im-internet.de (Jugendschutzgesetz)
-• bvlh.net (Bundesverband Liberaler Hilfen)`);
-        }
-
-        // Animation function
-        function animateCards() {
-            setTimeout(() => {
-                document.querySelectorAll('.mode-card').forEach((card, index) => {
+    // Animation function
+    function animateCards() {
+        setTimeout(() => {
+            document.querySelectorAll('.mode-card').forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(30px)';
+                    card.style.transition = 'all 0.6s ease';
                     setTimeout(() => {
-                        card.style.opacity = '0';
-                        card.style.transform = 'translateY(30px)';
-                        card.style.transition = 'all 0.6s ease';
-                        setTimeout(() => {
-                            card.style.opacity = '1';
-                            card.style.transform = 'translateY(0)';
-                        }, 100);
-                    }, index * 200);
-                });
-            }, 500);
-        }
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 200);
+            });
+        }, 500);
+    }
 
-        // Notification function
-        function showNotification(message, type = 'info') {
-            // Remove existing notifications
-            document.querySelectorAll('.toast-notification').forEach(n => n.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `toast-notification ${type}`;
-            notification.innerHTML = `
+    // Notification function
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        document.querySelectorAll('.toast-notification').forEach(n => n.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `toast-notification ${type}`;
+        notification.innerHTML = `
                 <div class="toast-content">
                     <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
                     <div class="toast-message">${message}</div>
                 </div>
             `;
-            
-            document.body.appendChild(notification);
-            
-            // Animate in
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            // Remove after 3 seconds
+
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
             setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                        document.body.removeChild(notification);
-                    }
-                }, 300);
-            }, 3000);
-        }
-
-        // Handle URL parameters for direct game joining
-        const urlParams = new URLSearchParams(window.location.search);
-        const gameId = urlParams.get('gameId');
-        if (gameId) {
-            // Wait for age verification, then redirect
-            const checkVerification = setInterval(() => {
-                if (ageVerified) {
-                    clearInterval(checkVerification);
-                    window.location.href = `join-game.html?gameId=${gameId}`;
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
                 }
-            }, 100);
-        }
+            }, 300);
+        }, 3000);
+    }
 
-        // Smooth scrolling for scroll indicator
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.scroll-indicator')) {
-                document.querySelector('.game-modes').scrollIntoView({
-                    behavior: 'smooth'
-                });
+    // Handle URL parameters for direct game joining
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameId = urlParams.get('gameId');
+    if (gameId) {
+        // Wait for age verification, then redirect
+        const checkVerification = setInterval(() => {
+            if (ageVerified) {
+                clearInterval(checkVerification);
+                window.location.href = `join-game.html?gameId=${gameId}`;
             }
-        });
-    </script>
+        }, 100);
+    }
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+    // Smooth scrolling for scroll indicator
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.scroll-indicator')) {
+            document.querySelector('.game-modes').scrollIntoView({
+                behavior: 'smooth'
+            });
         }
+    });
+</script>
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
-            overflow-x: hidden;
-        }
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-        /* Age Modal Styles */
-        .age-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            backdrop-filter: blur(10px);
-        }
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: white;
+        overflow-x: hidden;
+    }
 
-.age-modal-content {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(25px);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-        }
+    /* Age Modal Styles */
+    .age-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(10px);
+    }
 
-        .age-header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
+    .age-modal-content {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(25px);
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+    }
 
-        .age-icon {
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 15px;
-        }
+    .age-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
 
-        .age-header h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
+    .age-icon {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 15px;
+    }
 
-        .age-warning {
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
+    .age-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
 
-        .age-warning h3 {
-            color: #ffc107;
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
+    .age-warning {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
 
-        .age-warning p {
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
+    .age-warning h3 {
+        color: #ffc107;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
 
-        .legal-note {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.8);
-        }
+    .age-warning p {
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
 
-        .age-verification {
-            margin-bottom: 25px;
-        }
+    .legal-note {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.8);
+    }
 
-        .age-verification h4 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
+    .age-verification {
+        margin-bottom: 25px;
+    }
 
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
+    .age-verification h4 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .checkbox-container input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .checkbox-container label {
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .age-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .btn-age {
+        width: 100%;
+        padding: 15px 25px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+
+    .btn-age.primary {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        opacity: 0.5;
+    }
+
+    .btn-age.primary.enabled {
+        opacity: 1;
+    }
+
+    .btn-age.primary.enabled:hover {
+        box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-age.secondary {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+
+    .btn-age.secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .or-divider {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 10px 0;
+    }
+
+    .age-subtitle {
+        text-align: center;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 10px;
+    }
+
+    .responsibility-info,
+    .help-section {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .responsibility-info h4,
+    .help-section h4 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .responsibility-info ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .responsibility-info li {
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .responsibility-info li:last-child {
+        border-bottom: none;
+    }
+
+    .help-section p {
+        line-height: 1.6;
+    }
+
+    .modal-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        padding-top: 20px;
+        margin-top: 20px;
+    }
+
+    .footer-links-modal {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .modal-link {
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 8px 15px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .modal-link:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Background Particles */
+    .background-particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        z-index: -1;
+    }
+
+    .particle {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        animation: float 8s ease-in-out infinite;
+    }
+
+    .particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { width: 80px; height: 80px; left: 80%; animation-delay: 2s; }
+    .particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 4s; }
+    .particle:nth-child(4) { width: 100px; height: 100px; left: 70%; animation-delay: 6s; }
+    .particle:nth-child(5) { width: 50px; height: 50px; left: 50%; animation-delay: 8s; }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+        50% { transform: translateY(-30px) rotate(180deg); opacity: 0.6; }
+    }
+
+    /* Container */
+    .app-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    /* Header */
+    .site-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .site-logo {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .logo-icon {
+        font-size: 4rem;
+        margin-bottom: 10px;
+        text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+    }
+
+    .site-logo .logo {
+        font-size: clamp(3rem, 8vw, 5rem);
+        font-weight: 800;
+        background: linear-gradient(45deg, #4facfe, #00f2fe);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+    }
+
+    .site-url {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* Main Content */
+    .main-content {
+        flex: 1;
+    }
+
+    /* Hero Section */
+    .hero-section {
+        text-align: center;
+        margin-bottom: 60px;
+        min-height: 50vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .hero-title {
+        font-size: clamp(1.8rem, 5vw, 2.5rem);
+        font-weight: 700;
+        margin-bottom: 15px;
+        color: white;
+    }
+
+    .hero-subtitle {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 40px;
+        font-weight: 300;
+    }
+
+    .game-features {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 30px;
+        margin: 40px 0;
+    }
+
+    .feature {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px 20px;
+        border-radius: 25px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .feature:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .feature-icon {
+        font-size: 1.5rem;
+    }
+
+    .feature-text {
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    /* Scroll Indicator */
+    .scroll-indicator {
+        margin-top: 40px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+
+    .scroll-indicator:hover {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+
+    .scroll-text {
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .scroll-arrow {
+        font-size: 1.5rem;
+        animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+    }
+
+    /* Sections */
+    .section-title {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 40px;
+        color: white;
+    }
+
+    /* Game Modes */
+    .game-modes {
+        margin-bottom: 80px;
+    }
+
+    .mode-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .mode-card {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(25px);
+        border-radius: 20px;
+        padding: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .mode-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        border-color: rgba(79, 172, 254, 0.5);
+    }
+
+    .mode-card.featured {
+        border: 2px solid #4facfe;
+        box-shadow: 0 0 30px rgba(79, 172, 254, 0.3);
+    }
+
+    .featured-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .mode-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .mode-icon {
+        font-size: 2.5rem;
+    }
+
+    .mode-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: white;
+        margin: 0;
+    }
+
+    .mode-description {
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.6;
+        margin-bottom: 20px;
+        font-size: 0.95rem;
+    }
+
+    .mode-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .feature-badge {
+        background: rgba(76, 175, 80, 0.2);
+        border: 1px solid rgba(76, 175, 80, 0.5);
+        color: #4CAF50;
+        padding: 5px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .mode-btn {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 15px;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+
+    .mode-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .mode-btn.primary {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        border-color: #4facfe;
+    }
+
+    .mode-btn.primary:hover {
+        box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
+        transform: translateY(-2px);
+    }
+
+    /* How It Works */
+    .how-it-works {
+        margin-bottom: 60px;
+    }
+
+    .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 30px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .step {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+    }
+
+    .step-number {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .step-content h5 {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .step-content p {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    /* Footer */
+    .site-footer {
+        margin-top: auto;
+        padding-top: 40px;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .footer-content {
+        text-align: center;
+    }
+
+    .footer-links {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .footer-link {
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 8px 15px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .footer-link:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-info {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.8rem;
+        line-height: 1.5;
+    }
+
+    .website-badge {
+        color: #4facfe;
+        font-weight: 600;
+    }
+
+    /* Toast Notifications */
+    .toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 20px;
+        padding: 20px;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        max-width: 350px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .toast-notification.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .toast-notification.success {
+        border-color: rgba(76, 175, 80, 0.5);
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
+    }
+
+    .toast-notification.warning {
+        border-color: rgba(255, 152, 0, 0.5);
+        background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
+    }
+
+    .toast-notification.error {
+        border-color: rgba(244, 67, 54, 0.5);
+        background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
+    }
+
+    .toast-notification.info {
+        border-color: rgba(33, 150, 243, 0.5);
+        background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.25));
+    }
+
+    .toast-content {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: white;
+    }
+
+    .toast-icon {
+        font-size: 1.5rem;
+    }
+
+    .toast-message {
+        font-weight: 600;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .app-container {
             padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .checkbox-container input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .checkbox-container label {
-            cursor: pointer;
-            font-weight: 500;
+        .age-modal-content {
+            padding: 20px;
+            width: 95%;
         }
 
         .age-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .btn-age {
-            width: 100%;
-            padding: 15px 25px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .btn-age.primary {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            opacity: 0.5;
-        }
-
-        .btn-age.primary.enabled {
-            opacity: 1;
-        }
-
-        .btn-age.primary.enabled:hover {
-            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .btn-age.secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .btn-age.secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .or-divider {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin: 10px 0;
-        }
-
-        .age-subtitle {
-            text-align: center;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-top: 10px;
-        }
-
-        .responsibility-info,
-        .help-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .responsibility-info h4,
-        .help-section h4 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-
-        .responsibility-info ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .responsibility-info li {
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .responsibility-info li:last-child {
-            border-bottom: none;
-        }
-
-        .help-section p {
-            line-height: 1.6;
-        }
-
-        .modal-footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            padding-top: 20px;
-            margin-top: 20px;
+            gap: 10px;
         }
 
         .footer-links-modal {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .modal-link {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 0.9rem;
-            padding: 8px 15px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .modal-link:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Background Particles */
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 8s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 80px; height: 80px; left: 80%; animation-delay: 2s; }
-        .particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 4s; }
-        .particle:nth-child(4) { width: 100px; height: 100px; left: 70%; animation-delay: 6s; }
-        .particle:nth-child(5) { width: 50px; height: 50px; left: 50%; animation-delay: 8s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            50% { transform: translateY(-30px) rotate(180deg); opacity: 0.6; }
-        }
-
-        /* Container */
-        .app-container {
-            min-height: 100vh;
-            display: flex;
             flex-direction: column;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Header */
-        .site-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .site-logo {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             gap: 10px;
-        }
-
-        .logo-icon {
-            font-size: 4rem;
-            margin-bottom: 10px;
-            text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
-        }
-
-        .site-logo .logo {
-            font-size: clamp(3rem, 8vw, 5rem);
-            font-weight: 800;
-            background: linear-gradient(45deg, #4facfe, #00f2fe);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 0;
-            text-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
-        }
-
-        .site-url {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 600;
-            margin: 0;
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-        }
-
-        /* Hero Section */
-        .hero-section {
-            text-align: center;
-            margin-bottom: 60px;
-            min-height: 50vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .hero-title {
-            font-size: clamp(1.8rem, 5vw, 2.5rem);
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: white;
-        }
-
-        .hero-subtitle {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 40px;
-            font-weight: 300;
         }
 
         .game-features {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 30px;
-            margin: 40px 0;
-        }
-
-        .feature {
-            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px 20px;
-            border-radius: 25px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-
-        .feature:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .feature-icon {
-            font-size: 1.5rem;
-        }
-
-        .feature-text {
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        /* Scroll Indicator */
-        .scroll-indicator {
-            margin-top: 40px;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: all 0.3s ease;
-        }
-
-        .scroll-indicator:hover {
-            opacity: 1;
-            transform: translateY(-2px);
-        }
-
-        .scroll-text {
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .scroll-arrow {
-            font-size: 1.5rem;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
-        }
-
-        /* Sections */
-        .section-title {
-            text-align: center;
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 40px;
-            color: white;
-        }
-
-        /* Game Modes */
-        .game-modes {
-            margin-bottom: 80px;
         }
 
         .mode-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .mode-card {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(25px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .mode-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-            border-color: rgba(79, 172, 254, 0.5);
-        }
-
-        .mode-card.featured {
-            border: 2px solid #4facfe;
-            box-shadow: 0 0 30px rgba(79, 172, 254, 0.3);
-        }
-
-        .featured-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .mode-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .mode-icon {
-            font-size: 2.5rem;
-        }
-
-        .mode-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: white;
-            margin: 0;
-        }
-
-        .mode-description {
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.6;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
-        }
-
-        .mode-features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-
-        .feature-badge {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid rgba(76, 175, 80, 0.5);
-            color: #4CAF50;
-            padding: 5px 12px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .mode-btn {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .mode-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .mode-btn.primary {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            border-color: #4facfe;
-        }
-
-        .mode-btn.primary:hover {
-            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
-            transform: translateY(-2px);
-        }
-
-        /* How It Works */
-        .how-it-works {
-            margin-bottom: 60px;
+            grid-template-columns: 1fr;
         }
 
         .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            max-width: 1000px;
-            margin: 0 auto;
+            grid-template-columns: 1fr;
         }
 
         .step {
-            display: flex;
-            gap: 20px;
-            align-items: flex-start;
-        }
-
-        .step-number {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-
-        .step-content h5 {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .step-content p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        /* Footer */
-        .site-footer {
-            margin-top: auto;
-            padding-top: 40px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .footer-content {
+            flex-direction: column;
             text-align: center;
+            gap: 15px;
         }
 
         .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .footer-link {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 0.9rem;
-            padding: 8px 15px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .footer-link:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .footer-info {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.8rem;
-            line-height: 1.5;
-        }
-
-        .website-badge {
-            color: #4facfe;
-            font-weight: 600;
-        }
-
-        /* Toast Notifications */
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 20px;
-            padding: 20px;
-            z-index: 10000;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-width: 350px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .toast-notification.show {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .toast-notification.success {
-            border-color: rgba(76, 175, 80, 0.5);
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
-        }
-
-        .toast-notification.warning {
-            border-color: rgba(255, 152, 0, 0.5);
-            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
-        }
-
-        .toast-notification.error {
-            border-color: rgba(244, 67, 54, 0.5);
-            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
-        }
-
-        .toast-content {
-            display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 15px;
-            color: white;
         }
 
-        .toast-icon {
-            font-size: 1.5rem;
+        .hero-section {
+            min-height: 40vh;
+        }
+    }
+
+    /* Accessibility */
+    .mode-card:focus,
+    .mode-btn:focus,
+    .footer-link:focus,
+    .btn-age:focus {
+        outline: 2px solid #4facfe;
+        outline-offset: 2px;
+    }
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
         }
 
-        .toast-message {
-            font-weight: 600;
-            font-size: 0.95rem;
-            line-height: 1.4;
+        .scroll-arrow {
+            animation: none;
         }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .app-container {
-                padding: 15px;
-            }
-
-            .age-modal-content {
-                padding: 20px;
-                width: 95%;
-            }
-
-            .age-buttons {
-                gap: 10px;
-            }
-
-            .footer-links-modal {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .game-features {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .mode-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .steps {
-                grid-template-columns: 1fr;
-            }
-
-            .step {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
-            }
-
-            .footer-links {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .hero-section {
-                min-height: 40vh;
-            }
-        }
-
-        /* Accessibility */
-        .mode-card:focus,
-        .mode-btn:focus,
-        .footer-link:focus,
-        .btn-age:focus {
-            outline: 2px solid #4facfe;
-            outline-offset: 2px;
-        }
-
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
-            
-            .scroll-arrow {
-                animation: none;
-            }
-        }
-    </style>
+    }
+</style>
 </body>
 </html>
