@@ -1261,9 +1261,33 @@
             this.loadFromStorage();
         }
 
+        saveToStorage() {
+            try {
+                const state = {
+                    deviceMode: this.deviceMode,
+                    selectedCategories: this.selectedCategories,
+                    difficulty: this.difficulty,
+                    players: this.players,
+                    gameId: this.gameId,
+                    playerName: this.playerName,
+                    isHost: this.isHost,
+                    isGuest: this.isGuest,
+                    gameState: this.gameState,
+                    timestamp: Date.now(),
+                    version: 2
+                };
+                localStorage.setItem('nocap_game_state', JSON.stringify(state));
+                console.log('✅ GameState saved:', state);
+                return true;
+            } catch (error) {
+                console.error('❌ Could not save game state:', error);
+                return false;
+            }
+        }
+
         loadFromStorage() {
             try {
-                const saved = localStorage.getItem('denkstdu_game_state');
+                const saved = localStorage.getItem('nocap_game_state');
                 if (saved) {
                     const state = JSON.parse(saved);
                     if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
@@ -1292,7 +1316,27 @@
         }
 
         clearStorage() {
-            localStorage.removeItem('denkstdu_game_state');
+            localStorage.removeItem('nocap_game_state');
+        }
+
+        setSelectedCategories(categories) {
+            this.selectedCategories = [...categories];
+            this.saveToStorage();
+        }
+
+        setDifficulty(difficulty) {
+            this.difficulty = difficulty;
+            this.saveToStorage();
+        }
+
+        setPlayers(players) {
+            this.players = [...players];
+            this.saveToStorage();
+        }
+
+        setDeviceMode(mode) {
+            this.deviceMode = mode;
+            this.saveToStorage();
         }
     }
 
@@ -1395,24 +1439,36 @@
         // Load game state
         gameState = new GameState();
 
+        // Debug: Log loaded state
+        console.log('📊 Loaded GameState:', {
+            deviceMode: gameState.deviceMode,
+            categories: gameState.selectedCategories,
+            difficulty: gameState.difficulty,
+            players: gameState.players,
+            playersCount: gameState.players ? gameState.players.length : 0
+        });
+
         // Initialize Firebase
         firebaseService = new FirebaseService();
         await firebaseService.initialize();
 
         // Validate game state
         if (!gameState.players || gameState.players.length < 2) {
+            console.error('❌ Validation failed: Not enough players', gameState.players);
             showNotification('Keine Spieler gefunden!', 'error');
             setTimeout(() => window.location.href = 'player-setup.html', 2000);
             return;
         }
 
         if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+            console.error('❌ Validation failed: No categories', gameState.selectedCategories);
             showNotification('Keine Kategorien ausgewählt!', 'error');
             setTimeout(() => window.location.href = 'category-selection.html', 2000);
             return;
         }
 
         if (!gameState.difficulty) {
+            console.error('❌ Validation failed: No difficulty', gameState.difficulty);
             showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
             setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
             return;
