@@ -3,11 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Spielen</title>
+    <title>No-Cap - Spielen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    
+
+    <!-- Favicon - Kappe Emoji -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -64,16 +71,16 @@
             margin: 0 auto;
             position: relative;
             z-index: 1;
+            overflow: hidden;
         }
 
-
-
-        /* Main Content Area - Flexibel */
+        /* Main Content Area - Flexibel und auf eine Seite passend */
         .game-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-height: 0;
+            overflow: hidden;
         }
 
         /* Question Card - Kompakt */
@@ -240,7 +247,7 @@
             font-size: 1.2rem;
         }
 
-        /* Estimation Section - Verbessert */
+        /* Estimation Section - Dynamisch ohne Scrollleiste */
         .estimation-section {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
@@ -253,6 +260,7 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+            overflow: hidden;
         }
 
         .estimation-title {
@@ -265,18 +273,68 @@
             flex-shrink: 0;
         }
 
-        /* Number Grid - Verbessert */
+        /* Current Selection Display - Nur sichtbar nach Auswahl */
+        .current-selection {
+            text-align: center;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+
+        .current-selection.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .selection-display {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
+            border: 2px solid rgba(76, 175, 80, 0.5);
+            border-radius: 12px;
+            padding: 8px 12px;
+            display: inline-block;
+            min-width: 100px;
+        }
+
+        .selection-number {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 1px;
+        }
+
+        .selection-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        /* Number Grid - Dynamisch angepasst */
         .number-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
-            gap: 12px;
+            gap: 10px;
             justify-items: center;
             flex: 1;
             align-content: center;
+            overflow: hidden;
+        }
+
+        /* Dynamische Grid-Anpassung basierend auf Anzahl der Spieler */
+        .number-grid.small {
+            grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
+        }
+        .number-grid.medium {
+            grid-template-columns: repeat(5, 1fr);
+        }
+        .number-grid.large {
+            grid-template-columns: repeat(6, 1fr);
         }
 
         .number-btn {
-            width: 55px;
+            width: 100%;
+            max-width: 55px;
             height: 55px;
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -305,34 +363,11 @@
             color: white;
         }
 
-        /* Selected Number Display - Kompakt */
-        .current-selection {
-            text-align: center;
-            margin-bottom: 15px;
-            flex-shrink: 0;
-        }
-
-        .selection-display {
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
-            border: 2px solid rgba(76, 175, 80, 0.5);
-            border-radius: 12px;
-            padding: 8px 12px;
-            display: inline-block;
-            min-width: 100px;
-        }
-
-        .selection-number {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 800;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            margin-bottom: 1px;
-        }
-
-        .selection-label {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.7rem;
-            font-weight: 600;
+        /* Für viele Spieler: Kleinere Buttons */
+        .number-grid.large .number-btn {
+            max-width: 45px;
+            height: 45px;
+            font-size: 1rem;
         }
 
         /* Submit Button */
@@ -450,6 +485,7 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+            overflow: hidden;
         }
 
         .results-header {
@@ -602,68 +638,7 @@
             transform: scale(0.98);
         }
 
-        /* Final Results Section - Kein horizontales Scrollen */
-        .final-results-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            padding: 0;
-            overflow-x: hidden;
-            width: 100%;
-        }
-
-        .final-header {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
-            border: 2px solid rgba(255, 215, 0, 0.6);
-            backdrop-filter: blur(30px);
-            border-radius: 20px;
-            padding: 20px 15px;
-            margin-bottom: 15px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            flex-shrink: 0;
-        }
-
-        .final-title {
-            color: #FFD700;
-            font-size: 1.5rem;
-            font-weight: 800;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
-        }
-
-        .final-subtitle {
-            color: rgba(255, 255, 255, 0.95);
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
-        .leaderboard {
-            flex: 1;
-            margin-bottom: 15px;
-            min-height: 0;
-            overflow-x: hidden;
-        }
-
-        .leaderboard-title {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 5px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .leaderboard-subtitle {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.85rem;
-            font-weight: 500;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        /* Final Results Section - Clean & Responsive */
+        /* Final Results Section */
         .final-results-section {
             flex: 1;
             display: flex;
@@ -706,6 +681,7 @@
             min-height: 0;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .leaderboard-title {
@@ -730,7 +706,8 @@
             flex-direction: column;
             gap: 10px;
             flex: 1;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .leaderboard-item {
@@ -748,7 +725,6 @@
             flex-shrink: 0;
         }
 
-        /* Spezielle Styles für die ersten 3 Plätze */
         .leaderboard-item:first-child {
             background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 193, 7, 0.35));
             border: 2px solid #FFD700;
@@ -780,36 +756,21 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .rank-1 { 
-            background: linear-gradient(135deg, #FFD700, #FFA500); 
+        .rank-1 {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
             color: white;
         }
-        .rank-2 { 
-            background: linear-gradient(135deg, #C0C0C0, #A0A0A0); 
-            color: white; 
-        }
-        .rank-3 { 
-            background: linear-gradient(135deg, #CD7F32, #B8860B); 
-            color: white; 
-        }
-        .rank-other { 
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15)); 
-            color: white; 
-        }
-
-        .result-avatar {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .rank-2 {
+            background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
             color: white;
-            font-weight: 800;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-            flex-shrink: 0;
+        }
+        .rank-3 {
+            background: linear-gradient(135deg, #CD7F32, #B8860B);
+            color: white;
+        }
+        .rank-other {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15));
+            color: white;
         }
 
         .player-final-stats {
@@ -862,44 +823,6 @@
             padding: 16px 20px;
             font-size: 1.1rem;
             width: 100%;
-        }
-
-        /* Responsive: Bei vielen Spielern kleinere Items */
-        .leaderboard-item.compact {
-            padding: 10px;
-            gap: 10px;
-        }
-
-        .leaderboard-item.compact .rank-number {
-            width: 35px;
-            height: 35px;
-            font-size: 1rem;
-        }
-
-        .leaderboard-item.compact .result-avatar {
-            width: 35px;
-            height: 35px;
-            font-size: 0.9rem;
-        }
-
-        .leaderboard-item.compact .player-final-name {
-            font-size: 1rem;
-        }
-
-        .leaderboard-item.compact .player-final-details {
-            font-size: 0.8rem;
-        }
-
-        .final-navigation {
-            flex-shrink: 0;
-            width: 100%;
-        }
-
-        .nav-btn.large {
-            padding: 18px 25px;
-            font-size: 1.2rem;
-            width: 100%;
-            max-width: 100%;
         }
 
         /* Toast Notifications */
@@ -1034,50 +957,25 @@
         }
 
         /* Responsive Design */
-        /* Responsive Design */
         @media (max-width: 480px) {
             .app-container {
                 padding: 8px;
             }
-            
+
             .question-text {
                 font-size: 0.95rem;
             }
-            
+
             .number-btn {
-                width: 45px;
+                max-width: 45px;
                 height: 45px;
                 font-size: 1rem;
             }
 
-            .estimation-section {
-                padding: 12px;
-            }
-
-            .selection-display {
-                min-width: 80px;
-                padding: 6px 10px;
-            }
-
-            .selection-number {
-                font-size: 1rem;
-            }
-
-            .selection-label {
-                font-size: 0.65rem;
-            }
-
-            .player-result-name {
+            .number-grid.large .number-btn {
+                max-width: 40px;
+                height: 40px;
                 font-size: 0.9rem;
-            }
-
-            .player-answer {
-                font-size: 0.75rem;
-            }
-
-            .sips-penalty {
-                padding: 5px 8px;
-                font-size: 0.75rem;
             }
         }
 
@@ -1085,38 +983,21 @@
             .question-text {
                 font-size: 0.9rem;
             }
-            
+
             .number-btn {
-                width: 40px;
+                max-width: 40px;
                 height: 40px;
                 font-size: 0.9rem;
             }
 
-            .estimation-section {
-                padding: 12px;
-            }
-
             .answer-btn {
                 padding: 12px 8px;
-            }
-
-            .selection-display {
-                padding: 6px 8px;
-            }
-
-            .selection-number {
-                font-size: 1rem;
             }
         }
 
         @media (max-height: 600px) {
             .app-container {
                 padding: 8px;
-            }
-            
-            .game-header {
-                padding: 8px 15px;
-                margin-bottom: 8px;
             }
 
             .question-card {
@@ -1129,52 +1010,11 @@
                 margin-bottom: 8px;
             }
 
-            .estimation-section {
-                padding: 10px;
-            }
-
             .number-btn {
-                width: 35px;
+                max-width: 35px;
                 height: 35px;
                 font-size: 0.8rem;
             }
-
-            .answer-btn {
-                padding: 12px 8px;
-            }
-
-            .answer-emoji {
-                font-size: 1rem;
-            }
-
-            .selection-display {
-                padding: 4px 6px;
-                min-width: 70px;
-            }
-
-            .selection-number {
-                font-size: 0.9rem;
-            }
-
-            .selection-label {
-                font-size: 0.6rem;
-            }
-
-            .submit-btn {
-                padding: 12px;
-                font-size: 0.9rem;
-            }
-        }
-
-        /* Verhindere horizontales Scrollen überall */
-        * {
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-
-        .app-container, .game-content, .estimation-section, .results-section, .final-results-section {
-            overflow-x: hidden;
-            width: 100%;
         }
 
         /* Animations */
@@ -1195,574 +1035,560 @@
     </style>
 </head>
 <body>
-    <!-- Background Particles -->
-    <div class="background-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
+<!-- Background Particles -->
+<div class="background-particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
 
-    <!-- App Container -->
-    <div class="app-container">
-
-
-        <!-- Main Game Content -->
-        <div class="game-content">
-            <!-- Question Card -->
-            <div class="question-card fadeInUp">
-                <div class="question-category" id="question-category">
-                    🎮 Loading...
-                </div>
-                <div class="question-text" id="question-text">
-                    Lade Frage...
-                </div>
+<!-- App Container -->
+<div class="app-container">
+    <!-- Main Game Content -->
+    <div class="game-content">
+        <!-- Question Card -->
+        <div class="question-card fadeInUp">
+            <div class="question-category" id="question-category">
+                🎮 Loading...
             </div>
-
-            <!-- Current Player -->
-            <div class="current-player-card fadeInUp">
-                <div class="player-avatar" id="current-avatar">M</div>
-                <div class="player-info">
-                    <div class="player-name" id="current-player-name">Max</div>
-                    <div class="player-status">Du bist dran! <span id="player-progress">(1/4)</span></div>
-                </div>
+            <div class="question-text" id="question-text">
+                Lade Frage...
             </div>
+        </div>
 
-            <!-- Answer Section -->
-            <div class="answer-section fadeInUp" id="answer-section">
-                <div class="answer-title">🤔 Deine Antwort</div>
-                <div class="answer-buttons">
-                    <button class="answer-btn yes" onclick="selectAnswer(true)" id="yes-btn">
-                        <div class="answer-emoji">✅</div>
-                        <div>Ja, habe ich</div>
-                    </button>
-                    <button class="answer-btn no" onclick="selectAnswer(false)" id="no-btn">
-                        <div class="answer-emoji">❌</div>
-                        <div>Nein, noch nie</div>
-                    </button>
-                </div>
+        <!-- Current Player -->
+        <div class="current-player-card fadeInUp">
+            <div class="player-avatar" id="current-avatar">M</div>
+            <div class="player-info">
+                <div class="player-name" id="current-player-name">Max</div>
+                <div class="player-status">Du bist dran! <span id="player-progress">(1/4)</span></div>
             </div>
+        </div>
 
-            <!-- Estimation Section -->
-            <div class="estimation-section fadeInUp" id="estimation-section">
-                <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
-                
-                <!-- Current Selection Display -->
-                <div class="current-selection">
-                    <div class="selection-display">
-                        <div class="selection-number" id="selected-number">1</div>
-                        <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
-                    </div>
-                </div>
-
-                <!-- Number Grid -->
-                <div class="number-grid" id="number-grid">
-                    <!-- Numbers will be generated dynamically -->
-                </div>
-            </div>
-
-            <!-- Submit Button -->
-            <div class="submit-section fadeInUp" id="submit-section">
-                <button class="submit-btn" onclick="submitAnswer()" id="submit-btn">
-                    📤 Antwort bestätigen
+        <!-- Answer Section -->
+        <div class="answer-section fadeInUp" id="answer-section">
+            <div class="answer-title">🤔 Deine Antwort</div>
+            <div class="answer-buttons">
+                <button class="answer-btn yes" onclick="selectAnswer(true)" id="yes-btn">
+                    <div class="answer-emoji">✅</div>
+                    <div>Ja, habe ich</div>
+                </button>
+                <button class="answer-btn no" onclick="selectAnswer(false)" id="no-btn">
+                    <div class="answer-emoji">❌</div>
+                    <div>Nein, noch nie</div>
                 </button>
             </div>
+        </div>
 
-            <!-- Results Section -->
-            <div class="results-section" id="results-section" style="display: none;">
-                <div class="results-header">
-                    <div class="results-summary" id="results-summary"></div>
-                </div>
+        <!-- Estimation Section -->
+        <div class="estimation-section fadeInUp" id="estimation-section">
+            <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
 
-                <div class="results-grid" id="results-grid">
-                    <!-- Results will be populated dynamically -->
-                </div>
-
-                <div class="results-navigation">
-                    <button class="nav-btn primary" onclick="nextQuestion()">
-                        ➡️ Nächste Frage
-                    </button>
-                    <button class="nav-btn secondary" onclick="endGame()">
-                        🚪 Spiel beenden
-                    </button>
+            <!-- Current Selection Display - Nur sichtbar nach Auswahl -->
+            <div class="current-selection" id="current-selection">
+                <div class="selection-display">
+                    <div class="selection-number" id="selected-number">-</div>
+                    <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
                 </div>
             </div>
 
-            <!-- Final Results Section -->
-            <div class="final-results-section" id="final-results-section" style="display: none;">
-                <div class="final-header">
-                    <div class="final-title">🏆 Spiel beendet!</div>
-                    <div class="final-subtitle">Hier sind die finalen Ergebnisse</div>
-                </div>
+            <!-- Number Grid -->
+            <div class="number-grid small" id="number-grid">
+                <!-- Numbers will be generated dynamically -->
+            </div>
+        </div>
 
-                <div class="leaderboard">
-                    <div class="leaderboard-title">🏅 Rangliste</div>
-                    <div class="leaderboard-subtitle">Sortiert nach wenigsten Schlücken</div>
-                    <div id="leaderboard-list">
-                        <!-- Leaderboard will be populated dynamically -->
-                    </div>
-                </div>
+        <!-- Submit Button -->
+        <div class="submit-section fadeInUp" id="submit-section">
+            <button class="submit-btn" onclick="submitAnswer()" id="submit-btn">
+                📤 Antwort bestätigen
+            </button>
+        </div>
 
-                <div class="final-navigation">
-                    <button class="nav-btn primary large" onclick="goHome()">
-                        🏠 Spiel beenden
-                    </button>
+        <!-- Results Section -->
+        <div class="results-section" id="results-section" style="display: none;">
+            <div class="results-header">
+                <div class="results-summary" id="results-summary"></div>
+            </div>
+
+            <div class="results-grid" id="results-grid">
+                <!-- Results will be populated dynamically -->
+            </div>
+
+            <div class="results-navigation">
+                <button class="nav-btn primary" onclick="nextQuestion()">
+                    ➡️ Nächste Frage
+                </button>
+                <button class="nav-btn secondary" onclick="endGame()">
+                    🚪 Spiel beenden
+                </button>
+            </div>
+        </div>
+
+        <!-- Final Results Section -->
+        <div class="final-results-section" id="final-results-section" style="display: none;">
+            <div class="final-header">
+                <div class="final-title">🏆 Spiel beendet!</div>
+                <div class="final-subtitle">Hier sind die finalen Ergebnisse</div>
+            </div>
+
+            <div class="leaderboard">
+                <div class="leaderboard-title">🏅 Rangliste</div>
+                <div class="leaderboard-subtitle">Sortiert nach wenigsten Schlücken</div>
+                <div id="leaderboard-list">
+                    <!-- Leaderboard will be populated dynamically -->
                 </div>
+            </div>
+
+            <div class="final-navigation">
+                <button class="nav-btn primary large" onclick="goHome()">
+                    🏠 Spiel beenden
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Player Change Popup -->
-    <div class="player-change-popup" id="player-change-popup">
-        <div class="popup-content">
-            <div class="popup-avatar" id="popup-avatar">M</div>
-            <div class="popup-name" id="popup-name">Max</div>
-            <div class="popup-message">ist dran!</div>
+<!-- Player Change Popup -->
+<div class="player-change-popup" id="player-change-popup">
+    <div class="popup-content">
+        <div class="popup-avatar" id="popup-avatar">M</div>
+        <div class="popup-name" id="popup-name">Max</div>
+        <div class="popup-message">ist dran!</div>
+    </div>
+</div>
+
+<!-- Exit Confirmation -->
+<div class="exit-confirmation" id="exit-confirmation">
+    <div class="exit-content">
+        <div class="exit-title">🚪 Spiel verlassen?</div>
+        <div class="exit-message">Möchtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.</div>
+        <div class="exit-buttons">
+            <button class="exit-btn cancel" onclick="cancelExit()">Nein, weiterspielen</button>
+            <button class="exit-btn confirm" onclick="confirmExit()">Ja, beenden</button>
         </div>
     </div>
+</div>
 
-    <!-- Exit Confirmation -->
-    <div class="exit-confirmation" id="exit-confirmation">
-        <div class="exit-content">
-            <div class="exit-title">🚪 Spiel verlassen?</div>
-            <div class="exit-message">Möchtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.</div>
-            <div class="exit-buttons">
-                <button class="exit-btn cancel" onclick="cancelExit()">Nein, weiterspielen</button>
-                <button class="exit-btn confirm" onclick="confirmExit()">Ja, beenden</button>
-            </div>
-        </div>
-    </div>
+<script>
+    // ===== FIREBASE SERVICE =====
+    class FirebaseService {
+        constructor() {
+            this.app = null;
+            this.database = null;
+            this.isInitialized = false;
+            this.isConnected = false;
+            this.config = {
+                apiKey: "AIzaSyAcUgQ6rHZXQvKsMQmzMPr77Hk-W4R2Zt0",
+                authDomain: "denkstduwebsite.firebaseapp.com",
+                databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                projectId: "denkstduwebsite",
+                storageBucket: "denkstduwebsite.appspot.com",
+                messagingSenderId: "27029260611",
+                appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+                measurementId: "G-BNKNW95HK8"
+            };
+        }
 
-    <script>
-        // ===== GAME STATE MANAGEMENT =====
-        class GameState {
-            constructor() {
-                this.deviceMode = null;
-                this.selectedCategories = [];
-                this.difficulty = null;
-                this.players = [];
-                this.gameId = null;
-                this.playerName = null;
-                this.isHost = false;
-                this.isGuest = false;
-                this.gameState = 'setup';
-                this.timestamp = Date.now();
-                
-                this.loadFromStorage();
-            }
+        async initialize() {
+            try {
+                console.log('🔥 Initializing Firebase...');
 
-            loadFromStorage() {
-                try {
-                    const saved = localStorage.getItem('denkstdu_game_state');
-                    if (saved) {
-                        const state = JSON.parse(saved);
-                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                            this.deviceMode = state.deviceMode || null;
-                            this.selectedCategories = state.selectedCategories || [];
-                            this.difficulty = state.difficulty || null;
-                            this.players = state.players || [];
-                            this.gameId = state.gameId || null;
-                            this.playerName = state.playerName || null;
-                            this.isHost = state.isHost || false;
-                            this.isGuest = state.isGuest || false;
-                            this.gameState = state.gameState || 'setup';
-                            
-                            console.log('✅ GameState loaded from storage:', this);
-                            return true;
-                        } else {
-                            console.log('⚠️ GameState expired, clearing storage');
-                            this.clearStorage();
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Could not load game state:', error);
-                    this.clearStorage();
+                if (typeof firebase === 'undefined') {
+                    console.warn('⚠️ Firebase SDK not loaded, using fallback mode');
+                    return false;
                 }
+
+                if (!firebase.apps || firebase.apps.length === 0) {
+                    this.app = firebase.initializeApp(this.config);
+                } else {
+                    this.app = firebase.app();
+                }
+
+                this.database = firebase.database();
+                this.isInitialized = true;
+
+                // Test connection
+                const connectedRef = this.database.ref('.info/connected');
+                const snapshot = await connectedRef.once('value');
+                this.isConnected = snapshot.val() === true;
+
+                console.log(`✅ Firebase ${this.isConnected ? 'connected' : 'initialized (offline)'}`);
+                return true;
+
+            } catch (error) {
+                console.error('❌ Firebase initialization failed:', error);
                 return false;
             }
-
-            clearStorage() {
-                localStorage.removeItem('denkstdu_game_state');
-            }
         }
 
-        // ===== GLOBAL VARIABLES =====
-        let gameState = null;
-        let currentGame = {
-            players: [],
-            allQuestions: [],
-            usedQuestions: [],
-            currentQuestionNumber: 1,
-            currentPlayerIndex: 0,
-            currentAnswers: {},
-            currentEstimates: {},
-            gameHistory: []
-        };
-
-        // Questions Database
-        const questionsDatabase = {
-            fsk0: [
-                "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
-                "Ich habe schon mal... Pizza zum Frühstück gegessen", 
-                "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen",
-                "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht",
-                "Ich habe schon mal... beim Kochen das Essen anbrennen lassen",
-                "Ich habe schon mal... mein Handy in die Toilette fallen lassen",
-                "Ich habe schon mal... ein Lied komplett falsch mitgesungen",
-                "Ich habe schon mal... heimlich Süßigkeiten vor dem Abendessen gegessen",
-                "Ich habe schon mal... so getan, als würde ich schlafen",
-                "Ich habe schon mal... einen Film dreimal hintereinander geschaut",
-                "Ich habe schon mal... vergessen, wie ich nach Hause komme",
-                "Ich habe schon mal... ein Tier im Haus versteckt",
-                "Ich habe schon mal... aus Versehen Salz statt Zucker verwendet",
-                "Ich habe schon mal... eine ganze Nacht durchgespielt",
-                "Ich habe schon mal... beim Singen unter der Dusche gestört",
-                "Ich habe schon mal... Essen vom Boden aufgehoben und gegessen",
-                "Ich habe schon mal... ein Gespräch mit mir selbst geführt",
-                "Ich habe schon mal... vergessen, dass ich etwas im Ofen hatte",
-                "Ich habe schon mal... einen Tag lang nichts gesagt",
-                "Ich habe schon mal... versucht, mit Tieren zu sprechen"
-            ],
-            fsk16: [
-                "Ich habe schon mal... so getan, als wäre ich krank, um nicht zur Schule zu müssen",
-                "Ich habe schon mal... bis 3 Uhr morgens Netflix geschaut",
-                "Ich habe schon mal... ein Lied so laut gesungen, dass die Nachbarn sich beschwert haben",
-                "Ich habe schon mal... vergessen, wo ich mein Auto geparkt habe",
-                "Ich habe schon mal... bei einer Prüfung geschummelt",
-                "Ich habe schon mal... heimlich das Tagebuch von jemand anderem gelesen",
-                "Ich habe schon mal... gelogen, um aus einer Verabredung herauszukommen",
-                "Ich habe schon mal... mich richtig betrunken",
-                "Ich habe schon mal... eine ganze Nacht durchgemacht",
-                "Ich habe schon mal... heimlich geraucht",
-                "Ich habe schon mal... ein Date versetzt",
-                "Ich habe schon mal... aus dem Fenster geklettert",
-                "Ich habe schon mal... einen Rausch vorgetäuscht",
-                "Ich habe schon mal... bei einem Spiel betrogen",
-                "Ich habe schon mal... Geld geklaut",
-                "Ich habe schon mal... jemanden angelogen, um besser dazustehen",
-                "Ich habe schon mal... eine Notlüge erzählt, die völlig eskaliert ist",
-                "Ich habe schon mal... heimlich jemanden geküsst",
-                "Ich habe schon mal... mich vor der Polizei versteckt",
-                "Ich habe schon mal... etwas Illegales getan"
-            ],
-            fsk18: [
-                "Ich habe schon mal... an einem öffentlichen Ort Sex gehabt",
-                "Ich habe schon mal... eine Affäre gehabt",
-                "Ich habe schon mal... in einer Beziehung betrogen",
-                "Ich habe schon mal... einen Amateur-Porno gedreht",
-                "Ich habe schon mal... einen Porno mit mehreren Personen zusammen angesehen",
-                "Ich habe schon mal... Sex gehabt und es danach bereut",
-                "Ich habe schon mal... Analsex gehabt",
-                "Ich habe schon mal... einen Dreier gehabt",
-                "Ich habe schon mal... mich vor Oralsex geekelt",
-                "Ich habe schon mal... einen Blowjob gegeben",
-                "Ich habe schon mal... einen Blowjob bekommen",
-                "Ich habe schon mal... beim Sex gelacht",
-                "Ich habe schon mal... einen Orgasmus gefaked",
-                "Ich habe schon mal... für jemanden gestrippt",
-                "Ich habe schon mal... für Sex bezahlt",
-                "Ich habe schon mal... jemanden beim Sex verletzt",
-                "Ich habe schon mal... Sex gehabt und dabei an jemand anderen gedacht",
-                "Ich habe schon mal... mit einer verheirateten Person geschlafen",
-                "Ich habe schon mal... Sex am Arbeitsplatz gehabt",
-                "Ich habe schon mal... beim ersten Date Sex gehabt"
-            ]
-        };
-
-        let isExitDialogShown = false;
-
-        // ===== PAGE LEAVE PROTECTION =====
-        window.addEventListener('beforeunload', function(e) {
-            if (!isExitDialogShown) {
-                e.preventDefault();
-                e.returnValue = 'Möchtest du das Spiel wirklich verlassen? Der Fortschritt geht verloren.';
-                return e.returnValue;
+        async loadQuestionsFromCategory(category) {
+            if (!this.isInitialized || !this.isConnected) {
+                return null;
             }
-        });
 
-        // Handle back button and manual navigation
-        window.addEventListener('popstate', function(e) {
+            try {
+                const questionsRef = this.database.ref(`questions/${category}`);
+                const snapshot = await questionsRef.once('value');
+
+                if (snapshot.exists()) {
+                    const questionsObj = snapshot.val();
+                    return Object.values(questionsObj);
+                }
+                return null;
+            } catch (error) {
+                console.error(`❌ Error loading ${category} questions:`, error);
+                return null;
+            }
+        }
+    }
+
+    // ===== GAME STATE MANAGEMENT =====
+    class GameState {
+        constructor() {
+            this.deviceMode = null;
+            this.selectedCategories = [];
+            this.difficulty = null;
+            this.players = [];
+            this.gameId = null;
+            this.playerName = null;
+            this.isHost = false;
+            this.isGuest = false;
+            this.gameState = 'setup';
+            this.timestamp = Date.now();
+
+            this.loadFromStorage();
+        }
+
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('denkstdu_game_state');
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                        this.deviceMode = state.deviceMode || null;
+                        this.selectedCategories = state.selectedCategories || [];
+                        this.difficulty = state.difficulty || null;
+                        this.players = state.players || [];
+                        this.gameId = state.gameId || null;
+                        this.playerName = state.playerName || null;
+                        this.isHost = state.isHost || false;
+                        this.isGuest = state.isGuest || false;
+                        this.gameState = state.gameState || 'setup';
+
+                        console.log('✅ GameState loaded from storage:', this);
+                        return true;
+                    } else {
+                        console.log('⚠️ GameState expired, clearing storage');
+                        this.clearStorage();
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Could not load game state:', error);
+                this.clearStorage();
+            }
+            return false;
+        }
+
+        clearStorage() {
+            localStorage.removeItem('denkstdu_game_state');
+        }
+    }
+
+    // ===== GLOBAL VARIABLES =====
+    let gameState = null;
+    let firebaseService = null;
+    let currentGame = {
+        players: [],
+        allQuestions: [],
+        usedQuestions: [],
+        currentQuestionNumber: 1,
+        currentPlayerIndex: 0,
+        currentAnswers: {},
+        currentEstimates: {},
+        gameHistory: []
+    };
+
+    // Fallback Questions Database
+    const fallbackQuestionsDatabase = {
+        fsk0: [
+            "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
+            "Ich habe schon mal... Pizza zum Frühstück gegessen",
+            "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen",
+            "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht",
+            "Ich habe schon mal... beim Kochen das Essen anbrennen lassen"
+        ],
+        fsk16: [
+            "Ich habe schon mal... so getan, als wäre ich krank, um nicht zur Schule zu müssen",
+            "Ich habe schon mal... bis 3 Uhr morgens Netflix geschaut",
+            "Ich habe schon mal... ein Lied so laut gesungen, dass die Nachbarn sich beschwert haben",
+            "Ich habe schon mal... vergessen, wo ich mein Auto geparkt habe"
+        ],
+        fsk18: [
+            "Ich habe schon mal... an einem öffentlichen Ort Sex gehabt",
+            "Ich habe schon mal... eine Affäre gehabt",
+            "Ich habe schon mal... in einer Beziehung betrogen"
+        ]
+    };
+
+    let isExitDialogShown = false;
+
+    // ===== PAGE LEAVE PROTECTION =====
+    window.addEventListener('beforeunload', function(e) {
+        if (!isExitDialogShown) {
             e.preventDefault();
-            showExitConfirmation();
-            history.pushState(null, null, window.location.pathname);
-        });
+            e.returnValue = 'Möchtest du das Spiel wirklich verlassen? Der Fortschritt geht verloren.';
+            return e.returnValue;
+        }
+    });
 
-        // Push initial state to enable back button interception
+    window.addEventListener('popstate', function(e) {
+        e.preventDefault();
+        showExitConfirmation();
         history.pushState(null, null, window.location.pathname);
+    });
 
-        function showExitConfirmation() {
-            const exitDialog = document.getElementById('exit-confirmation');
-            exitDialog.classList.add('show');
+    history.pushState(null, null, window.location.pathname);
+
+    function showExitConfirmation() {
+        const exitDialog = document.getElementById('exit-confirmation');
+        exitDialog.classList.add('show');
+    }
+
+    function cancelExit() {
+        const exitDialog = document.getElementById('exit-confirmation');
+        exitDialog.classList.remove('show');
+    }
+
+    function confirmExit() {
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            isExitDialogShown = true;
+            window.location.replace('index.html');
+        } catch (error) {
+            console.error('Exit error:', error);
+            window.location.href = 'index.html?t=' + Date.now();
+        }
+    }
+
+    function goHome() {
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            isExitDialogShown = true;
+            window.location.replace('index.html');
+        } catch (error) {
+            window.location.href = 'index.html?t=' + Date.now();
+        }
+    }
+
+    // ===== INITIALIZATION =====
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeGame();
+    });
+
+    async function initializeGame() {
+        console.log('🎮 Initializing endless single device gameplay...');
+
+        // Load game state
+        gameState = new GameState();
+
+        // Initialize Firebase
+        firebaseService = new FirebaseService();
+        await firebaseService.initialize();
+
+        // Validate game state
+        if (!gameState.players || gameState.players.length < 2) {
+            showNotification('Keine Spieler gefunden!', 'error');
+            setTimeout(() => window.location.href = 'player-setup.html', 2000);
+            return;
         }
 
-        function cancelExit() {
-            const exitDialog = document.getElementById('exit-confirmation');
-            exitDialog.classList.remove('show');
+        if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+            showNotification('Keine Kategorien ausgewählt!', 'error');
+            setTimeout(() => window.location.href = 'category-selection.html', 2000);
+            return;
         }
 
-        function confirmExit() {
-            try {
-                // Lösche alle Daten
-                localStorage.clear();
-                sessionStorage.clear();
-                
-                // Deaktiviere alle Event Listener
-                isExitDialogShown = true;
-                
-                // Force Redirect ohne Cache
-                window.location.replace('index.html');
-            } catch (error) {
-                console.error('Exit error:', error);
-                // Fallback: Force reload zur Startseite
-                window.location.href = 'index.html?t=' + Date.now();
-            }
+        if (!gameState.difficulty) {
+            showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
+            setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
+            return;
         }
 
-        function goHome() {
-            // Direkte Lösung ohne Dialog für finale Ergebnisseite
-            try {
-                localStorage.clear();
-                sessionStorage.clear();
-                isExitDialogShown = true;
-                window.location.replace('index.html');
-            } catch (error) {
-                window.location.href = 'index.html?t=' + Date.now();
-            }
-        }
+        // Setup game
+        currentGame.players = [...gameState.players];
+        await generateAllQuestions();
 
-        // ===== DEBUG / EMERGENCY EXIT =====
-        function emergencyExit() {
-            try {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.replace('index.html');
-            } catch (error) {
-                window.location.href = 'index.html?t=' + Date.now();
-            }
-        }
+        // Initialize UI
+        updateGameDisplay();
+        createNumberGrid();
 
-        // Emergency exit mit Tastenkombination
-        window.addEventListener('keydown', function(e) {
-            // Ctrl+Alt+E = Emergency Exit
-            if (e.ctrlKey && e.altKey && e.key === 'e') {
-                emergencyExit();
-            }
+        // Start first question
+        startNewQuestion();
+
+        console.log('✅ Endless game initialized:', {
+            players: currentGame.players,
+            categories: gameState.selectedCategories,
+            difficulty: gameState.difficulty,
+            totalQuestions: currentGame.allQuestions.length
         });
+    }
 
-        // ===== INITIALIZATION =====
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeGame();
-        });
+    async function generateAllQuestions() {
+        currentGame.allQuestions = [];
 
-        function initializeGame() {
-            console.log('🎮 Initializing endless single device gameplay...');
-            
-            // Load game state
-            gameState = new GameState();
-            
-            // Validate game state
-            if (!gameState.players || gameState.players.length < 2) {
-                showNotification('Keine Spieler gefunden!', 'error');
-                setTimeout(() => window.location.href = 'player-setup.html', 2000);
-                return;
-            }
+        // Try to load questions from Firebase first
+        for (const category of gameState.selectedCategories) {
+            const firebaseQuestions = await firebaseService.loadQuestionsFromCategory(category);
 
-            if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-                showNotification('Keine Kategorien ausgewählt!', 'error');
-                setTimeout(() => window.location.href = 'category-selection.html', 2000);
-                return;
-            }
-
-            if (!gameState.difficulty) {
-                showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
-                setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
-                return;
-            }
-
-            // Setup game
-            currentGame.players = [...gameState.players];
-            generateAllQuestions();
-            
-            // Initialize UI
-            updateGameDisplay();
-            createNumberGrid();
-            
-            // Start first question
-            startNewQuestion();
-            
-            console.log('✅ Endless game initialized:', {
-                players: currentGame.players,
-                categories: gameState.selectedCategories,
-                difficulty: gameState.difficulty,
-                totalQuestions: currentGame.allQuestions.length
-            });
-        }
-
-        function generateAllQuestions() {
-            currentGame.allQuestions = [];
-            
-            gameState.selectedCategories.forEach(category => {
-                if (questionsDatabase[category]) {
-                    questionsDatabase[category].forEach(q => {
+            if (firebaseQuestions && firebaseQuestions.length > 0) {
+                console.log(`✅ Loaded ${firebaseQuestions.length} questions from Firebase for ${category}`);
+                firebaseQuestions.forEach(q => {
+                    currentGame.allQuestions.push({
+                        text: q,
+                        category: category
+                    });
+                });
+            } else {
+                // Fallback to local questions
+                console.log(`⚠️ Using fallback questions for ${category}`);
+                if (fallbackQuestionsDatabase[category]) {
+                    fallbackQuestionsDatabase[category].forEach(q => {
                         currentGame.allQuestions.push({
                             text: q,
                             category: category
                         });
                     });
                 }
-            });
-            
-            // Shuffle questions
+            }
+        }
+
+        // Shuffle questions
+        currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
+
+        console.log(`📚 Total questions loaded: ${currentGame.allQuestions.length}`);
+    }
+
+    function getNextQuestion() {
+        if (currentGame.usedQuestions.length >= currentGame.allQuestions.length) {
+            currentGame.usedQuestions = [];
             currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
+            showNotification('Alle Fragen gespielt! Mische neu...', 'success');
         }
 
-        function getNextQuestion() {
-            // If we've used all questions, reshuffle and start over
-            if (currentGame.usedQuestions.length >= currentGame.allQuestions.length) {
-                currentGame.usedQuestions = [];
-                currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
-                showNotification('Alle Fragen gespielt! Mische neu...', 'success');
+        for (let question of currentGame.allQuestions) {
+            if (!currentGame.usedQuestions.includes(question.text)) {
+                currentGame.usedQuestions.push(question.text);
+                return question;
             }
-
-            // Find a question we haven't used yet
-            for (let question of currentGame.allQuestions) {
-                if (!currentGame.usedQuestions.includes(question.text)) {
-                    currentGame.usedQuestions.push(question.text);
-                    return question;
-                }
-            }
-
-            // Fallback (shouldn't happen)
-            return currentGame.allQuestions[0];
         }
 
-        function shuffleArray(array) {
-            const shuffled = [...array];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            return shuffled;
+        return currentGame.allQuestions[0];
+    }
+
+    function shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
+        return shuffled;
+    }
 
-        // ===== GAME FLOW =====
-        function updateGameDisplay() {
-            document.getElementById('total-players').textContent = currentGame.players.length;
-            
-            // Update current player
-            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-            document.getElementById('current-player-name').textContent = currentPlayerName;
-            document.getElementById('current-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
-            document.getElementById('player-progress').textContent = 
-                `(${currentGame.currentPlayerIndex + 1}/${currentGame.players.length})`;
-        }
+    // ===== GAME FLOW =====
+    function updateGameDisplay() {
+        document.getElementById('total-players').textContent = currentGame.players.length;
 
-        function startNewQuestion() {
-            console.log(`🎲 Starting question ${currentGame.currentQuestionNumber}`);
-            
-            // Reset for new question
-            currentGame.currentPlayerIndex = 0;
-            currentGame.currentAnswers = {};
-            currentGame.currentEstimates = {};
-            
-            // Load next question
-            const question = getNextQuestion();
-            loadQuestion(question);
-            
-            // Reset UI
-            resetPlayerUI();
-            updateGameDisplay();
-            
-            // Show game view
-            showGameView();
-        }
+        const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
+        document.getElementById('current-player-name').textContent = currentPlayerName;
+        document.getElementById('current-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
+        document.getElementById('player-progress').textContent =
+            `(${currentGame.currentPlayerIndex + 1}/${currentGame.players.length})`;
+    }
 
-        // ===== NAVIGATION =====
-        function nextQuestion() {
-            currentGame.currentQuestionNumber++;
-            startNewQuestion();
-            showNotification('Neue Frage geladen! 🎮', 'success');
-        }
+    function startNewQuestion() {
+        console.log(`🎲 Starting question ${currentGame.currentQuestionNumber}`);
 
-        function endGame() {
-            showFinalResults();
-        }
+        currentGame.currentPlayerIndex = 0;
+        currentGame.currentAnswers = {};
+        currentGame.currentEstimates = {};
 
-        function goHome() {
-            showExitConfirmation();
-        }
+        const question = getNextQuestion();
+        loadQuestion(question);
 
-        // ===== FINAL RESULTS =====
-        function showFinalResults() {
-            console.log('🏆 Calculating final results...');
-            
-            // Calculate player statistics
-            const playerStats = calculatePlayerStatistics();
-            
-            // Sort by fewest sips (best to worst)
-            const finalRankings = playerStats.sort((a, b) => a.totalSips - b.totalSips);
-            
-            // Display final results
-            displayFinalResults(finalRankings);
-            
-            // Switch to final results view
-            showFinalResultsView();
-        }
+        resetPlayerUI();
+        updateGameDisplay();
+        showGameView();
+    }
 
-        function calculatePlayerStatistics() {
-            const playerStats = {};
-            
-            // Initialize stats for each player
-            currentGame.players.forEach(player => {
-                playerStats[player] = {
-                    playerName: player,
-                    totalSips: 0,
-                    correctGuesses: 0,
-                    totalGuesses: 0,
-                    accuracy: 0
-                };
-            });
+    function nextQuestion() {
+        currentGame.currentQuestionNumber++;
+        startNewQuestion();
+        showNotification('Neue Frage geladen! 🎮', 'success');
+    }
 
-            // Calculate stats from game history
-            currentGame.gameHistory.forEach(round => {
-                round.results.forEach(result => {
-                    const stats = playerStats[result.playerName];
-                    if (stats) {
-                        stats.totalSips += result.sips;
-                        stats.totalGuesses++;
-                        if (result.isCorrect) {
-                            stats.correctGuesses++;
-                        }
+    function endGame() {
+        showFinalResults();
+    }
+
+    // ===== FINAL RESULTS =====
+    function showFinalResults() {
+        console.log('🏆 Calculating final results...');
+
+        const playerStats = calculatePlayerStatistics();
+        const finalRankings = playerStats.sort((a, b) => a.totalSips - b.totalSips);
+
+        displayFinalResults(finalRankings);
+        showFinalResultsView();
+    }
+
+    function calculatePlayerStatistics() {
+        const playerStats = {};
+
+        currentGame.players.forEach(player => {
+            playerStats[player] = {
+                playerName: player,
+                totalSips: 0,
+                correctGuesses: 0,
+                totalGuesses: 0
+            };
+        });
+
+        currentGame.gameHistory.forEach(round => {
+            round.results.forEach(result => {
+                const stats = playerStats[result.playerName];
+                if (stats) {
+                    stats.totalSips += result.sips;
+                    stats.totalGuesses++;
+                    if (result.isCorrect) {
+                        stats.correctGuesses++;
                     }
-                });
+                }
             });
+        });
 
-            // Calculate accuracy percentage
-            Object.values(playerStats).forEach(stats => {
-                stats.accuracy = stats.totalGuesses > 0 ? 
-                    Math.round((stats.correctGuesses / stats.totalGuesses) * 100) : 0;
-            });
+        return Object.values(playerStats);
+    }
 
-            return Object.values(playerStats);
-        }
+    function displayFinalResults(finalRankings) {
+        const leaderboardList = document.getElementById('leaderboard-list');
+        leaderboardList.innerHTML = '';
 
-        function displayFinalResults(finalRankings) {
-            // Build leaderboard
-            const leaderboardList = document.getElementById('leaderboard-list');
-            leaderboardList.innerHTML = '';
-            
-            finalRankings.forEach((player, index) => {
-                const leaderboardItem = document.createElement('div');
-                leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
-                
-                const rankClass = index === 0 ? 'rank-1' : 
-                                 index === 1 ? 'rank-2' : 
-                                 index === 2 ? 'rank-3' : 'rank-other';
-                
-                const rankText = index + 1;
-                const avatar = player.playerName.charAt(0).toUpperCase();
-                
-                leaderboardItem.innerHTML = `
+        finalRankings.forEach((player, index) => {
+            const leaderboardItem = document.createElement('div');
+            leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
+
+            const rankClass = index === 0 ? 'rank-1' :
+                index === 1 ? 'rank-2' :
+                    index === 2 ? 'rank-3' : 'rank-other';
+
+            const rankText = index + 1;
+            const avatar = player.playerName.charAt(0).toUpperCase();
+
+            leaderboardItem.innerHTML = `
                     <div class="rank-number ${rankClass}">${rankText}</div>
                     <div class="result-avatar">${avatar}</div>
                     <div class="player-final-stats">
@@ -1774,304 +1600,300 @@
                             </div>
                             <div class="detail-item">
                                 <span class="detail-icon">🎯</span>
-                                <span>${player.accuracy}% richtig</span>
+                                <span>${player.correctGuesses} Fragen richtig</span>
                             </div>
                         </div>
                     </div>
                 `;
-                
-                leaderboardList.appendChild(leaderboardItem);
-            });
 
-            showNotification(
-                `🏆 ${finalRankings[0].playerName} hat gewonnen!`, 
-                'success', 
-                3000
-            );
+            leaderboardList.appendChild(leaderboardItem);
+        });
+
+        showNotification(
+            `🏆 ${finalRankings[0].playerName} hat gewonnen!`,
+            'success',
+            3000
+        );
+    }
+
+    function showFinalResultsView() {
+        const questionCard = document.querySelector('.question-card');
+        const answerSection = document.getElementById('answer-section');
+        const estimationSection = document.getElementById('estimation-section');
+        const submitSection = document.getElementById('submit-section');
+        const currentPlayerCard = document.querySelector('.current-player-card');
+        const resultsSection = document.getElementById('results-section');
+
+        if (questionCard) questionCard.style.display = 'none';
+        if (answerSection) answerSection.style.display = 'none';
+        if (estimationSection) estimationSection.style.display = 'none';
+        if (submitSection) submitSection.style.display = 'none';
+        if (currentPlayerCard) currentPlayerCard.style.display = 'none';
+        if (resultsSection) resultsSection.style.display = 'none';
+
+        const finalResultsSection = document.getElementById('final-results-section');
+        if (finalResultsSection) {
+            finalResultsSection.style.display = 'flex';
+        }
+    }
+
+    function loadQuestion(question) {
+        const categoryNames = {
+            'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
+            'fsk16': '🎉 Party Time',
+            'fsk18': '🔥 Heiß & Gewagt'
+        };
+
+        document.getElementById('question-text').textContent = question.text;
+        document.getElementById('question-category').textContent = categoryNames[question.category] || '🎮 Spiel';
+    }
+
+    function resetPlayerUI() {
+        document.querySelectorAll('.answer-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        // Reset estimation to unselected state
+        currentEstimation = null;
+        updateNumberSelection();
+        hideSelectionDisplay();
+        updateSubmitButton();
+    }
+
+    // ===== UI CONTROLS =====
+    function createNumberGrid() {
+        const numberGrid = document.getElementById('number-grid');
+        const playerCount = currentGame.players.length;
+        numberGrid.innerHTML = '';
+
+        // Dynamische Grid-Klasse basierend auf Anzahl
+        if (playerCount <= 6) {
+            numberGrid.className = 'number-grid small';
+        } else if (playerCount <= 10) {
+            numberGrid.className = 'number-grid medium';
+        } else {
+            numberGrid.className = 'number-grid large';
         }
 
-        function showFinalResultsView() {
-            // Hide all other sections
-            const questionCard = document.querySelector('.question-card');
-            const answerSection = document.getElementById('answer-section');
-            const estimationSection = document.getElementById('estimation-section');
-            const submitSection = document.getElementById('submit-section');
-            const currentPlayerCard = document.querySelector('.current-player-card');
-            const resultsSection = document.getElementById('results-section');
-            
-            if (questionCard) questionCard.style.display = 'none';
-            if (answerSection) answerSection.style.display = 'none';
-            if (estimationSection) estimationSection.style.display = 'none';
-            if (submitSection) submitSection.style.display = 'none';
-            if (currentPlayerCard) currentPlayerCard.style.display = 'none';
-            if (resultsSection) resultsSection.style.display = 'none';
-            
-            // Show final results
-            const finalResultsSection = document.getElementById('final-results-section');
-            if (finalResultsSection) {
-                finalResultsSection.style.display = 'flex';
-            }
-        }
+        for (let i = 0; i <= playerCount; i++) {
+            const numberBtn = document.createElement('button');
+            numberBtn.className = 'number-btn';
+            numberBtn.textContent = i;
+            numberBtn.onclick = () => selectNumber(i);
+            numberBtn.id = `number-btn-${i}`;
 
-        function loadQuestion(question) {
-            const categoryNames = {
-                'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
-                'fsk16': '🎉 Party Time',
-                'fsk18': '🔥 Heiß & Gewagt'
-            };
-            
-            document.getElementById('question-text').textContent = question.text;
-            document.getElementById('question-category').textContent = categoryNames[question.category] || '🎮 Spiel';
+            numberGrid.appendChild(numberBtn);
         }
+    }
 
-        function resetPlayerUI() {
-            // Reset answer buttons
-            document.querySelectorAll('.answer-btn').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            
-            // Reset number selection
-            updateSelectedNumber(Math.floor(currentGame.players.length / 2));
+    function selectNumber(number) {
+        if (number >= 0 && number <= currentGame.players.length) {
+            currentEstimation = number;
+            updateSelectedNumber(number);
+            showSelectionDisplay();
             updateNumberSelection();
             updateSubmitButton();
-        }
 
-        // ===== UI CONTROLS =====
-        function createNumberGrid() {
-            const numberGrid = document.getElementById('number-grid');
-            numberGrid.innerHTML = '';
-
-            for (let i = 0; i <= currentGame.players.length; i++) {
-                const numberBtn = document.createElement('button');
-                numberBtn.className = 'number-btn';
-                numberBtn.textContent = i;
-                numberBtn.onclick = () => selectNumber(i);
-                numberBtn.id = `number-btn-${i}`;
-                
-                numberGrid.appendChild(numberBtn);
-            }
-            
-            updateNumberSelection();
-        }
-
-        function selectNumber(number) {
-            if (number >= 0 && number <= currentGame.players.length) {
-                currentEstimation = number;
-                updateSelectedNumber(number);
-                updateNumberSelection();
-                updateSubmitButton();
-                
-                if (navigator.vibrate) {
-                    navigator.vibrate(50);
-                }
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
             }
         }
+    }
 
-        function updateSelectedNumber(number) {
-            document.getElementById('selected-number').textContent = number;
-            
-            const selectionDisplay = document.querySelector('.selection-display');
-            selectionDisplay.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                selectionDisplay.style.transform = 'scale(1)';
-            }, 200);
-        }
+    function updateSelectedNumber(number) {
+        document.getElementById('selected-number').textContent = number;
 
-        function updateNumberSelection() {
-            document.querySelectorAll('.number-btn').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            
+        const selectionDisplay = document.querySelector('.selection-display');
+        selectionDisplay.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+            selectionDisplay.style.transform = 'scale(1)';
+        }, 200);
+    }
+
+    function showSelectionDisplay() {
+        const selectionEl = document.getElementById('current-selection');
+        selectionEl.classList.add('visible');
+    }
+
+    function hideSelectionDisplay() {
+        const selectionEl = document.getElementById('current-selection');
+        selectionEl.classList.remove('visible');
+    }
+
+    function updateNumberSelection() {
+        document.querySelectorAll('.number-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        if (currentEstimation !== null) {
             const selectedBtn = document.getElementById(`number-btn-${currentEstimation}`);
             if (selectedBtn) {
                 selectedBtn.classList.add('selected');
             }
         }
+    }
 
-        function selectAnswer(answer) {
-            currentAnswer = answer;
-            
-            document.querySelectorAll('.answer-btn').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            
-            const selectedBtn = answer ? document.getElementById('yes-btn') : document.getElementById('no-btn');
-            selectedBtn.classList.add('selected');
-            
-            updateSubmitButton();
+    function selectAnswer(answer) {
+        currentAnswer = answer;
+
+        document.querySelectorAll('.answer-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        const selectedBtn = answer ? document.getElementById('yes-btn') : document.getElementById('no-btn');
+        selectedBtn.classList.add('selected');
+
+        updateSubmitButton();
+    }
+
+    function updateSubmitButton() {
+        const submitBtn = document.getElementById('submit-btn');
+        if (currentAnswer !== null && currentEstimation !== null) {
+            submitBtn.classList.add('enabled');
+            submitBtn.disabled = false;
+        } else {
+            submitBtn.classList.remove('enabled');
+            submitBtn.disabled = true;
+        }
+    }
+
+    // ===== GAME ACTIONS =====
+    let currentAnswer = null;
+    let currentEstimation = null;
+
+    function submitAnswer() {
+        if (currentAnswer === null || currentEstimation === null) {
+            showNotification('Bitte wähle eine Antwort und eine Schätzung aus!', 'warning');
+            return;
         }
 
-        function updateSubmitButton() {
-            const submitBtn = document.getElementById('submit-btn');
-            if (currentAnswer !== null) {
-                submitBtn.classList.add('enabled');
-                submitBtn.disabled = false;
-            } else {
-                submitBtn.classList.remove('enabled');
-                submitBtn.disabled = true;
+        const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
+
+        currentGame.currentAnswers[currentPlayerName] = currentAnswer;
+        currentGame.currentEstimates[currentPlayerName] = currentEstimation;
+
+        console.log(`📤 ${currentPlayerName} answered:`, {
+            answer: currentAnswer,
+            estimation: currentEstimation
+        });
+
+        if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
+            currentGame.currentPlayerIndex++;
+            currentAnswer = null;
+            currentEstimation = null;
+            resetPlayerUI();
+            updateGameDisplay();
+            showPlayerChangePopup();
+        } else {
+            showResults();
+        }
+    }
+
+    // ===== PLAYER CHANGE POPUP =====
+    function showPlayerChangePopup() {
+        const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
+
+        document.getElementById('popup-name').textContent = currentPlayerName;
+        document.getElementById('popup-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
+
+        const popup = document.getElementById('player-change-popup');
+        popup.classList.add('show');
+
+        if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
+        }
+
+        setTimeout(() => {
+            popup.classList.remove('show');
+        }, 2000);
+    }
+
+    // ===== RESULTS =====
+    function showResults() {
+        console.log('📊 Calculating results...');
+
+        const actualYesCount = Object.values(currentGame.currentAnswers).filter(answer => answer === true).length;
+
+        const results = currentGame.players.map(playerName => {
+            const answer = currentGame.currentAnswers[playerName];
+            const estimation = currentGame.currentEstimates[playerName];
+            const difference = Math.abs(estimation - actualYesCount);
+            const isCorrect = difference === 0;
+
+            let sips = 0;
+            if (!isCorrect) {
+                const baseSips = getDifficultyMultiplier();
+                sips = baseSips + difference;
             }
+
+            return {
+                playerName: playerName,
+                answer: answer,
+                estimation: estimation,
+                difference: difference,
+                isCorrect: isCorrect,
+                sips: sips
+            };
+        });
+
+        currentGame.gameHistory.push({
+            questionNumber: currentGame.currentQuestionNumber,
+            actualYesCount: actualYesCount,
+            results: results
+        });
+
+        displayResults(results, actualYesCount);
+        showResultsView();
+    }
+
+    function showResultsView() {
+        document.getElementById('answer-section').style.display = 'none';
+        document.getElementById('estimation-section').style.display = 'none';
+        document.getElementById('submit-section').style.display = 'none';
+        document.querySelector('.current-player-card').style.display = 'none';
+        document.getElementById('results-section').style.display = 'flex';
+
+        showNotification('Ergebnisse werden angezeigt...', 'success', 2000);
+    }
+
+    function showGameView() {
+        document.getElementById('answer-section').style.display = 'block';
+        document.getElementById('estimation-section').style.display = 'flex';
+        document.getElementById('submit-section').style.display = 'block';
+        document.querySelector('.current-player-card').style.display = 'flex';
+        document.getElementById('results-section').style.display = 'none';
+    }
+
+    function getDifficultyMultiplier() {
+        switch (gameState.difficulty) {
+            case 'easy': return 1;
+            case 'hard': return 3;
+            default: return 2;
         }
+    }
 
-        // ===== GAME ACTIONS =====
-        let currentAnswer = null;
-        let currentEstimation = 1;
+    function displayResults(results, actualYesCount) {
+        document.getElementById('results-summary').textContent =
+            `${actualYesCount} von ${currentGame.players.length} Spielern haben "Ja" geantwortet`;
 
-        function submitAnswer() {
-            if (currentAnswer === null) {
-                showNotification('Bitte wähle eine Antwort aus!', 'warning');
-                return;
-            }
+        const sortedResults = results.sort((a, b) => {
+            if (a.isCorrect && !b.isCorrect) return -1;
+            if (!a.isCorrect && b.isCorrect) return 1;
+            return a.sips - b.sips;
+        });
 
-            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-            
-            // Save answers
-            currentGame.currentAnswers[currentPlayerName] = currentAnswer;
-            currentGame.currentEstimates[currentPlayerName] = currentEstimation;
-            
-            console.log(`📤 ${currentPlayerName} answered:`, {
-                answer: currentAnswer,
-                estimation: currentEstimation
-            });
+        const resultsGrid = document.getElementById('results-grid');
+        resultsGrid.innerHTML = '';
 
-            // Move to next player or show results
-            if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
-                currentGame.currentPlayerIndex++;
-                currentAnswer = null;
-                currentEstimation = Math.floor(currentGame.players.length / 2);
-                resetPlayerUI();
-                updateGameDisplay();
-                
-                // Show player change popup
-                showPlayerChangePopup();
-            } else {
-                // All players answered, show quick results
-                showQuickResults();
-            }
-        }
+        sortedResults.forEach(result => {
+            const resultItem = document.createElement('div');
+            resultItem.className = 'result-item';
 
-        // ===== PLAYER CHANGE POPUP =====
-        function showPlayerChangePopup() {
-            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-            
-            document.getElementById('popup-name').textContent = currentPlayerName;
-            document.getElementById('popup-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
-            
-            const popup = document.getElementById('player-change-popup');
-            popup.classList.add('show');
-            
-            if (navigator.vibrate) {
-                navigator.vibrate([100, 50, 100]);
-            }
-            
-            setTimeout(() => {
-                popup.classList.remove('show');
-            }, 2000);
-        }
+            const avatar = result.playerName.charAt(0).toUpperCase();
+            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
+            const sipsClass = result.sips === 0 ? 'none' : '';
 
-        // ===== RESULTS =====
-        function showResults() {
-            console.log('📊 Calculating results...');
-            
-            // Calculate actual yes count
-            const actualYesCount = Object.values(currentGame.currentAnswers).filter(answer => answer === true).length;
-            
-            // Calculate results for each player
-            const results = currentGame.players.map(playerName => {
-                const answer = currentGame.currentAnswers[playerName];
-                const estimation = currentGame.currentEstimates[playerName];
-                const difference = Math.abs(estimation - actualYesCount);
-                const isCorrect = difference === 0;
-                
-                // Calculate sips based on difficulty
-                let sips = 0;
-                if (!isCorrect) {
-                    const baseSips = getDifficultyMultiplier();
-                    sips = baseSips + difference;
-                }
-                
-                return {
-                    playerName: playerName,
-                    answer: answer,
-                    estimation: estimation,
-                    difference: difference,
-                    isCorrect: isCorrect,
-                    sips: sips
-                };
-            });
-            
-            // Save to game history
-            currentGame.gameHistory.push({
-                questionNumber: currentGame.currentQuestionNumber,
-                actualYesCount: actualYesCount,
-                results: results
-            });
-            
-            // Display results
-            displayResults(results, actualYesCount);
-            
-            // Switch to results view
-            showResultsView();
-        }
-
-        function showResultsView() {
-            // Hide game elements
-            document.getElementById('answer-section').style.display = 'none';
-            document.getElementById('estimation-section').style.display = 'none';
-            document.getElementById('submit-section').style.display = 'none';
-            document.querySelector('.current-player-card').style.display = 'none';
-            
-            // Show results
-            document.getElementById('results-section').style.display = 'flex';
-            
-            showNotification('Ergebnisse werden angezeigt...', 'success', 2000);
-        }
-
-        function showGameView() {
-            // Show game elements
-            document.getElementById('answer-section').style.display = 'block';
-            document.getElementById('estimation-section').style.display = 'flex';
-            document.getElementById('submit-section').style.display = 'block';
-            document.querySelector('.current-player-card').style.display = 'flex';
-            
-            // Hide results
-            document.getElementById('results-section').style.display = 'none';
-        }
-
-        function getDifficultyMultiplier() {
-            switch (gameState.difficulty) {
-                case 'easy': return 1;
-                case 'hard': return 3;
-                default: return 2; // medium
-            }
-        }
-
-        function displayResults(results, actualYesCount) {
-            // Update summary
-            document.getElementById('results-summary').textContent = 
-                `${actualYesCount} von ${currentGame.players.length} Spielern haben "Ja" geantwortet`;
-
-            // Sort results: first correct guesses, then by fewest sips
-            const sortedResults = results.sort((a, b) => {
-                // First sort by correctness (correct first)
-                if (a.isCorrect && !b.isCorrect) return -1;
-                if (!a.isCorrect && b.isCorrect) return 1;
-                // If both correct or both wrong, sort by sips (fewer first)
-                return a.sips - b.sips;
-            });
-
-            // Display individual results
-            const resultsGrid = document.getElementById('results-grid');
-            resultsGrid.innerHTML = '';
-
-            sortedResults.forEach(result => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'result-item';
-                
-                const avatar = result.playerName.charAt(0).toUpperCase();
-                const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
-                const sipsClass = result.sips === 0 ? 'none' : '';
-
-                resultItem.innerHTML = `
+            resultItem.innerHTML = `
                     <div class="player-result">
                         <div class="result-avatar">${avatar}</div>
                         <div class="player-result-info">
@@ -2082,120 +1904,38 @@
                     <div class="sips-penalty ${sipsClass}">${sipsText}</div>
                 `;
 
-                resultsGrid.appendChild(resultItem);
-            });
-        }
+            resultsGrid.appendChild(resultItem);
+        });
+    }
 
-        function submitAnswer() {
-            if (currentAnswer === null) {
-                showNotification('Bitte wähle eine Antwort aus!', 'warning');
-                return;
-            }
+    // ===== UTILITY FUNCTIONS =====
+    function showNotification(message, type = 'info', duration = 3000) {
+        document.querySelectorAll('.toast-notification').forEach(n => n.remove());
 
-            const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-            
-            // Save answers
-            currentGame.currentAnswers[currentPlayerName] = currentAnswer;
-            currentGame.currentEstimates[currentPlayerName] = currentEstimation;
-            
-            console.log(`📤 ${currentPlayerName} answered:`, {
-                answer: currentAnswer,
-                estimation: currentEstimation
-            });
-
-            // Move to next player or show results
-            if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
-                currentGame.currentPlayerIndex++;
-                currentAnswer = null;
-                currentEstimation = Math.floor(currentGame.players.length / 2);
-                resetPlayerUI();
-                updateGameDisplay();
-                
-                // Show player change popup
-                showPlayerChangePopup();
-            } else {
-                // All players answered, show results
-                showResults();
-            }
-        }
-
-        // ===== UTILITY FUNCTIONS =====
-        function showNotification(message, type = 'info', duration = 3000) {
-            // Remove existing notifications
-            document.querySelectorAll('.toast-notification').forEach(n => n.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `toast-notification ${type}`;
-            notification.innerHTML = `
+        const notification = document.createElement('div');
+        notification.className = `toast-notification ${type}`;
+        notification.innerHTML = `
                 <div class="toast-content">
                     <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
                     <div class="toast-message">${message}</div>
                 </div>
             `;
-            
-            document.body.appendChild(notification);
-            
-            // Animate in
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            // Remove after duration
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        setTimeout(() => {
+            notification.classList.remove('show');
             setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                        document.body.removeChild(notification);
-                    }
-                }, 300);
-            }, duration);
-        }
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }, duration);
+    }
 
-        // ===== DEBUG FUNCTIONS =====
-        window.debugGame = function() {
-            console.log('🔍 Game Debug Info:');
-            console.log('GameState:', gameState);
-            console.log('Current Game:', currentGame);
-        };
-
-        window.showGameStats = function() {
-            const totalQuestions = currentGame.gameHistory.length;
-            const totalPlayers = currentGame.players.length;
-            
-            console.log(`📊 Game Stats:`);
-            console.log(`Questions played: ${totalQuestions}`);
-            console.log(`Players: ${totalPlayers}`);
-            console.log(`Questions available: ${currentGame.allQuestions.length}`);
-            console.log(`Questions used: ${currentGame.usedQuestions.length}`);
-            
-            // Player stats
-            const playerStats = {};
-            currentGame.players.forEach(player => {
-                playerStats[player] = {
-                    totalSips: 0,
-                    correctGuesses: 0,
-                    totalGuesses: 0
-                };
-            });
-
-            currentGame.gameHistory.forEach(round => {
-                round.results.forEach(result => {
-                    const stats = playerStats[result.playerName];
-                    if (stats) {
-                        stats.totalSips += result.sips;
-                        stats.totalGuesses++;
-                        if (result.isCorrect) {
-                            stats.correctGuesses++;
-                        }
-                    }
-                });
-            });
-
-            console.log('Player Stats:', playerStats);
-        };
-
-        console.log('✅ Endless Single Device Gameplay loaded');
-        console.log('🎮 Debug Commands:');
-        console.log('- debugGame() - Show debug info');
-        console.log('- showGameStats() - Show game statistics');
-    </script>
+    console.log('✅ No-Cap Gameplay loaded with Firebase integration');
+</script>
 </body>
 </html>
