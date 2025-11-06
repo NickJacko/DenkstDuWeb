@@ -247,12 +247,12 @@
             font-size: 1.2rem;
         }
 
-        /* Estimation Section - Dynamisch ohne Scrollleiste */
+        /* Estimation Section - Kompakter und proportionaler */
         .estimation-section {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
             border-radius: 15px;
-            padding: 12px;
+            padding: 10px 12px;
             margin-bottom: 10px;
             border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
@@ -265,49 +265,53 @@
 
         .estimation-title {
             color: white;
-            font-size: 0.9rem;
-            font-weight: 700;
+            font-size: 0.8rem;
+            font-weight: 600;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             flex-shrink: 0;
+            opacity: 0.95;
         }
 
-        /* Current Selection Display - Nur sichtbar nach Auswahl */
+        /* Current Selection Display - Kompakter und nur sichtbar nach Auswahl */
         .current-selection {
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             flex-shrink: 0;
             opacity: 0;
-            transform: scale(0.8);
+            transform: scale(0.9);
             transition: all 0.3s ease;
+            max-height: 0;
+            overflow: hidden;
         }
 
         .current-selection.visible {
             opacity: 1;
             transform: scale(1);
+            max-height: 50px;
         }
 
         .selection-display {
             background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
             border: 2px solid rgba(76, 175, 80, 0.5);
-            border-radius: 12px;
-            padding: 8px 12px;
+            border-radius: 10px;
+            padding: 6px 10px;
             display: inline-block;
-            min-width: 100px;
+            min-width: 90px;
         }
 
         .selection-number {
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 800;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            margin-bottom: 1px;
+            margin-bottom: 0;
         }
 
         .selection-label {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 600;
         }
 
@@ -334,13 +338,13 @@
 
         .number-btn {
             width: 100%;
-            max-width: 55px;
-            height: 55px;
+            max-width: 50px;
+            height: 50px;
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
             border-radius: 50%;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 800;
             cursor: pointer;
             display: flex;
@@ -358,16 +362,16 @@
         .number-btn.selected {
             background: linear-gradient(135deg, #4CAF50, #2196F3);
             border-color: #4CAF50;
-            transform: scale(1.1);
+            transform: scale(1.08);
             box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
             color: white;
         }
 
         /* Für viele Spieler: Kleinere Buttons */
         .number-grid.large .number-btn {
-            max-width: 45px;
-            height: 45px;
-            font-size: 1rem;
+            max-width: 42px;
+            height: 42px;
+            font-size: 0.95rem;
         }
 
         /* Submit Button */
@@ -966,16 +970,33 @@
                 font-size: 0.95rem;
             }
 
+            .estimation-title {
+                font-size: 0.75rem;
+            }
+
             .number-btn {
-                max-width: 45px;
-                height: 45px;
+                max-width: 42px;
+                height: 42px;
                 font-size: 1rem;
             }
 
             .number-grid.large .number-btn {
-                max-width: 40px;
-                height: 40px;
+                max-width: 38px;
+                height: 38px;
                 font-size: 0.9rem;
+            }
+
+            .selection-display {
+                min-width: 80px;
+                padding: 5px 8px;
+            }
+
+            .selection-number {
+                font-size: 1rem;
+            }
+
+            .selection-label {
+                font-size: 0.6rem;
             }
         }
 
@@ -984,14 +1005,29 @@
                 font-size: 0.9rem;
             }
 
+            .estimation-title {
+                font-size: 0.75rem;
+                margin-bottom: 6px;
+            }
+
             .number-btn {
-                max-width: 40px;
-                height: 40px;
-                font-size: 0.9rem;
+                max-width: 38px;
+                height: 38px;
+                font-size: 0.95rem;
+            }
+
+            .number-grid.large .number-btn {
+                max-width: 35px;
+                height: 35px;
+                font-size: 0.85rem;
             }
 
             .answer-btn {
                 padding: 12px 8px;
+            }
+
+            .current-selection {
+                margin-bottom: 6px;
             }
         }
 
@@ -1010,10 +1046,55 @@
                 margin-bottom: 8px;
             }
 
+            .estimation-section {
+                padding: 8px 10px;
+            }
+
+            .estimation-title {
+                font-size: 0.7rem;
+                margin-bottom: 5px;
+            }
+
             .number-btn {
                 max-width: 35px;
                 height: 35px;
+                font-size: 0.85rem;
+            }
+
+            .number-grid.large .number-btn {
+                max-width: 32px;
+                height: 32px;
                 font-size: 0.8rem;
+            }
+
+            .answer-btn {
+                padding: 10px 8px;
+            }
+
+            .answer-emoji {
+                font-size: 1rem;
+            }
+
+            .current-selection {
+                margin-bottom: 5px;
+            }
+
+            .selection-display {
+                padding: 4px 6px;
+                min-width: 70px;
+            }
+
+            .selection-number {
+                font-size: 0.95rem;
+            }
+
+            .selection-label {
+                font-size: 0.55rem;
+            }
+
+            .submit-btn {
+                padding: 12px;
+                font-size: 0.9rem;
             }
         }
 
@@ -1083,7 +1164,7 @@
 
         <!-- Estimation Section -->
         <div class="estimation-section fadeInUp" id="estimation-section">
-            <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
+            <div class="estimation-title">🎯 Wie viele mit "Ja"?</div>
 
             <!-- Current Selection Display - Nur sichtbar nach Auswahl -->
             <div class="current-selection" id="current-selection">
@@ -1343,6 +1424,7 @@
     // ===== GLOBAL VARIABLES =====
     let gameState = null;
     let firebaseService = null;
+    let alcoholMode = false;
     let currentGame = {
         players: [],
         allQuestions: [],
@@ -1353,6 +1435,18 @@
         currentEstimates: {},
         gameHistory: []
     };
+
+    // Check alcohol mode
+    function checkAlcoholMode() {
+        try {
+            const alcoholModeStr = localStorage.getItem('nocap_alcohol_mode');
+            alcoholMode = alcoholModeStr === 'true';
+            console.log('🍺 Alcohol mode:', alcoholMode);
+        } catch (error) {
+            console.error('❌ Error checking alcohol mode:', error);
+            alcoholMode = false;
+        }
+    }
 
     // Fallback Questions Database
     const fallbackQuestionsDatabase = {
@@ -1435,6 +1529,9 @@
 
     async function initializeGame() {
         console.log('🎮 Initializing endless single device gameplay...');
+
+        // Check alcohol mode
+        checkAlcoholMode();
 
         // Load game state
         gameState = new GameState();
@@ -1633,6 +1730,9 @@
         const leaderboardList = document.getElementById('leaderboard-list');
         leaderboardList.innerHTML = '';
 
+        // Emoji basierend auf Alcohol Mode
+        const drinkEmoji = alcoholMode ? '🍺' : '💧';
+
         finalRankings.forEach((player, index) => {
             const leaderboardItem = document.createElement('div');
             leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
@@ -1644,6 +1744,10 @@
             const rankText = index + 1;
             const avatar = player.playerName.charAt(0).toUpperCase();
 
+            // Singular/Plural bei Schlücken und Fragen
+            const sipsText = player.totalSips === 1 ? '1 Schluck' : `${player.totalSips} Schlücke`;
+            const questionsText = player.correctGuesses === 1 ? '1 Frage richtig' : `${player.correctGuesses} Fragen richtig`;
+
             leaderboardItem.innerHTML = `
                     <div class="rank-number ${rankClass}">${rankText}</div>
                     <div class="result-avatar">${avatar}</div>
@@ -1651,12 +1755,12 @@
                         <div class="player-final-name">${player.playerName}</div>
                         <div class="player-final-details">
                             <div class="detail-item">
-                                <span class="detail-icon">🍺</span>
-                                <span>${player.totalSips} Schlücke</span>
+                                <span class="detail-icon">${drinkEmoji}</span>
+                                <span>${sipsText}</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-icon">🎯</span>
-                                <span>${player.correctGuesses} Fragen richtig</span>
+                                <span>${questionsText}</span>
                             </div>
                         </div>
                     </div>
@@ -1768,7 +1872,10 @@
 
     function showSelectionDisplay() {
         const selectionEl = document.getElementById('current-selection');
-        selectionEl.classList.add('visible');
+        // Kleine Verzögerung für smooth animation
+        requestAnimationFrame(() => {
+            selectionEl.classList.add('visible');
+        });
     }
 
     function hideSelectionDisplay() {
@@ -1941,12 +2048,19 @@
         const resultsGrid = document.getElementById('results-grid');
         resultsGrid.innerHTML = '';
 
+        // Emoji basierend auf Alcohol Mode
+        const drinkEmoji = alcoholMode ? '🍺' : '💧';
+
         sortedResults.forEach(result => {
             const resultItem = document.createElement('div');
             resultItem.className = 'result-item';
 
             const avatar = result.playerName.charAt(0).toUpperCase();
-            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
+
+            // Singular/Plural bei Schlücken
+            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' :
+                result.sips === 1 ? `1 Schluck ${drinkEmoji}` :
+                    `${result.sips} Schlücke ${drinkEmoji}`;
             const sipsClass = result.sips === 0 ? 'none' : '';
 
             resultItem.innerHTML = `
