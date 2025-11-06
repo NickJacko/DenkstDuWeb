@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Schwierigkeit wählen</title>
+    <title>No-Cap - Multiplayer Schwierigkeit wählen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Favicon - Kappe Emoji -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -47,6 +50,8 @@
         .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
         .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 2s; }
         .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 4s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 1s; }
+        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 3s; }
 
         @keyframes float {
             0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
@@ -295,6 +300,7 @@
             color: rgba(255, 255, 255, 0.7);
             font-size: 0.8rem;
             flex: 1;
+            text-align: left;
         }
 
         .stat-value {
@@ -463,6 +469,8 @@
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
 </div>
 
 <!-- Loading Spinner -->
@@ -518,13 +526,8 @@
                 <div class="difficulty-stats">
                     <div class="stat-item">
                         <div class="stat-icon">🍺</div>
-                        <div class="stat-label">Schlücke bei Fehler</div>
-                        <div class="stat-value">1-2</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">⏱️</div>
-                        <div class="stat-label">Bedenkzeit</div>
-                        <div class="stat-value">Entspannt</div>
+                        <div class="stat-label">Schlücke bei falscher Antwort</div>
+                        <div class="stat-value">1</div>
                     </div>
                 </div>
             </div>
@@ -540,13 +543,8 @@
                 <div class="difficulty-stats">
                     <div class="stat-item">
                         <div class="stat-icon">🍺</div>
-                        <div class="stat-label">Schlücke bei Fehler</div>
-                        <div class="stat-value">2-3</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">⏱️</div>
-                        <div class="stat-label">Bedenkzeit</div>
-                        <div class="stat-value">Normal</div>
+                        <div class="stat-label">Schlücke bei falscher Schätzung</div>
+                        <div class="stat-value">= Abweichung</div>
                     </div>
                 </div>
             </div>
@@ -562,13 +560,8 @@
                 <div class="difficulty-stats">
                     <div class="stat-item">
                         <div class="stat-icon">🍺</div>
-                        <div class="stat-label">Schlücke bei Fehler</div>
-                        <div class="stat-value">3-5</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon">⏱️</div>
-                        <div class="stat-label">Bedenkzeit</div>
-                        <div class="stat-value">Schnell</div>
+                        <div class="stat-label">Schlücke bei falscher Schätzung</div>
+                        <div class="stat-value">= 2x Abweichung</div>
                     </div>
                 </div>
             </div>
@@ -622,7 +615,7 @@
                     timestamp: Date.now(),
                     version: 3
                 };
-                localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                localStorage.setItem('nocap_game_state', JSON.stringify(state));
                 this.log('✅ State saved successfully');
                 return true;
             } catch (error) {
@@ -633,7 +626,7 @@
 
         load() {
             try {
-                const saved = localStorage.getItem('denkstdu_game_state');
+                const saved = localStorage.getItem('nocap_game_state');
                 if (saved) {
                     const state = JSON.parse(saved);
                     if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
@@ -662,7 +655,7 @@
         }
 
         clearStorage() {
-            localStorage.removeItem('denkstdu_game_state');
+            localStorage.removeItem('nocap_game_state');
             this.log('🗑️ Storage cleared');
         }
 
@@ -722,7 +715,6 @@
             try {
                 this.log('🔥 Firebase Service - Initialisierung gestartet...');
 
-                // Check if Firebase SDK is loaded
                 if (typeof firebase === 'undefined') {
                     this.log('❌ Firebase SDK nicht gefunden', 'error');
                     throw new Error('Firebase SDK nicht geladen');
@@ -730,7 +722,6 @@
 
                 this.log('✅ Firebase SDK geladen');
 
-                // Initialize Firebase App
                 if (!firebase.apps || firebase.apps.length === 0) {
                     this.log('🔧 Initialisiere Firebase App...');
                     this.app = firebase.initializeApp(this.config);
@@ -740,15 +731,12 @@
                     this.app = firebase.app();
                 }
 
-                // Get database reference
                 this.log('🔧 Hole Database-Referenz...');
                 this.database = firebase.database();
                 this.log('✅ Database-Referenz erhalten');
 
-                // Warte kurz, damit Database vollständig initialisiert ist
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // Test connection with timeout
                 this.log('🔧 Teste Verbindung...');
                 this.isConnected = await this.testConnectionWithTimeout(10000);
 
@@ -918,6 +906,11 @@
             name: 'Heiß & Gewagt',
             icon: '🔥',
             color: '#F44336'
+        },
+        special: {
+            name: 'Special Edition',
+            icon: '⭐',
+            color: '#FFD700'
         }
     };
 
@@ -950,12 +943,10 @@
             log('🔥 Starte Firebase-Initialisierung...');
             updateConnectionStatus('connecting', '🔄 Verbinde mit Firebase...');
 
-            // Warte kurz, damit Firebase SDK vollständig geladen ist
             await new Promise(resolve => setTimeout(resolve, 500));
 
             let firebaseReady = await firebaseService.initialize();
 
-            // Wenn fehlgeschlagen, automatisch retry
             if (!firebaseReady && firebaseService.retryAttempts < firebaseService.maxRetries) {
                 log('🔄 Erster Versuch fehlgeschlagen, starte automatisches Retry...');
                 await new Promise(resolve => setTimeout(resolve, 1000));
@@ -977,7 +968,6 @@
             log(`❌ Initialisierung fehlgeschlagen: ${error.message}`, 'error');
             console.error('Init Error:', error);
             updateConnectionStatus('disconnected', '❌ Fehler (Klicken zum Neu-Verbinden)');
-            showNotification('Initialisierungsfehler - Offline-Modus aktiv', 'warning');
         }
     }
 
@@ -996,12 +986,11 @@
             showNotification('Erfolgreich verbunden! 🎉', 'success');
         } else {
             updateConnectionStatus('disconnected', '❌ Verbindung fehlgeschlagen');
-            showNotification('Verbindung fehlgeschlagen - Offline-Modus', 'error');
+            showNotification('Verbindung fehlgeschlagen', 'error');
         }
     }
 
     function validateGameState() {
-        // Check multiplayer mode
         if (gameState.deviceMode !== 'multi') {
             log('❌ Nicht im Multiplayer-Modus', 'error');
             showNotification('Nicht im Multiplayer-Modus. Weiterleitung...', 'warning');
@@ -1011,7 +1000,6 @@
             return false;
         }
 
-        // Check categories
         if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
             log('❌ Keine Kategorien ausgewählt', 'error');
             showNotification('Keine Kategorien ausgewählt. Zurück zur Kategorieauswahl...', 'warning');
@@ -1021,7 +1009,6 @@
             return false;
         }
 
-        // Check game ID
         if (!gameState.gameId) {
             log('❌ Keine Spiel-ID gefunden', 'error');
             showNotification('Keine Spiel-ID gefunden. Zurück zur Kategorieauswahl...', 'warning');
@@ -1040,10 +1027,6 @@
                 connected ? 'connected' : 'disconnected',
                 connected ? '✅ Verbunden' : '⚠️ Offline'
             );
-
-            if (connected) {
-                showNotification('Verbindung wiederhergestellt! 🎉', 'success');
-            }
         });
     }
 
@@ -1133,9 +1116,6 @@
 
         // Update UI
         updateContinueButton();
-
-        // Sync with Firebase
-        syncWithFirebase();
     }
 
     function updateContinueButton() {
@@ -1161,14 +1141,14 @@
                     categories: gameState.selectedCategories
                 });
                 log('✅ Schwierigkeit mit Firebase synchronisiert');
-                showNotification('Mit Firebase synchronisiert! 💾', 'success');
+                return true;
             } catch (error) {
                 log(`❌ Firebase-Sync fehlgeschlagen: ${error.message}`, 'error');
-                showNotification('Lokal gespeichert (Offline)', 'warning');
+                return false;
             }
         } else {
             log('ℹ️ Firebase nicht verfügbar - nur lokale Speicherung');
-            showNotification('Lokal gespeichert', 'success');
+            return false;
         }
     }
 
@@ -1184,7 +1164,7 @@
         showLoading();
 
         try {
-            // Try to sync with Firebase one last time
+            // Sync with Firebase silently
             await syncWithFirebase();
 
             // Set game phase to lobby
@@ -1272,14 +1252,14 @@
             ready: firebaseService?.isReady,
             retryAttempts: firebaseService?.retryAttempts
         });
-        console.log('LocalStorage:', localStorage.getItem('denkstdu_game_state'));
+        console.log('LocalStorage:', localStorage.getItem('nocap_game_state'));
     };
 
     window.forceRetry = function() {
         retryFirebaseConnection();
     };
 
-    log('✅ Multiplayer Difficulty Selection v5.0 IMPROVED - vollständig geladen!');
+    log('✅ No-Cap Multiplayer Difficulty Selection - vollständig geladen!');
     log('🛠️ Debug: debugDifficultySelection() | forceRetry()');
 </script>
 </body>
