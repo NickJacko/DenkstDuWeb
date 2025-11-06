@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Multiplayer Kategorien</title>
+    <title>No-Cap - Multiplayer Kategorien wählen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    
+
+    <!-- Favicon - Kappe Emoji -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
@@ -25,6 +29,37 @@
             min-height: 100vh;
             overflow-x: hidden;
             padding-top: 2rem;
+        }
+
+        /* Animated Background */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
+        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
+            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
         }
 
         .back-button {
@@ -96,7 +131,7 @@
 
         .app-container {
             padding: 20px;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -108,7 +143,7 @@
             padding: 40px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 950px;
+            max-width: 1150px;
         }
 
         .multiplayer-header {
@@ -179,7 +214,14 @@
 
         @media (min-width: 768px) {
             .category-grid {
-                grid-template-columns: 1fr 1fr 1fr;
+                grid-template-columns: 1fr 1fr;
+                gap: 25px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .category-grid {
+                grid-template-columns: 1fr 1fr 1fr 1fr;
                 gap: 25px;
             }
         }
@@ -195,10 +237,15 @@
             overflow: hidden;
         }
 
-        .category-card:hover {
+        .category-card:hover:not(.locked) {
             transform: translateY(-5px);
             border-color: rgba(255, 255, 255, 0.4);
             background: rgba(255, 255, 255, 0.15);
+        }
+
+        .category-card.locked {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
 
         .category-card.selected {
@@ -206,6 +253,99 @@
             border-color: #4CAF50;
             transform: translateY(-8px);
             box-shadow: 0 15px 35px rgba(76, 175, 80, 0.3);
+        }
+
+        .category-card.fsk0.selected {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .category-card.fsk16.selected {
+            border-color: #FF9800;
+            background: rgba(255, 152, 0, 0.1);
+        }
+
+        .category-card.fsk18.selected {
+            border-color: #F44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+
+        .category-card.special.selected {
+            border-color: #FFD700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        /* Locked Overlay */
+        .locked-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            z-index: 10;
+            gap: 10px;
+        }
+
+        .lock-icon {
+            font-size: 3rem;
+            animation: shake 2s ease-in-out infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+
+        .lock-message {
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .unlock-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .unlock-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Premium Badge */
+        .premium-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            z-index: 5;
+            animation: pulse-premium 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-premium {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
         .category-header {
@@ -245,6 +385,11 @@
             color: white;
         }
 
+        .special-badge {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: white;
+        }
+
         .category-title {
             color: white;
             font-size: 1.3rem;
@@ -277,6 +422,30 @@
             font-size: 0.8rem;
             line-height: 1.3;
             border-left: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .category-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .age-range, .question-count {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .loading-dots {
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
         }
 
         .selection-summary {
@@ -358,6 +527,7 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.8);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 9999;
@@ -378,6 +548,13 @@
             border-top: 4px solid #fff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 20px;
         }
 
         @keyframes spin {
@@ -446,8 +623,19 @@
             position: relative;
         }
 
+        .premium-modal-content {
+            border: 3px solid #FFD700;
+        }
+
         .modal-header {
             margin-bottom: 20px;
+        }
+
+        .premium-header {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
+            padding: 20px;
+            border-radius: 15px;
+            margin: -30px -30px 20px -30px;
         }
 
         .modal-title {
@@ -461,6 +649,56 @@
             margin-bottom: 25px;
             color: #666;
             line-height: 1.5;
+        }
+
+        .premium-features {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .premium-features h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .premium-features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .premium-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.95rem;
+        }
+
+        .premium-features li:last-child {
+            border-bottom: none;
+        }
+
+        .premium-price {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1));
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .price-tag {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .price-amount {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #FFA500;
+        }
+
+        .price-period {
+            font-size: 0.9rem;
+            color: #666;
         }
 
         .modal-footer {
@@ -537,6 +775,40 @@
             cursor: not-allowed;
         }
 
+        .btn-premium {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: absolute;
+            right: 15px;
+            top: 15px;
+        }
+
+        .close-btn:hover {
+            color: #333;
+            transform: rotate(90deg);
+        }
+
         /* Debug Panel */
         .debug-panel {
             position: fixed;
@@ -593,1039 +865,1279 @@
             .modal-content {
                 padding: 25px 20px;
             }
+
+            .category-card {
+                padding: 20px;
+            }
+
+            .category-icon {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Loading Spinner -->
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-    </div>
+<!-- Background Particles -->
+<div class="background-particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
 
-    <!-- Notification -->
-    <div class="notification" id="notification"></div>
+<!-- Loading Spinner -->
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">Lade Fragen...</p>
+</div>
 
-    <!-- Back Button -->
-    <button class="back-button" onclick="goBack()">← Zurück</button>
+<!-- Notification -->
+<div class="notification" id="notification"></div>
 
-    <!-- Connection Status -->
-    <div class="connection-status connecting" id="connection-status">
-        🔄 Verbinde...
-    </div>
+<!-- Back Button -->
+<button class="back-button" onclick="goBack()">← Zurück</button>
 
-    <!-- Debug Panel -->
-    <div class="debug-panel" id="debug-panel">
-        <div id="debug-content">Debug-Informationen werden hier angezeigt...</div>
-    </div>
+<!-- Connection Status -->
+<div class="connection-status connecting" id="connection-status">
+    🔄 Verbinde...
+</div>
 
-    <!-- App Container -->
-    <div class="app-container">
-        <h2 class="screen-title">🌐 Multiplayer Kategorien</h2>
-        
-        <div class="glass-card">
-            <!-- Multiplayer Header -->
-            <div class="multiplayer-header">
-                <div class="host-info">
-                    <div class="host-details">
-                        <div class="host-name" id="host-name">Host Name</div>
-                        <div class="host-indicator">👑 Du bist der Host</div>
-                    </div>
-                    <div class="game-id-section">
-                        <div class="game-id-label">Spiel-ID:</div>
-                        <div class="game-id-display" id="game-id-display">Wird erstellt...</div>
-                    </div>
+<!-- Debug Panel -->
+<div class="debug-panel" id="debug-panel">
+    <div id="debug-content">Debug-Informationen werden hier angezeigt...</div>
+</div>
+
+<!-- App Container -->
+<div class="app-container">
+    <h2 class="screen-title">🌐 No-Cap - Multiplayer Kategorien wählen</h2>
+
+    <div class="glass-card">
+        <!-- Multiplayer Header -->
+        <div class="multiplayer-header">
+            <div class="host-info">
+                <div class="host-details">
+                    <div class="host-name" id="host-name">Host Name</div>
+                    <div class="host-indicator">👑 Du bist der Host</div>
+                </div>
+                <div class="game-id-section">
+                    <div class="game-id-label">Spiel-ID:</div>
+                    <div class="game-id-display" id="game-id-display">Wird erstellt...</div>
                 </div>
             </div>
-
-            <p class="selection-description">
-                Wähle die Kategorien für euer Multiplayer-Spiel<br>
-                <small>Andere Spieler können über deine Spiel-ID beitreten</small>
-            </p>
-            
-            <div class="category-grid">
-                <!-- FSK 0 - Familie & Freunde -->
-                <div class="category-card fsk0" data-category="fsk0" onclick="toggleCategory(this)">
-                    <div class="category-header">
-                        <div class="category-icon">👨‍👩‍👧‍👦</div>
-                        <div class="fsk-badge fsk0-badge">FSK 0</div>
-                    </div>
-                    <h3 class="category-title">Familie & Freunde</h3>
-                    <p class="category-description">
-                        Harmlose und lustige Fragen für alle Altersgruppen. 
-                        Perfekt für Familienabende und gemischte Gruppen.
-                    </p>
-                    <div class="category-examples">
-                        <div class="example-questions">
-                            <div class="example-question">"Warst du schon mal im Ausland?"</div>
-                            <div class="example-question">"Hast du schon mal ein Buch zu Ende gelesen?"</div>
-                            <div class="example-question">"Warst du schon mal auf einem Konzert?"</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FSK 16 - Party Time -->
-                <div class="category-card fsk16" data-category="fsk16" onclick="toggleCategory(this)">
-                    <div class="category-header">
-                        <div class="category-icon">🎉</div>
-                        <div class="fsk-badge fsk16-badge">FSK 16</div>
-                    </div>
-                    <h3 class="category-title">Party Time</h3>
-                    <p class="category-description">
-                        Etwas frechere Fragen für Jugendliche und junge Erwachsene. 
-                        Bringt mehr Schwung in die Runde!
-                    </p>
-                    <div class="category-examples">
-                        <div class="example-questions">
-                            <div class="example-question">"Hattest du schon mal einen Kater?"</div>
-                            <div class="example-question">"Hast du schon mal bei einer Prüfung geschummelt?"</div>
-                            <div class="example-question">"Warst du schon mal heimlich verliebt?"</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FSK 18 - Heiß & Gewagt -->
-                <div class="category-card fsk18" data-category="fsk18" onclick="toggleCategory(this)">
-                    <div class="category-header">
-                        <div class="category-icon">🔥</div>
-                        <div class="fsk-badge fsk18-badge">FSK 18</div>
-                    </div>
-                    <h3 class="category-title">Heiß & Gewagt</h3>
-                    <p class="category-description">
-                        Intime und tabulos Fragen nur für Erwachsene. 
-                        Für alle, die es richtig heiß mögen!
-                    </p>
-                    <div class="category-examples">
-                        <div class="example-questions">
-                            <div class="example-question">"Nur für Erwachsene..."</div>
-                            <div class="example-question">"Intime Geheimnisse..."</div>
-                            <div class="example-question">"Heiße Abenteuer..."</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Selection Summary -->
-            <div class="selection-summary" id="selection-summary">
-                <div class="summary-title" id="summary-title">0 Kategorien ausgewählt</div>
-                <div class="selected-categories" id="selected-categories"></div>
-                <div class="total-questions">
-                    Insgesamt <span id="total-questions">0</span> verfügbare Fragen
-                </div>
-            </div>
-
-            <button class="proceed-button" id="proceed-button" onclick="proceedWithCategories()">
-                Weiter zur Schwierigkeit
-            </button>
         </div>
-    </div>
 
-    <!-- Host Name Input Modal -->
-    <div class="modal-overlay" id="host-name-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">👑 Host-Name eingeben</h3>
+        <p class="selection-description">
+            Wähle die Kategorien für euer Multiplayer-Spiel
+        </p>
+
+        <div class="category-grid">
+            <!-- FSK 0 - Familie & Freunde -->
+            <div class="category-card fsk0" data-category="fsk0" onclick="toggleCategory(this)">
+                <div class="category-header">
+                    <div class="category-icon">👨‍👩‍👧‍👦</div>
+                    <div class="fsk-badge fsk0-badge">FSK 0</div>
+                </div>
+                <h3 class="category-title">Familie & Freunde</h3>
+                <p class="category-description">
+                    Harmlose und lustige Fragen für alle Altersgruppen.
+                    Perfekt für Familienabende und gemischte Gruppen.
+                </p>
+                <div class="category-examples">
+                    <div class="example-questions">
+                        <div class="example-question">"Warst du schon mal im Ausland?"</div>
+                        <div class="example-question">"Hast du schon mal ein Buch zu Ende gelesen?"</div>
+                        <div class="example-question">"Warst du schon mal auf einem Konzert?"</div>
+                    </div>
+                </div>
+                <div class="category-footer">
+                    <span class="age-range">Ab 0 Jahren</span>
+                    <span class="question-count" data-category-count="fsk0">
+                            <span class="loading-dots">...</span>
+                        </span>
+                </div>
             </div>
-            <div class="modal-body">
-                <p>Als Host des Multiplayer-Spiels benötigst du einen Namen, damit andere Spieler dich in der Lobby erkennen können.</p>
-                
-                <div class="name-input-section">
-                    <input 
-                        type="text" 
-                        id="host-name-input" 
-                        class="name-input" 
-                        placeholder="Dein Host-Name" 
+
+            <!-- FSK 16 - Party Time -->
+            <div class="category-card fsk16" data-category="fsk16" onclick="toggleCategory(this)">
+                <div class="category-header">
+                    <div class="category-icon">🎉</div>
+                    <div class="fsk-badge fsk16-badge">FSK 16</div>
+                </div>
+                <h3 class="category-title">Party Time</h3>
+                <p class="category-description">
+                    Etwas frechere Fragen für Jugendliche und junge Erwachsene.
+                    Bringt mehr Schwung in die Runde!
+                </p>
+                <div class="category-examples">
+                    <div class="example-questions">
+                        <div class="example-question">"Hattest du schon mal einen Kater?"</div>
+                        <div class="example-question">"Hast du schon mal bei einer Prüfung geschummelt?"</div>
+                        <div class="example-question">"Warst du schon mal heimlich verliebt?"</div>
+                    </div>
+                </div>
+                <div class="category-footer">
+                    <span class="age-range">Ab 16 Jahren</span>
+                    <span class="question-count" data-category-count="fsk16">
+                            <span class="loading-dots">...</span>
+                        </span>
+                </div>
+            </div>
+
+            <!-- FSK 18 - Heiß & Gewagt -->
+            <div class="category-card fsk18" data-category="fsk18" onclick="toggleCategory(this)">
+                <div class="locked-overlay" id="fsk18-locked" style="display: none;">
+                    <div class="lock-icon">🔒</div>
+                    <p class="lock-message">Nur für Erwachsene (18+)</p>
+                </div>
+                <div class="category-header">
+                    <div class="category-icon">🔥</div>
+                    <div class="fsk-badge fsk18-badge">FSK 18</div>
+                </div>
+                <h3 class="category-title">Heiß & Gewagt</h3>
+                <p class="category-description">
+                    Intime und tabulos Fragen nur für Erwachsene.
+                    Für alle, die es richtig heiß mögen!
+                </p>
+                <div class="category-examples">
+                    <div class="example-questions">
+                        <div class="example-question">"Hattest du schon mal einen One-Night-Stand?"</div>
+                        <div class="example-question">"Hast du schon mal etwas Illegales gemacht?"</div>
+                        <div class="example-question">"Warst du schon mal in jemand anderem verliebt?"</div>
+                    </div>
+                </div>
+                <div class="category-footer">
+                    <span class="age-range">Nur Erwachsene</span>
+                    <span class="question-count" data-category-count="fsk18">
+                            <span class="loading-dots">...</span>
+                        </span>
+                </div>
+            </div>
+
+            <!-- SPECIAL - Premium Kategorie -->
+            <div class="category-card special locked" data-category="special" onclick="toggleCategory(this)">
+                <div class="premium-badge">👑 PREMIUM</div>
+                <div class="locked-overlay" id="special-locked">
+                    <div class="lock-icon">🔒</div>
+                    <p class="lock-message">Premium Inhalt</p>
+                    <button class="unlock-btn" onclick="showPremiumInfo(event)">
+                        💎 Freischalten
+                    </button>
+                </div>
+                <div class="category-header">
+                    <div class="category-icon">⭐</div>
+                    <div class="fsk-badge special-badge">SPECIAL</div>
+                </div>
+                <h3 class="category-title">Special Edition</h3>
+                <p class="category-description">
+                    Exklusive und einzigartige Fragen für besondere Momente.
+                    Premium-Content mit den besten Community-Fragen.
+                </p>
+                <div class="category-examples">
+                    <div class="example-questions">
+                        <div class="example-question">"Würdest du für 1 Million € auf Social Media verzichten?"</div>
+                        <div class="example-question">"Hast du schon mal jemanden geghostet?"</div>
+                        <div class="example-question">"Würdest du lieber Zeit- oder Gedankenreisen können?"</div>
+                    </div>
+                </div>
+                <div class="category-footer">
+                    <span class="age-range">Premium Only</span>
+                    <span class="question-count" data-category-count="special">
+                            <span class="loading-dots">...</span>
+                        </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selection Summary -->
+        <div class="selection-summary" id="selection-summary">
+            <div class="summary-title" id="summary-title">0 Kategorien ausgewählt</div>
+            <div class="selected-categories" id="selected-categories"></div>
+            <div class="total-questions">
+                Insgesamt <span id="total-questions">0</span> verfügbare Fragen
+            </div>
+        </div>
+
+        <button class="proceed-button" id="proceed-button" onclick="proceedWithCategories()">
+            Weiter zur Schwierigkeit
+        </button>
+    </div>
+</div>
+
+<!-- Host Name Input Modal -->
+<div class="modal-overlay" id="host-name-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">👑 Host-Name eingeben</h3>
+        </div>
+        <div class="modal-body">
+            <p>Als Host des Multiplayer-Spiels benötigst du einen Namen, damit andere Spieler dich in der Lobby erkennen können.</p>
+
+            <div class="name-input-section">
+                <input
+                        type="text"
+                        id="host-name-input"
+                        class="name-input"
+                        placeholder="Dein Host-Name"
                         maxlength="20"
                         autocomplete="name"
                         oninput="validateHostName()"
-                    >
-                    <div class="name-requirements">
-                        • Mindestens 2 Zeichen<br>
-                        • Maximal 20 Zeichen<br>
-                        • Nur Buchstaben, Zahlen und Leerzeichen
-                    </div>
+                >
+                <div class="name-requirements">
+                    • Mindestens 2 Zeichen<br>
+                    • Maximal 20 Zeichen<br>
+                    • Nur Buchstaben, Zahlen und Leerzeichen
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="goBack()">Abbrechen</button>
-                <button class="btn btn-primary" id="confirm-name-btn" onclick="confirmHostName()" disabled>
-                    Name bestätigen
-                </button>
-            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="goBack()">Abbrechen</button>
+            <button class="btn btn-primary" id="confirm-name-btn" onclick="confirmHostName()" disabled>
+                Name bestätigen
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- Age Verification Modal -->
-    <div class="modal-overlay" id="age-verification-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">🔞 Altersverifikation</h3>
+<!-- Premium Info Modal -->
+<div class="modal-overlay" id="premium-modal">
+    <div class="modal-content premium-modal-content">
+        <div class="modal-header premium-header">
+            <h3>👑 Premium Special Edition</h3>
+        </div>
+        <button class="close-btn" onclick="closePremiumModal()">×</button>
+        <div class="modal-body">
+            <div class="premium-features">
+                <h4>✨ Was du bekommst:</h4>
+                <ul>
+                    <li>🎯 <span id="special-question-count">150+</span> exklusive Fragen</li>
+                    <li>⭐ Community-Highlights & Best-Of</li>
+                    <li>🔥 Regelmäßige Updates mit neuen Fragen</li>
+                    <li>💎 Lebenslanger Zugriff</li>
+                </ul>
             </div>
-            <div class="modal-body">
-                <p>Die Kategorie "Heiß & Gewagt" enthält intime Inhalte für Erwachsene.</p>
-                <p>Bestätigst du, dass alle Spieler mindestens 18 Jahre alt sind?</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeAgeVerificationModal()">Abbrechen</button>
-                <button class="btn btn-primary" onclick="confirmAge()">Ja, alle sind 18+</button>
+            <div class="premium-price">
+                <div class="price-tag">
+                    <span class="price-amount">2,99 €</span>
+                    <span class="price-period">Einmalig</span>
+                </div>
             </div>
         </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closePremiumModal()">Später</button>
+            <button class="btn btn-premium" onclick="purchasePremium()">
+                💎 Jetzt kaufen
+            </button>
+        </div>
     </div>
+</div>
 
-    <script>
-        // ===== KONSISTENTE GAMESTATE-KLASSE (FIXED VERSION) =====
-        class GameState {
-            constructor() {
-                this.deviceMode = null;
-                this.selectedCategories = [];
-                this.difficulty = null;
-                this.playerName = '';
-                this.gameId = null;
-                this.playerId = null;
+<!-- Firebase Auth Service -->
+<script src="firebase-auth.js"></script>
+
+<script>
+    // ===== KONSISTENTE GAMESTATE-KLASSE =====
+    class GameState {
+        constructor() {
+            this.deviceMode = null;
+            this.selectedCategories = [];
+            this.difficulty = null;
+            this.playerName = '';
+            this.gameId = null;
+            this.playerId = null;
+            this.isHost = false;
+            this.isGuest = false;
+            this.gamePhase = 'setup';
+            this.timestamp = Date.now();
+
+            this.loadFromStorage();
+        }
+
+        setDeviceMode(mode) {
+            this.deviceMode = mode;
+            if (mode === 'multi') {
+                this.isHost = true;
+                this.gameId = this.generateGameId();
+            } else {
                 this.isHost = false;
-                this.isGuest = false;
-                this.gamePhase = 'setup';
-                this.timestamp = Date.now();
-                
-                this.loadFromStorage();
+                this.gameId = null;
             }
+            this.save();
+            this.log(`Device mode set to: ${mode} ${this.isHost ? '(Host)' : ''}`);
+        }
 
-            setDeviceMode(mode) {
-                this.deviceMode = mode;
-                if (mode === 'multi') {
-                    this.isHost = true;
-                    this.gameId = this.generateGameId();
-                } else {
-                    this.isHost = false;
-                    this.gameId = null;
-                }
-                this.save();
-                this.log(`Device mode set to: ${mode} ${this.isHost ? '(Host)' : ''}`);
+        setSelectedCategories(categories) {
+            this.selectedCategories = categories;
+            this.save();
+            this.log(`Categories set: [${categories.join(', ')}]`);
+        }
+
+        setPlayerName(name) {
+            this.playerName = name;
+            this.save();
+            this.log(`Player name set: ${name}`);
+        }
+
+        generateGameId() {
+            if (!this.gameId) {
+                this.gameId = Math.random().toString(36).substr(2, 6).toUpperCase();
             }
+            return this.gameId;
+        }
 
-            setSelectedCategories(categories) {
-                this.selectedCategories = categories;
-                this.save();
-                this.log(`Categories set: [${categories.join(', ')}]`);
-            }
-
-            setPlayerName(name) {
-                this.playerName = name;
-                this.save();
-                this.log(`Player name set: ${name}`);
-            }
-
-            generateGameId() {
-                if (!this.gameId) {
-                    this.gameId = Math.random().toString(36).substr(2, 6).toUpperCase();
-                }
-                return this.gameId;
-            }
-
-            save() {
-                try {
-                    const state = {
-                        deviceMode: this.deviceMode,
-                        selectedCategories: this.selectedCategories,
-                        difficulty: this.difficulty,
-                        playerName: this.playerName,
-                        gameId: this.gameId,
-                        playerId: this.playerId,
-                        isHost: this.isHost,
-                        isGuest: this.isGuest,
-                        gamePhase: this.gamePhase,
-                        timestamp: Date.now(),
-                        version: 3
-                    };
-                    localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
-                    this.log('✅ State saved successfully');
-                    return true;
-                } catch (error) {
-                    this.log(`❌ Save failed: ${error.message}`, 'error');
-                    return false;
-                }
-            }
-
-            loadFromStorage() {
-                try {
-                    const saved = localStorage.getItem('denkstdu_game_state');
-                    if (saved) {
-                        const state = JSON.parse(saved);
-                        
-                        // Check if state is not too old (24 hours)
-                        if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                            this.deviceMode = state.deviceMode || null;
-                            this.selectedCategories = state.selectedCategories || [];
-                            this.difficulty = state.difficulty || null;
-                            this.playerName = state.playerName || '';
-                            this.gameId = state.gameId || null;
-                            this.playerId = state.playerId || null;
-                            this.isHost = state.isHost || false;
-                            this.isGuest = state.isGuest || false;
-                            this.gamePhase = state.gamePhase || 'setup';
-                            this.timestamp = state.timestamp || Date.now();
-                            
-                            this.log('✅ State loaded from localStorage');
-                        } else {
-                            this.log('⚠️ Saved state too old, cleared');
-                            this.clearStorage();
-                        }
-                    } else {
-                        this.log('ℹ️ No saved state found');
-                    }
-                } catch (error) {
-                    this.log(`❌ Load failed: ${error.message}`, 'error');
-                    this.clearStorage();
-                }
-            }
-
-            clearStorage() {
-                localStorage.removeItem('denkstdu_game_state');
-                this.log('🗑️ Storage cleared');
-            }
-
-            isValidForMultiplayer() {
-                return this.deviceMode === 'multi' && 
-                       this.selectedCategories.length > 0 &&
-                       this.gameId;
-            }
-
-            getDebugInfo() {
-                return {
+        save() {
+            try {
+                const state = {
                     deviceMode: this.deviceMode,
-                    isHost: this.isHost,
-                    gameId: this.gameId,
-                    playerId: this.playerId,
-                    categories: this.selectedCategories,
+                    selectedCategories: this.selectedCategories,
                     difficulty: this.difficulty,
                     playerName: this.playerName,
+                    gameId: this.gameId,
+                    playerId: this.playerId,
+                    isHost: this.isHost,
+                    isGuest: this.isGuest,
                     gamePhase: this.gamePhase,
-                    valid: this.isValidForMultiplayer(),
-                    timestamp: this.timestamp
+                    timestamp: Date.now(),
+                    version: 3
                 };
-            }
-
-            log(message, type = 'info') {
-                console.log(`[GameState] ${message}`);
-                updateDebugPanel(`[GameState] ${message}`);
-            }
-        }
-
-        // ===== KORRIGIERTE FIREBASE-SERVICE-KLASSE =====
-        class FirebaseGameService {
-            constructor() {
-                this.app = null;
-                this.database = null;
-                this.isInitialized = false;
-                this.isConnected = false;
-                this.currentGameId = null;
-                this.listeners = [];
-                this.connectionListeners = [];
-                
-                this.config = {
-                    apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-                    authDomain: "denkstduwebsite.firebaseapp.com",
-                    databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-                    projectId: "denkstduwebsite",
-                    storageBucket: "denkstduwebsite.appspot.com",
-                    messagingSenderId: "27029260611",
-                    appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-                    measurementId: "G-BNKNW95HK8"
-                };
-            }
-
-            async initialize() {
-                try {
-                    this.log('🔥 Firebase Service v3.0 - Initialisierung gestartet...');
-
-                    // SCHRITT 1: Firebase SDK prüfen
-                    if (typeof firebase === 'undefined') {
-                        throw new Error('Firebase SDK nicht geladen');
-                    }
-                    this.log('✅ Firebase SDK verfügbar');
-
-                    // SCHRITT 2: Firebase App initialisieren
-                    if (!firebase.apps || firebase.apps.length === 0) {
-                        this.app = firebase.initializeApp(this.config);
-                        this.log('✅ Firebase App initialisiert');
-                    } else {
-                        this.app = firebase.app();
-                        this.log('✅ Firebase App bereits vorhanden');
-                    }
-
-                    // SCHRITT 3: Database Service
-                    this.database = firebase.database();
-                    this.log('✅ Database Service erhalten');
-
-                    // SCHRITT 4: Verbindungstest mit Retry
-                    this.isConnected = await this.testConnectionWithRetry();
-                    
-                    if (!this.isConnected) {
-                        throw new Error('Firebase-Verbindung fehlgeschlagen nach mehreren Versuchen');
-                    }
-
-                    // SCHRITT 5: Connection Monitoring
-                    this.setupConnectionMonitoring();
-
-                    this.isInitialized = true;
-                    this.log('🎉 Firebase Service vollständig bereit!');
-                    return true;
-
-                } catch (error) {
-                    this.log(`❌ Firebase Initialisierung fehlgeschlagen: ${error.message}`, 'error');
-                    this.isInitialized = false;
-                    this.isConnected = false;
-                    return false;
-                }
-            }
-
-            async testConnectionWithRetry(maxRetries = 3) {
-                for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                    this.log(`🔄 Verbindungsversuch ${attempt}/${maxRetries}...`);
-                    
-                    try {
-                        const connected = await this.performConnectionTest();
-                        if (connected) {
-                            this.log(`✅ Verbindung erfolgreich bei Versuch ${attempt}`);
-                            return true;
-                        }
-                    } catch (error) {
-                        this.log(`⚠️ Versuch ${attempt} fehlgeschlagen: ${error.message}`, 'warning');
-                    }
-
-                    if (attempt < maxRetries) {
-                        await this.delay(1000 * attempt);
-                    }
-                }
-
-                this.log('❌ Alle Verbindungsversuche fehlgeschlagen', 'error');
+                localStorage.setItem('nocap_game_state', JSON.stringify(state));
+                this.log('✅ State saved successfully');
+                return true;
+            } catch (error) {
+                this.log(`❌ Save failed: ${error.message}`, 'error');
                 return false;
             }
+        }
 
-            async performConnectionTest(timeoutMs = 8000) {
-                return new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        reject(new Error(`Timeout nach ${timeoutMs}ms`));
-                    }, timeoutMs);
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('nocap_game_state');
+                if (saved) {
+                    const state = JSON.parse(saved);
 
-                    try {
-                        const connectedRef = this.database.ref('.info/connected');
-                        
-                        connectedRef.once('value', (snapshot) => {
-                            clearTimeout(timeout);
-                            const isConnected = snapshot.val() === true;
-                            this.log(`🔍 Verbindungsstatus: ${isConnected ? 'Verbunden' : 'Getrennt'}`);
-                            resolve(isConnected);
-                        }, (error) => {
-                            clearTimeout(timeout);
-                            reject(error);
-                        });
+                    if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+                        this.deviceMode = state.deviceMode || null;
+                        this.selectedCategories = state.selectedCategories || [];
+                        this.difficulty = state.difficulty || null;
+                        this.playerName = state.playerName || '';
+                        this.gameId = state.gameId || null;
+                        this.playerId = state.playerId || null;
+                        this.isHost = state.isHost || false;
+                        this.isGuest = state.isGuest || false;
+                        this.gamePhase = state.gamePhase || 'setup';
+                        this.timestamp = state.timestamp || Date.now();
 
-                    } catch (error) {
-                        clearTimeout(timeout);
-                        reject(error);
+                        this.log('✅ State loaded from localStorage');
+                    } else {
+                        this.log('⚠️ Saved state too old, cleared');
+                        this.clearStorage();
                     }
-                });
+                } else {
+                    this.log('ℹ️ No saved state found');
+                }
+            } catch (error) {
+                this.log(`❌ Load failed: ${error.message}`, 'error');
+                this.clearStorage();
+            }
+        }
+
+        clearStorage() {
+            localStorage.removeItem('nocap_game_state');
+            this.log('🗑️ Storage cleared');
+        }
+
+        isValidForMultiplayer() {
+            return this.deviceMode === 'multi' &&
+                this.selectedCategories.length > 0 &&
+                this.gameId;
+        }
+
+        getDebugInfo() {
+            return {
+                deviceMode: this.deviceMode,
+                isHost: this.isHost,
+                gameId: this.gameId,
+                playerId: this.playerId,
+                categories: this.selectedCategories,
+                difficulty: this.difficulty,
+                playerName: this.playerName,
+                gamePhase: this.gamePhase,
+                valid: this.isValidForMultiplayer(),
+                timestamp: this.timestamp
+            };
+        }
+
+        log(message, type = 'info') {
+            console.log(`[GameState] ${message}`);
+            updateDebugPanel(`[GameState] ${message}`);
+        }
+    }
+
+    // ===== FIREBASE SERVICE KLASSE =====
+    class FirebaseGameService {
+        constructor() {
+            this.app = null;
+            this.database = null;
+            this.isInitialized = false;
+            this.isConnected = false;
+            this.currentGameId = null;
+            this.listeners = [];
+            this.connectionListeners = [];
+
+            this.config = {
+                apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+                authDomain: "denkstduwebsite.firebaseapp.com",
+                databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                projectId: "denkstduwebsite",
+                storageBucket: "denkstduwebsite.appspot.com",
+                messagingSenderId: "27029260611",
+                appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+                measurementId: "G-BNKNW95HK8"
+            };
+        }
+
+        async initialize() {
+            try {
+                this.log('🔥 Firebase Service v3.0 - Initialisierung gestartet...');
+
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK nicht geladen');
+                }
+                this.log('✅ Firebase SDK verfügbar');
+
+                if (!firebase.apps || firebase.apps.length === 0) {
+                    this.app = firebase.initializeApp(this.config);
+                    this.log('✅ Firebase App initialisiert');
+                } else {
+                    this.app = firebase.app();
+                    this.log('✅ Firebase App bereits vorhanden');
+                }
+
+                this.database = firebase.database();
+                this.log('✅ Database Service erhalten');
+
+                this.isConnected = await this.testConnectionWithRetry();
+
+                if (!this.isConnected) {
+                    throw new Error('Firebase-Verbindung fehlgeschlagen');
+                }
+
+                this.setupConnectionMonitoring();
+
+                this.isInitialized = true;
+                this.log('🎉 Firebase Service vollständig bereit!');
+                return true;
+
+            } catch (error) {
+                this.log(`❌ Firebase Initialisierung fehlgeschlagen: ${error.message}`, 'error');
+                this.isInitialized = false;
+                this.isConnected = false;
+                return false;
+            }
+        }
+
+        async testConnectionWithRetry(maxRetries = 3) {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                this.log(`🔄 Verbindungsversuch ${attempt}/${maxRetries}...`);
+
+                try {
+                    const connected = await this.performConnectionTest();
+                    if (connected) {
+                        this.log(`✅ Verbindung erfolgreich bei Versuch ${attempt}`);
+                        return true;
+                    }
+                } catch (error) {
+                    this.log(`⚠️ Versuch ${attempt} fehlgeschlagen: ${error.message}`, 'warning');
+                }
+
+                if (attempt < maxRetries) {
+                    await this.delay(1000 * attempt);
+                }
             }
 
-            setupConnectionMonitoring() {
+            this.log('❌ Alle Verbindungsversuche fehlgeschlagen', 'error');
+            return false;
+        }
+
+        async performConnectionTest(timeoutMs = 8000) {
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error(`Timeout nach ${timeoutMs}ms`));
+                }, timeoutMs);
+
                 try {
                     const connectedRef = this.database.ref('.info/connected');
-                    
-                    const connectionListener = connectedRef.on('value', (snapshot) => {
-                        const wasConnected = this.isConnected;
-                        this.isConnected = snapshot.val() === true;
-                        
-                        if (wasConnected !== this.isConnected) {
-                            this.log(`🔄 Verbindungsstatus geändert: ${this.isConnected ? 'Verbunden' : 'Getrennt'}`);
-                            this.notifyConnectionChange(this.isConnected);
-                        }
+
+                    connectedRef.once('value', (snapshot) => {
+                        clearTimeout(timeout);
+                        const isConnected = snapshot.val() === true;
+                        this.log(`🔍 Verbindungsstatus: ${isConnected ? 'Verbunden' : 'Getrennt'}`);
+                        resolve(isConnected);
+                    }, (error) => {
+                        clearTimeout(timeout);
+                        reject(error);
                     });
 
-                    this.listeners.push({ ref: connectedRef, listener: connectionListener });
-                    this.log('✅ Verbindungsüberwachung aktiv');
-
                 } catch (error) {
-                    this.log(`❌ Fehler beim Setup der Verbindungsüberwachung: ${error.message}`, 'error');
+                    clearTimeout(timeout);
+                    reject(error);
                 }
-            }
-
-            onConnectionChange(callback) {
-                this.connectionListeners.push(callback);
-            }
-
-            notifyConnectionChange(connected) {
-                this.connectionListeners.forEach(callback => {
-                    try {
-                        callback(connected);
-                    } catch (error) {
-                        this.log(`❌ Fehler beim Benachrichtigen der Verbindungsänderung: ${error.message}`, 'error');
-                    }
-                });
-            }
-
-            async createGame(gameData) {
-                if (!this.isConnected) {
-                    throw new Error('Keine Firebase-Verbindung verfügbar');
-                }
-
-                try {
-                    const gameId = gameData.gameId || this.generateGameId();
-                    const hostPlayerId = this.generatePlayerId(gameData.hostName, true);
-                    
-                    this.log(`🎮 Erstelle Spiel: ${gameId} mit Host: ${hostPlayerId}`);
-
-                    const gameObject = {
-                        gameId: gameId,
-                        gameState: 'lobby',
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        lastUpdate: firebase.database.ServerValue.TIMESTAMP,
-                        categories: gameData.categories || [],
-                        difficulty: gameData.difficulty || 'medium',
-                        maxPlayers: 8,
-                        currentRound: 0,
-                        hostId: hostPlayerId,
-                        
-                        players: {
-                            [hostPlayerId]: {
-                                id: hostPlayerId,
-                                name: gameData.hostName,
-                                isHost: true,
-                                isReady: true,
-                                isOnline: true,
-                                joinedAt: firebase.database.ServerValue.TIMESTAMP
-                            }
-                        },
-                        
-                        settings: {
-                            questionsPerGame: 10,
-                            timePerQuestion: 30,
-                            showResults: true,
-                            allowSpectators: false
-                        }
-                    };
-
-                    const gameRef = this.database.ref(`games/${gameId}`);
-                    await gameRef.set(gameObject);
-
-                    this.currentGameId = gameId;
-                    this.log(`✅ Spiel erstellt: ${gameId}`);
-
-                    return {
-                        gameId: gameId,
-                        playerId: hostPlayerId,
-                        gameRef: gameRef
-                    };
-
-                } catch (error) {
-                    this.log(`❌ Fehler beim Erstellen des Spiels: ${error.message}`, 'error');
-                    throw error;
-                }
-            }
-
-            generateGameId() {
-                return Math.random().toString(36).substr(2, 6).toUpperCase();
-            }
-
-            generatePlayerId(playerName, isHost = false) {
-                const prefix = isHost ? 'host' : 'guest';
-                const timestamp = Date.now();
-                const random = Math.random().toString(36).substr(2, 4);
-                const safeName = playerName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                return `${prefix}_${safeName}_${timestamp}_${random}`;
-            }
-
-            cleanup() {
-                this.log('🧹 Firebase Service Cleanup...');
-
-                this.listeners.forEach(({ ref, listener }) => {
-                    try {
-                        ref.off('value', listener);
-                    } catch (error) {
-                        this.log(`❌ Fehler beim Entfernen des Listeners: ${error.message}`, 'error');
-                    }
-                });
-
-                this.listeners = [];
-                this.connectionListeners = [];
-                this.currentGameId = null;
-
-                this.log('✅ Firebase Service bereinigt');
-            }
-
-            async delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-
-            get isReady() {
-                return this.isInitialized && this.isConnected;
-            }
-
-            log(message, type = 'info') {
-                console.log(`[Firebase] ${message}`);
-                updateDebugPanel(`[Firebase] ${message}`);
-            }
-        }
-
-        // ===== GLOBAL VARIABLES =====
-        let gameState = null;
-        let firebaseService = null;
-        let selectedCategories = [];
-        let pendingAgeVerification = null;
-
-        // Category data
-        const categoryData = {
-            fsk0: {
-                name: 'Familie & Freunde',
-                icon: '👨‍👩‍👧‍👦',
-                questions: 350,
-                color: '#4CAF50'
-            },
-            fsk16: {
-                name: 'Party Time',
-                icon: '🎉',
-                questions: 300,
-                color: '#FF9800'
-            },
-            fsk18: {
-                name: 'Heiß & Gewagt',
-                icon: '🔥',
-                questions: 250,
-                color: '#F44336'
-            }
-        };
-
-        // ===== INITIALIZATION =====
-        document.addEventListener('DOMContentLoaded', function() {
-            initMultiplayerCategorySelection();
-        });
-
-        async function initMultiplayerCategorySelection() {
-            log('🌐 Multiplayer Category Selection v3.0 - Initialisierung gestartet...');
-            showLoading();
-            
-            try {
-                // SCHRITT 1: Services initialisieren
-                gameState = new GameState();
-                firebaseService = new FirebaseGameService();
-                
-                // SCHRITT 2: Multiplayer-Modus validieren
-                log(`🔍 Aktueller GameState: ${JSON.stringify(gameState.getDebugInfo())}`);
-                
-                if (gameState.deviceMode !== 'multi') {
-                    log('❌ KRITISCH: Nicht im Multiplayer-Modus!', 'error');
-                    showNotification('Nicht im Multiplayer-Modus. Weiterleitung...', 'error');
-                    setTimeout(() => window.location.href = 'index.html', 2000);
-                    return;
-                }
-
-                // SCHRITT 3: Firebase initialisieren
-                updateConnectionStatus('connecting', 'Verbinde mit Firebase...');
-                const firebaseReady = await firebaseService.initialize();
-                
-                if (firebaseReady) {
-                    log('✅ Firebase erfolgreich initialisiert');
-                    updateConnectionStatus('connected', 'Firebase verbunden');
-                    setupConnectionStatus();
-                } else {
-                    log('⚠️ Firebase-Verbindung fehlgeschlagen - weiter im Offline-Modus');
-                    updateConnectionStatus('disconnected', 'Offline-Modus');
-                }
-
-                // SCHRITT 4: Host-Setup
-                if (!gameState.isHost) {
-                    gameState.isHost = true;
-                    gameState.save();
-                }
-
-                if (!gameState.gameId) {
-                    gameState.generateGameId();
-                    gameState.save();
-                }
-
-                hideLoading();
-
-                // SCHRITT 5: Host-Name prüfen
-                if (!gameState.playerName || gameState.playerName.trim() === '') {
-                    log('👤 Kein Host-Name gesetzt, zeige Modal...');
-                    showHostNameModal();
-                    return;
-                }
-
-                // SCHRITT 6: Setup abschließen
-                await continueWithExistingName();
-                
-            } catch (error) {
-                log(`❌ Initialisierung fehlgeschlagen: ${error.message}`, 'error');
-                showNotification('Initialisierungsfehler', 'error');
-                hideLoading();
-            }
-        }
-
-        async function continueWithExistingName() {
-            try {
-                // Display info
-                document.getElementById('host-name').textContent = gameState.playerName;
-                document.getElementById('game-id-display').textContent = gameState.gameId;
-                
-                // Firebase game creation
-                if (firebaseService.isReady && !gameState.playerId) {
-                    log('🎮 Erstelle Firebase-Spiel...');
-                    await createGameInFirebase();
-                } else if (gameState.playerId) {
-                    log(`✅ Spiel bereits in Firebase: ${gameState.gameId}`);
-                } else {
-                    log('⚠️ Firebase nicht verfügbar, lokaler Modus');
-                }
-                
-                // Load saved categories
-                if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
-                    selectedCategories = [...gameState.selectedCategories];
-                    
-                    selectedCategories.forEach(category => {
-                        const card = document.querySelector(`[data-category="${category}"]`);
-                        if (card) {
-                            card.classList.add('selected');
-                        }
-                    });
-                    
-                    updateSelectionSummary();
-                }
-                
-                log('✅ Multiplayer Category Selection bereit!');
-                
-            } catch (error) {
-                log(`❌ Fehler in continueWithExistingName: ${error.message}`, 'error');
-                showNotification('Setup-Fehler', 'warning');
-            }
-        }
-
-        async function createGameInFirebase() {
-            try {
-                const gameResult = await firebaseService.createGame({
-                    gameId: gameState.gameId,
-                    hostName: gameState.playerName,
-                    categories: gameState.selectedCategories || [],
-                    difficulty: gameState.difficulty || 'medium'
-                });
-                
-                if (gameResult.gameId && gameResult.playerId) {
-                    gameState.gameId = gameResult.gameId;
-                    gameState.playerId = gameResult.playerId;
-                    gameState.save();
-                    
-                    document.getElementById('game-id-display').textContent = gameState.gameId;
-                    
-                    log(`✅ Spiel in Firebase erstellt: ${gameResult.gameId}`);
-                    showNotification('Multiplayer-Spiel erstellt! 🎮', 'success');
-                } else {
-                    throw new Error('Ungültige Firebase-Antwort');
-                }
-                
-            } catch (error) {
-                log(`❌ Firebase-Spiel-Erstellung fehlgeschlagen: ${error.message}`, 'error');
-                
-                // Fallback
-                if (!gameState.gameId) {
-                    gameState.gameId = Math.random().toString(36).substr(2, 6).toUpperCase();
-                    gameState.save();
-                    document.getElementById('game-id-display').textContent = gameState.gameId;
-                }
-                
-                showNotification('Offline-Modus - Spiel erstellt', 'warning');
-            }
-        }
-
-        function setupConnectionStatus() {
-            firebaseService.onConnectionChange((connected) => {
-                updateConnectionStatus(connected ? 'connected' : 'disconnected', 
-                                    connected ? 'Online' : 'Offline');
             });
         }
 
-        // ===== CATEGORY SELECTION =====
-        function toggleCategory(element) {
-            const category = element.dataset.category;
-            log(`🔄 Toggle Kategorie: ${category}`);
-            
-            if (category === 'fsk18' && !selectedCategories.includes(category)) {
-                pendingAgeVerification = element;
-                showAgeVerificationModal();
-                return;
+        setupConnectionMonitoring() {
+            try {
+                const connectedRef = this.database.ref('.info/connected');
+
+                const connectionListener = connectedRef.on('value', (snapshot) => {
+                    const wasConnected = this.isConnected;
+                    this.isConnected = snapshot.val() === true;
+
+                    if (wasConnected !== this.isConnected) {
+                        this.log(`🔄 Verbindungsstatus geändert: ${this.isConnected ? 'Verbunden' : 'Getrennt'}`);
+                        this.notifyConnectionChange(this.isConnected);
+                    }
+                });
+
+                this.listeners.push({ ref: connectedRef, listener: connectionListener });
+                this.log('✅ Verbindungsüberwachung aktiv');
+
+            } catch (error) {
+                this.log(`❌ Fehler beim Setup der Verbindungsüberwachung: ${error.message}`, 'error');
             }
-            
-            if (selectedCategories.includes(category)) {
-                selectedCategories = selectedCategories.filter(c => c !== category);
-                element.classList.remove('selected');
-                log(`➖ Kategorie entfernt: ${category}`);
-            } else {
-                selectedCategories.push(category);
-                element.classList.add('selected');
-                log(`➕ Kategorie hinzugefügt: ${category}`);
-            }
-            
-            updateSelectionSummary();
-            gameState.setSelectedCategories(selectedCategories);
-            syncWithFirebase();
         }
 
-        function updateSelectionSummary() {
-            const summaryElement = document.getElementById('selection-summary');
-            const summaryTitleElement = document.getElementById('summary-title');
-            const categoriesListElement = document.getElementById('selected-categories');
-            const totalQuestionsElement = document.getElementById('total-questions');
-            const proceedButton = document.getElementById('proceed-button');
+        onConnectionChange(callback) {
+            this.connectionListeners.push(callback);
+        }
 
-            if (selectedCategories.length > 0) {
-                summaryElement.classList.add('show');
-                proceedButton.classList.add('enabled');
+        notifyConnectionChange(connected) {
+            this.connectionListeners.forEach(callback => {
+                try {
+                    callback(connected);
+                } catch (error) {
+                    this.log(`❌ Fehler beim Benachrichtigen der Verbindungsänderung: ${error.message}`, 'error');
+                }
+            });
+        }
 
-                summaryTitleElement.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length !== 1 ? 'n' : ''} ausgewählt`;
+        async createGame(gameData) {
+            if (!this.isConnected) {
+                throw new Error('Keine Firebase-Verbindung verfügbar');
+            }
 
-                categoriesListElement.innerHTML = selectedCategories.map(category => {
-                    const data = categoryData[category];
-                    return `
+            try {
+                const gameId = gameData.gameId || this.generateGameId();
+                const hostPlayerId = this.generatePlayerId(gameData.hostName, true);
+
+                this.log(`🎮 Erstelle Spiel: ${gameId} mit Host: ${hostPlayerId}`);
+
+                const gameObject = {
+                    gameId: gameId,
+                    gameState: 'lobby',
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP,
+                    categories: gameData.categories || [],
+                    difficulty: gameData.difficulty || 'medium',
+                    maxPlayers: 8,
+                    currentRound: 0,
+                    hostId: hostPlayerId,
+
+                    players: {
+                        [hostPlayerId]: {
+                            id: hostPlayerId,
+                            name: gameData.hostName,
+                            isHost: true,
+                            isReady: true,
+                            isOnline: true,
+                            joinedAt: firebase.database.ServerValue.TIMESTAMP
+                        }
+                    },
+
+                    settings: {
+                        questionsPerGame: 10,
+                        timePerQuestion: 30,
+                        showResults: true,
+                        allowSpectators: false
+                    }
+                };
+
+                const gameRef = this.database.ref(`games/${gameId}`);
+                await gameRef.set(gameObject);
+
+                this.currentGameId = gameId;
+                this.log(`✅ Spiel erstellt: ${gameId}`);
+
+                return {
+                    gameId: gameId,
+                    playerId: hostPlayerId,
+                    gameRef: gameRef
+                };
+
+            } catch (error) {
+                this.log(`❌ Fehler beim Erstellen des Spiels: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        generateGameId() {
+            return Math.random().toString(36).substr(2, 6).toUpperCase();
+        }
+
+        generatePlayerId(playerName, isHost = false) {
+            const prefix = isHost ? 'host' : 'guest';
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substr(2, 4);
+            const safeName = playerName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            return `${prefix}_${safeName}_${timestamp}_${random}`;
+        }
+
+        cleanup() {
+            this.log('🧹 Firebase Service Cleanup...');
+
+            this.listeners.forEach(({ ref, listener }) => {
+                try {
+                    ref.off('value', listener);
+                } catch (error) {
+                    this.log(`❌ Fehler beim Entfernen des Listeners: ${error.message}`, 'error');
+                }
+            });
+
+            this.listeners = [];
+            this.connectionListeners = [];
+            this.currentGameId = null;
+
+            this.log('✅ Firebase Service bereinigt');
+        }
+
+        async delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        get isReady() {
+            return this.isInitialized && this.isConnected;
+        }
+
+        log(message, type = 'info') {
+            console.log(`[Firebase] ${message}`);
+            updateDebugPanel(`[Firebase] ${message}`);
+        }
+    }
+
+    // ===== GLOBAL VARIABLES =====
+    let gameState = null;
+    let firebaseService = null;
+    let selectedCategories = [];
+    let isAdult = false;
+    let hasPremium = false;
+    let questionCounts = {
+        fsk0: 0,
+        fsk16: 0,
+        fsk18: 0,
+        special: 0
+    };
+
+    // Category data
+    const categoryData = {
+        fsk0: {
+            name: 'Familie & Freunde',
+            icon: '👨‍👩‍👧‍👦',
+            color: '#4CAF50'
+        },
+        fsk16: {
+            name: 'Party Time',
+            icon: '🎉',
+            color: '#FF9800'
+        },
+        fsk18: {
+            name: 'Heiß & Gewagt',
+            icon: '🔥',
+            color: '#F44336'
+        },
+        special: {
+            name: 'Special Edition',
+            icon: '⭐',
+            color: '#FFD700'
+        }
+    };
+
+    // ===== INITIALIZATION =====
+    document.addEventListener('DOMContentLoaded', function() {
+        initMultiplayerCategorySelection();
+    });
+
+    async function initMultiplayerCategorySelection() {
+        log('🌐 Multiplayer Category Selection v3.0 - Initialisierung gestartet...');
+        showLoading();
+
+        try {
+            // Initialize Firebase Auth
+            await authService.initialize();
+
+            // SCHRITT 1: Services initialisieren
+            gameState = new GameState();
+            firebaseService = new FirebaseGameService();
+
+            // SCHRITT 2: Multiplayer-Modus validieren
+            log(`🔍 Aktueller GameState: ${JSON.stringify(gameState.getDebugInfo())}`);
+
+            if (gameState.deviceMode !== 'multi') {
+                log('❌ KRITISCH: Nicht im Multiplayer-Modus!', 'error');
+                showNotification('Nicht im Multiplayer-Modus. Weiterleitung...', 'error');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return;
+            }
+
+            // SCHRITT 3: Firebase initialisieren
+            updateConnectionStatus('connecting', 'Verbinde mit Firebase...');
+            const firebaseReady = await firebaseService.initialize();
+
+            if (firebaseReady) {
+                log('✅ Firebase erfolgreich initialisiert');
+                updateConnectionStatus('connected', 'Firebase verbunden');
+                setupConnectionStatus();
+            } else {
+                log('⚠️ Firebase-Verbindung fehlgeschlagen - weiter im Offline-Modus');
+                updateConnectionStatus('disconnected', 'Offline-Modus');
+            }
+
+            // SCHRITT 4: Host-Setup
+            if (!gameState.isHost) {
+                gameState.isHost = true;
+                gameState.save();
+            }
+
+            if (!gameState.gameId) {
+                gameState.generateGameId();
+                gameState.save();
+            }
+
+            // SCHRITT 5: Check age verification and premium
+            checkAgeVerification();
+            await checkPremiumStatus();
+
+            // SCHRITT 6: Load question counts
+            await loadQuestionCounts();
+
+            hideLoading();
+
+            // SCHRITT 7: Host-Name prüfen
+            if (!gameState.playerName || gameState.playerName.trim() === '') {
+                log('👤 Kein Host-Name gesetzt, zeige Modal...');
+                showHostNameModal();
+                return;
+            }
+
+            // SCHRITT 8: Setup abschließen
+            await continueWithExistingName();
+
+        } catch (error) {
+            log(`❌ Initialisierung fehlgeschlagen: ${error.message}`, 'error');
+            showNotification('Initialisierungsfehler', 'error');
+            hideLoading();
+        }
+    }
+
+    // Check age verification from localStorage
+    function checkAgeVerification() {
+        try {
+            const verification = localStorage.getItem('nocap_age_verification');
+            if (verification) {
+                const data = JSON.parse(verification);
+                isAdult = data.isAdult || false;
+
+                if (!isAdult) {
+                    const fsk18Card = document.querySelector('[data-category="fsk18"]');
+                    if (fsk18Card) {
+                        fsk18Card.classList.add('locked');
+                        document.getElementById('fsk18-locked').style.display = 'flex';
+                    }
+                    log('🔒 FSK 18 locked (user under 18)');
+                } else {
+                    log('✅ FSK 18 unlocked (user 18+)');
+                }
+            } else {
+                const fsk18Card = document.querySelector('[data-category="fsk18"]');
+                if (fsk18Card) {
+                    fsk18Card.classList.add('locked');
+                    document.getElementById('fsk18-locked').style.display = 'flex';
+                }
+                log('⚠️ No age verification found, FSK 18 locked');
+            }
+        } catch (error) {
+            log(`❌ Error checking age verification: ${error.message}`, 'error');
+        }
+    }
+
+    // Check premium status
+    async function checkPremiumStatus() {
+        try {
+            const userId = authService.getUserId();
+            if (!userId) {
+                log('⚠️ No user ID, premium locked');
+                return;
+            }
+
+            const userRef = firebase.database().ref(`users/${userId}/purchases/special`);
+            const snapshot = await userRef.once('value');
+
+            if (snapshot.exists()) {
+                hasPremium = true;
+                const specialCard = document.querySelector('[data-category="special"]');
+                if (specialCard) {
+                    specialCard.classList.remove('locked');
+                    document.getElementById('special-locked').style.display = 'none';
+                }
+                log('✅ Premium unlocked');
+            } else {
+                log('🔒 Premium locked (not purchased)');
+            }
+        } catch (error) {
+            log(`❌ Error checking premium status: ${error.message}`, 'error');
+        }
+    }
+
+    // Load question counts from Firebase
+    async function loadQuestionCounts() {
+        try {
+            const categories = ['fsk0', 'fsk16', 'fsk18', 'special'];
+
+            for (const category of categories) {
+                const questionsRef = firebase.database().ref(`questions/${category}`);
+                const snapshot = await questionsRef.once('value');
+
+                if (snapshot.exists()) {
+                    const questions = snapshot.val();
+                    const count = Object.keys(questions).length;
+                    questionCounts[category] = count;
+
+                    const countElement = document.querySelector(`[data-category-count="${category}"]`);
+                    if (countElement) {
+                        countElement.innerHTML = `~${count} Fragen`;
+                    }
+
+                    log(`✅ ${category}: ${count} questions loaded`);
+                } else {
+                    const fallbackCounts = {
+                        fsk0: 200,
+                        fsk16: 300,
+                        fsk18: 250,
+                        special: 150
+                    };
+                    questionCounts[category] = fallbackCounts[category];
+
+                    const countElement = document.querySelector(`[data-category-count="${category}"]`);
+                    if (countElement) {
+                        countElement.innerHTML = `~${fallbackCounts[category]} Fragen`;
+                    }
+
+                    log(`⚠️ No questions in database for ${category}, using fallback: ${fallbackCounts[category]}`);
+                }
+            }
+
+            document.getElementById('special-question-count').textContent = `${questionCounts.special}+`;
+
+        } catch (error) {
+            log(`❌ Error loading question counts: ${error.message}`, 'error');
+            const fallbackCounts = {
+                fsk0: 200,
+                fsk16: 300,
+                fsk18: 250,
+                special: 150
+            };
+            Object.assign(questionCounts, fallbackCounts);
+
+            Object.keys(fallbackCounts).forEach(category => {
+                const countElement = document.querySelector(`[data-category-count="${category}"]`);
+                if (countElement) {
+                    countElement.innerHTML = `~${fallbackCounts[category]} Fragen`;
+                }
+            });
+        }
+    }
+
+    async function continueWithExistingName() {
+        try {
+            document.getElementById('host-name').textContent = gameState.playerName;
+            document.getElementById('game-id-display').textContent = gameState.gameId;
+
+            if (firebaseService.isReady && !gameState.playerId) {
+                log('🎮 Erstelle Firebase-Spiel...');
+                await createGameInFirebase();
+            } else if (gameState.playerId) {
+                log(`✅ Spiel bereits in Firebase: ${gameState.gameId}`);
+            } else {
+                log('⚠️ Firebase nicht verfügbar, lokaler Modus');
+            }
+
+            if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
+                selectedCategories = [...gameState.selectedCategories];
+
+                selectedCategories.forEach(category => {
+                    const card = document.querySelector(`[data-category="${category}"]`);
+                    if (card && !card.classList.contains('locked')) {
+                        card.classList.add('selected');
+                    }
+                });
+
+                updateSelectionSummary();
+            }
+
+            log('✅ Multiplayer Category Selection bereit!');
+
+        } catch (error) {
+            log(`❌ Fehler in continueWithExistingName: ${error.message}`, 'error');
+            showNotification('Setup-Fehler', 'warning');
+        }
+    }
+
+    async function createGameInFirebase() {
+        try {
+            const gameResult = await firebaseService.createGame({
+                gameId: gameState.gameId,
+                hostName: gameState.playerName,
+                categories: gameState.selectedCategories || [],
+                difficulty: gameState.difficulty || 'medium'
+            });
+
+            if (gameResult.gameId && gameResult.playerId) {
+                gameState.gameId = gameResult.gameId;
+                gameState.playerId = gameResult.playerId;
+                gameState.save();
+
+                document.getElementById('game-id-display').textContent = gameState.gameId;
+
+                log(`✅ Spiel in Firebase erstellt: ${gameResult.gameId}`);
+                showNotification('Multiplayer-Spiel erstellt! 🎮', 'success');
+            } else {
+                throw new Error('Ungültige Firebase-Antwort');
+            }
+
+        } catch (error) {
+            log(`❌ Firebase-Spiel-Erstellung fehlgeschlagen: ${error.message}`, 'error');
+
+            if (!gameState.gameId) {
+                gameState.gameId = Math.random().toString(36).substr(2, 6).toUpperCase();
+                gameState.save();
+                document.getElementById('game-id-display').textContent = gameState.gameId;
+            }
+
+            showNotification('Offline-Modus - Spiel erstellt', 'warning');
+        }
+    }
+
+    function setupConnectionStatus() {
+        firebaseService.onConnectionChange((connected) => {
+            updateConnectionStatus(connected ? 'connected' : 'disconnected',
+                connected ? 'Online' : 'Offline');
+        });
+    }
+
+    // ===== CATEGORY SELECTION =====
+    function toggleCategory(element) {
+        const category = element.dataset.category;
+        log(`🔄 Toggle Kategorie: ${category}`);
+
+        // Check if category is locked
+        if (element.classList.contains('locked')) {
+            if (category === 'fsk18') {
+                showNotification('Du musst 18+ sein für diese Kategorie', 'warning');
+            } else if (category === 'special') {
+                showPremiumInfo();
+            }
+            return;
+        }
+
+        if (selectedCategories.includes(category)) {
+            selectedCategories = selectedCategories.filter(c => c !== category);
+            element.classList.remove('selected');
+            log(`➖ Kategorie entfernt: ${category}`);
+        } else {
+            selectedCategories.push(category);
+            element.classList.add('selected');
+            log(`➕ Kategorie hinzugefügt: ${category}`);
+        }
+
+        updateSelectionSummary();
+        gameState.setSelectedCategories(selectedCategories);
+        syncWithFirebase();
+    }
+
+    function updateSelectionSummary() {
+        const summaryElement = document.getElementById('selection-summary');
+        const summaryTitleElement = document.getElementById('summary-title');
+        const categoriesListElement = document.getElementById('selected-categories');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const proceedButton = document.getElementById('proceed-button');
+
+        if (selectedCategories.length > 0) {
+            summaryElement.classList.add('show');
+            proceedButton.classList.add('enabled');
+
+            summaryTitleElement.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length !== 1 ? 'n' : ''} ausgewählt`;
+
+            categoriesListElement.innerHTML = selectedCategories.map(category => {
+                const data = categoryData[category];
+                return `
                         <div class="selected-category-tag">
                             <span>${data.icon}</span>
                             <span>${data.name}</span>
                         </div>
                     `;
-                }).join('');
+            }).join('');
 
-                const totalQuestions = selectedCategories.reduce((sum, category) => {
-                    return sum + categoryData[category].questions;
-                }, 0);
-                totalQuestionsElement.textContent = totalQuestions;
-            } else {
-                summaryElement.classList.remove('show');
-                proceedButton.classList.remove('enabled');
-            }
+            const totalQuestions = selectedCategories.reduce((sum, category) => {
+                return sum + questionCounts[category];
+            }, 0);
+            totalQuestionsElement.textContent = totalQuestions;
+        } else {
+            summaryElement.classList.remove('show');
+            proceedButton.classList.remove('enabled');
         }
+    }
 
-        async function syncWithFirebase() {
-            if (firebaseService.isReady && gameState.playerId) {
-                try {
-                    const gameRef = firebaseService.database.ref(`games/${gameState.gameId}`);
-                    await gameRef.update({
-                        categories: selectedCategories,
-                        lastUpdate: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    log('✅ Kategorien mit Firebase synchronisiert');
-                } catch (error) {
-                    log(`❌ Firebase-Sync fehlgeschlagen: ${error.message}`, 'error');
-                }
-            }
-        }
-
-        // ===== AGE VERIFICATION =====
-        function showAgeVerificationModal() {
-            document.getElementById('age-verification-modal').classList.add('show');
-        }
-
-        function closeAgeVerificationModal() {
-            document.getElementById('age-verification-modal').classList.remove('show');
-            pendingAgeVerification = null;
-        }
-
-        function confirmAge() {
-            if (pendingAgeVerification) {
-                const category = pendingAgeVerification.dataset.category;
-                selectedCategories.push(category);
-                pendingAgeVerification.classList.add('selected');
-                updateSelectionSummary();
-                gameState.setSelectedCategories(selectedCategories);
-                syncWithFirebase();
-                
-                showNotification('FSK 18 Kategorie hinzugefügt', 'success');
-                log('🔞 Alter verifiziert, FSK18 Kategorie hinzugefügt');
-            }
-            closeAgeVerificationModal();
-        }
-
-        // ===== HOST NAME HANDLING =====
-        function showHostNameModal() {
-            const modal = document.getElementById('host-name-modal');
-            const input = document.getElementById('host-name-input');
-            
-            modal.classList.add('show');
-            
-            setTimeout(() => {
-                input.focus();
-            }, 300);
-            
-            input.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !document.getElementById('confirm-name-btn').disabled) {
-                    confirmHostName();
-                }
-            });
-        }
-
-        function validateHostName() {
-            const input = document.getElementById('host-name-input');
-            const button = document.getElementById('confirm-name-btn');
-            const name = input.value.trim();
-            
-            const isValid = name.length >= 2 && name.length <= 20 && /^[a-zA-Z0-9\s]+$/.test(name);
-            
-            button.disabled = !isValid;
-            
-            if (name.length > 0) {
-                input.style.borderColor = isValid ? '#4CAF50' : '#f44336';
-            } else {
-                input.style.borderColor = '#ddd';
-            }
-        }
-
-        function confirmHostName() {
-            const input = document.getElementById('host-name-input');
-            const name = input.value.trim();
-            
-            if (name.length < 2) {
-                showNotification('Name muss mindestens 2 Zeichen lang sein', 'warning');
-                return;
-            }
-            
-            if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
-                showNotification('Name darf nur Buchstaben, Zahlen und Leerzeichen enthalten', 'warning');
-                return;
-            }
-            
-            gameState.setPlayerName(name);
-            document.getElementById('host-name-modal').classList.remove('show');
-            
-            continueWithExistingName();
-            showNotification(`Willkommen, ${name}! 👑`, 'success');
-            log(`✅ Host-Name gesetzt: ${name}`);
-        }
-
-        // ===== PROCEED TO NEXT STEP =====
-        async function proceedWithCategories() {
-            if (selectedCategories.length === 0) {
-                showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
-                return;
-            }
-            
-            log(`➡️ Weiter mit Kategorien: ${selectedCategories.join(', ')}`);
-            showLoading();
-            
+    async function syncWithFirebase() {
+        if (firebaseService.isReady && gameState.playerId) {
             try {
-                gameState.setSelectedCategories(selectedCategories);
-                gameState.gamePhase = 'difficulty_selection';
-                gameState.save();
-                
-                // Firebase sync
-                if (firebaseService.isReady && gameState.playerId) {
-                    await syncWithFirebase();
-                }
-                
-                showNotification('Kategorien gespeichert! 🎯', 'success');
-                
-                setTimeout(() => {
-                    window.location.href = 'multiplayer-difficulty-selection.html';
-                }, 1000);
-                
+                const gameRef = firebaseService.database.ref(`games/${gameState.gameId}`);
+                await gameRef.update({
+                    categories: selectedCategories,
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                });
+                log('✅ Kategorien mit Firebase synchronisiert');
             } catch (error) {
-                log(`❌ Fehler beim Weiterleiten: ${error.message}`, 'error');
-                showNotification('Fehler beim Speichern', 'error');
-                hideLoading();
+                log(`❌ Firebase-Sync fehlgeschlagen: ${error.message}`, 'error');
             }
         }
+    }
 
-        function goBack() {
-            if (firebaseService) {
-                firebaseService.cleanup();
+    // ===== PREMIUM HANDLING =====
+    function showPremiumInfo(event) {
+        if (event) {
+            event.stopPropagation();
+        }
+        document.getElementById('premium-modal').classList.add('show');
+    }
+
+    function closePremiumModal() {
+        document.getElementById('premium-modal').classList.remove('show');
+    }
+
+    async function purchasePremium() {
+        showNotification('Premium-Kauf wird vorbereitet...', 'info');
+
+        try {
+            const userId = authService.getUserId();
+            if (!userId) {
+                showNotification('Bitte erstelle zuerst einen Account', 'warning');
+                return;
             }
-            
-            showLoading();
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 300);
-        }
 
-        // ===== UTILITY FUNCTIONS =====
-        function showLoading() {
-            document.getElementById('loading').classList.add('show');
-        }
+            const purchaseRef = firebase.database().ref(`users/${userId}/purchases/special`);
+            await purchaseRef.set({
+                id: 'special_edition',
+                name: 'Special Edition',
+                price: 2.99,
+                currency: 'EUR',
+                timestamp: Date.now()
+            });
 
-        function hideLoading() {
-            document.getElementById('loading').classList.remove('show');
-        }
+            hasPremium = true;
 
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type} show`;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
+            const specialCard = document.querySelector('[data-category="special"]');
+            if (specialCard) {
+                specialCard.classList.remove('locked');
+                document.getElementById('special-locked').style.display = 'none';
+            }
 
-        function updateConnectionStatus(status, message = '') {
-            const statusEl = document.getElementById('connection-status');
-            statusEl.textContent = message || status;
-            statusEl.className = `connection-status ${status}`;
-        }
+            closePremiumModal();
+            showNotification('Premium freigeschaltet! 🎉', 'success');
 
-        function updateDebugPanel(message) {
-            const debugPanel = document.getElementById('debug-panel');
-            const debugContent = document.getElementById('debug-content');
-            
-            const timestamp = new Date().toLocaleTimeString();
-            debugContent.innerHTML += `[${timestamp}] ${message}<br>`;
-            debugContent.scrollTop = debugContent.scrollHeight;
-            
-            // Auto-hide debug panel if not in debug mode
-            // debugPanel.classList.toggle('show', window.location.hash === '#debug');
+        } catch (error) {
+            log(`❌ Purchase error: ${error.message}`, 'error');
+            showNotification('Fehler beim Kauf. Bitte versuche es später erneut.', 'error');
         }
+    }
 
-        function log(message, type = 'info') {
-            const colors = {
-                info: '#4488ff',
-                warning: '#ffaa00',
-                error: '#ff4444',
-                success: '#00ff00'
-            };
-            
-            console.log(`%c[App] ${message}`, `color: ${colors[type] || colors.info}`);
-            updateDebugPanel(`[App] ${message}`);
-        }
+    // ===== HOST NAME HANDLING =====
+    function showHostNameModal() {
+        const modal = document.getElementById('host-name-modal');
+        const input = document.getElementById('host-name-input');
 
-        // ===== CLEANUP =====
-        window.addEventListener('beforeunload', function() {
-            if (firebaseService) {
-                firebaseService.cleanup();
+        modal.classList.add('show');
+
+        setTimeout(() => {
+            input.focus();
+        }, 300);
+
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !document.getElementById('confirm-name-btn').disabled) {
+                confirmHostName();
             }
         });
+    }
 
-        // ===== DEBUG FUNCTIONS =====
-        window.debugMultiplayerCategories = function() {
-            console.log('🔍 === MULTIPLAYER CATEGORIES DEBUG ===');
-            console.log('GameState:', gameState?.getDebugInfo());
-            console.log('Firebase Status:', {
-                initialized: firebaseService?.isInitialized,
-                connected: firebaseService?.isConnected,
-                ready: firebaseService?.isReady
-            });
-            console.log('Selected Categories:', selectedCategories);
-            console.log('LocalStorage Keys:', 
-                Object.keys(localStorage).filter(k => k.includes('denkstdu'))
-            );
-            
-            // Show debug panel
-            document.getElementById('debug-panel').classList.add('show');
-        };
+    function validateHostName() {
+        const input = document.getElementById('host-name-input');
+        const button = document.getElementById('confirm-name-btn');
+        const name = input.value.trim();
 
-        window.toggleDebugPanel = function() {
-            document.getElementById('debug-panel').classList.toggle('show');
-        };
+        const isValid = name.length >= 2 && name.length <= 20 && /^[a-zA-Z0-9\s]+$/.test(name);
 
-        // Enable debug mode with URL hash
-        if (window.location.hash === '#debug') {
-            window.debugMultiplayerCategories();
+        button.disabled = !isValid;
+
+        if (name.length > 0) {
+            input.style.borderColor = isValid ? '#4CAF50' : '#f44336';
+        } else {
+            input.style.borderColor = '#ddd';
+        }
+    }
+
+    function confirmHostName() {
+        const input = document.getElementById('host-name-input');
+        const name = input.value.trim();
+
+        if (name.length < 2) {
+            showNotification('Name muss mindestens 2 Zeichen lang sein', 'warning');
+            return;
         }
 
-        log('✅ Multiplayer Category Selection v3.0 vollständig geladen!');
-        log('🛠️ Debug-Befehle: debugMultiplayerCategories(), toggleDebugPanel()');
-    </script>
+        if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
+            showNotification('Name darf nur Buchstaben, Zahlen und Leerzeichen enthalten', 'warning');
+            return;
+        }
+
+        gameState.setPlayerName(name);
+        document.getElementById('host-name-modal').classList.remove('show');
+
+        continueWithExistingName();
+        showNotification(`Willkommen, ${name}! 👑`, 'success');
+        log(`✅ Host-Name gesetzt: ${name}`);
+    }
+
+    // ===== PROCEED TO NEXT STEP =====
+    async function proceedWithCategories() {
+        if (selectedCategories.length === 0) {
+            showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
+            return;
+        }
+
+        log(`➡️ Weiter mit Kategorien: ${selectedCategories.join(', ')}`);
+        showLoading();
+
+        try {
+            gameState.setSelectedCategories(selectedCategories);
+            gameState.gamePhase = 'difficulty_selection';
+            gameState.save();
+
+            if (firebaseService.isReady && gameState.playerId) {
+                await syncWithFirebase();
+            }
+
+            showNotification('Kategorien gespeichert! 🎯', 'success');
+
+            setTimeout(() => {
+                window.location.href = 'multiplayer-difficulty-selection.html';
+            }, 1000);
+
+        } catch (error) {
+            log(`❌ Fehler beim Weiterleiten: ${error.message}`, 'error');
+            showNotification('Fehler beim Speichern', 'error');
+            hideLoading();
+        }
+    }
+
+    function goBack() {
+        if (firebaseService) {
+            firebaseService.cleanup();
+        }
+
+        showLoading();
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 300);
+    }
+
+    // ===== UTILITY FUNCTIONS =====
+    function showLoading() {
+        document.getElementById('loading').classList.add('show');
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').classList.remove('show');
+    }
+
+    function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.className = `notification ${type} show`;
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+
+    function updateConnectionStatus(status, message = '') {
+        const statusEl = document.getElementById('connection-status');
+        statusEl.textContent = message || status;
+        statusEl.className = `connection-status ${status}`;
+    }
+
+    function updateDebugPanel(message) {
+        const debugPanel = document.getElementById('debug-panel');
+        const debugContent = document.getElementById('debug-content');
+
+        const timestamp = new Date().toLocaleTimeString();
+        debugContent.innerHTML += `[${timestamp}] ${message}<br>`;
+        debugContent.scrollTop = debugContent.scrollHeight;
+    }
+
+    function log(message, type = 'info') {
+        const colors = {
+            info: '#4488ff',
+            warning: '#ffaa00',
+            error: '#ff4444',
+            success: '#00ff00'
+        };
+
+        console.log(`%c[App] ${message}`, `color: ${colors[type] || colors.info}`);
+        updateDebugPanel(`[App] ${message}`);
+    }
+
+    // ===== CLEANUP =====
+    window.addEventListener('beforeunload', function() {
+        if (firebaseService) {
+            firebaseService.cleanup();
+        }
+    });
+
+    // ===== DEBUG FUNCTIONS =====
+    window.debugMultiplayerCategories = function() {
+        console.log('🔍 === MULTIPLAYER CATEGORIES DEBUG ===');
+        console.log('GameState:', gameState?.getDebugInfo());
+        console.log('Firebase Status:', {
+            initialized: firebaseService?.isInitialized,
+            connected: firebaseService?.isConnected,
+            ready: firebaseService?.isReady
+        });
+        console.log('Selected Categories:', selectedCategories);
+        console.log('Question Counts:', questionCounts);
+        console.log('Is Adult:', isAdult);
+        console.log('Has Premium:', hasPremium);
+
+        document.getElementById('debug-panel').classList.add('show');
+    };
+
+    window.toggleDebugPanel = function() {
+        document.getElementById('debug-panel').classList.toggle('show');
+    };
+
+    if (window.location.hash === '#debug') {
+        window.debugMultiplayerCategories();
+    }
+
+    log('✅ Multiplayer Category Selection v3.0 vollständig geladen!');
+    log('🛠️ Debug-Befehle: debugMultiplayerCategories(), toggleDebugPanel()');
+</script>
 </body>
 </html>
