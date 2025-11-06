@@ -247,15 +247,16 @@
             font-size: 1.2rem;
         }
 
-        /* Estimation Section - Kompakter und proportional zu anderen Elementen */
+        /* Estimation Section - Weicher und harmonischer */
         .estimation-section {
-            background: rgba(255, 255, 255, 0.12);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08));
             backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 12px;
+            border-radius: 20px;
+            padding: 14px;
             margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+            inset 0 1px 2px rgba(255, 255, 255, 0.1);
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -268,51 +269,56 @@
             font-size: 0.85rem;
             font-weight: 600;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             flex-shrink: 0;
             opacity: 0.95;
+            letter-spacing: 0.3px;
         }
 
-        /* Current Selection Display - Kompakter */
+        /* Current Selection Display - Weicher und harmonischer */
         .current-selection {
             text-align: center;
             margin-bottom: 10px;
             flex-shrink: 0;
             opacity: 0;
-            transform: scale(0.9);
-            transition: all 0.3s ease;
+            transform: scale(0.95) translateY(-5px);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             max-height: 0;
             overflow: hidden;
         }
 
         .current-selection.visible {
             opacity: 1;
-            transform: scale(1);
+            transform: scale(1) translateY(0);
             max-height: 45px;
         }
 
         .selection-display {
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.3));
-            border: 2px solid rgba(76, 175, 80, 0.5);
-            border-radius: 10px;
-            padding: 6px 12px;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(33, 150, 243, 0.25));
+            border: 2px solid rgba(76, 175, 80, 0.6);
+            border-radius: 20px;
+            padding: 8px 16px;
             display: inline-block;
-            min-width: 85px;
+            min-width: 100px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+            backdrop-filter: blur(10px);
         }
 
         .selection-number {
             color: white;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             font-weight: 800;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            margin-bottom: 0;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
         }
 
         .selection-label {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 0.7rem;
             font-weight: 600;
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
         }
 
         /* Number Grid - Kompakter für proportionales Design */
@@ -339,8 +345,8 @@
             width: 100%;
             max-width: 48px;
             height: 48px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1));
+            border: 2px solid rgba(255, 255, 255, 0.35);
             color: white;
             border-radius: 50%;
             font-size: 1.05rem;
@@ -349,9 +355,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             backdrop-filter: blur(20px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15),
+            inset 0 1px 2px rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .number-btn:hover {
+            border-color: rgba(76, 175, 80, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.2);
         }
 
         .number-btn:active {
@@ -361,9 +375,21 @@
         .number-btn.selected {
             background: linear-gradient(135deg, #4CAF50, #2196F3);
             border-color: #4CAF50;
-            transform: scale(1.08);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(76, 175, 80, 0.5),
+            0 0 20px rgba(76, 175, 80, 0.3);
             color: white;
+        }
+
+        .number-btn.selected::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(33, 150, 243, 0.3));
+            z-index: -1;
+            filter: blur(8px);
+            opacity: 0.8;
         }
 
         /* Für viele Spieler: Kleinere Buttons */
@@ -971,6 +997,7 @@
 
             .estimation-section {
                 max-height: 220px;
+                padding: 12px;
             }
 
             .estimation-title {
@@ -994,16 +1021,17 @@
             }
 
             .selection-display {
-                min-width: 75px;
-                padding: 5px 10px;
+                min-width: 85px;
+                padding: 6px 12px;
+                border-radius: 16px;
             }
 
             .selection-number {
-                font-size: 1rem;
+                font-size: 1.1rem;
             }
 
             .selection-label {
-                font-size: 0.6rem;
+                font-size: 0.65rem;
             }
         }
 
@@ -1014,12 +1042,12 @@
 
             .estimation-section {
                 max-height: 200px;
-                padding: 10px;
+                padding: 12px;
             }
 
             .estimation-title {
                 font-size: 0.8rem;
-                margin-bottom: 8px;
+                margin-bottom: 10px;
             }
 
             .number-btn {
@@ -1047,7 +1075,11 @@
             }
 
             .current-selection.visible {
-                max-height: 40px;
+                max-height: 42px;
+            }
+
+            .selection-display {
+                padding: 6px 14px;
             }
         }
 
@@ -1067,13 +1099,14 @@
             }
 
             .estimation-section {
-                padding: 8px 10px;
+                padding: 10px;
                 max-height: 180px;
+                border-radius: 16px;
             }
 
             .estimation-title {
                 font-size: 0.75rem;
-                margin-bottom: 6px;
+                margin-bottom: 8px;
             }
 
             .number-btn {
@@ -1105,20 +1138,21 @@
             }
 
             .current-selection.visible {
-                max-height: 38px;
+                max-height: 40px;
             }
 
             .selection-display {
-                padding: 4px 8px;
-                min-width: 70px;
+                padding: 5px 10px;
+                min-width: 75px;
+                border-radius: 14px;
             }
 
             .selection-number {
-                font-size: 0.95rem;
+                font-size: 1rem;
             }
 
             .selection-label {
-                font-size: 0.55rem;
+                font-size: 0.6rem;
             }
 
             .submit-btn {
@@ -1893,10 +1927,11 @@
         document.getElementById('selected-number').textContent = number;
 
         const selectionDisplay = document.querySelector('.selection-display');
-        selectionDisplay.style.transform = 'scale(1.05)';
+        // Smooth bounce animation
+        selectionDisplay.style.transform = 'scale(1.08)';
         setTimeout(() => {
             selectionDisplay.style.transform = 'scale(1)';
-        }, 200);
+        }, 300);
     }
 
     function showSelectionDisplay() {
