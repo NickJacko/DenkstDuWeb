@@ -846,15 +846,12 @@
                 this.log(`🔍 Suche Spiel mit ID: ${gameId}`);
                 const gameRef = this.database.ref(`games/${gameId}`);
 
-                this.log(`🔗 Firebase Pfad: games/${gameId}`);
-
                 const snapshot = await gameRef.once('value');
-
-                this.log(`📊 Snapshot exists: ${snapshot.exists()}`);
 
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    this.log('✅ Spieldaten gefunden:', data);
+                    this.log('✅ Spieldaten gefunden');
+                    console.log('Game Data Structure:', data);
                     return data;
                 } else {
                     this.log('⚠️ Kein Spiel gefunden mit dieser ID');
@@ -1085,6 +1082,8 @@
     function displayGameInfo(gameData) {
         const infoDiv = document.getElementById('game-info');
 
+        log('📊 Displaying game info:', gameData);
+
         // Host
         const hostPlayer = Object.values(gameData.players || {}).find(p => p.isHost);
         document.getElementById('info-host').textContent = hostPlayer ? hostPlayer.name : 'Unbekannt';
@@ -1097,9 +1096,19 @@
         const playerCount = gameData.players ? Object.keys(gameData.players).length : 0;
         document.getElementById('info-players').textContent = `${playerCount}/8`;
 
-        // Categories
-        const categories = (gameData.categories || [])
-            .map(cat => categoryData[cat]?.icon || cat)
+        // Categories - UNTERSTÜTZT BEIDE FORMATE
+        const categoriesArray = gameData.categories || gameData.selectedCategories || [];
+        log('📋 Categories found:', categoriesArray);
+
+        const categories = categoriesArray
+            .map(cat => {
+                const catData = categoryData[cat];
+                if (!catData) {
+                    log(`⚠️ Unknown category: ${cat}`, 'warning');
+                    return cat;
+                }
+                return catData.icon;
+            })
             .join(' ');
         document.getElementById('info-categories').textContent = categories || '-';
 
@@ -1155,19 +1164,22 @@
             const joinResult = await firebaseService.joinGame(gameCode, playerName);
 
             log('✅ Successfully joined!');
+            log('Join Result:', joinResult);
 
-            // Setup game state
+            // Setup game state - UNTERSTÜTZT BEIDE FORMATE
             gameState.gameId = gameCode;
             gameState.playerId = joinResult.playerId;
             gameState.playerName = playerName;
             gameState.deviceMode = 'multi';
             gameState.isHost = false;
             gameState.isGuest = true;
-            gameState.selectedCategories = joinResult.gameData.categories || [];
+            // WICHTIG: Beide Formate unterstützen
+            gameState.selectedCategories = joinResult.gameData.categories || joinResult.gameData.selectedCategories || [];
             gameState.difficulty = joinResult.gameData.difficulty || 'medium';
             gameState.gamePhase = 'lobby';
             gameState.timestamp = Date.now();
 
+            log('💾 Saving game state:', gameState);
             gameState.save();
 
             log('✅ Game state saved');
