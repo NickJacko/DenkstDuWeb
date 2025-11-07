@@ -13,6 +13,7 @@
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
@@ -270,6 +271,10 @@
         .player-item.host {
             background: rgba(76, 175, 80, 0.2);
             border: 1px solid #4CAF50;
+        }
+
+        .player-item.me {
+            border: 2px solid #2196F3;
         }
 
         .player-info {
@@ -873,6 +878,7 @@
             return {
                 deviceMode: this.deviceMode,
                 isHost: this.isHost,
+                isGuest: this.isGuest,
                 gameId: this.gameId,
                 playerId: this.playerId,
                 categories: this.selectedCategories,
@@ -893,6 +899,7 @@
     class FirebaseGameService {
         constructor() {
             this.app = null;
+            this.auth = null;
             this.database = null;
             this.isInitialized = false;
             this.isConnected = false;
@@ -923,6 +930,18 @@
                     this.app = firebase.initializeApp(this.config);
                 } else {
                     this.app = firebase.app();
+                }
+
+                // Anonymous Auth
+                this.log('🔐 Starte anonyme Authentifizierung...');
+                this.auth = firebase.auth();
+
+                try {
+                    await this.auth.signInAnonymously();
+                    this.log('✅ Anonym angemeldet');
+                } catch (authError) {
+                    this.log(`❌ Auth Fehler: ${authError.message}`, 'error');
+                    throw authError;
                 }
 
                 this.database = firebase.database();
@@ -1086,26 +1105,31 @@
             gameState = new GameState();
             firebaseService = new FirebaseGameService();
 
-            // SCHRITT 1.5: UI SOFORT aktualisieren
-            updateGameDisplay();
-            updateHostControls();
-            generateShareLink();
+            log('📊 Initial GameState:', gameState.getDebugInfo());
 
             // SCHRITT 2: State validieren
             if (!validateGameState()) {
                 return;
             }
 
-            // SCHRITT 3: Firebase initialisieren (still im Hintergrund)
+            // SCHRITT 3: Firebase initialisieren
             await firebaseService.initialize();
 
             if (firebaseService.isReady) {
                 log('✅ Firebase bereit und verbunden!');
 
-                // SCHRITT 4: Spiel-Listener setup
+                // SCHRITT 4: Game Data aus Firebase laden und GameState UPDATEN
+                await loadGameDataFromFirebase();
+
+                // SCHRITT 5: UI aktualisieren (NACH dem Laden!)
+                updateGameDisplay();
+                updateHostControls();
+                generateShareLink();
+
+                // SCHRITT 6: Spiel-Listener setup
                 await setupGameListener();
 
-                // SCHRITT 5: Player online setzen
+                // SCHRITT 7: Player online setzen
                 if (gameState.playerId) {
                     await firebaseService.setPlayerOnline(gameState.gameId, gameState.playerId, true);
                 }
@@ -1123,6 +1147,51 @@
         }
     }
 
+    async function loadGameDataFromFirebase() {
+        log('📥 Lade Spieldaten aus Firebase...');
+
+        try {
+            const gameData = await firebaseService.getGameData(gameState.gameId);
+
+            if (!gameData) {
+                log('❌ Spiel nicht in Firebase gefunden!');
+                showNotification('Spiel nicht gefunden', 'error');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return;
+            }
+
+            log('📦 Firebase Game Data:', gameData);
+
+            // UPDATE GameState mit Firebase Daten
+            // WICHTIG: Überschreibe nur die Spiel-Einstellungen, NICHT die Player-ID
+            gameState.difficulty = gameData.difficulty || gameState.difficulty;
+            gameState.selectedCategories = gameData.categories || gameData.selectedCategories || gameState.selectedCategories;
+
+            // Prüfe ob wir wirklich der Host sind (aus Firebase players)
+            if (gameData.players && gameState.playerId) {
+                const playerData = gameData.players[gameState.playerId];
+                if (playerData) {
+                    gameState.isHost = playerData.isHost || false;
+                    gameState.isGuest = !playerData.isHost;
+                    gameState.playerName = playerData.name || gameState.playerName;
+                    log(`✅ Player gefunden in Firebase: ${gameState.playerName} (Host: ${gameState.isHost})`);
+                } else {
+                    log('⚠️ Player nicht in Firebase gefunden - möglicherweise neu beigetreten');
+                }
+            }
+
+            gameState.save();
+            log('✅ GameState mit Firebase-Daten aktualisiert');
+
+            currentGameData = gameData;
+
+        } catch (error) {
+            log(`❌ Fehler beim Laden: ${error.message}`, 'error');
+        }
+    }
+
     function validateGameState() {
         if (gameState.deviceMode !== 'multi') {
             log('❌ Nicht im Multiplayer-Modus', 'error');
@@ -1133,11 +1202,20 @@
             return false;
         }
 
-        if (!gameState.isValidForMultiplayer()) {
-            log('❌ Spieleinstellungen unvollständig', 'error');
-            showNotification('Spieleinstellungen unvollständig. Zurück zur Konfiguration...', 'warning');
+        if (!gameState.gameId) {
+            log('❌ Keine Game ID', 'error');
+            showNotification('Keine Spiel-ID gefunden', 'error');
             setTimeout(() => {
-                window.location.href = 'multiplayer-difficulty-selection.html';
+                window.location.href = 'index.html';
+            }, 2000);
+            return false;
+        }
+
+        if (!gameState.playerId) {
+            log('❌ Keine Player ID', 'error');
+            showNotification('Keine Spieler-ID gefunden', 'error');
+            setTimeout(() => {
+                window.location.href = 'index.html';
             }, 2000);
             return false;
         }
@@ -1147,6 +1225,8 @@
 
     function updateHostControls() {
         const settingsBtn = document.getElementById('settings-btn');
+
+        log(`🎮 Updating controls - isHost: ${gameState.isHost}`);
 
         if (gameState.isHost) {
             settingsBtn.classList.add('show');
@@ -1214,7 +1294,14 @@
 
     function updateGameDisplay() {
         document.getElementById('game-id').textContent = gameState.gameId || 'N/A';
-        document.getElementById('host-name').textContent = gameState.playerName || 'Unbekannt';
+
+        // Host Name aus Firebase oder Local
+        if (currentGameData && currentGameData.players) {
+            const hostPlayer = Object.values(currentGameData.players).find(p => p.isHost);
+            document.getElementById('host-name').textContent = hostPlayer ? hostPlayer.name : gameState.playerName;
+        } else {
+            document.getElementById('host-name').textContent = gameState.playerName || 'Unbekannt';
+        }
 
         const difficultyDisplay = document.getElementById('difficulty-display');
         difficultyDisplay.textContent = difficultyNames[gameState.difficulty] || gameState.difficulty || 'Unbekannt';
@@ -1244,7 +1331,8 @@
             name: data.name,
             isHost: data.isHost || false,
             isOnline: data.isOnline || false,
-            isReady: data.isReady || false
+            isReady: data.isReady || false,
+            isMe: id === gameState.playerId
         }));
 
         playerCount.textContent = `${playersArray.length}/8 Spieler`;
@@ -1264,7 +1352,15 @@
             const avatar = player.name.charAt(0).toUpperCase();
             const statusClass = player.isOnline ? 'status-online' : 'status-offline';
             const statusText = player.isOnline ? 'Online' : 'Offline';
-            const playerClass = player.isHost ? 'player-item host' : 'player-item';
+
+            let playerClass = 'player-item';
+            if (player.isHost) playerClass += ' host';
+            if (player.isMe) playerClass += ' me';
+
+            let roleText = '';
+            if (player.isHost) roleText = '👑 Host';
+            else if (player.isMe) roleText = '👤 Du';
+            else roleText = '👤 Spieler';
 
             return `
                 <div class="${playerClass}">
@@ -1272,7 +1368,7 @@
                         <div class="player-avatar">${avatar}</div>
                         <div class="player-details">
                             <div class="player-name">${player.name}</div>
-                            <div class="player-role">${player.isHost ? '👑 Host' : '👤 Spieler'}</div>
+                            <div class="player-role">${roleText}</div>
                         </div>
                     </div>
                     <div class="player-status">
@@ -1327,7 +1423,7 @@
         const localPlayers = {
             [gameState.playerId]: {
                 name: gameState.playerName,
-                isHost: true,
+                isHost: gameState.isHost,
                 isOnline: true,
                 isReady: true
             }
@@ -1335,38 +1431,6 @@
 
         updatePlayersDisplay(localPlayers);
         updateStartButton(localPlayers);
-    }
-
-    // ===== SHARE FUNCTIONS =====
-    function showShareModal() {
-        document.getElementById('share-link-display').textContent = shareLink;
-        document.getElementById('share-modal').classList.add('show');
-    }
-
-    function closeShareModal() {
-        document.getElementById('share-modal').classList.remove('show');
-    }
-
-    function shareViaWhatsApp() {
-        const message = encodeURIComponent(`Hey! Komm in mein No-Cap Spiel!\n\n${shareLink}\n\nSpiel-ID: ${gameState.gameId}`);
-        const whatsappUrl = `https://wa.me/?text=${message}`;
-        window.open(whatsappUrl, '_blank');
-        showNotification('WhatsApp geöffnet! 💬', 'success');
-    }
-
-    async function copyShareLink() {
-        try {
-            await navigator.clipboard.writeText(shareLink);
-            showNotification('Link kopiert! 📋', 'success');
-        } catch (error) {
-            const textArea = document.createElement('textarea');
-            textArea.value = shareLink;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            showNotification('Link kopiert! 📋', 'success');
-        }
     }
 
     // ===== GAME CONTROL =====
@@ -1408,6 +1472,38 @@
         setTimeout(() => {
             window.location.href = 'multiplayer-gameplay.html';
         }, 2000);
+    }
+
+    // ===== SHARE FUNCTIONS =====
+    function showShareModal() {
+        document.getElementById('share-link-display').textContent = shareLink;
+        document.getElementById('share-modal').classList.add('show');
+    }
+
+    function closeShareModal() {
+        document.getElementById('share-modal').classList.remove('show');
+    }
+
+    function shareViaWhatsApp() {
+        const message = encodeURIComponent(`Hey! Komm in mein No-Cap Spiel!\n\n${shareLink}\n\nSpiel-ID: ${gameState.gameId}`);
+        const whatsappUrl = `https://wa.me/?text=${message}`;
+        window.open(whatsappUrl, '_blank');
+        showNotification('WhatsApp geöffnet! 💬', 'success');
+    }
+
+    async function copyShareLink() {
+        try {
+            await navigator.clipboard.writeText(shareLink);
+            showNotification('Link kopiert! 📋', 'success');
+        } catch (error) {
+            const textArea = document.createElement('textarea');
+            textArea.value = shareLink;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showNotification('Link kopiert! 📋', 'success');
+        }
     }
 
     // ===== UTILITY FUNCTIONS =====
