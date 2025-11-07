@@ -13,6 +13,7 @@
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
@@ -725,6 +726,7 @@
     class FirebaseGameService {
         constructor() {
             this.app = null;
+            this.auth = null;
             this.database = null;
             this.isInitialized = false;
             this.isConnected = false;
@@ -756,6 +758,18 @@
                 } else {
                     this.app = firebase.app();
                     this.log('ℹ️ Firebase App bereits initialisiert');
+                }
+
+                // WICHTIG: Anonymous Auth
+                this.log('🔐 Starte anonyme Authentifizierung...');
+                this.auth = firebase.auth();
+
+                try {
+                    const userCredential = await this.auth.signInAnonymously();
+                    this.log(`✅ Anonym angemeldet: ${userCredential.user.uid}`);
+                } catch (authError) {
+                    this.log(`❌ Auth Fehler: ${authError.message}`, 'error');
+                    throw authError;
                 }
 
                 this.database = firebase.database();
@@ -844,18 +858,6 @@
                     return data;
                 } else {
                     this.log('⚠️ Kein Spiel gefunden mit dieser ID');
-
-                    // Debug: Liste alle Spiele auf
-                    const allGamesRef = this.database.ref('games');
-                    const allGamesSnapshot = await allGamesRef.once('value');
-                    const allGames = allGamesSnapshot.val();
-
-                    if (allGames) {
-                        this.log('📋 Verfügbare Spiele:', Object.keys(allGames));
-                    } else {
-                        this.log('📋 Keine Spiele in der Datenbank');
-                    }
-
                     return null;
                 }
             } catch (error) {
@@ -1235,7 +1237,8 @@
         console.log('Firebase Status:', {
             initialized: firebaseService?.isInitialized,
             connected: firebaseService?.isConnected,
-            ready: firebaseService?.isReady
+            ready: firebaseService?.isReady,
+            auth: firebaseService?.auth?.currentUser
         });
         console.log('Firebase Initialized Flag:', firebaseInitialized);
         console.log('Pending Game Code:', pendingGameCode);
