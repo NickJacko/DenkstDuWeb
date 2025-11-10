@@ -1115,7 +1115,7 @@
 
             log('📊 Initial GameState:', gameState.getDebugInfo());
 
-            // SCHRITT 2: State validieren
+            // SCHRITT 2: State validieren (generiert Player ID bei Bedarf)
             if (!validateGameState()) {
                 return;
             }
@@ -1129,15 +1129,18 @@
                 // SCHRITT 4: Game Data aus Firebase laden und GameState UPDATEN
                 await loadGameDataFromFirebase();
 
-                // SCHRITT 5: UI aktualisieren (NACH dem Laden!)
+                // SCHRITT 5: Prüfe ob Spieler in Firebase existiert, falls nicht: hinzufügen
+                await ensurePlayerInFirebase();
+
+                // SCHRITT 6: UI aktualisieren (NACH dem Laden!)
                 updateGameDisplay();
                 updateHostControls();
                 generateShareLink();
 
-                // SCHRITT 6: Spiel-Listener setup (inkl. automatische Aktualisierung)
+                // SCHRITT 7: Spiel-Listener setup (inkl. automatische Aktualisierung)
                 await setupGameListener();
 
-                // SCHRITT 7: Player online setzen
+                // SCHRITT 8: Player online setzen
                 if (gameState.playerId) {
                     await firebaseService.setPlayerOnline(gameState.gameId, gameState.playerId, true);
                 }
@@ -1152,6 +1155,40 @@
             log(`❌ Initialisierung fehlgeschlagen: ${error.message}`, 'error');
             console.error('Init Error:', error);
             startLocalFallback();
+        }
+    }
+
+    // Stelle sicher, dass der Spieler in Firebase existiert
+    async function ensurePlayerInFirebase() {
+        if (!firebaseService.isReady || !currentGameData) return;
+
+        try {
+            // Prüfe ob Spieler bereits in Firebase existiert
+            if (currentGameData.players && currentGameData.players[gameState.playerId]) {
+                log(`✅ Spieler existiert bereits in Firebase: ${gameState.playerId}`);
+                return;
+            }
+
+            // Spieler fehlt in Firebase - füge ihn hinzu
+            log(`⚠️ Spieler fehlt in Firebase - füge hinzu: ${gameState.playerId}`);
+
+            const playerRef = firebaseService.database.ref(`games/${gameState.gameId}/players/${gameState.playerId}`);
+            await playerRef.set({
+                id: gameState.playerId,
+                name: gameState.playerName || 'Spieler',
+                isHost: gameState.isHost,
+                isReady: false,
+                isOnline: true,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            log(`✅ Spieler zu Firebase hinzugefügt: ${gameState.playerId}`);
+
+            // Lade Game Data neu
+            await loadGameDataFromFirebase();
+
+        } catch (error) {
+            log(`❌ Fehler beim Hinzufügen des Spielers: ${error.message}`, 'error');
         }
     }
 
@@ -1223,13 +1260,20 @@
             return false;
         }
 
+        // Player ID fehlt? Generiere sie automatisch!
         if (!gameState.playerId) {
-            log('❌ Keine Player ID', 'error');
-            showNotification('Keine Spieler-ID gefunden', 'error');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
-            return false;
+            log('⚠️ Keine Player ID gefunden - generiere neue ID');
+
+            // Generiere Player ID basierend auf Name und Timestamp
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substr(2, 4);
+            const safeName = (gameState.playerName || 'player').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            const prefix = gameState.isHost ? 'host' : 'guest';
+
+            gameState.playerId = `${prefix}_${safeName}_${timestamp}_${random}`;
+            gameState.save();
+
+            log(`✅ Player ID generiert: ${gameState.playerId}`);
         }
 
         return true;
