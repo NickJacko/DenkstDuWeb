@@ -328,6 +328,12 @@
         .status-online {
             background: #4CAF50;
             box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
 
         .status-offline {
@@ -1061,6 +1067,8 @@
     let gameListener = null;
     let currentGameData = null;
     let shareLink = '';
+    let pollingInterval = null;
+    let lastPlayerCount = 0;
 
     // Category data
     const categoryData = {
@@ -1126,7 +1134,7 @@
                 updateHostControls();
                 generateShareLink();
 
-                // SCHRITT 6: Spiel-Listener setup
+                // SCHRITT 6: Spiel-Listener setup (inkl. automatische Aktualisierung)
                 await setupGameListener();
 
                 // SCHRITT 7: Player online setzen
@@ -1165,11 +1173,10 @@
             log('📦 Firebase Game Data:', gameData);
 
             // UPDATE GameState mit Firebase Daten
-            // WICHTIG: Überschreibe nur die Spiel-Einstellungen, NICHT die Player-ID
             gameState.difficulty = gameData.difficulty || gameState.difficulty;
             gameState.selectedCategories = gameData.categories || gameData.selectedCategories || gameState.selectedCategories;
 
-            // Prüfe ob wir wirklich der Host sind (aus Firebase players)
+            // Prüfe ob wir wirklich der Host sind
             if (gameData.players && gameState.playerId) {
                 const playerData = gameData.players[gameState.playerId];
                 if (playerData) {
@@ -1186,6 +1193,11 @@
             log('✅ GameState mit Firebase-Daten aktualisiert');
 
             currentGameData = gameData;
+
+            // Initiale Player-Anzahl speichern
+            if (gameData.players) {
+                lastPlayerCount = Object.keys(gameData.players).length;
+            }
 
         } catch (error) {
             log(`❌ Fehler beim Laden: ${error.message}`, 'error');
@@ -1241,6 +1253,7 @@
         log(`🔗 Share Link generiert: ${shareLink}`);
     }
 
+    // ===== VERBESSERTE GAME LISTENER MIT AUTOMATISCHER AKTUALISIERUNG =====
     async function setupGameListener() {
         if (!firebaseService.isReady || !gameState.gameId) {
             log('⚠️ Kann Game Listener nicht setup - Firebase nicht bereit');
@@ -1250,13 +1263,25 @@
         try {
             log(`🎧 Setup Game Listener für: ${gameState.gameId}`);
 
+            // Realtime Listener für das gesamte Spiel
             gameListener = firebaseService.setupGameListener(gameState.gameId, (snapshot) => {
                 if (snapshot.exists()) {
-                    currentGameData = snapshot.val();
-                    log('📡 Firebase Update erhalten');
-                    updateFromFirebaseData(currentGameData);
+                    const newGameData = snapshot.val();
 
-                    if (currentGameData.gameState === 'playing') {
+                    // Stille Aktualisierung - keine Benachrichtigungen
+                    const newPlayerCount = newGameData.players ? Object.keys(newGameData.players).length : 0;
+
+                    // Nur loggen wenn sich die Spieleranzahl ändert
+                    if (newPlayerCount !== lastPlayerCount) {
+                        log(`📡 Spieler-Update: ${lastPlayerCount} → ${newPlayerCount}`);
+                        lastPlayerCount = newPlayerCount;
+                    }
+
+                    currentGameData = newGameData;
+                    updateFromFirebaseData(newGameData);
+
+                    // Prüfe auf Spielstart
+                    if (newGameData.gameState === 'playing') {
                         handleGameStarted();
                     }
                 } else {
@@ -1268,6 +1293,7 @@
                 }
             });
 
+            // Initial laden
             const initialData = await firebaseService.getGameData(gameState.gameId);
             if (initialData) {
                 currentGameData = initialData;
@@ -1275,13 +1301,59 @@
                 log('✅ Initial Game Data geladen');
             }
 
+            // Zusätzliches Polling als Fallback (alle 3 Sekunden)
+            startPlayerListPolling();
+
         } catch (error) {
             log(`❌ Fehler beim Setup des Game Listeners: ${error.message}`, 'error');
         }
     }
 
+    // ===== POLLING FÜR SPIELERLISTE ALS FALLBACK =====
+    function startPlayerListPolling() {
+        // Stoppe vorheriges Polling falls vorhanden
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+
+        log('⏱️ Starte automatische Spielerlisten-Aktualisierung (alle 3 Sekunden)');
+
+        pollingInterval = setInterval(async () => {
+            if (!firebaseService.isReady || !gameState.gameId) {
+                return;
+            }
+
+            try {
+                const freshData = await firebaseService.getGameData(gameState.gameId);
+                if (freshData) {
+                    const newPlayerCount = freshData.players ? Object.keys(freshData.players).length : 0;
+
+                    // Nur aktualisieren wenn sich etwas geändert hat
+                    if (newPlayerCount !== lastPlayerCount) {
+                        log(`🔄 Polling: Player-Änderung erkannt (${lastPlayerCount} → ${newPlayerCount})`);
+                        lastPlayerCount = newPlayerCount;
+                        currentGameData = freshData;
+                        updateFromFirebaseData(freshData);
+                    }
+                }
+            } catch (error) {
+                // Fehler stumm ignorieren um UI nicht zu stören
+                console.debug(`Polling Fehler: ${error.message}`);
+            }
+        }, 3000); // Alle 3 Sekunden
+    }
+
+    function stopPlayerListPolling() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+            log('⏹️ Spielerlisten-Polling gestoppt');
+        }
+    }
+
+    // ===== UPDATE FUNCTIONS =====
     function updateFromFirebaseData(gameData) {
-        log('📝 Update from Firebase data');
+        // Stille Aktualisierung - keine Console-Logs außer bei Änderungen
 
         if (gameData.players) {
             updatePlayersDisplay(gameData.players);
@@ -1378,8 +1450,6 @@
                 </div>
             `;
         }).join('');
-
-        log(`✅ ${playersArray.length} Spieler angezeigt`);
     }
 
     function showEmptyPlayersList() {
@@ -1464,6 +1534,9 @@
     function handleGameStarted() {
         log('🎮 Spiel gestartet - Weiterleitung...');
 
+        // Stoppe Polling vor Weiterleitung
+        stopPlayerListPolling();
+
         gameState.gamePhase = 'playing';
         gameState.save();
 
@@ -1515,6 +1588,9 @@
 
         log('⬅️ Zurück zur Schwierigkeitsauswahl');
 
+        // Cleanup
+        stopPlayerListPolling();
+
         if (firebaseService && gameState.playerId) {
             firebaseService.setPlayerOnline(gameState.gameId, gameState.playerId, false);
         }
@@ -1561,6 +1637,8 @@
 
     // ===== CLEANUP =====
     window.addEventListener('beforeunload', function() {
+        stopPlayerListPolling();
+
         if (firebaseService && gameState.playerId) {
             firebaseService.setPlayerOnline(gameState.gameId, gameState.playerId, false);
         }
@@ -1581,6 +1659,8 @@
         });
         console.log('Current Game Data:', currentGameData);
         console.log('Game Listener Active:', !!gameListener);
+        console.log('Polling Active:', !!pollingInterval);
+        console.log('Last Player Count:', lastPlayerCount);
         console.log('Share Link:', shareLink);
     };
 
