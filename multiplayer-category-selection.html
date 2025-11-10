@@ -846,7 +846,7 @@
 <!-- Loading Spinner -->
 <div class="loading" id="loading">
     <div class="spinner"></div>
-    <p class="loading-text">Lade Fragen...</p>
+    <p class="loading-text">Verbinde mit Firebase...</p>
 </div>
 
 <!-- Notification -->
@@ -1225,10 +1225,11 @@
         }
     }
 
-    // ===== FIREBASE SERVICE KLASSE =====
+    // ===== FIREBASE SERVICE KLASSE MIT AUTH =====
     class FirebaseGameService {
         constructor() {
             this.app = null;
+            this.auth = null;
             this.database = null;
             this.isInitialized = false;
             this.isConnected = false;
@@ -1261,24 +1262,63 @@
                     this.app = firebase.app();
                 }
 
-                this.database = firebase.database();
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // ⭐ WICHTIG: Anonyme Authentifizierung hinzufügen!
+                this.log('🔐 Starte anonyme Authentifizierung...');
+                this.auth = firebase.auth();
 
-                const connectedRef = this.database.ref('.info/connected');
-                const snapshot = await connectedRef.once('value');
-                this.isConnected = snapshot.val() === true;
+                try {
+                    await this.auth.signInAnonymously();
+                    this.log('✅ Anonym angemeldet');
+                } catch (authError) {
+                    this.log(`❌ Auth Fehler: ${authError.message}`, 'error');
+                    throw authError;
+                }
+
+                this.database = firebase.database();
+
+                // Längeres Warten und bessere Verbindungsprüfung
+                this.log('🔗 Warte auf Datenbankverbindung...');
+
+                // Versuche mehrfach zu verbinden (bis zu 5 Sekunden)
+                let connected = false;
+                let attempts = 0;
+                const maxAttempts = 10; // 10 x 500ms = 5 Sekunden
+
+                while (!connected && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    try {
+                        const connectedRef = this.database.ref('.info/connected');
+                        const snapshot = await connectedRef.once('value');
+                        connected = snapshot.val() === true;
+
+                        if (connected) {
+                            this.log('✅ Datenbankverbindung hergestellt!');
+                        } else {
+                            attempts++;
+                            this.log(`🔄 Verbindungsversuch ${attempts}/${maxAttempts}...`);
+                        }
+                    } catch (error) {
+                        attempts++;
+                        this.log(`⚠️ Verbindungsfehler (Versuch ${attempts}/${maxAttempts}): ${error.message}`);
+                    }
+                }
+
+                this.isConnected = connected;
 
                 if (this.isConnected) {
                     this.isInitialized = true;
-                    this.log('✅ Firebase verbunden');
+                    this.log('✅ Firebase vollständig verbunden und bereit!');
                 } else {
-                    this.log('⚠️ Firebase nicht verbunden');
+                    this.log('❌ Firebase Verbindung fehlgeschlagen nach 5 Sekunden');
+                    this.isInitialized = false;
                 }
 
                 return this.isInitialized;
 
             } catch (error) {
                 this.log(`❌ Firebase Fehler: ${error.message}`, 'error');
+                console.error('Firebase Init Error:', error);
                 this.isInitialized = false;
                 this.isConnected = false;
                 return false;
@@ -1329,7 +1369,7 @@
                 await gameRef.set(gameObject);
 
                 this.currentGameId = gameId;
-                this.log(`✅ Spiel erstellt: ${gameId}`);
+                this.log(`✅ Spiel in Firebase erstellt: ${gameId}`);
 
                 return {
                     gameId: gameId,
@@ -1442,8 +1482,15 @@
                 return;
             }
 
-            // SCHRITT 3: Firebase initialisieren (still im Hintergrund)
-            firebaseService.initialize();
+            // SCHRITT 3: Firebase initialisieren (MIT WARTEN!)
+            log('🔥 Starte Firebase-Initialisierung...');
+            const firebaseReady = await firebaseService.initialize();
+
+            if (firebaseReady) {
+                log('✅ Firebase erfolgreich initialisiert!');
+            } else {
+                log('⚠️ Firebase-Initialisierung fehlgeschlagen - App läuft im Offline-Modus');
+            }
 
             // SCHRITT 4: Host-Setup
             if (!gameState.isHost) {
@@ -1605,9 +1652,11 @@
             document.getElementById('host-name').textContent = gameState.playerName;
             document.getElementById('game-id-display').textContent = gameState.gameId;
 
-            // Firebase game creation (still im Hintergrund, keine Notifications)
+            // Firebase game creation NUR wenn Firebase bereit ist
             if (firebaseService.isReady && !gameState.playerId) {
                 log('🎮 Erstelle Firebase-Spiel...');
+                showNotification('Erstelle Multiplayer-Spiel...', 'info');
+
                 const gameResult = await firebaseService.createGame({
                     gameId: gameState.gameId,
                     hostName: gameState.playerName,
@@ -1621,9 +1670,14 @@
                     gameState.save();
                     document.getElementById('game-id-display').textContent = gameState.gameId;
                     log(`✅ Spiel in Firebase erstellt: ${gameResult.gameId}`);
+                    showNotification('Multiplayer-Spiel erstellt! 🎮', 'success');
+                } else {
+                    log('⚠️ Firebase Spiel-Erstellung fehlgeschlagen - läuft offline');
                 }
             } else if (gameState.playerId) {
                 log(`✅ Spiel bereits in Firebase: ${gameState.gameId}`);
+            } else {
+                log('⚠️ Firebase nicht bereit - Spiel wird nicht in Datenbank erstellt');
             }
 
             if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
@@ -1942,7 +1996,7 @@
         window.debugMultiplayerCategories();
     }
 
-    log('✅ Multiplayer Category Selection v4.0 vollständig geladen!');
+    log('✅ Multiplayer Category Selection v4.1 - MIT FIREBASE AUTH vollständig geladen!');
     log('🛠️ Debug-Befehle: debugMultiplayerCategories(), toggleDebugPanel()');
 </script>
 </body>

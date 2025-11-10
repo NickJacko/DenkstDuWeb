@@ -951,23 +951,50 @@
                 }
 
                 this.database = firebase.database();
-                await new Promise(resolve => setTimeout(resolve, 300));
 
-                const connectedRef = this.database.ref('.info/connected');
-                const snapshot = await connectedRef.once('value');
-                this.isConnected = snapshot.val() === true;
+                // Längeres Warten und bessere Verbindungsprüfung
+                this.log('🔗 Warte auf Datenbankverbindung...');
+
+                // Versuche mehrfach zu verbinden (bis zu 5 Sekunden)
+                let connected = false;
+                let attempts = 0;
+                const maxAttempts = 10; // 10 x 500ms = 5 Sekunden
+
+                while (!connected && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    try {
+                        const connectedRef = this.database.ref('.info/connected');
+                        const snapshot = await connectedRef.once('value');
+                        connected = snapshot.val() === true;
+
+                        if (connected) {
+                            this.log('✅ Datenbankverbindung hergestellt!');
+                        } else {
+                            attempts++;
+                            this.log(`🔄 Verbindungsversuch ${attempts}/${maxAttempts}...`);
+                        }
+                    } catch (error) {
+                        attempts++;
+                        this.log(`⚠️ Verbindungsfehler (Versuch ${attempts}/${maxAttempts}): ${error.message}`);
+                    }
+                }
+
+                this.isConnected = connected;
 
                 if (this.isConnected) {
                     this.isInitialized = true;
-                    this.log('✅ Firebase verbunden');
+                    this.log('✅ Firebase vollständig verbunden und bereit!');
                 } else {
-                    this.log('⚠️ Firebase nicht verbunden');
+                    this.log('❌ Firebase Verbindung fehlgeschlagen nach 5 Sekunden');
+                    this.isInitialized = false;
                 }
 
                 return this.isInitialized;
 
             } catch (error) {
                 this.log(`❌ Firebase Fehler: ${error.message}`, 'error');
+                console.error('Firebase Init Error:', error);
                 this.isInitialized = false;
                 this.isConnected = false;
                 return false;
@@ -1399,11 +1426,19 @@
                 const freshData = await firebaseService.getGameData(gameState.gameId);
                 if (freshData) {
                     const newPlayerCount = freshData.players ? Object.keys(freshData.players).length : 0;
+                    const oldPlayerCount = currentGameData?.players ? Object.keys(currentGameData.players).length : 0;
 
-                    // Nur aktualisieren wenn sich etwas geändert hat
-                    if (newPlayerCount !== lastPlayerCount) {
-                        log(`🔄 Polling: Player-Änderung erkannt (${lastPlayerCount} → ${newPlayerCount})`);
+                    // Aktualisiere wenn sich etwas geändert hat
+                    if (newPlayerCount !== oldPlayerCount) {
+                        log(`🔄 Polling: Player-Änderung erkannt (${oldPlayerCount} → ${newPlayerCount})`);
                         lastPlayerCount = newPlayerCount;
+                        currentGameData = freshData;
+
+                        // Aktualisiere UI
+                        updateGameDisplay();
+                        updateFromFirebaseData(freshData);
+                    } else {
+                        // Auch ohne Änderung sanft aktualisieren (für neue Daten wie isOnline)
                         currentGameData = freshData;
                         updateFromFirebaseData(freshData);
                     }
@@ -1759,7 +1794,29 @@
         console.log('Polling Active:', !!pollingInterval);
         console.log('Last Player Count:', lastPlayerCount);
         console.log('Share Link:', shareLink);
+
+        // Extra Debug: Spielerliste
+        if (currentGameData && currentGameData.players) {
+            console.log('📋 Spieler in Firebase:');
+            Object.entries(currentGameData.players).forEach(([id, player]) => {
+                console.log(`  - ${player.name} (${id})`, {
+                    isHost: player.isHost,
+                    isOnline: player.isOnline,
+                    isMe: id === gameState?.playerId
+                });
+            });
+        } else {
+            console.log('⚠️ Keine Spieler in currentGameData!');
+        }
     };
+
+    // Automatisches Debug-Log alle 10 Sekunden
+    setInterval(() => {
+        if (currentGameData) {
+            const playerCount = currentGameData.players ? Object.keys(currentGameData.players).length : 0;
+            log(`💓 Heartbeat: ${playerCount} Spieler online`);
+        }
+    }, 10000);
 
     log('✅ No-Cap Multiplayer Lobby - vollständig geladen!');
     log('🛠️ Debug: debugLobby()');
