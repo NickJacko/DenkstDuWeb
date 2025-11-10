@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Multiplayer Gameplay</title>
+    <title>No-Cap - Multiplayer Gameplay</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Favicon - Kappe Emoji -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
@@ -59,43 +63,7 @@
             75% { transform: translateY(-30px) rotate(270deg); opacity: 0.6; }
         }
 
-        /* Connection Status */
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 10px 15px;
-            color: white;
-            font-size: 0.8rem;
-            z-index: 1000;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .connection-status.connected {
-            border: 1px solid #4CAF50;
-            background: rgba(76, 175, 80, 0.2);
-        }
-
-        .connection-status.disconnected {
-            border: 1px solid #f44336;
-            background: rgba(244, 67, 54, 0.2);
-        }
-
-        .connection-status.connecting {
-            border: 1px solid #ff9800;
-            background: rgba(255, 152, 0, 0.2);
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
+        /* KOMPLETT DYNAMISCHES LAYOUT - Alles passt auf eine Seite */
         .app-container {
             min-height: 100vh;
             display: flex;
@@ -105,13 +73,13 @@
             margin: 0 auto;
             position: relative;
             z-index: 1;
-            padding-top: 70px;
+            padding-top: 60px;
         }
 
         /* Small Game Info Top */
         .game-info-top {
             position: fixed;
-            top: 20px;
+            top: 15px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 100;
@@ -132,76 +100,28 @@
             color: rgba(255, 255, 255, 0.5);
         }
 
-        /* Header - ENTFERNT */
-        .game-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(25px);
-            border-radius: 25px;
-            padding: 18px 25px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        .game-info {
-            color: white;
-        }
-
-        .game-id {
-            font-size: 0.8rem;
-            opacity: 0.9;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .question-counter {
-            font-size: 1.1rem;
-            font-weight: 800;
-        }
-
-        .players-online {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
-        .online-indicator {
-            width: 10px;
-            height: 10px;
-            background: linear-gradient(45deg, #4CAF50, #8BC34A);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-        }
-
         /* Game Phases */
         .game-phase {
             display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
         }
 
         .game-phase.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Question Card */
+        /* Question Card - KOMPAKTER */
         .question-card {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 30px;
+            border-radius: 25px;
             border: 1px solid rgba(255, 255, 255, 0.25);
-            padding: 35px 30px;
-            margin-bottom: 30px;
+            padding: 25px 20px;
+            margin-bottom: 20px;
             text-align: center;
-            min-height: 180px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
             position: relative;
             overflow: hidden;
@@ -228,33 +148,33 @@
             background: linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(76, 175, 80, 0.35));
             border: 1px solid rgba(76, 175, 80, 0.5);
             color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 0.9rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
             font-weight: 700;
             display: inline-block;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             backdrop-filter: blur(10px);
         }
 
         .question-text {
             color: white;
-            font-size: 1.3rem;
+            font-size: 1.15rem;
             font-weight: 700;
-            line-height: 1.5;
+            line-height: 1.4;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
-        /* Answer Section */
+        /* Answer Section - KOMPAKTER */
         .answer-section {
-            margin-bottom: 35px;
+            margin-bottom: 20px;
         }
 
         .answer-title {
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: center;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
@@ -262,27 +182,24 @@
         .answer-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 15px;
         }
 
         .answer-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid rgba(255, 255, 255, 0.25);
             color: white;
-            padding: 25px 20px;
-            border-radius: 25px;
-            font-size: 1.1rem;
+            padding: 20px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
-            min-height: 100px;
+            gap: 10px;
             backdrop-filter: blur(20px);
-            position: relative;
-            overflow: hidden;
         }
 
         .answer-btn:active {
@@ -307,46 +224,46 @@
         }
 
         .answer-emoji {
-            font-size: 2rem;
+            font-size: 1.8rem;
         }
 
-        /* Estimation Section */
+        /* Estimation Section - KOMPAKTER */
         .estimation-section {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 25px;
-            padding: 30px 25px;
-            margin-bottom: 30px;
+            border-radius: 20px;
+            padding: 20px 18px;
+            margin-bottom: 20px;
             border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
         }
 
         .estimation-title {
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
-        /* Number Grid */
+        /* Number Grid - DYNAMISCH */
         .number-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
             justify-items: center;
         }
 
         .number-btn {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid rgba(255, 255, 255, 0.25);
             color: white;
             border-radius: 50%;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 800;
             cursor: pointer;
             display: flex;
@@ -368,24 +285,29 @@
             color: white;
         }
 
-        /* Current Selection Display */
+        /* Current Selection Display - NUR NACH AUSWAHL */
         .current-selection {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
+            display: none; /* Initially hidden */
+        }
+
+        .current-selection.show {
+            display: block;
         }
 
         .selection-display {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 15px;
+            padding: 15px;
             display: inline-block;
-            min-width: 200px;
+            min-width: 180px;
         }
 
         .selection-number {
             color: white;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 800;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             margin-bottom: 5px;
@@ -393,13 +315,13 @@
 
         .selection-label {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
         }
 
         /* Submit Button */
         .submit-section {
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
 
         .submit-btn {
@@ -407,9 +329,9 @@
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
             border: none;
-            padding: 22px;
-            border-radius: 25px;
-            font-size: 1.3rem;
+            padding: 18px;
+            border-radius: 20px;
+            font-size: 1.2rem;
             font-weight: 800;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -431,17 +353,17 @@
         /* Waiting Phase */
         .waiting-screen {
             text-align: center;
-            padding: 60px 20px;
+            padding: 40px 20px;
         }
 
         .waiting-spinner {
-            width: 100px;
-            height: 100px;
-            border: 8px solid rgba(255, 255, 255, 0.1);
-            border-top: 8px solid #4CAF50;
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(255, 255, 255, 0.1);
+            border-top: 6px solid #4CAF50;
             border-radius: 50%;
             animation: spin 1.5s linear infinite;
-            margin: 0 auto 40px;
+            margin: 0 auto 30px;
             box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
         }
 
@@ -452,32 +374,32 @@
 
         .waiting-title {
             color: white;
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             font-weight: 800;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .waiting-description {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 1.1rem;
-            line-height: 1.6;
+            font-size: 1rem;
+            line-height: 1.5;
             font-weight: 500;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .players-status {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 25px;
-            margin: 30px 0;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 0;
         }
 
         .player-status-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
+            padding: 10px 0;
             color: white;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -487,9 +409,9 @@
         }
 
         .status-indicator {
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
             font-weight: 600;
         }
 
@@ -504,17 +426,20 @@
             color: #ff9800;
         }
 
-        /* Results Phase */
+        /* Results Phase - KOMPAKTER & DYNAMISCH */
         .results-screen {
-            padding: 10px 0;
+            padding: 5px 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .results-header {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
@@ -522,61 +447,51 @@
 
         .results-title {
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.05rem;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
         .results-summary {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
         }
 
-        .correct-answer {
-            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
-            border: 1px solid #4CAF50;
-            border-radius: 15px;
-            padding: 15px;
-            color: white;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        /* Personal Result Box */
+        /* Personal Result Box - KOMPAKTER */
         .personal-result-box {
             background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(33, 150, 243, 0.3));
             backdrop-filter: blur(30px);
             border: 2px solid rgba(33, 150, 243, 0.5);
-            border-radius: 20px;
-            padding: 18px;
-            margin-bottom: 20px;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
         }
 
         .personal-result-title {
             color: #2196F3;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 800;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-align: center;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .personal-result-content {
             display: grid;
-            gap: 10px;
+            gap: 8px;
         }
 
         .personal-result-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 12px;
+            padding: 8px 10px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            border-radius: 10px;
         }
 
         .personal-result-item.highlight {
@@ -586,48 +501,86 @@
 
         .personal-label {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
         }
 
         .personal-value {
             color: white;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 800;
         }
 
         .personal-result-item.highlight .personal-value {
             color: #FFD700;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
 
+        /* Results Grid - SMART LAYOUT für viele Spieler */
         .results-grid {
             display: grid;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: calc(100vh - 450px);
+            padding-right: 5px;
+        }
+
+        /* Scrollbar styling */
+        .results-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .results-grid::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .results-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
         }
 
         .result-item {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 15px 18px;
+            border-radius: 12px;
+            padding: 12px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* NEUE FARBKODIERUNG */
+        .result-item.correct-not-me {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.15);
+        }
+
+        .result-item.is-me {
+            border: 2px solid #2196F3;
+            background: rgba(33, 150, 243, 0.15);
+        }
+
+        .result-item.wrong {
+            border-color: rgba(244, 67, 54, 0.3);
         }
 
         .player-result {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
         }
 
         .player-avatar {
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             background: linear-gradient(135deg, #4facfe, #00f2fe);
             border-radius: 50%;
             display: flex;
@@ -635,22 +588,28 @@
             justify-content: center;
             color: white;
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 0.9rem;
             box-shadow: 0 5px 20px rgba(79, 172, 254, 0.3);
+            flex-shrink: 0;
         }
 
         .player-info {
             color: white;
+            flex: 1;
+            min-width: 0;
         }
 
         .player-name {
             font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 3px;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .player-answer {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             opacity: 0.8;
             font-weight: 500;
         }
@@ -659,11 +618,12 @@
             background: linear-gradient(135deg, rgba(244, 67, 54, 0.3), rgba(244, 67, 54, 0.4));
             border: 1px solid #f44336;
             color: #f44336;
-            padding: 10px 18px;
-            border-radius: 20px;
+            padding: 8px 14px;
+            border-radius: 15px;
             font-weight: 800;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             box-shadow: 0 5px 15px rgba(244, 67, 54, 0.2);
+            flex-shrink: 0;
         }
 
         .sips-penalty.none {
@@ -673,21 +633,21 @@
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
         }
 
-        /* Host Controls */
+        /* Host Controls - KOMPAKTER */
         .host-controls {
             background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.15));
             border: 2px solid rgba(255, 215, 0, 0.3);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 15px;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
             backdrop-filter: blur(20px);
         }
 
         .host-title {
             color: #FFD700;
             font-weight: 800;
-            font-size: 1rem;
-            margin-bottom: 12px;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -697,14 +657,14 @@
         /* Navigation Buttons */
         .nav-buttons {
             display: grid;
-            gap: 12px;
-            margin-top: 15px;
+            gap: 10px;
+            margin-top: 12px;
         }
 
         .nav-btn {
-            padding: 14px;
-            border-radius: 15px;
-            font-size: 1rem;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.95rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -712,72 +672,71 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
-        /* Player Waiting (without card - centered text) */
         .player-waiting {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .waiting-host-text {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         /* Overall Results Phase */
         .overall-results-screen {
-            padding: 10px 0;
+            padding: 5px 0;
         }
 
         .overall-header {
             background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.3));
             border: 2px solid rgba(255, 215, 0, 0.5);
             backdrop-filter: blur(30px);
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 20px;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
             text-align: center;
             box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
         }
 
         .overall-title {
             color: #FFD700;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 800;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .overall-subtitle {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
         }
 
         .overall-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 15px;
         }
 
         .stat-card {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 15px;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.25);
         }
 
         .stat-number {
             color: white;
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             margin-bottom: 5px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
@@ -785,32 +744,32 @@
 
         .stat-label {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
         }
 
         .overall-leaderboard {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .leaderboard-title {
             color: white;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .leaderboard-item {
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(30px);
-            border-radius: 15px;
-            padding: 15px 18px;
-            margin-bottom: 12px;
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             border: 1px solid rgba(255, 255, 255, 0.25);
         }
 
@@ -820,14 +779,14 @@
         }
 
         .rank-badge {
-            width: 35px;
-            height: 35px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: white;
         }
 
@@ -843,15 +802,15 @@
         .leaderboard-player-name {
             color: white;
             font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 5px;
+            font-size: 1rem;
+            margin-bottom: 4px;
         }
 
         .leaderboard-player-stats {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             display: flex;
-            gap: 12px;
+            gap: 10px;
         }
 
         .nav-btn.primary {
@@ -878,14 +837,14 @@
         /* Toast Notifications */
         .toast-notification {
             position: fixed;
-            top: 90px;
+            top: 70px;
             left: 15px;
             right: 15px;
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 15px;
+            padding: 15px;
             z-index: 10000;
             opacity: 0;
             transform: translateY(-50px);
@@ -918,58 +877,18 @@
         .toast-content {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             color: white;
         }
 
         .toast-icon {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
         }
 
         .toast-message {
             font-weight: 600;
-            font-size: 0.95rem;
-            line-height: 1.4;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 480px) {
-            .app-container {
-                padding: 12px;
-            }
-
-            .question-text {
-                font-size: 1.2rem;
-            }
-
-            .number-btn {
-                width: 50px;
-                height: 50px;
-                font-size: 1.1rem;
-            }
-
-            .connection-status {
-                top: 15px;
-                right: 15px;
-                font-size: 0.7rem;
-                padding: 8px 12px;
-            }
-        }
-
-        /* Animations */
-        .fadeInUp {
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            font-size: 0.9rem;
+            line-height: 1.3;
         }
 
         /* Loading Screen */
@@ -1010,6 +929,40 @@
             font-size: 1.1rem;
             font-weight: 600;
         }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .app-container {
+                padding: 12px;
+                padding-top: 55px;
+            }
+
+            .question-text {
+                font-size: 1.05rem;
+            }
+
+            .number-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Animations */
+        .fadeInUp {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1025,11 +978,6 @@
 <div class="loading-screen" id="loading-screen">
     <div class="loading-spinner"></div>
     <div class="loading-text">Lade Spiel...</div>
-</div>
-
-<!-- Connection Status -->
-<div class="connection-status connecting" id="connection-status" onclick="retryConnection()">
-    🔄 Verbinde...
 </div>
 
 <!-- App Container -->
@@ -1072,17 +1020,17 @@
         <div class="estimation-section fadeInUp">
             <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
 
-            <!-- Current Selection Display -->
-            <div class="current-selection">
-                <div class="selection-display">
-                    <div class="selection-number" id="selected-number">1</div>
-                    <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
-                </div>
-            </div>
-
             <!-- Number Grid -->
             <div class="number-grid" id="number-grid">
                 <!-- Numbers will be generated dynamically -->
+            </div>
+
+            <!-- Current Selection Display - NUR NACH AUSWAHL -->
+            <div class="current-selection" id="current-selection">
+                <div class="selection-display">
+                    <div class="selection-number" id="selected-number">-</div>
+                    <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
+                </div>
             </div>
         </div>
 
@@ -1143,7 +1091,7 @@
                 <!-- Results will be populated dynamically -->
             </div>
 
-            <!-- Host Controls (only visible for host) -->
+            <!-- Host Controls -->
             <div class="host-controls fadeInUp" id="host-controls" style="display: none;">
                 <div class="host-title">
                     👑 Host-Kontrollen
@@ -1158,14 +1106,14 @@
                 </div>
             </div>
 
-            <!-- Player Controls (for non-hosts) -->
+            <!-- Player Controls -->
             <div class="player-waiting fadeInUp" id="player-controls">
                 <p class="waiting-host-text">⏳ Warten auf Host...</p>
             </div>
         </div>
     </div>
 
-    <!-- PHASE 4: Overall Results (Gesamtergebnisse) -->
+    <!-- PHASE 4: Overall Results -->
     <div class="game-phase" id="overall-results-phase">
         <div class="overall-results-screen">
             <div class="overall-header fadeInUp">
@@ -1225,18 +1173,27 @@
             this.isGuest = false;
             this.gamePhase = 'playing';
             this.timestamp = Date.now();
+            this.alcoholMode = true; // Default: Mit Alkohol (18+)
             this.load();
         }
 
         load() {
             try {
-                const saved = localStorage.getItem('denkstdu_game_state');
+                const saved = localStorage.getItem('nocap_game_state');
                 if (saved) {
                     const state = JSON.parse(saved);
                     if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
                         Object.assign(this, state);
                         this.log('✅ State loaded');
                     }
+                }
+
+                // Load alcohol mode from age verification
+                const ageVerification = localStorage.getItem('nocap_age_verification');
+                if (ageVerification) {
+                    const ageData = JSON.parse(ageVerification);
+                    this.alcoholMode = ageData.isAdult || false;
+                    this.log(`🍺 Alcohol mode: ${this.alcoholMode ? 'Bier' : 'Wasser'}`);
                 }
             } catch (error) {
                 this.log(`❌ Load failed: ${error.message}`, 'error');
@@ -1255,10 +1212,11 @@
                     isHost: this.isHost,
                     isGuest: this.isGuest,
                     gamePhase: this.gamePhase,
+                    alcoholMode: this.alcoholMode,
                     timestamp: Date.now(),
                     version: 3
                 };
-                localStorage.setItem('denkstdu_game_state', JSON.stringify(state));
+                localStorage.setItem('nocap_game_state', JSON.stringify(state));
                 this.log('✅ State saved');
                 return true;
             } catch (error) {
@@ -1276,13 +1234,11 @@
     class FirebaseGameService {
         constructor() {
             this.app = null;
+            this.auth = null;
             this.database = null;
             this.isInitialized = false;
             this.isConnected = false;
             this.listeners = [];
-            this.connectionListeners = [];
-            this.retryAttempts = 0;
-            this.maxRetries = 3;
 
             this.config = {
                 apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
@@ -1310,93 +1266,61 @@
                     this.app = firebase.app();
                 }
 
-                this.database = firebase.database();
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // Anonymous Auth
+                this.log('🔐 Starte anonyme Authentifizierung...');
+                this.auth = firebase.auth();
 
-                this.isConnected = await this.testConnectionWithTimeout(10000);
+                try {
+                    await this.auth.signInAnonymously();
+                    this.log('✅ Anonym angemeldet');
+                } catch (authError) {
+                    this.log(`❌ Auth Fehler: ${authError.message}`, 'error');
+                    throw authError;
+                }
+
+                this.database = firebase.database();
+
+                // Verbindungsprüfung
+                this.log('🔗 Warte auf Datenbankverbindung...');
+                let connected = false;
+                let attempts = 0;
+
+                while (!connected && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    try {
+                        const connectedRef = this.database.ref('.info/connected');
+                        const snapshot = await connectedRef.once('value');
+                        connected = snapshot.val() === true;
+
+                        if (connected) {
+                            this.log('✅ Datenbankverbindung hergestellt!');
+                        } else {
+                            attempts++;
+                            this.log(`🔄 Verbindungsversuch ${attempts}/10...`);
+                        }
+                    } catch (error) {
+                        attempts++;
+                    }
+                }
+
+                this.isConnected = connected;
+                this.isInitialized = connected;
 
                 if (this.isConnected) {
-                    this.log('✅ Firebase-Verbindung erfolgreich!');
-                    this.setupConnectionMonitoring();
-                    this.isInitialized = true;
-                    this.retryAttempts = 0;
+                    this.log('✅ Firebase vollständig verbunden!');
                 } else {
-                    this.log('⚠️ Firebase-Verbindung fehlgeschlagen', 'warning');
-                    this.isInitialized = false;
+                    this.log('❌ Firebase Verbindung fehlgeschlagen');
                 }
 
                 return this.isInitialized;
 
             } catch (error) {
-                this.log(`❌ Firebase Initialisierung fehlgeschlagen: ${error.message}`, 'error');
+                this.log(`❌ Firebase Fehler: ${error.message}`, 'error');
                 this.isInitialized = false;
                 this.isConnected = false;
                 return false;
             }
-        }
-
-        async testConnectionWithTimeout(timeout = 10000) {
-            return new Promise(async (resolve) => {
-                const timeoutId = setTimeout(() => {
-                    this.log('⚠️ Verbindungstest Timeout', 'warning');
-                    resolve(false);
-                }, timeout);
-
-                try {
-                    const connectedRef = this.database.ref('.info/connected');
-                    const snapshot = await connectedRef.once('value');
-                    clearTimeout(timeoutId);
-                    const connected = snapshot.val() === true;
-                    resolve(connected);
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    resolve(false);
-                }
-            });
-        }
-
-        setupConnectionMonitoring() {
-            try {
-                const connectedRef = this.database.ref('.info/connected');
-
-                const connectionListener = connectedRef.on('value', (snapshot) => {
-                    const wasConnected = this.isConnected;
-                    this.isConnected = snapshot.val() === true;
-
-                    if (wasConnected !== this.isConnected) {
-                        this.log(`🔄 Verbindungsstatus: ${this.isConnected ? 'Verbunden ✅' : 'Getrennt ❌'}`);
-                        this.notifyConnectionChange(this.isConnected);
-                    }
-                });
-
-                this.listeners.push({ ref: connectedRef, listener: connectionListener });
-
-            } catch (error) {
-                this.log(`❌ Fehler beim Setup: ${error.message}`, 'error');
-            }
-        }
-
-        async retry() {
-            if (this.retryAttempts < this.maxRetries) {
-                this.retryAttempts++;
-                this.log(`🔄 Verbindungsversuch ${this.retryAttempts}/${this.maxRetries}...`);
-                return await this.initialize();
-            }
-            return false;
-        }
-
-        onConnectionChange(callback) {
-            this.connectionListeners.push(callback);
-        }
-
-        notifyConnectionChange(connected) {
-            this.connectionListeners.forEach(callback => {
-                try {
-                    callback(connected);
-                } catch (error) {
-                    this.log(`❌ Fehler beim Benachrichtigen: ${error.message}`, 'error');
-                }
-            });
         }
 
         async getGameData(gameId) {
@@ -1495,7 +1419,6 @@
             });
 
             this.listeners = [];
-            this.connectionListeners = [];
             this.log('✅ Cleanup abgeschlossen');
         }
 
@@ -1549,7 +1472,7 @@
     let currentPlayers = {};
     let currentQuestion = null;
     let userAnswer = null;
-    let userEstimation = 1;
+    let userEstimation = null; // WICHTIG: Null statt 1
     let totalPlayers = 0;
     let currentQuestionNumber = 1;
     let currentPhase = 'question';
@@ -1596,29 +1519,17 @@
         }
 
         // Initialize Firebase
-        updateConnectionStatus('connecting', '🔄 Verbinde...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-
         let firebaseReady = await firebaseService.initialize();
 
-        if (!firebaseReady) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            firebaseReady = await firebaseService.retry();
-        }
-
         if (firebaseReady) {
-            updateConnectionStatus('connected', '✅ Verbunden');
-            setupConnectionStatus();
             await setupFirebaseListeners();
         } else {
-            updateConnectionStatus('disconnected', '⚠️ Offline');
             showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
         }
 
         // Initialize UI
         updateGameDisplay();
         createNumberGrid();
-        updateSelectedNumber(1);
         updateSubmitButton();
 
         // Show/hide host controls
@@ -1632,38 +1543,6 @@
 
         hideLoading();
         log('✅ Gameplay initialized');
-    }
-
-    async function retryConnection() {
-        if (!firebaseService || firebaseService.isConnected) return;
-
-        log('🔄 Neu-Verbindung...');
-        updateConnectionStatus('connecting', '🔄 Neu-Verbindung...');
-
-        const success = await firebaseService.retry();
-
-        if (success) {
-            updateConnectionStatus('connected', '✅ Verbunden');
-            showNotification('Verbindung wiederhergestellt!', 'success');
-            await setupFirebaseListeners();
-        } else {
-            updateConnectionStatus('disconnected', '❌ Verbindung fehlgeschlagen');
-            showNotification('Verbindung fehlgeschlagen', 'error');
-        }
-    }
-
-    function setupConnectionStatus() {
-        firebaseService.onConnectionChange((connected) => {
-            updateConnectionStatus(
-                connected ? 'connected' : 'disconnected',
-                connected ? '✅ Verbunden' : '⚠️ Offline'
-            );
-
-            if (connected) {
-                showNotification('Verbindung wiederhergestellt!', 'success');
-                setupFirebaseListeners();
-            }
-        });
     }
 
     // ===== FIREBASE LISTENERS =====
@@ -1689,7 +1568,6 @@
                 if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
                     log('📊 Overall results triggered by host');
 
-                    // Load overall stats if available
                     if (currentGameData.overallStats) {
                         overallStats = currentGameData.overallStats;
                     }
@@ -1728,17 +1606,14 @@
             currentPlayers = initialData.players || {};
             updatePlayersCount();
 
-            // If game has a current round, load it
             if (initialData.currentRound) {
                 currentQuestionNumber = initialData.currentRound;
                 updateGameDisplay();
                 await loadRoundFromFirebase(currentQuestionNumber);
             } else if (gameState.isHost) {
-                // Host starts the first round
                 await startNewRound();
             }
         } else if (gameState.isHost) {
-            // Host starts the first round
             await startNewRound();
         }
 
@@ -1760,11 +1635,7 @@
 
                 if (currentQuestion) {
                     displayQuestion(currentQuestion);
-
-                    // WICHTIG: Setup round listener SOFORT beim Laden der Frage
-                    // Nicht erst beim Absenden der Antwort!
                     setupRoundListener(roundNumber);
-
                     log('✅ Question loaded and listener setup');
                 }
             } else {
@@ -1804,9 +1675,8 @@
                     if (answerCount >= playerCount && playerCount >= 2) {
                         log('🎉 ALL PLAYERS ANSWERED! Showing results for EVERYONE...');
 
-                        // Small delay to ensure UI is ready
                         setTimeout(() => {
-                            if (currentPhase === 'waiting') { // Double-check we're still in waiting
+                            if (currentPhase === 'waiting') {
                                 calculateAndShowResults();
                             }
                         }, 300);
@@ -1846,8 +1716,6 @@
         // Start round in Firebase
         if (firebaseService.isReady) {
             await firebaseService.startNewRound(gameState.gameId, currentQuestionNumber, currentQuestion);
-
-            // WICHTIG: Setup listener SOFORT nach dem Erstellen der Runde
             setupRoundListener(currentQuestionNumber);
         }
 
@@ -1889,7 +1757,7 @@
 
     function resetForNewQuestion() {
         userAnswer = null;
-        userEstimation = Math.min(1, totalPlayers || 1);
+        userEstimation = null; // WICHTIG: Auf null setzen
 
         document.querySelectorAll('.answer-btn').forEach(btn => {
             btn.classList.remove('selected');
@@ -1901,7 +1769,11 @@
             personalBox.style.display = 'none';
         }
 
-        updateSelectedNumber(userEstimation);
+        // WICHTIG: Selection display verstecken
+        const selectionDisplay = document.getElementById('current-selection');
+        selectionDisplay.classList.remove('show');
+        document.getElementById('selected-number').textContent = '-';
+
         updateNumberSelection();
         updateSubmitButton();
     }
@@ -1909,7 +1781,6 @@
     // ===== UI FUNCTIONS =====
     function updateGameDisplay() {
         document.getElementById('game-id-display').textContent = gameState.gameId;
-        // question-number wurde aus dem Header entfernt
     }
 
     function updatePlayersCount() {
@@ -1946,6 +1817,10 @@
             updateSelectedNumber(number);
             updateNumberSelection();
             updateSubmitButton();
+
+            // WICHTIG: Zeige selection display erst NACH Auswahl
+            const selectionDisplay = document.getElementById('current-selection');
+            selectionDisplay.classList.add('show');
         }
     }
 
@@ -1958,9 +1833,11 @@
             btn.classList.remove('selected');
         });
 
-        const selectedBtn = document.getElementById(`number-btn-${userEstimation}`);
-        if (selectedBtn) {
-            selectedBtn.classList.add('selected');
+        if (userEstimation !== null) {
+            const selectedBtn = document.getElementById(`number-btn-${userEstimation}`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('selected');
+            }
         }
     }
 
@@ -1979,7 +1856,7 @@
 
     function updateSubmitButton() {
         const submitBtn = document.getElementById('submit-btn');
-        if (userAnswer !== null) {
+        if (userAnswer !== null && userEstimation !== null) {
             submitBtn.classList.add('enabled');
             submitBtn.disabled = false;
         } else {
@@ -1990,8 +1867,8 @@
 
     // ===== GAME ACTIONS =====
     async function submitAnswers() {
-        if (userAnswer === null) {
-            showNotification('Bitte wähle eine Antwort aus!', 'warning');
+        if (userAnswer === null || userEstimation === null) {
+            showNotification('Bitte wähle eine Antwort UND eine Schätzung aus!', 'warning');
             return;
         }
 
@@ -2002,7 +1879,8 @@
             playerName: gameState.playerName,
             answer: userAnswer,
             estimation: userEstimation,
-            isHost: gameState.isHost
+            isHost: gameState.isHost,
+            alcoholMode: gameState.alcoholMode
         };
 
         try {
@@ -2020,8 +1898,6 @@
             showNotification('Antworten gesendet! 🎯', 'success');
             showPhase('waiting');
 
-            // WICHTIG: Sofort checken ob alle schon geantwortet haben
-            // (für den Fall dass wir der letzte Spieler sind)
             setTimeout(() => {
                 checkIfAllAnswered();
             }, 1000);
@@ -2032,7 +1908,6 @@
         }
     }
 
-    // Neue Funktion: Manueller Check ob alle geantwortet haben
     async function checkIfAllAnswered() {
         if (!firebaseService.isReady || !currentQuestionNumber) return;
 
@@ -2125,7 +2000,8 @@
                 estimation: playerAnswer.estimation,
                 difference: difference,
                 isCorrect: isCorrect,
-                sips: sips
+                sips: sips,
+                alcoholMode: playerAnswer.alcoholMode !== undefined ? playerAnswer.alcoholMode : true
             };
         });
 
@@ -2160,7 +2036,7 @@
     }
 
     function displayRoundResults(results, actualYesCount) {
-        // Zeige die FRAGE als Titel statt "Ergebnis Frage X"
+        // Zeige die FRAGE als Titel
         if (currentQuestion && currentQuestion.text) {
             document.getElementById('results-question-text').textContent = currentQuestion.text;
         }
@@ -2185,9 +2061,10 @@
             statusEl.textContent = statusText;
             statusEl.style.color = myResult.isCorrect ? '#4CAF50' : '#f44336';
 
+            const drinkEmoji = myResult.alcoholMode ? '🍺' : '💧';
             const sipsText = myResult.sips === 0 ?
                 '🎯 Keine! Perfekt!' :
-                `${myResult.sips} Schlücke 🍺`;
+                `${myResult.sips} ${drinkEmoji}`;
             document.getElementById('personal-sips').textContent = sipsText;
         }
 
@@ -2199,31 +2076,28 @@
             const resultItem = document.createElement('div');
             resultItem.className = 'result-item';
 
-            // Highlight current player
-            if (result.playerId === gameState.playerId) {
-                resultItem.style.border = '2px solid #2196F3';
-                resultItem.style.background = 'rgba(33, 150, 243, 0.15)';
+            // NEUE FARBKODIERUNG
+            const isMe = result.playerId === gameState.playerId;
+            const isCorrect = result.isCorrect;
+
+            if (isMe) {
+                resultItem.classList.add('is-me');
+            } else if (isCorrect) {
+                resultItem.classList.add('correct-not-me');
+            } else {
+                resultItem.classList.add('wrong');
             }
 
             const avatar = result.playerName.substring(0, 2).toUpperCase();
-            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
+            const drinkEmoji = result.alcoholMode ? '🍺' : '💧';
+            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} ${drinkEmoji}`;
             const sipsClass = result.sips === 0 ? 'none' : '';
 
-            // Add rank badge
-            let rankBadge = '';
-            if (index === 0 && result.sips > 0) {
-                rankBadge = '<span style="color: #f44336; font-weight: 800; margin-left: 5px;">🥇 Meiste</span>';
-            } else if (index === results.length - 1 && results.length > 1) {
-                rankBadge = '<span style="color: #4CAF50; font-weight: 800; margin-left: 5px;">🏆 Wenigste</span>';
-            }
-
-            // WICHTIG: Zeige NICHT ob Spieler Ja oder Nein gesagt hat
-            // Nur die Schätzung
             resultItem.innerHTML = `
                     <div class="player-result">
                         <div class="player-avatar">${avatar}</div>
                         <div class="player-info">
-                            <div class="player-name">${result.playerName}${rankBadge}</div>
+                            <div class="player-name">${result.playerName}</div>
                             <div class="player-answer">Tipp: ${result.estimation}</div>
                         </div>
                     </div>
@@ -2300,8 +2174,8 @@
                 index === 1 ? 'rank-2' :
                     index === 2 ? 'rank-3' : 'rank-other';
 
-            const accuracy = player.totalGuesses > 0 ?
-                Math.round((player.correctGuesses / player.totalGuesses) * 100) : 0;
+            // NEUE TEXT: "x Fragen richtig" statt "100% richtig"
+            const correctText = `${player.correctGuesses} Fragen richtig`;
 
             leaderboardItem.innerHTML = `
                     <div class="rank-badge ${rankClass}">${index + 1}</div>
@@ -2309,7 +2183,7 @@
                         <div class="leaderboard-player-name">${player.name}</div>
                         <div class="leaderboard-player-stats">
                             <span>🍺 ${player.totalSips} Schlücke</span>
-                            <span>🎯 ${accuracy}% genau</span>
+                            <span>🎯 ${correctText}</span>
                         </div>
                     </div>
                 `;
@@ -2399,10 +2273,6 @@
         }
     }
 
-    function waitForHost() {
-        showNotification('Warte auf den Host...', 'info');
-    }
-
     function cleanup() {
         if (gameListener) {
             try {
@@ -2457,12 +2327,6 @@
         }, 4000);
     }
 
-    function updateConnectionStatus(status, message = '') {
-        const statusEl = document.getElementById('connection-status');
-        statusEl.textContent = message || status;
-        statusEl.className = `connection-status ${status}`;
-    }
-
     function log(message, type = 'info') {
         const colors = {
             info: '#4488ff',
@@ -2487,7 +2351,7 @@
         console.log('Players:', currentPlayers);
     };
 
-    log('✅ Multiplayer Gameplay v6.0 FIXED - vollständig geladen!');
+    log('✅ No-Cap Multiplayer Gameplay v7.0 - KOMPLETT NEU - vollständig geladen!');
     log('🛠️ Debug: debugGameplay()');
 </script>
 </body>
