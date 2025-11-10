@@ -1331,49 +1331,31 @@
                 return null;
             }
 
-            // WICHTIG: echte UID des anonymen Users
-            const authUid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
-            if (!authUid) {
-                throw new Error('auth.uid fehlt – anonyme Auth nicht aktiv?');
-            }
-
             try {
                 const gameId = gameData.gameId || this.generateGameId();
-                // Diese ID ist nur Anzeige/Debug, NICHT der Key in der DB
-                const displayPlayerId = this.generatePlayerId(gameData.hostName || 'Host', true);
-                const now = firebase.database.ServerValue.TIMESTAMP;
+                const hostPlayerId = this.generatePlayerId(gameData.hostName, true);
 
-                // Objekt so bauen, dass die Rules den Initial-Create erlauben:
-                // - ownerUid == auth.uid
-                // - members/<auth.uid> == true
-                // - players/<auth.uid> existiert
                 const gameObject = {
-                    gameId,
+                    gameId: gameId,
                     gameState: 'lobby',
-                    createdAt: now,
-                    lastUpdate: now,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP,
                     categories: gameData.categories || [],
                     difficulty: gameData.difficulty || 'medium',
                     maxPlayers: 8,
                     currentRound: 0,
-                    ownerUid: authUid,             // <— echte UID
+                    hostId: hostPlayerId,
 
                     players: {
-                        [authUid]: {               // <— Key ist auth.uid
-                            id: displayPlayerId,   // frei wählbar (Anzeige)
-                            name: gameData.hostName || 'Host',
+                        [hostPlayerId]: {
+                            id: hostPlayerId,
+                            name: gameData.hostName,
                             isHost: true,
                             isReady: true,
                             isOnline: true,
-                            joinedAt: now
+                            joinedAt: firebase.database.ServerValue.TIMESTAMP
                         }
                     },
-
-                    members: {
-                        [authUid]: true            // <— Mitgliedschaft
-                    },
-
-                    playerOrder: [authUid],        // <— Reihenfolge mit UID
 
                     settings: {
                         questionsPerGame: 10,
@@ -1384,17 +1366,57 @@
                 };
 
                 const gameRef = this.database.ref(`games/${gameId}`);
-                await gameRef.set(gameObject);     // Initial-Create passiert in EINEM set()
+                await gameRef.set(gameObject);
 
                 this.currentGameId = gameId;
-                return {gameId, playerUid: authUid, displayPlayerId};
+                this.log(`✅ Spiel in Firebase erstellt: ${gameId}`);
+
+                return {
+                    gameId: gameId,
+                    playerId: hostPlayerId,
+                    gameRef: gameRef
+                };
+
             } catch (error) {
                 this.log(`❌ Fehler beim Erstellen: ${error.message}`, 'error');
-                throw error;
+                return null;
             }
         }
-    }
 
+        generateGameId() {
+            return Math.random().toString(36).substr(2, 6).toUpperCase();
+        }
+
+        generatePlayerId(playerName, isHost = false) {
+            const prefix = isHost ? 'host' : 'guest';
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substr(2, 4);
+            const safeName = playerName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            return `${prefix}_${safeName}_${timestamp}_${random}`;
+        }
+
+        cleanup() {
+            this.log('🧹 Cleanup...');
+            this.listeners.forEach(({ ref, listener }) => {
+                try {
+                    ref.off('value', listener);
+                } catch (error) {
+                    this.log(`❌ Listener-Fehler: ${error.message}`, 'error');
+                }
+            });
+            this.listeners = [];
+            this.currentGameId = null;
+        }
+
+        get isReady() {
+            return this.isInitialized && this.isConnected;
+        }
+
+        log(message, type = 'info') {
+            console.log(`[Firebase] ${message}`);
+            updateDebugPanel(`[Firebase] ${message}`);
+        }
+    }
 
     // ===== GLOBAL VARIABLES =====
     let gameState = null;
