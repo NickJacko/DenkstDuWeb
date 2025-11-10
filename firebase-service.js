@@ -204,102 +204,117 @@ class FirebaseGameService {
     // ===== GAME: CREATE / JOIN / CONNECT =====
     async createGame(gameData) {
         if (!this.isConnected) throw new Error('Keine Firebase-Verbindung verfügbar');
-        await this.ensureAuth();
-        const uid = this.getUid();
 
-        const gameId = gameData.gameId || this.generateGameId();
-        const hostName = this.safeName(gameData.hostName);
-        console.log(`🎮 Erstelle Spiel ${gameId} (Host UID: ${uid})`);
+        const authUid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
+        if (!authUid) throw new Error('auth.uid fehlt – anonyme Auth nicht aktiv?');
 
-        const gameObject = {
-            gameId,
-            gameState: 'lobby',
-            createdAt: firebase.database.ServerValue.TIMESTAMP,
-            lastUpdate: firebase.database.ServerValue.TIMESTAMP,
-            categories: gameData.categories || [],
-            difficulty: gameData.difficulty || 'medium',
-            maxPlayers: 8,
-            currentRound: 0,
-            // Kanonische Host-Referenz
-            ownerUid: uid,
-            // Spieler unter UID
-            players: {
-                [uid]: {
-                    id: uid,
-                    name: hostName,
-                    isHost: true,
-                    isReady: true,
-                    isOnline: true,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP
+        try {
+            const gameId = gameData.gameId || this.generateGameId();
+            const displayPlayerId = this.generatePlayerId(gameData.hostName || 'Host', true);
+            const now = firebase.database.ServerValue.TIMESTAMP;
+
+            const gameObject = {
+                gameId,
+                gameState: 'lobby',
+                createdAt: now,
+                lastUpdate: now,
+                categories: gameData.categories || [],
+                difficulty: gameData.difficulty || 'medium',
+                maxPlayers: 8,
+                currentRound: 0,
+                ownerUid: authUid,
+
+                players: {
+                    [authUid]: {
+                        id: displayPlayerId,
+                        name: gameData.hostName || 'Host',
+                        isHost: true,
+                        isReady: true,
+                        isOnline: true,
+                        joinedAt: now
+                    }
+                },
+
+                members: {
+                    [authUid]: true
+                },
+
+                playerOrder: [authUid],
+
+                settings: {
+                    questionsPerGame: 10,
+                    timePerQuestion: 30,
+                    showResults: true,
+                    allowSpectators: false
                 }
-            },
-            // Host-only Settings
-            settings: {
-                questionsPerGame: 10,
-                timePerQuestion: 30,
-                showResults: true,
-                allowSpectators: false
-            },
-            // Indexe für Rules & Turns
-            members: { [uid]: true },
-            playerOrder: [uid]
-        };
+            };
 
-        const gameRef = this.database.ref(`games/${gameId}`);
-        await gameRef.set(gameObject);
+            const gameRef = this.database.ref(`games/${gameId}`);
+            await gameRef.set(gameObject);
 
-        this.currentGameId = gameId;
-        this.gameRef = gameRef;
+            this.currentGameId = gameId;
+            this.gameRef = gameRef;
 
-        console.log(`✅ Spiel erstellt: ${gameId}`);
-        return { gameId, playerId: uid, gameRef };
+            return { gameId, playerUid: authUid, gameRef };
+        } catch (error) {
+            console.error('❌ Fehler beim Erstellen des Spiels:', error);
+            throw error;
+        }
     }
 
     async joinGame(gameId, playerName) {
         if (!this.isConnected) throw new Error('Keine Firebase-Verbindung verfügbar');
-        await this.ensureAuth();
-        const uid = this.getUid();
-        const safePlayerName = this.safeName(playerName);
 
-        console.log(`🔄 Trete Spiel bei: ${gameId} als UID ${uid}`);
+        const authUid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
+        if (!authUid) throw new Error('auth.uid fehlt – anonyme Auth nicht aktiv?');
 
-        const gameRef = this.database.ref(`games/${gameId}`);
-        const snap = await gameRef.once('value');
-        if (!snap.exists()) throw new Error('Spiel nicht gefunden');
+        try {
+            const gameRef = this.database.ref(`games/${gameId}`);
+            const gameSnapshot = await gameRef.once('value');
+            if (!gameSnapshot.exists()) throw new Error('Spiel nicht gefunden');
 
-        const data = snap.val();
-        if (data.gameState !== 'lobby') throw new Error('Spiel bereits gestartet');
+            const gameData = gameSnapshot.val();
 
-        const currentCount = data.players ? Object.keys(data.players).length : 0;
-        if (currentCount >= (data.maxPlayers || 8)) throw new Error('Spiel ist voll');
+            if (gameData.gameState !== 'lobby') throw new Error('Spiel bereits gestartet');
 
-        // Spieler unter eigener UID eintragen/aktualisieren
-        await gameRef.child(`players/${uid}`).set({
-            id: uid,
-            name: safePlayerName,
-            isHost: false,
-            isReady: false,
-            isOnline: true,
-            joinedAt: firebase.database.ServerValue.TIMESTAMP
-        });
+            const currentPlayerCount = gameData.players ? Object.keys(gameData.players).length : 0;
+            if (currentPlayerCount >= (gameData.maxPlayers || 8)) throw new Error('Spiel ist voll');
 
-        // Für Rules: Mitgliedschaft & Reihenfolge pflegen
-        await gameRef.child('members').child(uid).set(true);
+            const displayPlayerId = this.generatePlayerId(playerName || 'Player', false);
+            const now = firebase.database.ServerValue.TIMESTAMP;
 
-        const orderRef = gameRef.child('playerOrder');
-        const orderSnap = await orderRef.once('value');
-        const order = Array.isArray(orderSnap.val()) ? orderSnap.val() : [];
-        if (!order.includes(uid)) {
-            order.push(uid);
-            await orderRef.set(order);
+            // Spieler unter UID anlegen
+            await gameRef.child(`players/${authUid}`).set({
+                id: displayPlayerId,
+                name: playerName || 'Player',
+                isHost: false,
+                isReady: false,
+                isOnline: true,
+                joinedAt: now
+            });
+
+            // Mitgliedschaft setzen (self-write)
+            await gameRef.child(`members/${authUid}`).set(true);
+
+            // playerOrder anfügen (einfach gehalten)
+            const orderRef = gameRef.child('playerOrder');
+            const orderSnap = await orderRef.once('value');
+            const order = Array.isArray(orderSnap.val()) ? orderSnap.val() : [];
+            if (!order.includes(authUid)) {
+                order.push(authUid);
+                await orderRef.set(order);
+            }
+
+            this.currentGameId = gameId;
+            this.gameRef = gameRef;
+
+            return { gameId, playerUid: authUid, gameData };
+        } catch (error) {
+            console.error('❌ Fehler beim Beitreten des Spiels:', error);
+            throw error;
         }
-
-        this.currentGameId = gameId;
-        this.gameRef = gameRef;
-
-        console.log(`✅ Erfolgreich beigetreten: ${gameId} als UID ${uid}`);
-        return { gameId, playerId: uid, gameRef, gameData: data };
     }
+
 
     async connectToGame(gameId, callbacks = {}) {
         if (!this.isConnected || !gameId) return false;
