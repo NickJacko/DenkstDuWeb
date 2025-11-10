@@ -14,7 +14,7 @@ class FirebaseGameService {
         this.currentGameId = null;
         this.listeners = [];
         this.connectionListeners = [];
-
+        
         // KORRIGIERTE Firebase-Konfiguration mit korrekten Endpoints
         this.config = {
             apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
@@ -60,7 +60,7 @@ class FirebaseGameService {
             // SCHRITT 4: Verbindungstest mit Timeout
             console.log('🔄 Teste Firebase-Verbindung...');
             this.isConnected = await this.testConnectionWithRetry();
-
+            
             if (!this.isConnected) {
                 throw new Error('Firebase-Verbindung fehlgeschlagen');
             }
@@ -91,7 +91,7 @@ class FirebaseGameService {
             console.error('❌ Firebase Initialisierung fehlgeschlagen:', error);
             this.isInitialized = false;
             this.isConnected = false;
-
+            
             // Detaillierte Fehlermeldung für Debugging
             this.logDetailedError(error);
             return false;
@@ -102,7 +102,7 @@ class FirebaseGameService {
     async testConnectionWithRetry(maxRetries = 3, timeoutMs = 8000) {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             console.log(`🔄 Verbindungsversuch ${attempt}/${maxRetries}...`);
-
+            
             try {
                 const connected = await this.performConnectionTest(timeoutMs);
                 if (connected) {
@@ -131,7 +131,7 @@ class FirebaseGameService {
 
             try {
                 const connectedRef = this.database.ref('.info/connected');
-
+                
                 connectedRef.once('value', (snapshot) => {
                     clearTimeout(timeout);
                     const isConnected = snapshot.val() === true;
@@ -155,11 +155,11 @@ class FirebaseGameService {
 
         try {
             const connectedRef = this.database.ref('.info/connected');
-
+            
             const connectionListener = connectedRef.on('value', (snapshot) => {
                 const wasConnected = this.isConnected;
                 this.isConnected = snapshot.val() === true;
-
+                
                 if (wasConnected !== this.isConnected) {
                     console.log(`🔄 Verbindungsstatus geändert: ${this.isConnected ? 'Verbunden' : 'Getrennt'}`);
                     this.notifyConnectionChange(this.isConnected);
@@ -210,7 +210,7 @@ class FirebaseGameService {
         try {
             const gameId = gameData.gameId || this.generateGameId();
             const hostPlayerId = this.generatePlayerId(gameData.hostName, true);
-
+            
             console.log(`🎮 Erstelle Spiel: ${gameId} mit Host: ${hostPlayerId}`);
 
             const gameObject = {
@@ -223,7 +223,7 @@ class FirebaseGameService {
                 maxPlayers: 8,
                 currentRound: 0,
                 hostId: hostPlayerId,
-
+                
                 // Host als ersten Spieler hinzufügen
                 players: {
                     [hostPlayerId]: {
@@ -235,7 +235,7 @@ class FirebaseGameService {
                         joinedAt: firebase.database.ServerValue.TIMESTAMP
                     }
                 },
-
+                
                 // Spieleinstellungen
                 settings: {
                     questionsPerGame: 10,
@@ -279,13 +279,13 @@ class FirebaseGameService {
             // Prüfe ob Spiel existiert
             const gameRef = this.database.ref(`games/${gameId}`);
             const gameSnapshot = await gameRef.once('value');
-
+            
             if (!gameSnapshot.exists()) {
                 throw new Error('Spiel nicht gefunden');
             }
 
             const gameData = gameSnapshot.val();
-
+            
             // Prüfe Spielzustand
             if (gameData.gameState !== 'lobby') {
                 throw new Error('Spiel bereits gestartet');
@@ -386,7 +386,7 @@ class FirebaseGameService {
     }
 
     async setPlayerOnline(gameId, playerId, online = true) {
-        return this.updatePlayerStatus(gameId, playerId, {
+        return this.updatePlayerStatus(gameId, playerId, { 
             isOnline: online,
             lastSeen: firebase.database.ServerValue.TIMESTAMP
         });
@@ -409,7 +409,7 @@ class FirebaseGameService {
                 startedAt: firebase.database.ServerValue.TIMESTAMP,
                 lastUpdate: firebase.database.ServerValue.TIMESTAMP
             });
-
+            
             console.log(`🚀 Spiel gestartet: ${gameId}`);
             return true;
 
@@ -425,10 +425,10 @@ class FirebaseGameService {
         try {
             const settingsRef = this.database.ref(`games/${gameId}/settings`);
             await settingsRef.update(settings);
-
+            
             const gameRef = this.database.ref(`games/${gameId}/lastUpdate`);
             await gameRef.set(firebase.database.ServerValue.TIMESTAMP);
-
+            
             console.log(`✅ Spieleinstellungen aktualisiert: ${gameId}`);
             return true;
         } catch (error) {
@@ -521,42 +521,42 @@ class FirebaseGameService {
 // ===== GLOBALE DEBUG-FUNKTIONEN =====
 window.testFirebaseService = async function() {
     console.log('🧪 Firebase Service Test gestartet...');
-
+    
     const service = new FirebaseGameService();
     const result = await service.initialize();
-
+    
     console.log('Test Ergebnis:', result);
     console.log('Service Status:', service.getStatus());
-
+    
     return service;
 };
 
 window.debugFirebaseConnection = async function() {
     console.log('🔍 Firebase Verbindungstest...');
-
+    
     // Teste Firebase SDK
     console.log('Firebase SDK verfügbar:', typeof firebase !== 'undefined');
-
+    
     if (typeof firebase !== 'undefined') {
         console.log('Firebase Apps:', firebase.apps.length);
-
+        
         try {
             // Direkte Datenbankverbindung testen
             const testService = new FirebaseGameService();
             const config = testService.config;
-
+            
             console.log('Config:', config);
-
+            
             const app = firebase.initializeApp(config, 'test-app');
             const db = firebase.database(app);
-
+            
             const testRef = db.ref('.info/connected');
             const snapshot = await testRef.once('value');
-
+            
             console.log('Direkte Verbindung:', snapshot.val());
-
+            
             app.delete();
-
+            
         } catch (error) {
             console.error('Direkter Test fehlgeschlagen:', error);
         }

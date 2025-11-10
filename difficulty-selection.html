@@ -645,7 +645,8 @@
             // Hard
             document.getElementById('hard-icon').textContent = '🔥';
             document.getElementById('hard-base').textContent = 'Doppelte Abweichung!';
-            document.getElementById('hard-formula').innerHTML = 'Schlücke = Abweichung × 2<br>Nur für erfahrene Spieler!';
+            const el = document.getElementById('hard-formula');
+            el.textContent = 'Punkte = Abweichung × 2 – Nur für erfahrene Spieler!';
 
             console.log('✅ UI updated for alcohol mode');
         } else {
