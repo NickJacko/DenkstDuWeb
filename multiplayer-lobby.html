@@ -1121,26 +1121,36 @@
             }
 
             // SCHRITT 3: Firebase initialisieren
+            showLoading(); // Zeige Loading während Firebase lädt
             await firebaseService.initialize();
+            hideLoading();
 
             if (firebaseService.isReady) {
                 log('✅ Firebase bereit und verbunden!');
 
-                // SCHRITT 4: Game Data aus Firebase laden und GameState UPDATEN
+                // SCHRITT 4: Game Data aus Firebase laden
                 await loadGameDataFromFirebase();
 
-                // SCHRITT 5: Prüfe ob Spieler in Firebase existiert, falls nicht: hinzufügen
+                // SCHRITT 5: Prüfe ob Spieler in Firebase existiert
                 await ensurePlayerInFirebase();
 
-                // SCHRITT 6: UI aktualisieren (NACH dem Laden!)
-                updateGameDisplay();
-                updateHostControls();
-                generateShareLink();
+                // SCHRITT 6: Erneut laden nach Player-Add
+                await loadGameDataFromFirebase();
 
-                // SCHRITT 7: Spiel-Listener setup (inkl. automatische Aktualisierung)
+                // SCHRITT 7: UI aktualisieren (NUR wenn currentGameData existiert!)
+                if (currentGameData) {
+                    updateGameDisplay();
+                    updateHostControls();
+                    generateShareLink();
+                    updateFromFirebaseData(currentGameData);
+                } else {
+                    log('❌ Keine Spieldaten - kann UI nicht aktualisieren');
+                }
+
+                // SCHRITT 8: Spiel-Listener setup (inkl. automatische Aktualisierung)
                 await setupGameListener();
 
-                // SCHRITT 8: Player online setzen
+                // SCHRITT 9: Player online setzen
                 if (gameState.playerId) {
                     await firebaseService.setPlayerOnline(gameState.gameId, gameState.playerId, true);
                 }
@@ -1154,6 +1164,7 @@
         } catch (error) {
             log(`❌ Initialisierung fehlgeschlagen: ${error.message}`, 'error');
             console.error('Init Error:', error);
+            hideLoading();
             startLocalFallback();
         }
     }
@@ -1322,6 +1333,9 @@
                     }
 
                     currentGameData = newGameData;
+
+                    // WICHTIG: Aktualisiere ALLE UI-Elemente bei jedem Update
+                    updateGameDisplay();
                     updateFromFirebaseData(newGameData);
 
                     // Prüfe auf Spielstart
@@ -1337,12 +1351,26 @@
                 }
             });
 
-            // Initial laden
-            const initialData = await firebaseService.getGameData(gameState.gameId);
+            // Initial laden MIT Retry
+            let retries = 0;
+            let initialData = null;
+
+            while (retries < 3 && !initialData) {
+                initialData = await firebaseService.getGameData(gameState.gameId);
+                if (!initialData) {
+                    log(`⚠️ Retry ${retries + 1}/3...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    retries++;
+                }
+            }
+
             if (initialData) {
                 currentGameData = initialData;
+                updateGameDisplay();
                 updateFromFirebaseData(initialData);
                 log('✅ Initial Game Data geladen');
+            } else {
+                log('❌ Initial Game Data konnte nicht geladen werden');
             }
 
             // Zusätzliches Polling als Fallback (alle 3 Sekunden)
@@ -1397,11 +1425,12 @@
 
     // ===== UPDATE FUNCTIONS =====
     function updateFromFirebaseData(gameData) {
-        // Stille Aktualisierung - keine Console-Logs außer bei Änderungen
+        log(`🔄 Update from Firebase - Players: ${gameData.players ? Object.keys(gameData.players).length : 0}`);
 
         if (gameData.players) {
             updatePlayersDisplay(gameData.players);
         } else {
+            log('⚠️ Keine Spieler in gameData!');
             showEmptyPlayersList();
         }
 
@@ -1409,23 +1438,45 @@
     }
 
     function updateGameDisplay() {
-        document.getElementById('game-id').textContent = gameState.gameId || 'N/A';
+        // Game ID
+        document.getElementById('game-id').textContent = gameState.gameId || 'Lädt...';
 
-        // Host Name aus Firebase oder Local
+        // Host Name aus Firebase oder GameState
+        let hostName = 'Lädt...';
         if (currentGameData && currentGameData.players) {
             const hostPlayer = Object.values(currentGameData.players).find(p => p.isHost);
-            document.getElementById('host-name').textContent = hostPlayer ? hostPlayer.name : gameState.playerName;
+            hostName = hostPlayer ? hostPlayer.name : (gameState.playerName || 'Unbekannt');
+        } else if (gameState.playerName) {
+            hostName = gameState.playerName;
+        }
+        document.getElementById('host-name').textContent = hostName;
+
+        // Difficulty
+        const difficultyDisplay = document.getElementById('difficulty-display');
+        if (gameState.difficulty) {
+            difficultyDisplay.textContent = difficultyNames[gameState.difficulty] || gameState.difficulty;
+        } else if (currentGameData && currentGameData.difficulty) {
+            difficultyDisplay.textContent = difficultyNames[currentGameData.difficulty] || currentGameData.difficulty;
         } else {
-            document.getElementById('host-name').textContent = gameState.playerName || 'Unbekannt';
+            difficultyDisplay.textContent = 'Lädt...';
         }
 
-        const difficultyDisplay = document.getElementById('difficulty-display');
-        difficultyDisplay.textContent = difficultyNames[gameState.difficulty] || gameState.difficulty || 'Unbekannt';
-
+        // Categories
         const categoriesDisplay = document.getElementById('categories-display');
-        if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
-            categoriesDisplay.innerHTML = gameState.selectedCategories.map(category => {
+        let categories = gameState.selectedCategories;
+
+        // Fallback: Lade von currentGameData
+        if ((!categories || categories.length === 0) && currentGameData) {
+            categories = currentGameData.categories || currentGameData.selectedCategories || [];
+        }
+
+        if (categories && categories.length > 0) {
+            categoriesDisplay.innerHTML = categories.map(category => {
                 const data = categoryData[category];
+                if (!data) {
+                    log(`⚠️ Unbekannte Kategorie: ${category}`, 'warning');
+                    return '';
+                }
                 return `
                     <div class="category-tag">
                         <span class="icon">${data.icon}</span>
@@ -1434,8 +1485,10 @@
                 `;
             }).join('');
         } else {
-            categoriesDisplay.innerHTML = '<span style="color: rgba(255,255,255,0.5);">Keine</span>';
+            categoriesDisplay.innerHTML = '<span style="color: rgba(255,255,255,0.5);">Lädt...</span>';
         }
+
+        log('✅ UI aktualisiert');
     }
 
     function updatePlayersDisplay(players) {
