@@ -16,7 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <!-- DOMPurify for XSS Protection -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-HT8HfXv/rkqzb07KXr0YfcqfXxzF/CbVqFN/N/FEfP9ICsLlvLcJKLFJN/aI2DW6z1LQqMj/cLh0atwKKLVZQQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
     <!-- Central Scripts (MUST load before page script) -->
     <script src="/assets/js/migration.js"></script>
@@ -593,7 +593,7 @@
 
         <!-- Controls -->
         <div class="controls">
-            <button class="btn btn-outline">← Zurück</button>
+            <button class="btn btn-outline" id="back-btn">← Zurück</button>
             <button class="btn btn-primary" id="continue-btn">
                 Schwierigkeit auswählen
             </button>

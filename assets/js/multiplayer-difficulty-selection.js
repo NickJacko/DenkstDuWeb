@@ -247,7 +247,7 @@ async function initMultiplayerDifficultySelection() {
             return;
         }
 
-        gameState = GameState.load();
+        gameState = new GameState();
         firebaseService = new FirebaseGameService();
 
         // SCHRITT 1.5: UI SOFORT aktualisieren mit geladenen Daten
@@ -256,9 +256,6 @@ async function initMultiplayerDifficultySelection() {
         displayGameInfo();
         displaySelectedCategories();
         loadPreviousDifficulty();
-
-        // SCHRITT 1.6: Setup Event Listeners for UI
-        setupEventListeners();
 
         // SCHRITT 2: State validieren
         if (!validateGameState()) {
@@ -320,7 +317,7 @@ function setupEventListeners() {
     });
 
     // Back Button
-    const backBtn = document.querySelector('.btn-outline');
+    const backBtn = document.getElementById('back-btn');
     if (backBtn) {
         backBtn.addEventListener('click', goBack);
     }
@@ -402,6 +399,7 @@ function displayGameInfo() {
     const gameIdEl = document.getElementById('game-id');
 
     if (hostNameEl) {
+        // Use textContent for safety
         hostNameEl.textContent = gameState.playerName || 'Unbekannt';
     }
 
@@ -431,7 +429,7 @@ function displaySelectedCategories() {
 
     log(`✅ Displaying ${gameState.selectedCategories.length} categories`);
 
-    // Use DOMPurify if available, otherwise use textContent
+    // Build HTML for categories
     const categoriesHTML = gameState.selectedCategories.map(category => {
         const data = categoryData[category];
         if (!data) {
@@ -446,9 +444,11 @@ function displaySelectedCategories() {
         `;
     }).join('');
 
+    // Use DOMPurify for XSS protection
     if (typeof DOMPurify !== 'undefined') {
         categoriesContainer.innerHTML = DOMPurify.sanitize(categoriesHTML);
     } else {
+        log('⚠️ DOMPurify not available, using innerHTML directly', 'warning');
         categoriesContainer.innerHTML = categoriesHTML;
     }
 }
@@ -476,8 +476,9 @@ function selectDifficulty(difficulty, element) {
     element.classList.add('selected');
     selectedDifficulty = difficulty;
 
-    // Update game state
-    gameState.setDifficulty(difficulty);
+    // Update game state - direkte Property-Zuweisung + save()
+    gameState.difficulty = difficulty;
+    gameState.save();
 
     // Show notification
     const difficultyNames = {
@@ -591,7 +592,12 @@ function showNotification(message, type = 'success') {
     const notification = document.getElementById('notification');
     if (!notification) return;
 
-    notification.textContent = message;
+    // Sanitize message for XSS protection
+    const sanitizedMessage = typeof DOMPurify !== 'undefined'
+        ? DOMPurify.sanitize(message, { ALLOWED_TAGS: [] })
+        : escapeHtml(message);
+
+    notification.textContent = sanitizedMessage;
     notification.className = `notification ${type} show`;
 
     setTimeout(() => {
@@ -603,6 +609,7 @@ function updateConnectionStatus(status, message = '') {
     const statusEl = document.getElementById('connection-status');
     if (!statusEl) return;
 
+    // Use textContent for safety
     statusEl.textContent = message || status;
     statusEl.className = `connection-status ${status}`;
 }
