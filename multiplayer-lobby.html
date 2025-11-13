@@ -9,23 +9,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðŸ§¢</text></svg>">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    <!-- DOMPurify für XSS-Schutz -->
+    <!-- DOMPurify fÃ¼r XSS-Schutz -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
             integrity="sha384-zqIVJLhAO5pXvfUYlSjjLjWIvvQXVXjBzrFXOXD1YbBMKm5+XdRQjjkN9Vll4VvC"
             crossorigin="anonymous"></script>
 
-    <!-- Migration Script (läuft automatisch) -->
-    <script src="assets/js/migration.js"></script>
+    <!-- Migration Script (lÃ¤uft automatisch) -->
+    <script src="migration.js"></script>
 
     <!-- Zentrale GameState Klasse -->
-    <script src="assets/js/GameState.js"></script>
+    <script src="GameState.js"></script>
 
     <style>
         * {
@@ -727,7 +727,7 @@
 <div class="modal-overlay" id="share-modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 class="modal-title">🔗 Spiel teilen</h3>
+            <h3 class="modal-title">ðŸ”— Spiel teilen</h3>
         </div>
         <div class="modal-body">
             <p style="color: #666; margin-bottom: 15px;">Teile diesen Link mit deinen Freunden:</p>
@@ -736,17 +736,17 @@
             </div>
             <div class="share-options">
                 <button class="share-btn share-btn-whatsapp" id="whatsapp-btn">
-                    <div class="share-btn-icon">💬</div>
+                    <div class="share-btn-icon">ðŸ’¬</div>
                     <div class="share-btn-text">WhatsApp</div>
                 </button>
                 <button class="share-btn share-btn-copy" id="copy-btn">
-                    <div class="share-btn-icon">📋</div>
+                    <div class="share-btn-icon">ðŸ“‹</div>
                     <div class="share-btn-text">Link kopieren</div>
                 </button>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn-close" id="close-modal-btn">Schließen</button>
+            <button class="btn-close" id="close-modal-btn">SchlieÃŸen</button>
         </div>
     </div>
 </div>
@@ -756,7 +756,7 @@
     <div class="glass-card">
         <!-- Header -->
         <div class="header">
-            <h1>🌐 Multiplayer Lobby</h1>
+            <h1>ðŸŒ Multiplayer Lobby</h1>
             <p>Warte auf andere Spieler oder starte das Spiel</p>
         </div>
 
@@ -774,7 +774,7 @@
             </div>
 
             <div class="game-settings">
-                <div class="settings-title">⚙️ Spieleinstellungen</div>
+                <div class="settings-title">âš™ï¸ Spieleinstellungen</div>
 
                 <div class="setting-row">
                     <div class="setting-header">Schwierigkeit</div>
@@ -793,7 +793,7 @@
         <!-- Players Section -->
         <div class="players-section">
             <div class="players-header">
-                <h3 class="players-title">👥 Spieler</h3>
+                <h3 class="players-title">ðŸ‘¥ Spieler</h3>
                 <div class="player-count" id="player-count">0/8 Spieler</div>
             </div>
             <div class="players-list" id="players-list">
@@ -805,34 +805,34 @@
 
         <!-- Join Info -->
         <div class="join-info">
-            <div class="join-title">🔗 Andere einladen</div>
+            <div class="join-title">ðŸ”— Andere einladen</div>
             <div class="join-description">
-                Teile den Einladungslink mit deinen Freunden, damit sie direkt beitreten können.
+                Teile den Einladungslink mit deinen Freunden, damit sie direkt beitreten kÃ¶nnen.
             </div>
         </div>
 
         <!-- Controls -->
         <div class="controls">
             <button class="btn btn-outline btn-host-only" id="settings-btn">
-                ⚙️ Einstellungen ändern
+                âš™ï¸ Einstellungen Ã¤ndern
             </button>
             <button class="btn btn-secondary" id="share-btn">
-                🔗 Einladung teilen
+                ðŸ”— Einladung teilen
             </button>
             <button class="btn btn-primary" id="start-btn">
-                🚀 Spiel starten
+                ðŸš€ Spiel starten
             </button>
         </div>
 
         <!-- Footer Links -->
         <div class="footer-links">
-            <a href="imprint.html" class="footer-link">📋 Impressum</a>
-            <a href="privacy-page.html" class="footer-link">🔒 Datenschutz</a>
+            <a href="imprint.html" class="footer-link">ðŸ“‹ Impressum</a>
+            <a href="privacy.html" class="footer-link">ðŸ”’ Datenschutz</a>
         </div>
     </div>
 </div>
 
 <!-- External JavaScript (NO INLINE SCRIPTS!) -->
-<script src="assets/js/multiplayer-lobby.js"></script>
+<script src="multiplayer-lobby.js"></script>
 </body>
 </html>
