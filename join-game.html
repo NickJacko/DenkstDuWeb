@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðŸ§¢</text></svg>">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -517,18 +517,18 @@
 <!-- Age Gate Overlay -->
 <div class="age-gate-overlay" id="age-gate">
     <div class="age-gate-content">
-        <div class="age-gate-icon">🔞</div>
-        <h2 class="age-gate-title">Altersbestätigung</h2>
+        <div class="age-gate-icon">ðŸ”ž</div>
+        <h2 class="age-gate-title">AltersbestÃ¤tigung</h2>
         <p class="age-gate-text">
-            Diese App enthält Inhalte, die für Erwachsene bestimmt sind.<br>
+            Diese App enthÃ¤lt Inhalte, die fÃ¼r Erwachsene bestimmt sind.<br>
             Bist du mindestens 18 Jahre alt?
         </p>
         <div class="age-gate-buttons">
             <button class="age-gate-btn age-gate-btn-yes" onclick="confirmAge(true)">
-                ✓ Ja, ich bin 18+
+                âœ“ Ja, ich bin 18+
             </button>
             <button class="age-gate-btn age-gate-btn-no" onclick="confirmAge(false)">
-                ✗ Nein
+                âœ— Nein
             </button>
         </div>
     </div>
@@ -548,7 +548,7 @@
     <div class="glass-card">
         <!-- Header -->
         <div class="header">
-            <h1>🎮 Spiel beitreten</h1>
+            <h1>ðŸŽ® Spiel beitreten</h1>
             <p>Gib den Spiel-Code und deinen Namen ein</p>
         </div>
 
@@ -571,7 +571,7 @@
 
             <!-- Game Info Preview -->
             <div class="game-info-preview" id="game-info">
-                <div class="info-title">✅ Spiel gefunden!</div>
+                <div class="info-title">âœ… Spiel gefunden!</div>
 
                 <div class="host-info">
                     <div class="host-label">Host</div>
@@ -617,647 +617,27 @@
         <!-- Controls -->
         <div class="controls">
             <button class="btn btn-outline" onclick="goBack()">
-                ← Zurück
+                â† ZurÃ¼ck
             </button>
             <button class="btn btn-primary" id="join-btn" onclick="joinGame()" disabled>
-                🚀 Beitreten
+                ðŸš€ Beitreten
             </button>
         </div>
     </div>
 </div>
 
-<script>
-    // ===== AGE GATE =====
-    function checkAgeGate() {
-        const ageConfirmed = localStorage.getItem('nocap_age_confirmed');
 
-        if (ageConfirmed === 'true') {
-            log('✅ Alter bereits bestätigt');
-            return true;
-        } else {
-            log('⚠️ Altersbestätigung erforderlich');
-            document.getElementById('age-gate').classList.add('show');
-            return false;
-        }
-    }
+<!-- DOMPurify for XSS Protection -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-HT8HfXv/rkqzb07KXr0YfcqfXxzF/CbVqFN/N/FEfP9ICsLlvLcJKLFJN/aI2DW6z1LQqMj/cLh0atwKKLVZQQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    function confirmAge(isAdult) {
-        if (isAdult) {
-            localStorage.setItem('nocap_age_confirmed', 'true');
-            document.getElementById('age-gate').classList.remove('show');
-            log('✅ Alter bestätigt');
+<!-- Central Scripts (MUST load before page script) -->
+<script src="/assets/js/migration.js"></script>
+<script src="/assets/js/GameState.js"></script>
 
-            // Continue with initialization
-            continueInitialization();
-        } else {
-            showNotification('Du musst mindestens 18 Jahre alt sein.', 'warning');
-            setTimeout(() => {
-                window.location.href = 'https://www.google.com';
-            }, 2000);
-        }
-    }
+<!-- Firebase Service -->
+<script src="/assets/js/firebase-service.js"></script>
 
-    // ===== GAMESTATE CLASS =====
-    class GameState {
-        constructor() {
-            this.deviceMode = null;
-            this.selectedCategories = [];
-            this.difficulty = null;
-            this.playerName = '';
-            this.gameId = null;
-            this.playerId = null;
-            this.isHost = false;
-            this.isGuest = false;
-            this.gamePhase = 'lobby';
-            this.timestamp = Date.now();
-            this.load();
-        }
-
-        load() {
-            try {
-                const saved = localStorage.getItem('nocap_game_state');
-                if (saved) {
-                    const state = JSON.parse(saved);
-                    if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                        Object.assign(this, state);
-                        this.log('✅ State loaded');
-                    }
-                }
-            } catch (error) {
-                this.log(`❌ Load failed: ${error.message}`, 'error');
-            }
-        }
-
-        save() {
-            try {
-                const state = {
-                    deviceMode: this.deviceMode,
-                    selectedCategories: this.selectedCategories,
-                    difficulty: this.difficulty,
-                    playerName: this.playerName,
-                    gameId: this.gameId,
-                    playerId: this.playerId,
-                    isHost: this.isHost,
-                    isGuest: this.isGuest,
-                    gamePhase: this.gamePhase,
-                    timestamp: Date.now(),
-                    version: 3
-                };
-                localStorage.setItem('nocap_game_state', JSON.stringify(state));
-                this.log('✅ State saved');
-                return true;
-            } catch (error) {
-                this.log(`❌ Save failed: ${error.message}`, 'error');
-                return false;
-            }
-        }
-
-        clearStorage() {
-            localStorage.removeItem('nocap_game_state');
-            this.log('🗑️ Storage cleared');
-        }
-
-        log(message, type = 'info') {
-            console.log(`[GameState] ${message}`);
-        }
-    }
-
-    // ===== FIREBASE SERVICE CLASS =====
-    class FirebaseGameService {
-        constructor() {
-            this.app = null;
-            this.auth = null;
-            this.database = null;
-            this.isInitialized = false;
-            this.isConnected = false;
-            this.listeners = [];
-
-            this.config = {
-                apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-                authDomain: "denkstduwebsite.firebaseapp.com",
-                databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-                projectId: "denkstduwebsite",
-                storageBucket: "denkstduwebsite.appspot.com",
-                messagingSenderId: "27029260611",
-                appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-                measurementId: "G-BNKNW95HK8"
-            };
-        }
-
-        async initialize() {
-            try {
-                this.log('🔥 Firebase Service - Initialisierung...');
-
-                if (typeof firebase === 'undefined') {
-                    throw new Error('Firebase SDK nicht geladen');
-                }
-
-                if (!firebase.apps || firebase.apps.length === 0) {
-                    this.app = firebase.initializeApp(this.config);
-                    this.log('✅ Firebase App initialisiert');
-                } else {
-                    this.app = firebase.app();
-                    this.log('ℹ️ Firebase App bereits initialisiert');
-                }
-
-                // WICHTIG: Anonymous Auth
-                this.log('🔐 Starte anonyme Authentifizierung...');
-                this.auth = firebase.auth();
-
-                try {
-                    const userCredential = await this.auth.signInAnonymously();
-                    this.log(`✅ Anonym angemeldet: ${userCredential.user.uid}`);
-                } catch (authError) {
-                    this.log(`❌ Auth Fehler: ${authError.message}`, 'error');
-                    throw authError;
-                }
-
-                this.database = firebase.database();
-                this.log('✅ Database-Referenz erhalten');
-
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                this.isConnected = await this.testConnectionWithTimeout(15000);
-
-                if (this.isConnected) {
-                    this.isInitialized = true;
-                    this.log('✅ Firebase verbunden und bereit');
-                    return true;
-                } else {
-                    this.log('⚠️ Erster Verbindungsversuch fehlgeschlagen, versuche erneut...');
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-
-                    this.isConnected = await this.testConnectionWithTimeout(15000);
-
-                    if (this.isConnected) {
-                        this.isInitialized = true;
-                        this.log('✅ Firebase verbunden nach Retry');
-                        return true;
-                    } else {
-                        this.log('❌ Firebase Verbindung fehlgeschlagen');
-                        return false;
-                    }
-                }
-
-            } catch (error) {
-                this.log(`❌ Firebase Fehler: ${error.message}`, 'error');
-                console.error('Firebase Init Error:', error);
-                this.isInitialized = false;
-                this.isConnected = false;
-                return false;
-            }
-        }
-
-        async testConnectionWithTimeout(timeout = 15000) {
-            return new Promise(async (resolve) => {
-                const timeoutId = setTimeout(() => {
-                    this.log('⚠️ Verbindungstest Timeout', 'warning');
-                    resolve(false);
-                }, timeout);
-
-                try {
-                    const connectedRef = this.database.ref('.info/connected');
-                    const snapshot = await connectedRef.once('value');
-                    clearTimeout(timeoutId);
-
-                    const connected = snapshot.val() === true;
-                    this.log(`🔍 Verbindungstest: ${connected ? 'Verbunden ✅' : 'Nicht verbunden ❌'}`);
-                    resolve(connected);
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    this.log(`❌ Verbindungstest Fehler: ${error.message}`, 'error');
-                    resolve(false);
-                }
-            });
-        }
-
-        async getGameData(gameId) {
-            if (!this.isReady) {
-                this.log('⚠️ getGameData: Firebase nicht bereit');
-                return null;
-            }
-
-            if (!gameId) {
-                this.log('⚠️ getGameData: Keine gameId');
-                return null;
-            }
-
-            try {
-                this.log(`🔍 Suche Spiel mit ID: ${gameId}`);
-                const gameRef = this.database.ref(`games/${gameId}`);
-
-                const snapshot = await gameRef.once('value');
-
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    this.log('✅ Spieldaten gefunden');
-                    console.log('Game Data Structure:', data);
-                    return data;
-                } else {
-                    this.log('⚠️ Kein Spiel gefunden mit dieser ID');
-                    return null;
-                }
-            } catch (error) {
-                this.log(`❌ Fehler beim Laden: ${error.message}`, 'error');
-                console.error('getGameData Error:', error);
-                return null;
-            }
-        }
-
-        async joinGame(gameId, playerName) {
-            if (!this.isConnected) {
-                throw new Error('Keine Firebase-Verbindung');
-            }
-
-            try {
-                this.log(`🚀 Trete Spiel bei: ${gameId} als ${playerName}`);
-
-                const playerId = `guest_${playerName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
-
-                const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
-                await playerRef.set({
-                    name: playerName,
-                    isHost: false,
-                    isOnline: true,
-                    isReady: false,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP
-                });
-
-                this.log(`✅ Player ${playerId} hinzugefügt`);
-
-                const gameData = await this.getGameData(gameId);
-
-                this.log(`✅ Erfolgreich beigetreten`);
-
-                return {
-                    playerId: playerId,
-                    gameData: gameData
-                };
-
-            } catch (error) {
-                this.log(`❌ Fehler beim Beitreten: ${error.message}`, 'error');
-                console.error('joinGame Error:', error);
-                throw error;
-            }
-        }
-
-        cleanup() {
-            this.log('🧹 Cleanup...');
-            this.listeners.forEach(({ ref, listener }) => {
-                try {
-                    ref.off('value', listener);
-                } catch (error) {
-                    this.log(`❌ Fehler beim Entfernen: ${error.message}`, 'error');
-                }
-            });
-            this.listeners = [];
-        }
-
-        get isReady() {
-            return this.isInitialized && this.isConnected;
-        }
-
-        log(message, type = 'info', data = null) {
-            const colors = {
-                info: '#4488ff',
-                warning: '#ffaa00',
-                error: '#ff4444',
-                success: '#00ff00'
-            };
-            console.log(`%c[Firebase] ${message}`, `color: ${colors[type] || colors.info}`);
-            if (data) {
-                console.log(data);
-            }
-        }
-    }
-
-    // ===== GLOBAL VARIABLES =====
-    let gameState = null;
-    let firebaseService = null;
-    let currentGameData = null;
-    let checkTimeout = null;
-    let firebaseInitialized = false;
-    let pendingGameCode = null;
-
-    const categoryData = {
-        fsk0: { name: 'Familie & Freunde', icon: '👨‍👩‍👧‍👦' },
-        fsk16: { name: 'Party Time', icon: '🎉' },
-        fsk18: { name: 'Heiß & Gewagt', icon: '🔥' },
-        special: { name: 'Special Edition', icon: '⭐' }
-    };
-
-    const difficultyNames = {
-        easy: 'Entspannt 😌',
-        medium: 'Ausgewogen 🎯',
-        hard: 'Hardcore 💀'
-    };
-
-    // ===== INITIALIZATION =====
-    document.addEventListener('DOMContentLoaded', function() {
-        initJoinGame();
-    });
-
-    async function initJoinGame() {
-        log('🎮 Join Game - Initialisierung...');
-
-        gameState = new GameState();
-        gameState.clearStorage();
-
-        // Check for URL parameter FIRST
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        if (code && code.length === 6) {
-            pendingGameCode = code.toUpperCase();
-            log(`🔗 URL-Parameter gefunden: ${pendingGameCode}`);
-        }
-
-        // Check age gate
-        const ageConfirmed = checkAgeGate();
-
-        if (ageConfirmed) {
-            await continueInitialization();
-        }
-    }
-
-    async function continueInitialization() {
-        log('▶️ Setze Initialisierung fort...');
-
-        firebaseService = new FirebaseGameService();
-
-        log('⏳ Firebase wird initialisiert...');
-        showLoading();
-
-        firebaseInitialized = await firebaseService.initialize();
-
-        hideLoading();
-
-        if (firebaseInitialized) {
-            log('✅ Firebase bereit');
-
-            // NOW apply pending game code if exists
-            if (pendingGameCode) {
-                const gameCodeInput = document.getElementById('game-code');
-                gameCodeInput.value = pendingGameCode;
-
-                setTimeout(() => {
-                    handleGameCodeInput();
-                }, 500);
-            }
-        } else {
-            log('❌ Firebase nicht verfügbar');
-            showNotification('Verbindung zu Firebase fehlgeschlagen. Bitte Seite neu laden.', 'error');
-        }
-
-        log('✅ Join Game bereit!');
-    }
-
-    // ===== GAME CODE HANDLING =====
-    function handleGameCodeInput() {
-        const input = document.getElementById('game-code');
-        let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-        if (value.length > 6) {
-            value = value.substring(0, 6);
-        }
-
-        input.value = value;
-
-        if (checkTimeout) {
-            clearTimeout(checkTimeout);
-        }
-
-        input.classList.remove('valid', 'error');
-        document.getElementById('game-info').classList.remove('show');
-
-        if (value.length === 6) {
-            checkTimeout = setTimeout(() => {
-                checkGameExists(value);
-            }, 800);
-        }
-
-        validateForm();
-    }
-
-    async function checkGameExists(gameCode) {
-        const input = document.getElementById('game-code');
-
-        try {
-            log(`🔍 Checking game: ${gameCode}`);
-
-            if (!firebaseService.isReady) {
-                throw new Error('Firebase nicht verbunden. Bitte warten oder Seite neu laden.');
-            }
-
-            const gameData = await firebaseService.getGameData(gameCode);
-
-            if (!gameData) {
-                throw new Error('Spiel nicht gefunden');
-            }
-
-            if (gameData.gameState === 'finished') {
-                throw new Error('Spiel bereits beendet');
-            }
-
-            if (gameData.gameState === 'playing') {
-                throw new Error('Spiel läuft bereits');
-            }
-
-            currentGameData = gameData;
-
-            displayGameInfo(gameData);
-            input.classList.add('valid');
-
-            showNotification('Spiel gefunden! ✅', 'success');
-            validateForm();
-
-        } catch (error) {
-            log(`❌ Check failed: ${error.message}`, 'error');
-            input.classList.add('error');
-            showNotification(error.message, 'error');
-            currentGameData = null;
-            validateForm();
-        }
-    }
-
-    function displayGameInfo(gameData) {
-        const infoDiv = document.getElementById('game-info');
-
-        log('📊 Displaying game info:', gameData);
-
-        // Host
-        const hostPlayer = Object.values(gameData.players || {}).find(p => p.isHost);
-        document.getElementById('info-host').textContent = hostPlayer ? hostPlayer.name : 'Unbekannt';
-
-        // Difficulty
-        document.getElementById('info-difficulty').textContent =
-            difficultyNames[gameData.difficulty] || 'Standard';
-
-        // Players
-        const playerCount = gameData.players ? Object.keys(gameData.players).length : 0;
-        document.getElementById('info-players').textContent = `${playerCount}/8`;
-
-        // Categories - UNTERSTÜTZT BEIDE FORMATE
-        const categoriesArray = gameData.categories || gameData.selectedCategories || [];
-        log('📋 Categories found:', categoriesArray);
-
-        const categories = categoriesArray
-            .map(cat => {
-                const catData = categoryData[cat];
-                if (!catData) {
-                    log(`⚠️ Unknown category: ${cat}`, 'warning');
-                    return cat;
-                }
-                return catData.icon;
-            })
-            .join(' ');
-        document.getElementById('info-categories').textContent = categories || '-';
-
-        // Status
-        const statusNames = {
-            waiting: 'Wartet',
-            lobby: 'Lobby',
-            playing: 'Läuft',
-            finished: 'Beendet'
-        };
-        document.getElementById('info-status').textContent = statusNames[gameData.gameState] || 'Lobby';
-
-        infoDiv.classList.add('show');
-    }
-
-    function validateForm() {
-        const gameCode = document.getElementById('game-code').value;
-        const playerName = document.getElementById('player-name').value.trim();
-        const joinBtn = document.getElementById('join-btn');
-
-        const isValid = gameCode.length === 6 &&
-            playerName.length >= 2 &&
-            currentGameData !== null &&
-            firebaseService.isReady;
-
-        joinBtn.disabled = !isValid;
-    }
-
-    // ===== JOIN GAME =====
-    async function joinGame() {
-        const gameCode = document.getElementById('game-code').value.toUpperCase();
-        const playerName = document.getElementById('player-name').value.trim();
-
-        if (!currentGameData) {
-            showNotification('Spiel-Code ungültig', 'error');
-            return;
-        }
-
-        if (playerName.length < 2) {
-            showNotification('Name zu kurz (min. 2 Zeichen)', 'error');
-            return;
-        }
-
-        if (!firebaseService.isReady) {
-            showNotification('Firebase nicht verbunden', 'error');
-            return;
-        }
-
-        log(`🚀 Joining game: ${gameCode} as ${playerName}`);
-        showLoading();
-
-        try {
-            const joinResult = await firebaseService.joinGame(gameCode, playerName);
-
-            log('✅ Successfully joined!');
-            log('Join Result:', joinResult);
-
-            // Setup game state - UNTERSTÜTZT BEIDE FORMATE
-            gameState.gameId = gameCode;
-            gameState.playerId = joinResult.playerId;
-            gameState.playerName = playerName;
-            gameState.deviceMode = 'multi';
-            gameState.isHost = false;
-            gameState.isGuest = true;
-            // WICHTIG: Beide Formate unterstützen
-            gameState.selectedCategories = joinResult.gameData.categories || joinResult.gameData.selectedCategories || [];
-            gameState.difficulty = joinResult.gameData.difficulty || 'medium';
-            gameState.gamePhase = 'lobby';
-            gameState.timestamp = Date.now();
-
-            log('💾 Saving game state:', gameState);
-            gameState.save();
-
-            log('✅ Game state saved');
-
-            hideLoading();
-            showNotification('Erfolgreich beigetreten! 🎉', 'success');
-
-            setTimeout(() => {
-                window.location.href = 'multiplayer-lobby.html';
-            }, 1500);
-
-        } catch (error) {
-            log(`❌ Join failed: ${error.message}`, 'error');
-            hideLoading();
-            showNotification('Fehler beim Beitreten: ' + error.message, 'error');
-        }
-    }
-
-    function goBack() {
-        if (firebaseService) {
-            firebaseService.cleanup();
-        }
-        window.location.href = 'index.html';
-    }
-
-    // ===== UTILITY FUNCTIONS =====
-    function showLoading() {
-        document.getElementById('loading').classList.add('show');
-    }
-
-    function hideLoading() {
-        document.getElementById('loading').classList.remove('show');
-    }
-
-    function showNotification(message, type = 'success') {
-        const notification = document.getElementById('notification');
-        notification.textContent = message;
-        notification.className = `notification ${type} show`;
-
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, 3000);
-    }
-
-    function log(message, type = 'info') {
-        const colors = {
-            info: '#4488ff',
-            warning: '#ffaa00',
-            error: '#ff4444',
-            success: '#00ff00'
-        };
-        console.log(`%c[JoinGame] ${message}`, `color: ${colors[type] || colors.info}`);
-    }
-
-    // ===== CLEANUP =====
-    window.addEventListener('beforeunload', function() {
-        if (firebaseService) {
-            firebaseService.cleanup();
-        }
-    });
-
-    // ===== DEBUG =====
-    window.debugJoinGame = function() {
-        console.log('🔍 === JOIN GAME DEBUG ===');
-        console.log('GameState:', gameState);
-        console.log('Current Game Data:', currentGameData);
-        console.log('Firebase Status:', {
-            initialized: firebaseService?.isInitialized,
-            connected: firebaseService?.isConnected,
-            ready: firebaseService?.isReady,
-            auth: firebaseService?.auth?.currentUser
-        });
-        console.log('Firebase Initialized Flag:', firebaseInitialized);
-        console.log('Pending Game Code:', pendingGameCode);
-    };
-
-    log('✅ No-Cap Join Game - vollständig geladen!');
-    log('🛠️ Debug: debugJoinGame()');
-</script>
+<!-- External Page Script (MUST load AFTER DOM is ready) -->
+<script src="/assets/js/join-game.js"></script>
 </body>
 </html>

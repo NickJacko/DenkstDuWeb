@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðŸ§¢</text></svg>">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -395,7 +395,7 @@
             opacity: 0.7;
         }
 
-        /* Für viele Spieler: Kleinere Buttons */
+        /* FÃ¼r viele Spieler: Kleinere Buttons */
         .number-grid.large .number-btn {
             max-width: 44px;
             height: 44px;
@@ -1186,7 +1186,7 @@
         <!-- Question Card -->
         <div class="question-card fadeInUp">
             <div class="question-category" id="question-category">
-                🎮 Loading...
+                ðŸŽ® Loading...
             </div>
             <div class="question-text" id="question-text">
                 Lade Frage...
@@ -1204,14 +1204,14 @@
 
         <!-- Answer Section -->
         <div class="answer-section fadeInUp" id="answer-section">
-            <div class="answer-title">🤔 Deine Antwort</div>
+            <div class="answer-title">ðŸ¤” Deine Antwort</div>
             <div class="answer-buttons">
-                <button class="answer-btn yes" onclick="selectAnswer(true)" id="yes-btn">
-                    <div class="answer-emoji">✅</div>
+                <button class="answer-btn yes" id="yes-btn">
+                    <div class="answer-emoji">âœ…</div>
                     <div>Ja, habe ich</div>
                 </button>
-                <button class="answer-btn no" onclick="selectAnswer(false)" id="no-btn">
-                    <div class="answer-emoji">❌</div>
+                <button class="answer-btn no" id="no-btn">
+                    <div class="answer-emoji">âŒ</div>
                     <div>Nein, noch nie</div>
                 </button>
             </div>
@@ -1219,7 +1219,7 @@
 
         <!-- Estimation Section -->
         <div class="estimation-section fadeInUp" id="estimation-section">
-            <div class="estimation-title">🎯 Wie viele antworten mit "Ja"?</div>
+            <div class="estimation-title">ðŸŽ¯ Wie viele antworten mit "Ja"?</div>
 
             <!-- Current Selection Display - Nur sichtbar nach Auswahl -->
             <div class="current-selection" id="current-selection">
@@ -1237,8 +1237,8 @@
 
         <!-- Submit Button -->
         <div class="submit-section fadeInUp" id="submit-section">
-            <button class="submit-btn" onclick="submitAnswer()" id="submit-btn">
-                📤 Antwort bestätigen
+            <button class="submit-btn" id="submit-btn">
+                ðŸ“¤ Antwort bestÃ¤tigen
             </button>
         </div>
 
@@ -1253,11 +1253,11 @@
             </div>
 
             <div class="results-navigation">
-                <button class="nav-btn primary" onclick="nextQuestion()">
-                    ➡️ Nächste Frage
+                <button class="nav-btn primary">
+                    âž¡ï¸ NÃ¤chste Frage
                 </button>
-                <button class="nav-btn secondary" onclick="endGame()">
-                    🚪 Spiel beenden
+                <button class="nav-btn secondary">
+                    ðŸšª Spiel beenden
                 </button>
             </div>
         </div>
@@ -1265,21 +1265,21 @@
         <!-- Final Results Section -->
         <div class="final-results-section" id="final-results-section" style="display: none;">
             <div class="final-header">
-                <div class="final-title">🏆 Spiel beendet!</div>
+                <div class="final-title">ðŸ† Spiel beendet!</div>
                 <div class="final-subtitle">Hier sind die finalen Ergebnisse</div>
             </div>
 
             <div class="leaderboard">
-                <div class="leaderboard-title">🏅 Rangliste</div>
-                <div class="leaderboard-subtitle">Sortiert nach wenigsten Schlücken</div>
+                <div class="leaderboard-title">ðŸ… Rangliste</div>
+                <div class="leaderboard-subtitle">Sortiert nach wenigsten SchlÃ¼cken</div>
                 <div id="leaderboard-list">
                     <!-- Leaderboard will be populated dynamically -->
                 </div>
             </div>
 
             <div class="final-navigation">
-                <button class="nav-btn primary large" onclick="goHome()">
-                    🏠 Spiel beenden
+                <button class="nav-btn primary large">
+                    ðŸ  Spiel beenden
                 </button>
             </div>
         </div>
@@ -1298,870 +1298,24 @@
 <!-- Exit Confirmation -->
 <div class="exit-confirmation" id="exit-confirmation">
     <div class="exit-content">
-        <div class="exit-title">🚪 Spiel verlassen?</div>
-        <div class="exit-message">Möchtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.</div>
+        <div class="exit-title">ðŸšª Spiel verlassen?</div>
+        <div class="exit-message">MÃ¶chtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.</div>
         <div class="exit-buttons">
-            <button class="exit-btn cancel" onclick="cancelExit()">Nein, weiterspielen</button>
-            <button class="exit-btn confirm" onclick="confirmExit()">Ja, beenden</button>
+            <button class="exit-btn cancel">Nein, weiterspielen</button>
+            <button class="exit-btn confirm">Ja, beenden</button>
         </div>
     </div>
 </div>
 
-<script>
-    // ===== FIREBASE SERVICE =====
-    class FirebaseService {
-        constructor() {
-            this.app = null;
-            this.database = null;
-            this.isInitialized = false;
-            this.isConnected = false;
-            this.config = {
-                apiKey: "AIzaSyAcUgQ6rHZXQvKsMQmzMPr77Hk-W4R2Zt0",
-                authDomain: "denkstduwebsite.firebaseapp.com",
-                databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-                projectId: "denkstduwebsite",
-                storageBucket: "denkstduwebsite.appspot.com",
-                messagingSenderId: "27029260611",
-                appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-                measurementId: "G-BNKNW95HK8"
-            };
-        }
 
-        async initialize() {
-            try {
-                console.log('🔥 Initializing Firebase...');
+<!-- DOMPurify for XSS Protection -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-HT8HfXv/rkqzb07KXr0YfcqfXxzF/CbVqFN/N/FEfP9ICsLlvLcJKLFJN/aI2DW6z1LQqMj/cLh0atwKKLVZQQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-                if (typeof firebase === 'undefined') {
-                    console.warn('⚠️ Firebase SDK not loaded, using fallback mode');
-                    return false;
-                }
+<!-- Central Scripts (MUST load before page script) -->
+<script src="/assets/js/migration.js"></script>
+<script src="/assets/js/GameState.js"></script>
 
-                if (!firebase.apps || firebase.apps.length === 0) {
-                    this.app = firebase.initializeApp(this.config);
-                } else {
-                    this.app = firebase.app();
-                }
-
-                this.database = firebase.database();
-                this.isInitialized = true;
-
-                // Test connection
-                const connectedRef = this.database.ref('.info/connected');
-                const snapshot = await connectedRef.once('value');
-                this.isConnected = snapshot.val() === true;
-
-                console.log(`✅ Firebase ${this.isConnected ? 'connected' : 'initialized (offline)'}`);
-                return true;
-
-            } catch (error) {
-                console.error('❌ Firebase initialization failed:', error);
-                return false;
-            }
-        }
-
-        async loadQuestionsFromCategory(category) {
-            if (!this.isInitialized || !this.isConnected) {
-                return null;
-            }
-
-            try {
-                const questionsRef = this.database.ref(`questions/${category}`);
-                const snapshot = await questionsRef.once('value');
-
-                if (snapshot.exists()) {
-                    const questionsObj = snapshot.val();
-                    return Object.values(questionsObj);
-                }
-                return null;
-            } catch (error) {
-                console.error(`❌ Error loading ${category} questions:`, error);
-                return null;
-            }
-        }
-    }
-
-    // ===== GAME STATE MANAGEMENT =====
-    class GameState {
-        constructor() {
-            this.deviceMode = null;
-            this.selectedCategories = [];
-            this.difficulty = null;
-            this.players = [];
-            this.gameId = null;
-            this.playerName = null;
-            this.isHost = false;
-            this.isGuest = false;
-            this.gameState = 'setup';
-            this.timestamp = Date.now();
-
-            this.loadFromStorage();
-        }
-
-        saveToStorage() {
-            try {
-                const state = {
-                    deviceMode: this.deviceMode,
-                    selectedCategories: this.selectedCategories,
-                    difficulty: this.difficulty,
-                    players: this.players,
-                    gameId: this.gameId,
-                    playerName: this.playerName,
-                    isHost: this.isHost,
-                    isGuest: this.isGuest,
-                    gameState: this.gameState,
-                    timestamp: Date.now(),
-                    version: 2
-                };
-                localStorage.setItem('nocap_game_state', JSON.stringify(state));
-                console.log('✅ GameState saved:', state);
-                return true;
-            } catch (error) {
-                console.error('❌ Could not save game state:', error);
-                return false;
-            }
-        }
-
-        loadFromStorage() {
-            try {
-                const saved = localStorage.getItem('nocap_game_state');
-                if (saved) {
-                    const state = JSON.parse(saved);
-                    if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                        this.deviceMode = state.deviceMode || null;
-                        this.selectedCategories = state.selectedCategories || [];
-                        this.difficulty = state.difficulty || null;
-                        this.players = state.players || [];
-                        this.gameId = state.gameId || null;
-                        this.playerName = state.playerName || null;
-                        this.isHost = state.isHost || false;
-                        this.isGuest = state.isGuest || false;
-                        this.gameState = state.gameState || 'setup';
-
-                        console.log('✅ GameState loaded from storage:', this);
-                        return true;
-                    } else {
-                        console.log('⚠️ GameState expired, clearing storage');
-                        this.clearStorage();
-                    }
-                }
-            } catch (error) {
-                console.error('❌ Could not load game state:', error);
-                this.clearStorage();
-            }
-            return false;
-        }
-
-        clearStorage() {
-            localStorage.removeItem('nocap_game_state');
-        }
-
-        setSelectedCategories(categories) {
-            this.selectedCategories = [...categories];
-            this.saveToStorage();
-        }
-
-        setDifficulty(difficulty) {
-            this.difficulty = difficulty;
-            this.saveToStorage();
-        }
-
-        setPlayers(players) {
-            this.players = [...players];
-            this.saveToStorage();
-        }
-
-        setDeviceMode(mode) {
-            this.deviceMode = mode;
-            this.saveToStorage();
-        }
-    }
-
-    // ===== GLOBAL VARIABLES =====
-    let gameState = null;
-    let firebaseService = null;
-    let alcoholMode = false;
-    let currentGame = {
-        players: [],
-        allQuestions: [],
-        usedQuestions: [],
-        currentQuestionNumber: 1,
-        currentPlayerIndex: 0,
-        currentAnswers: {},
-        currentEstimates: {},
-        gameHistory: []
-    };
-
-    // Check alcohol mode
-    function checkAlcoholMode() {
-        try {
-            const alcoholModeStr = localStorage.getItem('nocap_alcohol_mode');
-            alcoholMode = alcoholModeStr === 'true';
-            console.log('🍺 Alcohol mode:', alcoholMode);
-        } catch (error) {
-            console.error('❌ Error checking alcohol mode:', error);
-            alcoholMode = false;
-        }
-    }
-
-    // Fallback Questions Database
-    const fallbackQuestionsDatabase = {
-        fsk0: [
-            "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
-            "Ich habe schon mal... Pizza zum Frühstück gegessen",
-            "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen",
-            "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht",
-            "Ich habe schon mal... beim Kochen das Essen anbrennen lassen"
-        ],
-        fsk16: [
-            "Ich habe schon mal... so getan, als wäre ich krank, um nicht zur Schule zu müssen",
-            "Ich habe schon mal... bis 3 Uhr morgens Netflix geschaut",
-            "Ich habe schon mal... ein Lied so laut gesungen, dass die Nachbarn sich beschwert haben",
-            "Ich habe schon mal... vergessen, wo ich mein Auto geparkt habe"
-        ],
-        fsk18: [
-            "Ich habe schon mal... an einem öffentlichen Ort Sex gehabt",
-            "Ich habe schon mal... eine Affäre gehabt",
-            "Ich habe schon mal... in einer Beziehung betrogen"
-        ]
-    };
-
-    let isExitDialogShown = false;
-
-    // ===== PAGE LEAVE PROTECTION =====
-    window.addEventListener('beforeunload', function(e) {
-        if (!isExitDialogShown) {
-            e.preventDefault();
-            e.returnValue = 'Möchtest du das Spiel wirklich verlassen? Der Fortschritt geht verloren.';
-            return e.returnValue;
-        }
-    });
-
-    window.addEventListener('popstate', function(e) {
-        e.preventDefault();
-        showExitConfirmation();
-        history.pushState(null, null, window.location.pathname);
-    });
-
-    history.pushState(null, null, window.location.pathname);
-
-    function showExitConfirmation() {
-        const exitDialog = document.getElementById('exit-confirmation');
-        exitDialog.classList.add('show');
-    }
-
-    function cancelExit() {
-        const exitDialog = document.getElementById('exit-confirmation');
-        exitDialog.classList.remove('show');
-    }
-
-    function confirmExit() {
-        try {
-            localStorage.clear();
-            sessionStorage.clear();
-            isExitDialogShown = true;
-            window.location.replace('index.html');
-        } catch (error) {
-            console.error('Exit error:', error);
-            window.location.href = 'index.html?t=' + Date.now();
-        }
-    }
-
-    function goHome() {
-        try {
-            localStorage.clear();
-            sessionStorage.clear();
-            isExitDialogShown = true;
-            window.location.replace('index.html');
-        } catch (error) {
-            window.location.href = 'index.html?t=' + Date.now();
-        }
-    }
-
-    // ===== INITIALIZATION =====
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeGame();
-    });
-
-    async function initializeGame() {
-        console.log('🎮 Initializing endless single device gameplay...');
-
-        // Check alcohol mode
-        checkAlcoholMode();
-
-        // Load game state
-        gameState = new GameState();
-
-        // Debug: Log loaded state
-        console.log('📊 Loaded GameState:', {
-            deviceMode: gameState.deviceMode,
-            categories: gameState.selectedCategories,
-            difficulty: gameState.difficulty,
-            players: gameState.players,
-            playersCount: gameState.players ? gameState.players.length : 0
-        });
-
-        // Initialize Firebase
-        firebaseService = new FirebaseService();
-        await firebaseService.initialize();
-
-        // Validate game state
-        if (!gameState.players || gameState.players.length < 2) {
-            console.error('❌ Validation failed: Not enough players', gameState.players);
-            showNotification('Keine Spieler gefunden!', 'error');
-            setTimeout(() => window.location.href = 'player-setup.html', 2000);
-            return;
-        }
-
-        if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-            console.error('❌ Validation failed: No categories', gameState.selectedCategories);
-            showNotification('Keine Kategorien ausgewählt!', 'error');
-            setTimeout(() => window.location.href = 'category-selection.html', 2000);
-            return;
-        }
-
-        if (!gameState.difficulty) {
-            console.error('❌ Validation failed: No difficulty', gameState.difficulty);
-            showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
-            setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
-            return;
-        }
-
-        // Setup game
-        currentGame.players = [...gameState.players];
-        await generateAllQuestions();
-
-        // Initialize UI
-        updateGameDisplay();
-        createNumberGrid();
-
-        // Start first question
-        startNewQuestion();
-
-        console.log('✅ Endless game initialized:', {
-            players: currentGame.players,
-            categories: gameState.selectedCategories,
-            difficulty: gameState.difficulty,
-            totalQuestions: currentGame.allQuestions.length
-        });
-    }
-
-    async function generateAllQuestions() {
-        currentGame.allQuestions = [];
-
-        // Try to load questions from Firebase first
-        for (const category of gameState.selectedCategories) {
-            const firebaseQuestions = await firebaseService.loadQuestionsFromCategory(category);
-
-            if (firebaseQuestions && firebaseQuestions.length > 0) {
-                console.log(`✅ Loaded ${firebaseQuestions.length} questions from Firebase for ${category}`);
-                firebaseQuestions.forEach(q => {
-                    currentGame.allQuestions.push({
-                        text: q,
-                        category: category
-                    });
-                });
-            } else {
-                // Fallback to local questions
-                console.log(`⚠️ Using fallback questions for ${category}`);
-                if (fallbackQuestionsDatabase[category]) {
-                    fallbackQuestionsDatabase[category].forEach(q => {
-                        currentGame.allQuestions.push({
-                            text: q,
-                            category: category
-                        });
-                    });
-                }
-            }
-        }
-
-        // Shuffle questions
-        currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
-
-        console.log(`📚 Total questions loaded: ${currentGame.allQuestions.length}`);
-    }
-
-    function getNextQuestion() {
-        if (currentGame.usedQuestions.length >= currentGame.allQuestions.length) {
-            currentGame.usedQuestions = [];
-            currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
-            showNotification('Alle Fragen gespielt! Mische neu...', 'success');
-        }
-
-        for (let question of currentGame.allQuestions) {
-            if (!currentGame.usedQuestions.includes(question.text)) {
-                currentGame.usedQuestions.push(question.text);
-                return question;
-            }
-        }
-
-        return currentGame.allQuestions[0];
-    }
-
-    function shuffleArray(array) {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-    }
-
-    // ===== GAME FLOW =====
-    function updateGameDisplay() {
-        document.getElementById('total-players').textContent = currentGame.players.length;
-
-        const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-        document.getElementById('current-player-name').textContent = currentPlayerName;
-        document.getElementById('current-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
-        document.getElementById('player-progress').textContent =
-            `(${currentGame.currentPlayerIndex + 1}/${currentGame.players.length})`;
-    }
-
-    function startNewQuestion() {
-        console.log(`🎲 Starting question ${currentGame.currentQuestionNumber}`);
-
-        currentGame.currentPlayerIndex = 0;
-        currentGame.currentAnswers = {};
-        currentGame.currentEstimates = {};
-
-        const question = getNextQuestion();
-        loadQuestion(question);
-
-        resetPlayerUI();
-        updateGameDisplay();
-        showGameView();
-    }
-
-    function nextQuestion() {
-        currentGame.currentQuestionNumber++;
-        startNewQuestion();
-        showNotification('Neue Frage geladen! 🎮', 'success');
-    }
-
-    function endGame() {
-        showFinalResults();
-    }
-
-    // ===== FINAL RESULTS =====
-    function showFinalResults() {
-        console.log('🏆 Calculating final results...');
-
-        const playerStats = calculatePlayerStatistics();
-        const finalRankings = playerStats.sort((a, b) => a.totalSips - b.totalSips);
-
-        displayFinalResults(finalRankings);
-        showFinalResultsView();
-    }
-
-    function calculatePlayerStatistics() {
-        const playerStats = {};
-
-        currentGame.players.forEach(player => {
-            playerStats[player] = {
-                playerName: player,
-                totalSips: 0,
-                correctGuesses: 0,
-                totalGuesses: 0
-            };
-        });
-
-        currentGame.gameHistory.forEach(round => {
-            round.results.forEach(result => {
-                const stats = playerStats[result.playerName];
-                if (stats) {
-                    stats.totalSips += result.sips;
-                    stats.totalGuesses++;
-                    if (result.isCorrect) {
-                        stats.correctGuesses++;
-                    }
-                }
-            });
-        });
-
-        return Object.values(playerStats);
-    }
-
-    function displayFinalResults(finalRankings) {
-        const leaderboardList = document.getElementById('leaderboard-list');
-        leaderboardList.innerHTML = '';
-
-        // Emoji basierend auf Alcohol Mode
-        const drinkEmoji = alcoholMode ? '🍺' : '💧';
-
-        finalRankings.forEach((player, index) => {
-            const leaderboardItem = document.createElement('div');
-            leaderboardItem.className = `leaderboard-item ${index === 0 ? 'winner' : ''}`;
-
-            const rankClass = index === 0 ? 'rank-1' :
-                index === 1 ? 'rank-2' :
-                    index === 2 ? 'rank-3' : 'rank-other';
-
-            const rankText = index + 1;
-            const avatar = player.playerName.charAt(0).toUpperCase();
-
-            // Singular/Plural bei Schlücken und Fragen
-            const sipsText = player.totalSips === 1 ? '1 Schluck' : `${player.totalSips} Schlücke`;
-            const questionsText = player.correctGuesses === 1 ? '1 Frage richtig' : `${player.correctGuesses} Fragen richtig`;
-
-            leaderboardItem.innerHTML = `
-                    <div class="rank-number ${rankClass}">${rankText}</div>
-                    <div class="result-avatar">${avatar}</div>
-                    <div class="player-final-stats">
-                        <div class="player-final-name">${player.playerName}</div>
-                        <div class="player-final-details">
-                            <div class="detail-item">
-                                <span class="detail-icon">${drinkEmoji}</span>
-                                <span>${sipsText}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-icon">🎯</span>
-                                <span>${questionsText}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-            leaderboardList.appendChild(leaderboardItem);
-        });
-
-        showNotification(
-            `🏆 ${finalRankings[0].playerName} hat gewonnen!`,
-            'success',
-            3000
-        );
-    }
-
-    function showFinalResultsView() {
-        const questionCard = document.querySelector('.question-card');
-        const answerSection = document.getElementById('answer-section');
-        const estimationSection = document.getElementById('estimation-section');
-        const submitSection = document.getElementById('submit-section');
-        const currentPlayerCard = document.querySelector('.current-player-card');
-        const resultsSection = document.getElementById('results-section');
-
-        if (questionCard) questionCard.style.display = 'none';
-        if (answerSection) answerSection.style.display = 'none';
-        if (estimationSection) estimationSection.style.display = 'none';
-        if (submitSection) submitSection.style.display = 'none';
-        if (currentPlayerCard) currentPlayerCard.style.display = 'none';
-        if (resultsSection) resultsSection.style.display = 'none';
-
-        const finalResultsSection = document.getElementById('final-results-section');
-        if (finalResultsSection) {
-            finalResultsSection.style.display = 'flex';
-        }
-    }
-
-    function loadQuestion(question) {
-        const categoryNames = {
-            'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
-            'fsk16': '🎉 Party Time',
-            'fsk18': '🔥 Heiß & Gewagt'
-        };
-
-        document.getElementById('question-text').textContent = question.text;
-        document.getElementById('question-category').textContent = categoryNames[question.category] || '🎮 Spiel';
-    }
-
-    function resetPlayerUI() {
-        document.querySelectorAll('.answer-btn').forEach(btn => {
-            btn.classList.remove('selected');
-        });
-
-        // Reset estimation to unselected state
-        currentEstimation = null;
-        updateNumberSelection();
-        hideSelectionDisplay();
-        updateSubmitButton();
-    }
-
-    // ===== UI CONTROLS =====
-    function createNumberGrid() {
-        const numberGrid = document.getElementById('number-grid');
-        const playerCount = currentGame.players.length;
-        numberGrid.innerHTML = '';
-
-        // Dynamische Grid-Klasse basierend auf Anzahl
-        if (playerCount <= 6) {
-            numberGrid.className = 'number-grid small';
-        } else if (playerCount <= 10) {
-            numberGrid.className = 'number-grid medium';
-        } else {
-            numberGrid.className = 'number-grid large';
-        }
-
-        for (let i = 0; i <= playerCount; i++) {
-            const numberBtn = document.createElement('button');
-            numberBtn.className = 'number-btn';
-            numberBtn.textContent = i;
-            numberBtn.onclick = () => selectNumber(i);
-            numberBtn.id = `number-btn-${i}`;
-
-            numberGrid.appendChild(numberBtn);
-        }
-    }
-
-    function selectNumber(number) {
-        if (number >= 0 && number <= currentGame.players.length) {
-            currentEstimation = number;
-            updateSelectedNumber(number);
-            showSelectionDisplay();
-            updateNumberSelection();
-            updateSubmitButton();
-
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        }
-    }
-
-    function updateSelectedNumber(number) {
-        document.getElementById('selected-number').textContent = number;
-
-        const selectionDisplay = document.querySelector('.selection-display');
-        // Smooth bounce animation
-        selectionDisplay.style.transform = 'scale(1.08)';
-        setTimeout(() => {
-            selectionDisplay.style.transform = 'scale(1)';
-        }, 300);
-    }
-
-    function showSelectionDisplay() {
-        const selectionEl = document.getElementById('current-selection');
-        // Kleine Verzögerung für smooth animation
-        requestAnimationFrame(() => {
-            selectionEl.classList.add('visible');
-        });
-    }
-
-    function hideSelectionDisplay() {
-        const selectionEl = document.getElementById('current-selection');
-        selectionEl.classList.remove('visible');
-    }
-
-    function updateNumberSelection() {
-        document.querySelectorAll('.number-btn').forEach(btn => {
-            btn.classList.remove('selected');
-        });
-
-        if (currentEstimation !== null) {
-            const selectedBtn = document.getElementById(`number-btn-${currentEstimation}`);
-            if (selectedBtn) {
-                selectedBtn.classList.add('selected');
-            }
-        }
-    }
-
-    function selectAnswer(answer) {
-        currentAnswer = answer;
-
-        document.querySelectorAll('.answer-btn').forEach(btn => {
-            btn.classList.remove('selected');
-        });
-
-        const selectedBtn = answer ? document.getElementById('yes-btn') : document.getElementById('no-btn');
-        selectedBtn.classList.add('selected');
-
-        updateSubmitButton();
-    }
-
-    function updateSubmitButton() {
-        const submitBtn = document.getElementById('submit-btn');
-        if (currentAnswer !== null && currentEstimation !== null) {
-            submitBtn.classList.add('enabled');
-            submitBtn.disabled = false;
-        } else {
-            submitBtn.classList.remove('enabled');
-            submitBtn.disabled = true;
-        }
-    }
-
-    // ===== GAME ACTIONS =====
-    let currentAnswer = null;
-    let currentEstimation = null;
-
-    function submitAnswer() {
-        if (currentAnswer === null || currentEstimation === null) {
-            showNotification('Bitte wähle eine Antwort und eine Schätzung aus!', 'warning');
-            return;
-        }
-
-        const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-
-        currentGame.currentAnswers[currentPlayerName] = currentAnswer;
-        currentGame.currentEstimates[currentPlayerName] = currentEstimation;
-
-        console.log(`📤 ${currentPlayerName} answered:`, {
-            answer: currentAnswer,
-            estimation: currentEstimation
-        });
-
-        if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
-            currentGame.currentPlayerIndex++;
-            currentAnswer = null;
-            currentEstimation = null;
-            resetPlayerUI();
-            updateGameDisplay();
-            showPlayerChangePopup();
-        } else {
-            showResults();
-        }
-    }
-
-    // ===== PLAYER CHANGE POPUP =====
-    function showPlayerChangePopup() {
-        const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
-
-        document.getElementById('popup-name').textContent = currentPlayerName;
-        document.getElementById('popup-avatar').textContent = currentPlayerName.charAt(0).toUpperCase();
-
-        const popup = document.getElementById('player-change-popup');
-        popup.classList.add('show');
-
-        if (navigator.vibrate) {
-            navigator.vibrate([100, 50, 100]);
-        }
-
-        setTimeout(() => {
-            popup.classList.remove('show');
-        }, 2000);
-    }
-
-    // ===== RESULTS =====
-    function showResults() {
-        console.log('📊 Calculating results...');
-
-        const actualYesCount = Object.values(currentGame.currentAnswers).filter(answer => answer === true).length;
-
-        const results = currentGame.players.map(playerName => {
-            const answer = currentGame.currentAnswers[playerName];
-            const estimation = currentGame.currentEstimates[playerName];
-            const difference = Math.abs(estimation - actualYesCount);
-            const isCorrect = difference === 0;
-
-            let sips = 0;
-            if (!isCorrect) {
-                const baseSips = getDifficultyMultiplier();
-                sips = baseSips + difference;
-            }
-
-            return {
-                playerName: playerName,
-                answer: answer,
-                estimation: estimation,
-                difference: difference,
-                isCorrect: isCorrect,
-                sips: sips
-            };
-        });
-
-        currentGame.gameHistory.push({
-            questionNumber: currentGame.currentQuestionNumber,
-            actualYesCount: actualYesCount,
-            results: results
-        });
-
-        displayResults(results, actualYesCount);
-        showResultsView();
-    }
-
-    function showResultsView() {
-        document.getElementById('answer-section').style.display = 'none';
-        document.getElementById('estimation-section').style.display = 'none';
-        document.getElementById('submit-section').style.display = 'none';
-        document.querySelector('.current-player-card').style.display = 'none';
-        document.getElementById('results-section').style.display = 'flex';
-
-        showNotification('Ergebnisse werden angezeigt...', 'success', 2000);
-    }
-
-    function showGameView() {
-        document.getElementById('answer-section').style.display = 'block';
-        document.getElementById('estimation-section').style.display = 'flex';
-        document.getElementById('submit-section').style.display = 'block';
-        document.querySelector('.current-player-card').style.display = 'flex';
-        document.getElementById('results-section').style.display = 'none';
-    }
-
-    function getDifficultyMultiplier() {
-        switch (gameState.difficulty) {
-            case 'easy': return 1;
-            case 'hard': return 3;
-            default: return 2;
-        }
-    }
-
-    function displayResults(results, actualYesCount) {
-        document.getElementById('results-summary').textContent =
-            `${actualYesCount} von ${currentGame.players.length} Spielern haben "Ja" geantwortet`;
-
-        const sortedResults = results.sort((a, b) => {
-            if (a.isCorrect && !b.isCorrect) return -1;
-            if (!a.isCorrect && b.isCorrect) return 1;
-            return a.sips - b.sips;
-        });
-
-        const resultsGrid = document.getElementById('results-grid');
-        resultsGrid.innerHTML = '';
-
-        // Emoji basierend auf Alcohol Mode
-        const drinkEmoji = alcoholMode ? '🍺' : '💧';
-
-        sortedResults.forEach(result => {
-            const resultItem = document.createElement('div');
-            resultItem.className = 'result-item';
-
-            const avatar = result.playerName.charAt(0).toUpperCase();
-
-            // Singular/Plural bei Schlücken
-            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' :
-                result.sips === 1 ? `1 Schluck ${drinkEmoji}` :
-                    `${result.sips} Schlücke ${drinkEmoji}`;
-            const sipsClass = result.sips === 0 ? 'none' : '';
-
-            resultItem.innerHTML = `
-                    <div class="player-result">
-                        <div class="result-avatar">${avatar}</div>
-                        <div class="player-result-info">
-                            <div class="player-result-name">${result.playerName}</div>
-                            <div class="player-answer">Tipp: ${result.estimation}</div>
-                        </div>
-                    </div>
-                    <div class="sips-penalty ${sipsClass}">${sipsText}</div>
-                `;
-
-            resultsGrid.appendChild(resultItem);
-        });
-    }
-
-    // ===== UTILITY FUNCTIONS =====
-    function showNotification(message, type = 'info', duration = 3000) {
-        document.querySelectorAll('.toast-notification').forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = `toast-notification ${type}`;
-        notification.innerHTML = `
-                <div class="toast-content">
-                    <div class="toast-icon">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'}</div>
-                    <div class="toast-message">${message}</div>
-                </div>
-            `;
-
-        document.body.appendChild(notification);
-
-        setTimeout(() => notification.classList.add('show'), 100);
-
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                if (document.body.contains(notification)) {
-                    document.body.removeChild(notification);
-                }
-            }, 300);
-        }, duration);
-    }
-
-    console.log('✅ No-Cap Gameplay loaded with Firebase integration');
-</script>
+<!-- External Page Script (MUST load AFTER DOM is ready) -->
+<script src="/assets/js/gameplay.js"></script>
 </body>
 </html>

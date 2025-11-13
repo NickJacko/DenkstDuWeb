@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DenkstDu - Spielergebnis</title>
+    <title>No-Cap - Spielergebnis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    
+
+    <!-- Favicon - Kappe Emoji -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
     <style>
         * {
             margin: 0;
@@ -533,504 +536,106 @@
     </style>
 </head>
 <body>
-    <!-- Background Particles -->
-    <div class="background-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
+<!-- Background Particles -->
+<div class="background-particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
 
-    <!-- Loading Spinner -->
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loading-text">Ergebnisse werden geladen...</div>
-    </div>
+<!-- Loading Spinner -->
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Ergebnisse werden geladen...</div>
+</div>
 
-    <!-- Notification -->
-    <div class="notification" id="notification"></div>
+<!-- Notification -->
+<div class="notification" id="notification"></div>
 
-    <!-- App Container -->
-    <div class="app-container">
-        <!-- Game Complete Header -->
-        <div class="game-complete-header">
-            <div class="completion-emoji">🎉</div>
-            <div class="completion-title">Spiel beendet!</div>
-            <div class="completion-subtitle">Ihr habt alle 10 Runden gemeistert</div>
-            
-            <div class="game-stats">
-                <div class="stat-item">
-                    <div class="stat-value">10</div>
-                    <div class="stat-label">Runden</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">4</div>
-                    <div class="stat-label">Spieler</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">15 Min</div>
-                    <div class="stat-label">Spieldauer</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">67%</div>
-                    <div class="stat-label">Trefferquote</div>
-                </div>
+<!-- App Container -->
+<div class="app-container">
+    <!-- Game Complete Header -->
+    <div class="game-complete-header">
+        <div class="completion-emoji">🎉</div>
+        <div class="completion-title">Spiel beendet!</div>
+        <div class="completion-subtitle" id="completion-subtitle">Ihr habt alle Runden gemeistert</div>
+
+        <div class="game-stats" id="game-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-rounds-stat">0</div>
+                <div class="stat-label">Runden</div>
             </div>
-        </div>
-
-        <!-- Final Rankings -->
-        <div class="final-rankings">
-            <div class="rankings-title">🏆 Endranking</div>
-            
-            <!-- Podium -->
-            <div class="podium">
-                <div class="podium-place first">
-                    <div class="podium-stand">
-                        <div class="podium-position">1</div>
-                    </div>
-                    <div class="podium-name">Anna</div>
-                    <div class="podium-score">12 Schlücke</div>
-                </div>
-                
-                <div class="podium-place second">
-                    <div class="podium-stand">
-                        <div class="podium-position">2</div>
-                    </div>
-                    <div class="podium-name">Max</div>
-                    <div class="podium-score">18 Schlücke</div>
-                </div>
-                
-                <div class="podium-place third">
-                    <div class="podium-stand">
-                        <div class="podium-position">3</div>
-                    </div>
-                    <div class="podium-name">Du</div>
-                    <div class="podium-score">24 Schlücke</div>
-                </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-players-stat">0</div>
+                <div class="stat-label">Spieler</div>
             </div>
-
-            <!-- All Players List -->
-            <div class="all-players">
-                <div class="players-list" id="players-list">
-                    <div class="player-result">
-                        <div class="player-info">
-                            <div class="player-rank first">1</div>
-                            <div class="player-name">Anna 👑</div>
-                        </div>
-                        <div class="player-stats">
-                            <div class="stat-column">
-                                <div class="stat-number">12</div>
-                                <div class="stat-text">Schlücke</div>
-                            </div>
-                            <div class="stat-column">
-                                <div class="stat-number">8</div>
-                                <div class="stat-text">Richtig</div>
-                            </div>
-                            <div class="stat-column">
-                                <div class="stat-number">80%</div>
-                                <div class="stat-text">Quote</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="player-result">
-                        <div class="player-info">
-                            <div class="player-rank second">2</div>
-                            <div class="player-name">Max</div>
-                        </div>
-                        <div class="player-stats">
-                            <div class="stat-column">
-                                <div class="stat-number">18</div>
-                                <div class="stat-text">Schlücke</div>
-                            </div>
-                            <div class="stat-column">
-                                <div class="stat-number">6</div>
-                                <div class="stat-text">Richtig</div>
-                            </div>
-                            <div class="stat-column">
-                                <div class="stat-number">60%</div>
-                                <div class="stat-text">Quote</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="player-result">
-                        <div class="player-info">
-                            <div class="player-rank third">3</div>
-                            <div class="player-name">Du</div>
-                        </div>
-                        <div class="player-stats">
-                            <div class="stat-column">
-                                <div class="stat-number">24</div>
-                                <div class="stat-text">Schlücke</div>
-                            </div>
-                            <div class="stat-column">
-                                <div class="stat-number">5</div>
-                                <div class="stat-text">Richtig</div>
-                            </div>
-                            <div class="stat-column">
-                                <div class="stat-number">50%</div>
-                                <div class="stat-text">Quote</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="player-result">
-                        <div class="player-info">
-                            <div class="player-rank">4</div>
-                            <div class="player-name">Lisa</div>
-                        </div>
-                        <div class="player-stats">
-                            <div class="stat-column">
-                                <div class="stat-number">31</div>
-                                <div class="stat-text">Schlücke</div>
-                            </div>
-                            <div class="stat-column">
-                                <div class="stat-number">4</div>
-                                <div class="stat-text">Richtig</div>
-                            </div>
-                            <div class="stat-column">
-                                <div class="stat-number">40%</div>
-                                <div class="stat-text">Quote</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="stat-item">
+                <div class="stat-value" id="game-duration-stat">-</div>
+                <div class="stat-label">Spieldauer</div>
             </div>
-        </div>
-
-        <!-- Fun Facts -->
-        <div class="fun-facts">
-            <div class="fun-facts-title">📊 Interessante Fakten</div>
-            <div class="facts-grid">
-                <div class="fact-item">
-                    <div class="fact-emoji">🎯</div>
-                    <div class="fact-text">
-                        <strong>Anna</strong> hatte die beste<br>
-                        Schätzgenauigkeit: 80%
-                    </div>
-                </div>
-                <div class="fact-item">
-                    <div class="fact-emoji">😅</div>
-                    <div class="fact-text">
-                        <strong>Lisa</strong> lag bei Frage 7<br>
-                        um ganze 3 Spieler daneben
-                    </div>
-                </div>
-                <div class="fact-item">
-                    <div class="fact-emoji">🔥</div>
-                    <div class="fact-text">
-                        Die <strong>schwerste Frage</strong><br>
-                        haben nur 2 Spieler richtig geschätzt
-                    </div>
-                </div>
-                <div class="fact-item">
-                    <div class="fact-emoji">🍺</div>
-                    <div class="fact-text">
-                        <strong>Insgesamt</strong> wurden<br>
-                        85 Schlücke verteilt
-                    </div>
-                </div>
+            <div class="stat-item">
+                <div class="stat-value" id="accuracy-stat">0%</div>
+                <div class="stat-label">Trefferquote</div>
             </div>
-        </div>
-
-        <!-- Share Results -->
-        <div class="share-section">
-            <div class="share-title">📤 Ergebnis teilen</div>
-            <div class="share-buttons">
-                <button class="share-btn" onclick="shareToWhatsApp()">💬 WhatsApp</button>
-                <button class="share-btn" onclick="shareToTelegram()">✈️ Telegram</button>
-                <button class="share-btn" onclick="copyResults()">📋 Kopieren</button>
-                <button class="share-btn" onclick="saveScreenshot()">📸 Screenshot</button>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <button class="btn btn-primary" onclick="playAgain()">🔄 Nochmal spielen</button>
-            <button class="btn btn-secondary" onclick="backToMenu()">🏠 Hauptmenü</button>
         </div>
     </div>
 
-    <!-- Game State Management -->
-    <script src="assets/js/gameState.js"></script>
-    
-    <script>
-        // Game state
-        let gameState;
-        let finalResults = {};
+    <!-- Final Rankings -->
+    <div class="final-rankings">
+        <div class="rankings-title">🏆 Endranking</div>
 
-        // Initialize multiplayer results
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('Initializing multiplayer results...');
-            
-            // Initialize game state
-            gameState = new GameState();
-            
-            // Load final results
-            loadFinalResults();
-            generateFunFacts();
-            
-            console.log('Multiplayer results loaded:', finalResults);
-        });
+        <!-- Podium -->
+        <div class="podium" id="podium">
+            <!-- Dynamically generated -->
+        </div>
 
-        // Load final results from game state
-        function loadFinalResults() {
-            // Demo data - in real app this would come from Firebase/gameState
-            finalResults = {
-                players: [
-                    { 
-                        name: 'Anna', 
-                        rank: 1, 
-                        totalSips: 12, 
-                        correctGuesses: 8, 
-                        accuracy: 80,
-                        perfectGuesses: 3
-                    },
-                    { 
-                        name: 'Max', 
-                        rank: 2, 
-                        totalSips: 18, 
-                        correctGuesses: 6, 
-                        accuracy: 60,
-                        perfectGuesses: 2
-                    },
-                    { 
-                        name: 'Du', 
-                        rank: 3, 
-                        totalSips: 24, 
-                        correctGuesses: 5, 
-                        accuracy: 50,
-                        perfectGuesses: 1
-                    },
-                    { 
-                        name: 'Lisa', 
-                        rank: 4, 
-                        totalSips: 31, 
-                        correctGuesses: 4, 
-                        accuracy: 40,
-                        perfectGuesses: 0
-                    }
-                ],
-                gameStats: {
-                    totalRounds: 10,
-                    totalPlayers: 4,
-                    gameDuration: '15 Min',
-                    averageAccuracy: 67,
-                    totalSips: 85,
-                    hardestQuestion: 7,
-                    easiestQuestion: 3
-                }
-            };
+        <!-- All Players List -->
+        <div class="all-players">
+            <div class="players-list" id="players-list">
+                <!-- Dynamically generated -->
+            </div>
+        </div>
+    </div>
 
-            // Update UI with real data
-            updateGameStats();
-            updatePlayersList();
-        }
+    <!-- Fun Facts -->
+    <div class="fun-facts">
+        <div class="fun-facts-title">📊 Interessante Fakten</div>
+        <div class="facts-grid" id="facts-grid">
+            <!-- Dynamically generated -->
+        </div>
+    </div>
 
-        // Update game statistics
-        function updateGameStats() {
-            const stats = finalResults.gameStats;
-            
-            // Update stat items (already in HTML)
-            console.log('Game stats updated:', stats);
-        }
+    <!-- Share Results -->
+    <div class="share-section">
+        <div class="share-title">📤 Ergebnis teilen</div>
+        <div class="share-buttons">
+            <button class="share-btn" id="share-whatsapp-btn">💬 WhatsApp</button>
+            <button class="share-btn" id="share-telegram-btn">✈️ Telegram</button>
+            <button class="share-btn" id="copy-results-btn">📋 Kopieren</button>
+            <button class="share-btn" id="save-screenshot-btn">📸 Screenshot</button>
+        </div>
+    </div>
 
-        // Update players list (already in HTML, but could be dynamic)
-        function updatePlayersList() {
-            console.log('Players list updated:', finalResults.players);
-            // In a real implementation, you would dynamically generate the player results
-        }
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="btn btn-primary" id="play-again-btn">🔄 Nochmal spielen</button>
+        <button class="btn btn-secondary" id="back-to-menu-btn">🏠 Hauptmenü</button>
+    </div>
+</div>
 
-        // Generate fun facts
-        function generateFunFacts() {
-            const players = finalResults.players;
-            const bestPlayer = players.find(p => p.rank === 1);
-            const worstPlayer = players.find(p => p.rank === players.length);
-            
-            console.log('Fun facts generated:', {
-                bestPlayer: bestPlayer.name,
-                worstAccuracy: worstPlayer.name
-            });
-            
-            // Facts are already in HTML, but could be dynamically generated
-        }
+<!-- Privacy Policy Footer Link -->
+<div style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 100;">
+    <a href="privacy.html" style="color: rgba(255,255,255,0.6); font-size: 0.75rem; text-decoration: none;">Datenschutz</a>
+</div>
 
-        // Share functions
-        function shareToWhatsApp() {
-            const text = generateShareText();
-            const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-            window.open(url, '_blank');
-            showNotification('WhatsApp Link geöffnet', 'success');
-        }
+<!-- DOMPurify CDN -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
-        function shareToTelegram() {
-            const text = generateShareText();
-            const url = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`;
-            window.open(url, '_blank');
-            showNotification('Telegram Link geöffnet', 'success');
-        }
-
-        function copyResults() {
-            const text = generateShareText();
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showNotification('Ergebnis kopiert!', 'success');
-                }).catch(() => {
-                    fallbackCopy(text);
-                });
-            } else {
-                fallbackCopy(text);
-            }
-        }
-
-        function fallbackCopy(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                showNotification('Ergebnis kopiert!', 'success');
-            } catch (err) {
-                showNotification('Kopieren fehlgeschlagen', 'error');
-            }
-            document.body.removeChild(textArea);
-        }
-
-        function saveScreenshot() {
-            // In a real implementation, you would use html2canvas or similar
-            showNotification('Screenshot-Feature kommt bald!', 'info');
-        }
-
-        // Generate share text
-        function generateShareText() {
-            const winner = finalResults.players[0];
-            return `🎉 DenkstDu Multiplayer Ergebnis 🎉\n\n` +
-                   `🏆 Gewinner: ${winner.name} (${winner.totalSips} Schlücke)\n` +
-                   `🎯 ${finalResults.gameStats.totalRounds} Runden gespielt\n` +
-                   `👥 ${finalResults.gameStats.totalPlayers} Spieler\n` +
-                   `⏱️ Dauer: ${finalResults.gameStats.gameDuration}\n\n` +
-                   `Wer kann uns schlagen? 😏`;
-        }
-
-        // Play again
-        function playAgain() {
-            showLoading('Neues Spiel wird vorbereitet...');
-            
-            // Reset game state but keep multiplayer settings
-            gameState.reset();
-            gameState.deviceMode = 'multi';
-            
-            setTimeout(() => {
-                window.location.href = 'multiplayer-lobby.html';
-            }, 1500);
-        }
-
-        // Back to main menu
-        function backToMenu() {
-            showLoading('Zurück zum Hauptmenü...');
-            
-            // Clear game state
-            gameState.reset();
-            
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
-        }
-
-        // Utility Functions
-        function showLoading(text = 'Lade...') {
-            const loading = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
-            if (loading) {
-                loadingText.textContent = text;
-                loading.classList.add('show');
-            }
-        }
-
-        function hideLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.classList.remove('show');
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            if (notification) {
-                notification.textContent = message;
-                notification.className = `notification ${type} show`;
-                
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 3000);
-            }
-        }
-
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            hideLoading();
-        });
-
-        // Handle page visibility
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                console.log('Results page visible - game completed');
-            }
-        });
-
-        // Prevent going back during results
-        window.addEventListener('popstate', function(event) {
-            // Optionally prevent back navigation or show confirmation
-            console.log('User tried to go back from results');
-        });
-
-        // Auto-save results for later viewing
-        function saveGameToHistory() {
-            const gameHistory = JSON.parse(localStorage.getItem('denkstdu_game_history') || '[]');
-            
-            const gameRecord = {
-                id: Date.now(),
-                date: new Date().toISOString(),
-                mode: 'multiplayer',
-                players: finalResults.players,
-                stats: finalResults.gameStats,
-                categories: gameState.selectedCategories,
-                difficulty: gameState.difficulty
-            };
-            
-            gameHistory.unshift(gameRecord);
-            
-            // Keep only last 10 games
-            if (gameHistory.length > 10) {
-                gameHistory.splice(10);
-            }
-            
-            localStorage.setItem('denkstdu_game_history', JSON.stringify(gameHistory));
-            console.log('Game saved to history:', gameRecord.id);
-        }
-
-        // Save game on load
-        window.addEventListener('load', function() {
-            saveGameToHistory();
-        });
-
-        // Celebration animation on load
-        function celebrateWinner() {
-            const winner = finalResults.players[0];
-            if (winner.name === 'Du') {
-                // Show special celebration for user winning
-                setTimeout(() => {
-                    showNotification('🎉 Glückwunsch! Du hast gewonnen! 🎉', 'success');
-                }, 1000);
-            }
-        }
-
-        // Run celebration
-        setTimeout(celebrateWinner, 500);
-    </script>
+<!-- Core Scripts in correct order -->
+<script src="/assets/js/migration.js"></script>
+<script src="/assets/js/GameState.js"></script>
+<script src="/assets/js/multiplayer-results.js"></script>
 </body>
 </html>

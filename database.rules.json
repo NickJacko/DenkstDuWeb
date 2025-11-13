@@ -1,0 +1,46 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    },
+    "games": {
+      "$gameId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "players": {
+          "$playerId": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          }
+        },
+        "questions": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "currentQuestion": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "responses": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "results": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      }
+    },
+    "questions": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "shop": {
+      ".read": "auth != null",
+      ".write": false
+    }
+  }
+}

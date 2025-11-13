@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No-Cap - Kategorien wählen</title>
+    <title>No-Cap - Kategorien wÃ¤hlen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðŸ§¢</text></svg>">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -27,7 +27,7 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button" onclick="goBack()">← Zurück</button>
+<button class="back-button">â† ZurÃ¼ck</button>
 
 <!-- Loading Spinner -->
 <div class="loading" id="loading">
@@ -39,24 +39,24 @@
 <div class="app-container">
     <div class="screen active">
         <div class="content-area">
-            <h2 class="screen-title">🎯 Kategorien wählen</h2>
+            <h2 class="screen-title">ðŸŽ¯ Kategorien wÃ¤hlen</h2>
 
             <div class="glass-card">
                 <p class="selection-description">
-                    Wähle eine oder mehrere Kategorien aus
+                    WÃ¤hle eine oder mehrere Kategorien aus
                 </p>
 
                 <div class="category-grid" id="category-grid">
                     <!-- FSK 0 - Familie & Freunde -->
-                    <div class="category-card fsk0" data-category="fsk0" onclick="toggleCategory(this)">
+                    <div class="category-card fsk0" data-category="fsk0">
                         <div class="category-header">
-                            <div class="category-icon">👨‍👩‍👧‍👦</div>
+                            <div class="category-icon">ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦</div>
                             <div class="fsk-badge fsk0-badge">FSK 0</div>
                         </div>
                         <h3 class="category-title">Familie & Freunde</h3>
                         <p class="category-description">
-                            Harmlose und lustige Fragen für alle Altersgruppen.
-                            Perfekt für Familienabende und gemischte Gruppen.
+                            Harmlose und lustige Fragen fÃ¼r alle Altersgruppen.
+                            Perfekt fÃ¼r Familienabende und gemischte Gruppen.
                         </p>
                         <div class="category-examples">
                             <div class="example-questions">
@@ -74,15 +74,15 @@
                     </div>
 
                     <!-- FSK 16 - Party Time -->
-                    <div class="category-card fsk16" data-category="fsk16" onclick="toggleCategory(this)">
+                    <div class="category-card fsk16" data-category="fsk16">
                         <div class="category-header">
-                            <div class="category-icon">🎉</div>
+                            <div class="category-icon">ðŸŽ‰</div>
                             <div class="fsk-badge fsk16-badge">FSK 16</div>
                         </div>
                         <h3 class="category-title">Party Time</h3>
                         <p class="category-description">
-                            Freche und unterhaltsame Fragen für Jugendliche und junge Erwachsene.
-                            Ideal für WG-Partys und Studentenfeiern.
+                            Freche und unterhaltsame Fragen fÃ¼r Jugendliche und junge Erwachsene.
+                            Ideal fÃ¼r WG-Partys und Studentenfeiern.
                         </p>
                         <div class="category-examples">
                             <div class="example-questions">
@@ -99,20 +99,20 @@
                         </div>
                     </div>
 
-                    <!-- FSK 18 - Heiß & Gewagt -->
-                    <div class="category-card fsk18" data-category="fsk18" onclick="toggleCategory(this)">
+                    <!-- FSK 18 - HeiÃŸ & Gewagt -->
+                    <div class="category-card fsk18" data-category="fsk18">
                         <div class="locked-overlay" id="fsk18-locked" style="display: none;">
-                            <div class="lock-icon">🔒</div>
-                            <p class="lock-message">Nur für Erwachsene (18+)</p>
+                            <div class="lock-icon">ðŸ”’</div>
+                            <p class="lock-message">Nur fÃ¼r Erwachsene (18+)</p>
                         </div>
                         <div class="category-header">
-                            <div class="category-icon">🔥</div>
+                            <div class="category-icon">ðŸ”¥</div>
                             <div class="fsk-badge fsk18-badge">FSK 18</div>
                         </div>
-                        <h3 class="category-title">Heiß & Gewagt</h3>
+                        <h3 class="category-title">HeiÃŸ & Gewagt</h3>
                         <p class="category-description">
-                            Pikante und intime Fragen nur für Erwachsene.
-                            Perfekt für enge Freundesgruppen und Paar-Abende.
+                            Pikante und intime Fragen nur fÃ¼r Erwachsene.
+                            Perfekt fÃ¼r enge Freundesgruppen und Paar-Abende.
                         </p>
                         <div class="category-examples">
                             <div class="example-questions">
@@ -130,29 +130,29 @@
                     </div>
 
                     <!-- SPECIAL - Premium Kategorie -->
-                    <div class="category-card special locked" data-category="special" onclick="toggleCategory(this)">
-                        <div class="premium-badge">👑 PREMIUM</div>
+                    <div class="category-card special locked" data-category="special">
+                        <div class="premium-badge">ðŸ‘‘ PREMIUM</div>
                         <div class="locked-overlay" id="special-locked">
-                            <div class="lock-icon">🔒</div>
+                            <div class="lock-icon">ðŸ”’</div>
                             <p class="lock-message">Premium Inhalt</p>
-                            <button class="unlock-btn" onclick="showPremiumInfo(event)">
-                                💎 Freischalten
+                            <button class="unlock-btn">
+                                ðŸ’Ž Freischalten
                             </button>
                         </div>
                         <div class="category-header">
-                            <div class="category-icon">⭐</div>
+                            <div class="category-icon">â­</div>
                             <div class="fsk-badge special-badge">SPECIAL</div>
                         </div>
                         <h3 class="category-title">Special Edition</h3>
                         <p class="category-description">
-                            Exklusive und einzigartige Fragen für besondere Momente.
+                            Exklusive und einzigartige Fragen fÃ¼r besondere Momente.
                             Premium-Content mit den besten Community-Fragen.
                         </p>
                         <div class="category-examples">
                             <div class="example-questions">
-                                <div class="example-question">"Würdest du für 1 Million € auf Social Media verzichten?"</div>
+                                <div class="example-question">"WÃ¼rdest du fÃ¼r 1 Million â‚¬ auf Social Media verzichten?"</div>
                                 <div class="example-question">"Hast du schon mal jemanden geghostet?"</div>
-                                <div class="example-question">"Würdest du lieber Zeit- oder Gedankenreisen können?"</div>
+                                <div class="example-question">"WÃ¼rdest du lieber Zeit- oder Gedankenreisen kÃ¶nnen?"</div>
                             </div>
                         </div>
                         <div class="category-footer">
@@ -167,20 +167,20 @@
                 <!-- Selection Summary -->
                 <div class="selection-summary" id="selection-summary" style="display: none;">
                     <div class="summary-header">
-                        <h4>✅ Ausgewählte Kategorien</h4>
+                        <h4>âœ… AusgewÃ¤hlte Kategorien</h4>
                     </div>
                     <div class="selected-categories" id="selected-categories-list"></div>
                     <div class="total-questions">
-                        Gesamt: <span id="total-questions">0</span> Fragen verfügbar
+                        Gesamt: <span id="total-questions">0</span> Fragen verfÃ¼gbar
                     </div>
                 </div>
 
                 <!-- Continue Button -->
                 <div class="continue-section">
-                    <button class="btn btn-primary btn-large" id="continue-btn" onclick="proceedWithCategories()" disabled>
+                    <button class="btn btn-primary btn-large" id="continue-btn" disabled>
                         Weiter zur Schwierigkeitsauswahl
                     </button>
-                    <p class="continue-hint">Wähle mindestens eine Kategorie aus</p>
+                    <p class="continue-hint">WÃ¤hle mindestens eine Kategorie aus</p>
                 </div>
             </div>
         </div>
@@ -191,30 +191,30 @@
 <div class="modal" id="premium-modal">
     <div class="modal-content premium-modal-content">
         <div class="modal-header premium-header">
-            <h3>👑 Premium Special Edition</h3>
-            <button class="close-btn" onclick="closePremiumModal()">×</button>
+            <h3>ðŸ‘‘ Premium Special Edition</h3>
+            <button class="close-btn">Ã—</button>
         </div>
         <div class="modal-body">
             <div class="premium-features">
-                <h4>✨ Was du bekommst:</h4>
+                <h4>âœ¨ Was du bekommst:</h4>
                 <ul>
-                    <li>🎯 <span id="special-question-count">150+</span> exklusive Fragen</li>
-                    <li>⭐ Community-Highlights & Best-Of</li>
-                    <li>🔥 Regelmäßige Updates mit neuen Fragen</li>
-                    <li>💎 Lebenslanger Zugriff</li>
+                    <li>ðŸŽ¯ <span id="special-question-count">150+</span> exklusive Fragen</li>
+                    <li>â­ Community-Highlights & Best-Of</li>
+                    <li>ðŸ”¥ RegelmÃ¤ÃŸige Updates mit neuen Fragen</li>
+                    <li>ðŸ’Ž Lebenslanger Zugriff</li>
                 </ul>
             </div>
             <div class="premium-price">
                 <div class="price-tag">
-                    <span class="price-amount">2,99 €</span>
+                    <span class="price-amount">2,99 â‚¬</span>
                     <span class="price-period">Einmalig</span>
                 </div>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closePremiumModal()">Später</button>
-            <button class="btn btn-premium" onclick="purchasePremium()">
-                💎 Jetzt kaufen
+            <button class="btn btn-outline">SpÃ¤ter</button>
+            <button class="btn btn-premium">
+                ðŸ’Ž Jetzt kaufen
             </button>
         </div>
     </div>
@@ -985,504 +985,18 @@
     }
 </style>
 
-<script>
-    // Global variables
-    let gameState = null;
-    let selectedCategories = [];
-    let isAdult = false;
-    let hasPremium = false;
-    let questionCounts = {
-        fsk0: 0,
-        fsk16: 0,
-        fsk18: 0,
-        special: 0
-    };
 
-    // KONSISTENTE Game State Management Klasse
-    class GameState {
-        constructor() {
-            this.deviceMode = null;
-            this.selectedCategories = [];
-            this.difficulty = null;
-            this.players = [];
-            this.gameId = null;
-            this.playerName = null;
-            this.isHost = false;
-            this.isGuest = false;
-            this.gameState = 'setup';
-            this.timestamp = Date.now();
+<!-- DOMPurify for XSS Protection -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-HT8HfXv/rkqzb07KXr0YfcqfXxzF/CbVqFN/N/FEfP9ICsLlvLcJKLFJN/aI2DW6z1LQqMj/cLh0atwKKLVZQQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-            this.loadFromStorage();
-        }
+<!-- Central Scripts (MUST load before page script) -->
+<script src="/assets/js/migration.js"></script>
+<script src="/assets/js/GameState.js"></script>
 
-        saveToStorage() {
-            try {
-                const state = {
-                    deviceMode: this.deviceMode,
-                    selectedCategories: this.selectedCategories,
-                    difficulty: this.difficulty,
-                    players: this.players,
-                    gameId: this.gameId,
-                    playerName: this.playerName,
-                    isHost: this.isHost,
-                    isGuest: this.isGuest,
-                    gameState: this.gameState,
-                    timestamp: Date.now(),
-                    version: 2
-                };
-                localStorage.setItem('nocap_game_state', JSON.stringify(state));
-                console.log('✅ GameState saved:', state);
-                return true;
-            } catch (error) {
-                console.error('❌ Could not save game state:', error);
-                return false;
-            }
-        }
+<!-- Firebase Auth Service (Optional) -->
+<script src="firebase-auth.js"></script>
 
-        loadFromStorage() {
-            try {
-                const saved = localStorage.getItem('nocap_game_state');
-                if (saved) {
-                    const state = JSON.parse(saved);
-                    if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                        this.deviceMode = state.deviceMode || null;
-                        this.selectedCategories = state.selectedCategories || [];
-                        this.difficulty = state.difficulty || null;
-                        this.players = state.players || [];
-                        this.gameId = state.gameId || null;
-                        this.playerName = state.playerName || null;
-                        this.isHost = state.isHost || false;
-                        this.isGuest = state.isGuest || false;
-                        this.gameState = state.gameState || 'setup';
-
-                        console.log('✅ GameState loaded from storage:', this);
-                        return true;
-                    } else {
-                        console.log('⚠️ GameState expired, clearing storage');
-                        this.clearStorage();
-                    }
-                }
-            } catch (error) {
-                console.error('❌ Could not load game state:', error);
-                this.clearStorage();
-            }
-            return false;
-        }
-
-        clearStorage() {
-            localStorage.removeItem('nocap_game_state');
-        }
-
-        setSelectedCategories(categories) {
-            this.selectedCategories = [...categories];
-            this.saveToStorage();
-            console.log('Categories set to:', categories);
-        }
-
-        setDifficulty(difficulty) {
-            this.difficulty = difficulty;
-            this.saveToStorage();
-            console.log('Difficulty set to:', difficulty);
-        }
-
-        setPlayers(players) {
-            this.players = [...players];
-            this.saveToStorage();
-            console.log('Players set to:', players);
-        }
-
-        setDeviceMode(mode) {
-            this.deviceMode = mode;
-            this.saveToStorage();
-            console.log('Device mode set to:', mode);
-        }
-    }
-
-    // Category data with names and icons
-    const categoryData = {
-        fsk0: {
-            name: 'Familie & Freunde',
-            icon: '👨‍👩‍👧‍👦',
-            color: '#4CAF50'
-        },
-        fsk16: {
-            name: 'Party Time',
-            icon: '🎉',
-            color: '#FF9800'
-        },
-        fsk18: {
-            name: 'Heiß & Gewagt',
-            icon: '🔥',
-            color: '#F44336'
-        },
-        special: {
-            name: 'Special Edition',
-            icon: '⭐',
-            color: '#FFD700'
-        }
-    };
-
-    // Initialize page
-    async function initCategorySelection() {
-        console.log('🎯 Initializing category selection...');
-
-        showLoading();
-
-        // Initialize Firebase Auth
-        try {
-            await authService.initialize();
-            console.log('✅ Firebase Auth initialized');
-        } catch (error) {
-            console.error('❌ Firebase Auth error:', error);
-        }
-
-        // Initialize game state
-        gameState = new GameState();
-
-        // Check age verification
-        checkAgeVerification();
-
-        // Check premium status
-        await checkPremiumStatus();
-
-        // Load question counts from Firebase
-        await loadQuestionCounts();
-
-        // Load previously selected categories if any
-        if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
-            selectedCategories = [...gameState.selectedCategories];
-            selectedCategories.forEach(category => {
-                const card = document.querySelector(`[data-category="${category}"]`);
-                if (card && !card.classList.contains('locked')) {
-                    card.classList.add('selected');
-                }
-            });
-            updateSelectionSummary();
-        }
-
-        hideLoading();
-
-        console.log('📋 Current game state:', {
-            deviceMode: gameState.deviceMode,
-            selectedCategories: gameState.selectedCategories,
-            difficulty: gameState.difficulty,
-            isAdult: isAdult,
-            hasPremium: hasPremium
-        });
-    }
-
-    // Check age verification from localStorage
-    function checkAgeVerification() {
-        try {
-            const verification = localStorage.getItem('nocap_age_verification');
-            if (verification) {
-                const data = JSON.parse(verification);
-                isAdult = data.isAdult || false;
-
-                // Lock FSK 18 if user is under 18
-                if (!isAdult) {
-                    const fsk18Card = document.querySelector('[data-category="fsk18"]');
-                    if (fsk18Card) {
-                        fsk18Card.classList.add('locked');
-                        document.getElementById('fsk18-locked').style.display = 'flex';
-                    }
-                    console.log('🔒 FSK 18 locked (user under 18)');
-                } else {
-                    console.log('✅ FSK 18 unlocked (user 18+)');
-                }
-            } else {
-                // If no verification found, lock FSK 18
-                const fsk18Card = document.querySelector('[data-category="fsk18"]');
-                if (fsk18Card) {
-                    fsk18Card.classList.add('locked');
-                    document.getElementById('fsk18-locked').style.display = 'flex';
-                }
-                console.log('⚠️ No age verification found, FSK 18 locked');
-            }
-        } catch (error) {
-            console.error('❌ Error checking age verification:', error);
-        }
-    }
-
-    // Check premium status
-    async function checkPremiumStatus() {
-        try {
-            const userId = authService.getUserId();
-            if (!userId) {
-                console.log('⚠️ No user ID, premium locked');
-                return;
-            }
-
-            // Check in Firebase if user has premium
-            const userRef = firebase.database().ref(`users/${userId}/purchases/special`);
-            const snapshot = await userRef.once('value');
-
-            if (snapshot.exists()) {
-                hasPremium = true;
-                // Unlock special category
-                const specialCard = document.querySelector('[data-category="special"]');
-                if (specialCard) {
-                    specialCard.classList.remove('locked');
-                    document.getElementById('special-locked').style.display = 'none';
-                }
-                console.log('✅ Premium unlocked');
-            } else {
-                console.log('🔒 Premium locked (not purchased)');
-            }
-        } catch (error) {
-            console.error('❌ Error checking premium status:', error);
-        }
-    }
-
-    // Load question counts from Firebase
-    async function loadQuestionCounts() {
-        try {
-            const categories = ['fsk0', 'fsk16', 'fsk18', 'special'];
-
-            for (const category of categories) {
-                const questionsRef = firebase.database().ref(`questions/${category}`);
-                const snapshot = await questionsRef.once('value');
-
-                if (snapshot.exists()) {
-                    const questions = snapshot.val();
-                    const count = Object.keys(questions).length;
-                    questionCounts[category] = count;
-
-                    // Update UI
-                    const countElement = document.querySelector(`[data-category-count="${category}"]`);
-                    if (countElement) {
-                        countElement.innerHTML = `~${count} Fragen`;
-                    }
-
-                    console.log(`✅ ${category}: ${count} questions loaded`);
-                } else {
-                    // Fallback values if database is empty
-                    const fallbackCounts = {
-                        fsk0: 200,
-                        fsk16: 300,
-                        fsk18: 250,
-                        special: 150
-                    };
-                    questionCounts[category] = fallbackCounts[category];
-
-                    const countElement = document.querySelector(`[data-category-count="${category}"]`);
-                    if (countElement) {
-                        countElement.innerHTML = `~${fallbackCounts[category]} Fragen`;
-                    }
-
-                    console.log(`⚠️ No questions in database for ${category}, using fallback: ${fallbackCounts[category]}`);
-                }
-            }
-
-            // Update Special count in premium modal
-            document.getElementById('special-question-count').textContent = `${questionCounts.special}+`;
-
-        } catch (error) {
-            console.error('❌ Error loading question counts:', error);
-            // Use fallback counts on error
-            const fallbackCounts = {
-                fsk0: 200,
-                fsk16: 300,
-                fsk18: 250,
-                special: 150
-            };
-            Object.assign(questionCounts, fallbackCounts);
-
-            Object.keys(fallbackCounts).forEach(category => {
-                const countElement = document.querySelector(`[data-category-count="${category}"]`);
-                if (countElement) {
-                    countElement.innerHTML = `~${fallbackCounts[category]} Fragen`;
-                }
-            });
-        }
-    }
-
-    // Toggle category selection
-    function toggleCategory(element) {
-        const category = element.dataset.category;
-
-        // Check if category is locked
-        if (element.classList.contains('locked')) {
-            if (category === 'fsk18') {
-                showNotification('Du musst 18+ sein für diese Kategorie', 'warning');
-            } else if (category === 'special') {
-                showPremiumInfo();
-            }
-            return;
-        }
-
-        // Toggle selection
-        if (selectedCategories.includes(category)) {
-            // Remove category
-            selectedCategories = selectedCategories.filter(c => c !== category);
-            element.classList.remove('selected');
-            showNotification(`${categoryData[category].name} entfernt`, 'info');
-        } else {
-            // Add category
-            selectedCategories.push(category);
-            element.classList.add('selected');
-            showNotification(`${categoryData[category].name} ausgewählt!`, 'success');
-        }
-
-        updateSelectionSummary();
-    }
-
-    // Show premium info modal
-    function showPremiumInfo(event) {
-        if (event) {
-            event.stopPropagation();
-        }
-        document.getElementById('premium-modal').style.display = 'flex';
-    }
-
-    // Close premium modal
-    function closePremiumModal() {
-        document.getElementById('premium-modal').style.display = 'none';
-    }
-
-    // Purchase premium
-    async function purchasePremium() {
-        showNotification('Premium-Kauf wird vorbereitet...', 'info');
-
-        // TODO: Implement actual payment processing
-        // For now, just unlock it for testing
-
-        try {
-            const userId = authService.getUserId();
-            if (!userId) {
-                showNotification('Bitte erstelle zuerst einen Account', 'warning');
-                return;
-            }
-
-            // Simulate purchase (replace with real payment gateway)
-            const purchaseRef = firebase.database().ref(`users/${userId}/purchases/special`);
-            await purchaseRef.set({
-                id: 'special_edition',
-                name: 'Special Edition',
-                price: 2.99,
-                currency: 'EUR',
-                timestamp: Date.now()
-            });
-
-            hasPremium = true;
-
-            // Unlock special category
-            const specialCard = document.querySelector('[data-category="special"]');
-            if (specialCard) {
-                specialCard.classList.remove('locked');
-                document.getElementById('special-locked').style.display = 'none';
-            }
-
-            closePremiumModal();
-            showNotification('Premium freigeschaltet! 🎉', 'success');
-
-        } catch (error) {
-            console.error('❌ Purchase error:', error);
-            showNotification('Fehler beim Kauf. Bitte versuche es später erneut.', 'error');
-        }
-    }
-
-    // Update selection summary
-    function updateSelectionSummary() {
-        const summaryElement = document.getElementById('selection-summary');
-        const categoriesListElement = document.getElementById('selected-categories-list');
-        const totalQuestionsElement = document.getElementById('total-questions');
-        const continueBtn = document.getElementById('continue-btn');
-        const continueHint = document.querySelector('.continue-hint');
-
-        if (selectedCategories.length === 0) {
-            summaryElement.style.display = 'none';
-            continueBtn.disabled = true;
-            continueHint.textContent = 'Wähle mindestens eine Kategorie aus';
-        } else {
-            summaryElement.style.display = 'block';
-            continueBtn.disabled = false;
-            continueHint.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''} ausgewählt`;
-
-            // Build category list
-            categoriesListElement.innerHTML = selectedCategories.map(category => {
-                const data = categoryData[category];
-                return `
-                        <div class="selected-category-tag">
-                            <span>${data.icon}</span>
-                            <span>${data.name}</span>
-                        </div>
-                    `;
-            }).join('');
-
-            // Calculate total questions
-            const totalQuestions = selectedCategories.reduce((sum, category) => {
-                return sum + questionCounts[category];
-            }, 0);
-            totalQuestionsElement.textContent = totalQuestions;
-        }
-
-        // Save to game state
-        gameState.setSelectedCategories(selectedCategories);
-    }
-
-    // Proceed with selected categories
-    function proceedWithCategories() {
-        if (selectedCategories.length === 0) {
-            showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
-            return;
-        }
-
-        showLoading();
-
-        // Save categories to game state
-        gameState.setSelectedCategories(selectedCategories);
-
-        setTimeout(() => {
-            window.location.href = 'difficulty-selection.html';
-        }, 500);
-    }
-
-    // Go back to previous page
-    function goBack() {
-        showLoading();
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 300);
-    }
-
-    // Utility Functions
-    function showLoading() {
-        const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.add('show');
-        }
-    }
-
-    function hideLoading() {
-        const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.remove('show');
-        }
-    }
-
-    function showNotification(message, type = 'info', duration = 3000) {
-        // Remove existing notifications
-        document.querySelectorAll('.notification').forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.innerHTML = `
-                <div class="notification-content">
-                    <span class="notification-text">${message}</span>
-                </div>
-            `;
-
-        document.getElementById('notification-container').appendChild(notification);
-
-        // Auto remove
-        setTimeout(() => {
-            notification.remove();
-        }, duration);
-    }
-
-    // Initialize page when DOM is loaded
-    document.addEventListener('DOMContentLoaded', initCategorySelection);
-</script>
+<!-- External Page Script (MUST load AFTER DOM is ready) -->
+<script src="/assets/js/category-selection.js"></script>
 </body>
 </html>
