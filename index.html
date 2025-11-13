@@ -8,11 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Firebase SDK - WICHTIG: VOR deinem eigenen Code! -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
     <!-- Meta tags -->
     <meta name="description" content="No-Cap - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
     <meta name="keywords" content="Party Spiel, Trinkspiel, Schätzspiel, Multiplayer, Online">
@@ -22,78 +17,91 @@
     <!-- Favicon - Kappe Emoji -->
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 
-    <!-- External CSS -->
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <!-- DOMPurify for XSS protection -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+    <!-- Core scripts - WICHTIG: Reihenfolge beachten! -->
+    <script src="/assets/js/migration.js"></script>
+    <script src="/assets/js/GameState.js"></script>
+    <script src="firebase-auth.js"></script>
 </head>
 <body>
-<div class="age-header">
-    <span class="age-icon">ðŸ›¡ï¸</span>
-    <h2>Jugendschutz & verantwortungsvoller Umgang</h2>
-</div>
+<!-- Age Verification Modal -->
+<div class="age-modal" id="age-modal">
+    <div class="age-modal-content">
+        <div class="age-header">
+            <span class="age-icon">🛡️</span>
+            <h2>Jugendschutz & verantwortungsvoller Umgang</h2>
+        </div>
 
-<div class="age-warning">
-    <h3>âš ï¸ Hinweis: Jugendschutz & verantwortungsvoller Umgang mit Alkohol</h3>
-    <p>
-        Dieses Spiel kann Aufgaben enthalten, die den Konsum alkoholischer GetrÃ¤nke erwÃ¤hnen.
-        Alkoholische Spielvarianten richten sich <strong>ausschlieÃŸlich an VolljÃ¤hrige (18+)</strong>.
-        MinderjÃ¤hrige oder Personen, die keinen Alkohol trinken mÃ¶chten, nutzen bitte die
-        <strong>alkoholfreie Variante</strong>.
-    </p>
-    <p class="legal-note">
-        Das Angebot verkauft oder schenkt keinen Alkohol aus.
-        (Vgl. Jugendschutzgesetz Â§ 9 zur Abgabe von Alkohol an MinderjÃ¤hrige.)
-    </p>
-</div>
+        <div class="age-warning">
+            <h3>⚠️ Hinweis: Jugendschutz & verantwortungsvoller Umgang mit Alkohol</h3>
+            <p>
+                Dieses Spiel kann Aufgaben enthalten, die den Konsum alkoholischer Getränke erwähnen.
+                Alkoholische Spielvarianten richten sich <strong>ausschließlich an Volljährige (18+)</strong>.
+                Minderjährige oder Personen, die keinen Alkohol trinken möchten, nutzen bitte die
+                <strong>alkoholfreie Variante</strong>.
+            </p>
+            <p class="legal-note">
+                Das Angebot verkauft oder schenkt keinen Alkohol aus.
+                (Vgl. Jugendschutzgesetz § 9 zur Abgabe von Alkohol an Minderjährige.)
+            </p>
+        </div>
 
-<div class="age-verification">
-    <h4>AltersbestÃ¤tigung (Pflicht)</h4>
-    <div class="checkbox-container">
-        <input type="checkbox" id="age-checkbox">
-        <label for="age-checkbox">
-            <strong>Ich bestÃ¤tige, dass ich mindestens 18 Jahre alt bin.</strong>
-        </label>
+        <div class="age-verification">
+            <h4>Altersbestätigung (Pflicht)</h4>
+            <div class="checkbox-container">
+                <input type="checkbox" id="age-checkbox">
+                <label for="age-checkbox">
+                    <strong>Ich bestätige, dass ich mindestens 18 Jahre alt bin.</strong>
+                </label>
+            </div>
+
+            <div class="age-buttons">
+                <button class="btn-age primary" id="btn-18plus" disabled>
+                    🔞 Weiter (18+)
+                </button>
+                <div class="or-divider">— oder —</div>
+                <button class="btn-age secondary" id="btn-under-18">
+                    👶 Ich bin unter 18
+                </button>
+            </div>
+
+            <p class="age-subtitle">
+                <em>Für Minderjährige und alle, die ohne Alkohol spielen möchten.</em>
+            </p>
+        </div>
+
+        <div class="responsibility-info">
+            <h4>🚨 Verantwortungsvoller Umgang</h4>
+            <ul>
+                <li><strong>Kein Alkohol</strong> bei Teilnahme am Straßenverkehr, in Schwangerschaft/Stillzeit, bei bestimmten Medikamenten oder gesundheitlichen Gründen.</li>
+                <li><strong>Kein Druck auf andere</strong> und <strong>kein exzessiver Konsum.</strong></li>
+                <li><strong>Beende das Spiel</strong> bei Unwohlsein.</li>
+            </ul>
+        </div>
+
+        <div class="help-section">
+            <h4>🆘 Hilfe & Beratung</h4>
+            <p>
+                Brauchst du Hilfe oder Beratung?
+                <strong>Sucht & Drogen Hotline: 01806 313031</strong>
+                (täglich 24/7, anonym)
+            </p>
+        </div>
+
+        <div class="modal-footer">
+            <div class="footer-links-modal">
+                <a href="imprint.html" class="modal-link">📋 Impressum</a>
+                <a href="privacy.html" class="modal-link">🔒 Datenschutz</a>
+            </div>
+        </div>
     </div>
-
-    <div class="age-buttons">
-        <button class="btn-age primary" id="btn-18plus" disabled>
-            ðŸ”ž Weiter (18+)
-        </button>
-        <div class="or-divider">â€” oder â€”</div>
-        <button class="btn-age secondary" id="btn-under-18">
-            ðŸ‘¶ Ich bin unter 18
-        </button>
-    </div>
-
-    <p class="age-subtitle">
-        <em>FÃ¼r MinderjÃ¤hrige und alle, die ohne Alkohol spielen mÃ¶chten.</em>
-    </p>
-</div>
-
-<div class="responsibility-info">
-    <h4>ðŸš¨ Verantwortungsvoller Umgang</h4>
-    <ul>
-        <li><strong>Kein Alkohol</strong> bei Teilnahme am StraÃŸenverkehr, in Schwangerschaft/Stillzeit, bei bestimmten Medikamenten oder gesundheitlichen GrÃ¼nden.</li>
-        <li><strong>Kein Druck auf andere</strong> und <strong>kein exzessiver Konsum.</strong></li>
-        <li><strong>Beende das Spiel</strong> bei Unwohlsein.</li>
-    </ul>
-</div>
-
-<div class="help-section">
-    <h4>ðŸ†˜ Hilfe & Beratung</h4>
-    <p>
-        Brauchst du Hilfe oder Beratung?
-        <strong>Sucht & Drogen Hotline: 01806 313031</strong>
-        (tÃ¤glich 24/7, anonym)
-    </p>
-</div>
-
-<div class="modal-footer">
-    <div class="footer-links-modal">
-        <a href="imprint.html" class="modal-link">ðŸ“‹ Impressum</a>
-        <a href="privacy.html" class="modal-link">ðŸ”’ Datenschutz</a>
-        <a href="youthprotection.html" class="modal-link">ðŸ›¡ï¸ Jugendschutz-Infos</a>
-    </div>
-</div>
-</div>
 </div>
 
 <!-- Background Particles -->
@@ -110,9 +118,9 @@
     <!-- Header -->
     <header class="site-header">
         <div class="site-logo">
-            <div class="logo-icon">ðŸ§¢</div>
+            <div class="logo-icon">🧢</div>
             <h1 class="logo">No-Cap</h1>
-            <p class="site-url">Das ultimative SchÃ¤tzspiel</p>
+            <p class="site-url">Das ultimative Schätzspiel</p>
         </div>
     </header>
 
@@ -120,79 +128,79 @@
     <main class="main-content">
         <!-- Hero Section -->
         <section class="hero-section">
-            <h2 class="hero-title">Das ultimative SchÃ¤tzspiel</h2>
-            <p class="hero-subtitle">FÃ¼r unvergessliche Abende mit Freunden</p>
+            <h2 class="hero-title">Das ultimative Schätzspiel</h2>
+            <p class="hero-subtitle">Für unvergessliche Abende mit Freunden</p>
 
             <div class="game-features">
                 <div class="feature">
-                    <span class="feature-icon">ðŸ¤”</span>
-                    <span class="feature-text">SchÃ¤tze, wie viele etwas gemacht haben</span>
+                    <span class="feature-icon">🤔</span>
+                    <span class="feature-text">Schätze, wie viele etwas gemacht haben</span>
                 </div>
                 <div class="feature">
-                    <span class="feature-icon" id="drink-icon">ðŸ»</span>
+                    <span class="feature-icon" id="drink-icon">🍻</span>
                     <span class="feature-text" id="drink-text">Trinke, wenn du falsch liegst</span>
                 </div>
                 <div class="feature">
-                    <span class="feature-icon">ðŸŽ‰</span>
-                    <span class="feature-text">Lache Ã¼ber peinliche GestÃ¤ndnisse</span>
+                    <span class="feature-icon">🎉</span>
+                    <span class="feature-text">Lache über peinliche Geständnisse</span>
                 </div>
             </div>
 
             <!-- Scroll Indicator -->
-            <div class="scroll-indicator">
+            <div class="scroll-indicator" id="scroll-indicator">
                 <div class="scroll-text">Mehr erfahren</div>
-                <div class="scroll-arrow">â¬‡ï¸</div>
+                <div class="scroll-arrow">⬇️</div>
             </div>
         </section>
 
         <!-- Game Modes -->
         <section class="game-modes">
-            <h3 class="section-title">WÃ¤hle deinen Spielmodus</h3>
+            <h3 class="section-title">Wähle deinen Spielmodus</h3>
 
             <div class="mode-cards">
                 <!-- Single Device Mode -->
-                <div class="mode-card">
+                <div class="mode-card" id="mode-single">
                     <div class="mode-header">
-                        <span class="mode-icon">ðŸ“±</span>
-                        <h4 class="mode-title">Ein GerÃ¤t</h4>
+                        <span class="mode-icon">📱</span>
+                        <h4 class="mode-title">Ein Gerät</h4>
                     </div>
                     <p class="mode-description">
                         Alle Spieler nutzen ein Handy gemeinsam.<br>
-                        Perfekt fÃ¼r kleine Runden (2-6 Spieler).
+                        Perfekt für kleine Runden (2-6 Spieler).
                     </p>
                     <div class="mode-features">
-                        <span class="feature-badge">âœ… Sofort spielbereit</span>
-                        <span class="feature-badge">âœ… Offline verfÃ¼gbar</span>
+                        <span class="feature-badge">✅ Sofort spielbereit</span>
+                        <span class="feature-badge">✅ Offline verfügbar</span>
                     </div>
-                    <button class="mode-btn">
-                        ðŸŽ® EinzelgerÃ¤t-Spiel starten
+                    <button class="mode-btn" id="btn-single">
+                        🎮 Einzelgerät-Spiel starten
                     </button>
                 </div>
 
                 <!-- Multiplayer Mode -->
-                <div class="mode-card featured">
-                    <div class="featured-badge">ðŸ”¥ Beliebt</div>
+                <div class="mode-card featured" id="mode-multi">
+                    <div class="featured-badge">🔥 Beliebt</div>
                     <div class="mode-header">
-                        <span class="mode-icon">ðŸŒ</span>
+                        <span class="mode-icon">🌐</span>
                         <h4 class="mode-title">Online Multiplayer</h4>
                     </div>
                     <p class="mode-description">
-                        Jeder Spieler nutzt sein eigenes GerÃ¤t.<br>
-                        Synchrones Spielen Ã¼ber das Internet.
+                        Jeder Spieler nutzt sein eigenes Gerät.<br>
+                        Synchrones Spielen über das Internet.
                     </p>
                     <div class="mode-features">
-                        <span class="feature-badge">ðŸš€ Bis zu 8 Spieler</span>
-                        <span class="feature-badge">ðŸ“± Jeder am eigenen Handy</span>
+                        <span class="feature-badge">🚀 Bis zu 8 Spieler</span>
+                        <span class="feature-badge">📱 Jeder am eigenen Handy</span>
                     </div>
-                    <button class="mode-btn primary">
-                        ðŸŒ Multiplayer-Spiel erstellen
+                    <button class="mode-btn primary" id="btn-multi">
+                        🌐 Multiplayer-Spiel erstellen
                     </button>
                 </div>
 
                 <!-- Join Game -->
-                <div class="mode-card">
+                <div class="mode-card" id="mode-join">
                     <div class="mode-header">
-                        <span class="mode-icon">ðŸ”—</span>
+                        <span class="mode-icon">🔗</span>
                         <h4 class="mode-title">Spiel beitreten</h4>
                     </div>
                     <p class="mode-description">
@@ -200,11 +208,11 @@
                         Einfach 6-stelligen Code eingeben.
                     </p>
                     <div class="mode-features">
-                        <span class="feature-badge">âš¡ Schneller Einstieg</span>
-                        <span class="feature-badge">ðŸŽ¯ Mit Code beitreten</span>
+                        <span class="feature-badge">⚡ Schneller Einstieg</span>
+                        <span class="feature-badge">🎯 Mit Code beitreten</span>
                     </div>
-                    <button class="mode-btn">
-                        ðŸ”— Spiel beitreten
+                    <button class="mode-btn" id="btn-join">
+                        🔗 Spiel beitreten
                     </button>
                 </div>
             </div>
@@ -232,14 +240,14 @@
                 <div class="step">
                     <div class="step-number">3</div>
                     <div class="step-content">
-                        <h5>Jeder schÃ¤tzt</h5>
+                        <h5>Jeder schätzt</h5>
                         <p>Wie viele haben "Ja" gesagt?</p>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-number">4</div>
                     <div class="step-content">
-                        <h5>AuflÃ¶sung & Konsequenz</h5>
+                        <h5>Auflösung & Konsequenz</h5>
                         <p id="step4-text">Wer falsch lag, muss trinken!</p>
                     </div>
                 </div>
@@ -251,38 +259,25 @@
     <footer class="site-footer">
         <div class="footer-content">
             <div class="footer-links">
-                <a href="rules.html" class="footer-link">ðŸ“– Spielregeln</a>
-                <a href="privacy.html" class="footer-link">ðŸ”’ Datenschutz</a>
-                <a href="imprint.html" class="footer-link">ðŸ“‹ Impressum</a>
-                <a href="youthprotection.html" class="footer-link">ðŸ›¡ï¸ Jugendschutz</a>
+                <a href="privacy.html" class="footer-link">🔒 Datenschutz</a>
+                <a href="imprint.html" class="footer-link">📋 Impressum</a>
             </div>
             <div class="footer-info">
-                <p>&copy; 2024 No-Cap - Das ultimative SchÃ¤tzspiel</p>
-                <p class="website-badge">ðŸ§¢ <strong>No-Cap</strong></p>
+                <p>&copy; 2024 No-Cap - Das ultimative Schätzspiel</p>
+                <p class="website-badge">🧢 <strong>No-Cap</strong></p>
             </div>
         </div>
     </footer>
 </div>
 
-<!-- WICHTIG: firebase-auth.js NACH Firebase SDK aber VOR deinem Code laden -->
-<script src="firebase-auth.js"></script>
+<!-- Toast Notification Container -->
+<div id="toast-container"></div>
 
-
-<!-- DOMPurify for XSS Protection -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-HT8HfXv/rkqzb07KXr0YfcqfXxzF/CbVqFN/N/FEfP9ICsLlvLcJKLFJN/aI2DW6z1LQqMj/cLh0atwKKLVZQQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-<!-- Central Scripts (MUST load before page script) -->
-<script src="/assets/js/migration.js"></script>
-<script src="/assets/js/GameState.js"></script>
-
-<!-- Firebase Auth Service (Optional) -->
-<script src="firebase-auth.js"></script>
-
-<!-- External Page Script (MUST load AFTER DOM is ready) -->
+<!-- Page Script -->
 <script src="/assets/js/index.js"></script>
-<style>
 
-     {
+<style>
+    * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
