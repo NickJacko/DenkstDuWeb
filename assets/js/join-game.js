@@ -3,10 +3,10 @@ function checkAgeGate() {
     const ageConfirmed = localStorage.getItem('nocap_age_confirmed');
 
     if (ageConfirmed === 'true') {
-        log('âœ… Alter bereits bestÃ¤tigt');
+        log('Alter bereits bestätigt');
         return true;
     } else {
-        log('âš ï¸ AltersbestÃ¤tigung erforderlich');
+        log('Altersbestätigung erforderlich');
         document.getElementById('age-gate').classList.add('show');
         return false;
     }
@@ -16,7 +16,7 @@ function confirmAge(isAdult) {
     if (isAdult) {
         localStorage.setItem('nocap_age_confirmed', 'true');
         document.getElementById('age-gate').classList.remove('show');
-        log('âœ… Alter bestÃ¤tigt');
+        log('Alter bestätigt');
 
         // Continue with initialization
         continueInitialization();
@@ -51,11 +51,11 @@ class GameState {
                 const state = JSON.parse(saved);
                 if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
                     Object.assign(this, state);
-                    this.log('âœ… State loaded');
+                    this.log('State loaded');
                 }
             }
         } catch (error) {
-            this.log(`âŒ Load failed: ${error.message}`, 'error');
+            this.log(`Load failed: ${error.message}`, 'error');
         }
     }
 
@@ -75,17 +75,17 @@ class GameState {
                 version: 3
             };
             localStorage.setItem('nocap_game_state', JSON.stringify(state));
-            this.log('âœ… State saved');
+            this.log('State saved');
             return true;
         } catch (error) {
-            this.log(`âŒ Save failed: ${error.message}`, 'error');
+            this.log(`Save failed: ${error.message}`, 'error');
             return false;
         }
     }
 
     clearStorage() {
         localStorage.removeItem('nocap_game_state');
-        this.log('ðŸ—‘ï¸ Storage cleared');
+        this.log('Storage cleared');
     }
 
     log(message, type = 'info') {
@@ -117,7 +117,7 @@ class FirebaseGameService {
 
     async initialize() {
         try {
-            this.log('ðŸ”¥ Firebase Service - Initialisierung...');
+            this.log('Firebase Service - Initialisierung...');
 
             if (typeof firebase === 'undefined') {
                 throw new Error('Firebase SDK nicht geladen');
@@ -125,26 +125,26 @@ class FirebaseGameService {
 
             if (!firebase.apps || firebase.apps.length === 0) {
                 this.app = firebase.initializeApp(this.config);
-                this.log('âœ… Firebase App initialisiert');
+                this.log('Firebase App initialisiert');
             } else {
                 this.app = firebase.app();
-                this.log('â„¹ï¸ Firebase App bereits initialisiert');
+                this.log('Firebase App bereits initialisiert');
             }
 
             // WICHTIG: Anonymous Auth
-            this.log('ðŸ” Starte anonyme Authentifizierung...');
+            this.log('Starte anonyme Authentifizierung...');
             this.auth = firebase.auth();
 
             try {
                 const userCredential = await this.auth.signInAnonymously();
-                this.log(`âœ… Anonym angemeldet: ${userCredential.user.uid}`);
+                this.log(`Anonym angemeldet: ${userCredential.user.uid}`);
             } catch (authError) {
-                this.log(`âŒ Auth Fehler: ${authError.message}`, 'error');
+                this.log(`Auth Fehler: ${authError.message}`, 'error');
                 throw authError;
             }
 
             this.database = firebase.database();
-            this.log('âœ… Database-Referenz erhalten');
+            this.log('Database-Referenz erhalten');
 
             await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -152,26 +152,26 @@ class FirebaseGameService {
 
             if (this.isConnected) {
                 this.isInitialized = true;
-                this.log('âœ… Firebase verbunden und bereit');
+                this.log('Firebase verbunden und bereit');
                 return true;
             } else {
-                this.log('âš ï¸ Erster Verbindungsversuch fehlgeschlagen, versuche erneut...');
+                this.log('Erster Verbindungsversuch fehlgeschlagen, versuche erneut...');
                 await new Promise(resolve => setTimeout(resolve, 1500));
 
                 this.isConnected = await this.testConnectionWithTimeout(15000);
 
                 if (this.isConnected) {
                     this.isInitialized = true;
-                    this.log('âœ… Firebase verbunden nach Retry');
+                    this.log('Firebase verbunden nach Retry');
                     return true;
                 } else {
-                    this.log('âŒ Firebase Verbindung fehlgeschlagen');
+                    this.log('Firebase Verbindung fehlgeschlagen');
                     return false;
                 }
             }
 
         } catch (error) {
-            this.log(`âŒ Firebase Fehler: ${error.message}`, 'error');
+            this.log(`Firebase Fehler: ${error.message}`, 'error');
             console.error('Firebase Init Error:', error);
             this.isInitialized = false;
             this.isConnected = false;
@@ -182,7 +182,7 @@ class FirebaseGameService {
     async testConnectionWithTimeout(timeout = 15000) {
         return new Promise(async (resolve) => {
             const timeoutId = setTimeout(() => {
-                this.log('âš ï¸ Verbindungstest Timeout', 'warning');
+                this.log('Verbindungstest Timeout', 'warning');
                 resolve(false);
             }, timeout);
 
@@ -192,11 +192,11 @@ class FirebaseGameService {
                 clearTimeout(timeoutId);
 
                 const connected = snapshot.val() === true;
-                this.log(`ðŸ” Verbindungstest: ${connected ? 'Verbunden âœ…' : 'Nicht verbunden âŒ'}`);
+                this.log(`Verbindungstest: ${connected ? 'Verbunden' : 'Nicht verbunden'}`);
                 resolve(connected);
             } catch (error) {
                 clearTimeout(timeoutId);
-                this.log(`âŒ Verbindungstest Fehler: ${error.message}`, 'error');
+                this.log(`Verbindungstest Fehler: ${error.message}`, 'error');
                 resolve(false);
             }
         });
@@ -204,32 +204,32 @@ class FirebaseGameService {
 
     async getGameData(gameId) {
         if (!this.isReady) {
-            this.log('âš ï¸ getGameData: Firebase nicht bereit');
+            this.log('getGameData: Firebase nicht bereit');
             return null;
         }
 
         if (!gameId) {
-            this.log('âš ï¸ getGameData: Keine gameId');
+            this.log('getGameData: Keine gameId');
             return null;
         }
 
         try {
-            this.log(`ðŸ” Suche Spiel mit ID: ${gameId}`);
+            this.log(`Suche Spiel mit ID: ${gameId}`);
             const gameRef = this.database.ref(`games/${gameId}`);
 
             const snapshot = await gameRef.once('value');
 
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                this.log('âœ… Spieldaten gefunden');
+                this.log('Spieldaten gefunden');
                 console.log('Game Data Structure:', data);
                 return data;
             } else {
-                this.log('âš ï¸ Kein Spiel gefunden mit dieser ID');
+                this.log('Kein Spiel gefunden mit dieser ID');
                 return null;
             }
         } catch (error) {
-            this.log(`âŒ Fehler beim Laden: ${error.message}`, 'error');
+            this.log(`Fehler beim Laden: ${error.message}`, 'error');
             console.error('getGameData Error:', error);
             return null;
         }
@@ -241,7 +241,7 @@ class FirebaseGameService {
         }
 
         try {
-            this.log(`ðŸš€ Trete Spiel bei: ${gameId} als ${playerName}`);
+            this.log(`Trete Spiel bei: ${gameId} als ${playerName}`);
 
             const playerId = `guest_${playerName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
 
@@ -266,19 +266,19 @@ class FirebaseGameService {
             };
 
         } catch (error) {
-            this.log(`âŒ Fehler beim Beitreten: ${error.message}`, 'error');
+            this.log(`Fehler beim Beitreten: ${error.message}`, 'error');
             console.error('joinGame Error:', error);
             throw error;
         }
     }
 
     cleanup() {
-        this.log('ðŸ§¹ Cleanup...');
+        this.log('Cleanup...');
         this.listeners.forEach(({ ref, listener }) => {
             try {
                 ref.off('value', listener);
             } catch (error) {
-                this.log(`âŒ Fehler beim Entfernen: ${error.message}`, 'error');
+                this.log(`Fehler beim Entfernen: ${error.message}`, 'error');
             }
         });
         this.listeners = [];
@@ -311,16 +311,16 @@ let firebaseInitialized = false;
 let pendingGameCode = null;
 
 const categoryData = {
-    fsk0: { name: 'Familie & Freunde', icon: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦' },
-    fsk16: { name: 'Party Time', icon: 'ðŸŽ‰' },
-    fsk18: { name: 'HeiÃŸ & Gewagt', icon: 'ðŸ”¥' },
-    special: { name: 'Special Edition', icon: 'â­' }
+    fsk0: { name: 'Familie & Freunde', icon: '👨‍👩‍👧‍👦' },
+    fsk16: { name: 'Party Time', icon: '🎉' },
+    fsk18: { name: 'Heiß & Gewagt', icon: '🔥' },
+    special: { name: 'Special Edition', icon: '⭐' }
 };
 
 const difficultyNames = {
-    easy: 'Entspannt ðŸ˜Œ',
-    medium: 'Ausgewogen ðŸŽ¯',
-    hard: 'Hardcore ðŸ’€'
+    easy: 'Entspannt 😌',
+    medium: 'Ausgewogen 🎯',
+    hard: 'Hardcore 💀'
 };
 
 // ===== INITIALIZATION =====
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initJoinGame() {
-    log('ðŸŽ® Join Game - Initialisierung...');
+    log('Join Game - Initialisierung...');
 
     gameState = new GameState();
     gameState.clearStorage();
@@ -339,7 +339,7 @@ async function initJoinGame() {
     const code = urlParams.get('code');
     if (code && code.length === 6) {
         pendingGameCode = code.toUpperCase();
-        log(`ðŸ”— URL-Parameter gefunden: ${pendingGameCode}`);
+        log(`URL-Parameter gefunden: ${pendingGameCode}`);
     }
 
     // Check age gate
@@ -351,11 +351,11 @@ async function initJoinGame() {
 }
 
 async function continueInitialization() {
-    log('â–¶ï¸ Setze Initialisierung fort...');
+    log('Setze Initialisierung fort...');
 
     firebaseService = new FirebaseGameService();
 
-    log('â³ Firebase wird initialisiert...');
+    log('Firebase wird initialisiert...');
     showLoading();
 
     firebaseInitialized = await firebaseService.initialize();
@@ -375,11 +375,11 @@ async function continueInitialization() {
             }, 500);
         }
     } else {
-        log('âŒ Firebase nicht verfÃ¼gbar');
+        log('Firebase nicht verfügbar');
         showNotification('Verbindung zu Firebase fehlgeschlagen. Bitte Seite neu laden.', 'error');
     }
 
-    log('âœ… Join Game bereit!');
+    log('Join Game bereit!');
 }
 
 // ===== GAME CODE HANDLING =====
@@ -413,7 +413,7 @@ async function checkGameExists(gameCode) {
     const input = document.getElementById('game-code');
 
     try {
-        log(`ðŸ” Checking game: ${gameCode}`);
+        log(`Checking game: ${gameCode}`);
 
         if (!firebaseService.isReady) {
             throw new Error('Firebase nicht verbunden. Bitte warten oder Seite neu laden.');
@@ -430,7 +430,7 @@ async function checkGameExists(gameCode) {
         }
 
         if (gameData.gameState === 'playing') {
-            throw new Error('Spiel lÃ¤uft bereits');
+            throw new Error('Spiel läuft bereits');
         }
 
         currentGameData = gameData;
@@ -438,11 +438,11 @@ async function checkGameExists(gameCode) {
         displayGameInfo(gameData);
         input.classList.add('valid');
 
-        showNotification('Spiel gefunden! âœ…', 'success');
+        showNotification('Spiel gefunden!', 'success');
         validateForm();
 
     } catch (error) {
-        log(`âŒ Check failed: ${error.message}`, 'error');
+        log(`Check failed: ${error.message}`, 'error');
         input.classList.add('error');
         showNotification(error.message, 'error');
         currentGameData = null;
@@ -453,7 +453,7 @@ async function checkGameExists(gameCode) {
 function displayGameInfo(gameData) {
     const infoDiv = document.getElementById('game-info');
 
-    log('ðŸ“Š Displaying game info:', gameData);
+    log('Displaying game info:', gameData);
 
     // Host
     const hostPlayer = Object.values(gameData.players || {}).find(p => p.isHost);
@@ -469,13 +469,13 @@ function displayGameInfo(gameData) {
 
     // Categories - UNTERSTÃœTZT BEIDE FORMATE
     const categoriesArray = gameData.categories || gameData.selectedCategories || [];
-    log('ðŸ“‹ Categories found:', categoriesArray);
+    log('Categories found:', categoriesArray);
 
     const categories = categoriesArray
         .map(cat => {
             const catData = categoryData[cat];
             if (!catData) {
-                log(`âš ï¸ Unknown category: ${cat}`, 'warning');
+                log(`Unknown category: ${cat}`, 'warning');
                 return cat;
             }
             return catData.icon;
@@ -514,7 +514,7 @@ async function joinGame() {
     const playerName = document.getElementById('player-name').value.trim();
 
     if (!currentGameData) {
-        showNotification('Spiel-Code ungÃ¼ltig', 'error');
+        showNotification('Spiel-Code ungültig', 'error');
         return;
     }
 
@@ -528,13 +528,13 @@ async function joinGame() {
         return;
     }
 
-    log(`ðŸš€ Joining game: ${gameCode} as ${playerName}`);
+    log(`Joining game: ${gameCode} as ${playerName}`);
     showLoading();
 
     try {
         const joinResult = await firebaseService.joinGame(gameCode, playerName);
 
-        log('âœ… Successfully joined!');
+        log('Successfully joined!');
         log('Join Result:', joinResult);
 
         // Setup game state - UNTERSTÃœTZT BEIDE FORMATE
@@ -550,20 +550,20 @@ async function joinGame() {
         gameState.gamePhase = 'lobby';
         gameState.timestamp = Date.now();
 
-        log('ðŸ’¾ Saving game state:', gameState);
+        log('Saving game state:', gameState);
         gameState.save();
 
         log('âœ… Game state saved');
 
         hideLoading();
-        showNotification('Erfolgreich beigetreten! ðŸŽ‰', 'success');
+        showNotification('Erfolgreich beigetreten!', 'success');
 
         setTimeout(() => {
             window.location.href = 'multiplayer-lobby.html';
         }, 1500);
 
     } catch (error) {
-        log(`âŒ Join failed: ${error.message}`, 'error');
+        log(`Join failed: ${error.message}`, 'error');
         hideLoading();
         showNotification('Fehler beim Beitreten: ' + error.message, 'error');
     }
@@ -614,7 +614,7 @@ window.addEventListener('beforeunload', function() {
 
 // ===== DEBUG =====
 window.debugJoinGame = function() {
-    console.log('ðŸ” === JOIN GAME DEBUG ===');
+    console.log('=== JOIN GAME DEBUG ===');
     console.log('GameState:', gameState);
     console.log('Current Game Data:', currentGameData);
     console.log('Firebase Status:', {

@@ -30,14 +30,14 @@
             const gameState = new GameState();
             if (gameState.selectedCategories && gameState.selectedCategories.includes('fsk18')) {
                 if (!data.isAdult) {
-                    console.log('FSK-18-Inhalte nur fÃ¼r Erwachsene!');
-                    alert('FSK-18-Inhalte sind nur fÃ¼r Erwachsene zugÃ¤nglich!');
+                    console.log('FSK-18-Inhalte nur für Erwachsene!');
+                    alert('FSK-18-Inhalte sind nur für Erwachsene zugÃ¤nglich!');
                     window.location.href = '/index.html';
                     return false;
                 }
             }
 
-            console.log('âœ… Age-Verification erfolgreich');
+            console.log('Age-Verification erfolgreich');
             return true;
 
         } catch (error) {
@@ -126,7 +126,7 @@
 
                 if (this.isConnected) {
                     this.isInitialized = true;
-                    this.log('Firebase vollstÃ¤ndig verbunden und bereit!');
+                    this.log('Firebase vollständig verbunden und bereit!');
                 } else {
                     this.log('Firebase Verbindung fehlgeschlagen');
                     this.isInitialized = false;
@@ -373,7 +373,7 @@
                     await firebaseService.setPlayerOnline(gameState.gameId, gameState.playerId, true);
                 }
             } else {
-                log('Firebase nicht verfÃ¼gbar - Offline-Modus');
+                log('Firebase nicht verfügbar - Offline-Modus');
                 startLocalFallback();
             }
 
@@ -520,7 +520,7 @@
             }
 
         } catch (error) {
-            log(`âŒ Fehler beim Laden: ${error.message}`, 'error');
+            log(`Fehler beim Laden: ${error.message}`, 'error');
         }
     }
 
@@ -726,7 +726,7 @@
                 // XSS-SCHUTZ: DOMPurify.sanitize()
                 categoriesDisplay.innerHTML = DOMPurify.sanitize(categoriesHTML);
             } else {
-                categoriesDisplay.innerHTML = '<span style="color: rgba(255,255,255,0.5);">LÃ¤dt...</span>';
+                categoriesDisplay.innerHTML = '<span style="color: rgba(255,255,255,0.5);">Lädt...</span>';
             }
         }
     }
@@ -791,11 +791,11 @@
             const playerRole = document.createElement('div');
             playerRole.className = 'player-role';
             if (player.isHost) {
-                playerRole.textContent = 'ðŸ‘‘ Host';
+                playerRole.textContent = 'Host';
             } else if (player.isMe) {
-                playerRole.textContent = 'ðŸ‘¤ Du';
+                playerRole.textContent = 'Du';
             } else {
-                playerRole.textContent = 'ðŸ‘¤ Spieler';
+                playerRole.textContent = 'Spieler';
             }
 
             playerDetails.appendChild(playerName);
