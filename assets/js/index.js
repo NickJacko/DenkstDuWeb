@@ -173,7 +173,9 @@ function startSingleDevice() {
     }
 
     // Set device mode
-    gameState.setDeviceMode('single');
+    gameState.deviceMode = 'single';
+    gameState.alcoholMode = alcoholMode;
+    gameState.save();
 
     // Save age settings
     localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
@@ -193,7 +195,9 @@ function startMultiplayer() {
     }
 
     // Set device mode
-    gameState.setDeviceMode('multi');
+    gameState.deviceMode = 'multi';
+    gameState.alcoholMode = alcoholMode;
+    gameState.save();
 
     // Save age settings
     localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
@@ -213,7 +217,10 @@ function joinGame() {
     }
 
     // Set device mode
-    gameState.setDeviceMode('multi');
+    gameState.deviceMode = 'multi';
+    gameState.alcoholMode = alcoholMode;
+    gameState.isGuest = true;
+    gameState.save();
 
     // Save age settings
     localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
