@@ -1,119 +1,51 @@
-// ===== NO-CAP LANDING PAGE =====
-// Version: 2.0 - Refactored with central GameState
-// Landing Page with Age-Gate, Mode Selection & Alcohol Toggle
+/**
+ * No-Cap Landing Page - Main Script
+ * Handles age verification, game mode selection, and Firebase initialization
+ */
 
-'use strict';
-
-// ===== GLOBAL VARIABLES =====
-let gameState = null;
+// ===========================
+// GLOBAL STATE
+// ===========================
 let ageVerified = false;
 let isAdult = false;
 let alcoholMode = false;
+let gameState = null;
 
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', async function() {
-    initLandingPage();
-});
+// ===========================
+// AGE VERIFICATION
+// ===========================
 
-async function initLandingPage() {
-    log('🧢 No-Cap Landing Page loaded');
+/**
+ * Show age verification modal
+ */
+function showAgeModal() {
+    const modal = document.getElementById('age-modal');
+    const mainApp = document.getElementById('main-app');
 
-    // Load central GameState
-    if (typeof GameState === 'undefined') {
-        log('❌ GameState not found - Load central version', 'error');
-        showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
-        return;
-    }
-
-    gameState = GameState.load();
-
-    // Initialize Firebase Auth
-    await initializeFirebaseAuth();
-
-    // Check for existing age verification
-    const hasExistingVerification = checkExistingVerification();
-
-    if (hasExistingVerification) {
-        // User already verified, skip modal
-        updateUIForVerification();
-        hideAgeModal();
-        animateCards();
-    } else {
-        // Show age modal for first-time users
-        showAgeModal();
-    }
-
-    // Setup event listeners
-    setupEventListeners();
-
-    // Handle URL parameters for direct game joining
-    handleURLParameters();
-
-    log('✅ Landing page initialized');
-}
-
-// ===== FIREBASE AUTHENTICATION =====
-async function initializeFirebaseAuth() {
-    try {
-        // Check if authService is available
-        if (typeof authService === 'undefined' || !authService.initialize) {
-            log('⚠️ Auth service not available, continuing in offline mode', 'warning');
-            return;
-        }
-
-        await authService.initialize();
-        log('✅ Firebase Auth initialized');
-
-        // Check if user already authenticated
-        if (!authService.isUserAuthenticated()) {
-            // Automatically sign in anonymously for immediate play
-            const result = await authService.signInAnonymously();
-            if (result.success) {
-                log(`✅ Anonymous user created: ${result.userId}`);
-            } else {
-                log('❌ Anonymous sign-in failed', 'error');
-            }
-        } else {
-            log(`✅ User already authenticated: ${authService.getUserId()}`);
-        }
-    } catch (error) {
-        log(`❌ Firebase initialization error: ${error.message}`, 'error');
-        // App works anyway in offline mode
+    if (modal && mainApp) {
+        modal.style.display = 'flex';
+        mainApp.style.filter = 'blur(5px)';
+        mainApp.style.pointerEvents = 'none';
     }
 }
 
-// ===== AGE VERIFICATION =====
-function checkExistingVerification() {
-    try {
-        const savedVerification = localStorage.getItem('nocap_age_verification');
-        if (!savedVerification) {
-            return false;
-        }
+/**
+ * Hide age verification modal
+ */
+function hideAgeModal() {
+    const modal = document.getElementById('age-modal');
+    const mainApp = document.getElementById('main-app');
 
-        const verification = JSON.parse(savedVerification);
-        const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000;
-
-        // Check if verification is still valid (24 hours)
-        if (now - verification.timestamp < oneDay) {
-            ageVerified = verification.ageVerified || false;
-            isAdult = verification.isAdult || false;
-            alcoholMode = verification.alcoholMode || false;
-
-            log('✅ Age verification loaded from storage', 'success');
-            log(`📋 Age verified: ${ageVerified}, Is adult: ${isAdult}, Alcohol mode: ${alcoholMode}`);
-            return true;
-        } else {
-            log('⚠️ Age verification expired', 'warning');
-            localStorage.removeItem('nocap_age_verification');
-            return false;
-        }
-    } catch (error) {
-        log(`❌ Error checking verification: ${error.message}`, 'error');
-        return false;
+    if (modal && mainApp) {
+        modal.style.display = 'none';
+        mainApp.style.filter = 'none';
+        mainApp.style.pointerEvents = 'auto';
     }
 }
 
+/**
+ * Save age verification to localStorage
+ */
 function saveVerification(isAdultUser, allowAlcohol) {
     const verification = {
         ageVerified: true,
@@ -121,16 +53,56 @@ function saveVerification(isAdultUser, allowAlcohol) {
         alcoholMode: allowAlcohol,
         timestamp: Date.now()
     };
-    localStorage.setItem('nocap_age_verification', JSON.stringify(verification));
 
-    ageVerified = true;
-    isAdult = isAdultUser;
-    alcoholMode = allowAlcohol;
+    try {
+        localStorage.setItem('nocap_age_verification', JSON.stringify(verification));
+        ageVerified = true;
+        isAdult = isAdultUser;
+        alcoholMode = allowAlcohol;
 
-    log('✅ Age verification saved', 'success');
-    log(`📋 Is adult: ${isAdultUser}, Alcohol mode: ${allowAlcohol}`);
+        console.log('✅ Age verification saved:', verification);
+    } catch (error) {
+        console.error('❌ Could not save age verification:', error);
+    }
 }
 
+/**
+ * Load age verification from localStorage
+ */
+function loadVerification() {
+    try {
+        const saved = localStorage.getItem('nocap_age_verification');
+
+        if (!saved) {
+            return false;
+        }
+
+        const verification = JSON.parse(saved);
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+
+        // Check if verification is still valid (24 hours)
+        if (verification.timestamp && now - verification.timestamp < oneDay) {
+            ageVerified = verification.ageVerified || false;
+            isAdult = verification.isAdult || false;
+            alcoholMode = verification.alcoholMode || false;
+
+            console.log('✅ Age verification loaded:', verification);
+            return true;
+        } else {
+            console.log('⚠️ Age verification expired');
+            localStorage.removeItem('nocap_age_verification');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Could not load age verification:', error);
+        return false;
+    }
+}
+
+/**
+ * Update UI based on age verification (alcohol-free mode)
+ */
 function updateUIForVerification() {
     if (!alcoholMode) {
         // Update UI for alcohol-free mode
@@ -138,245 +110,160 @@ function updateUIForVerification() {
         const drinkText = document.getElementById('drink-text');
         const step4Text = document.getElementById('step4-text');
 
-        if (drinkIcon) drinkIcon.textContent = '🎯';
-        if (drinkText) drinkText.textContent = 'Bekomme Challenges bei falschen Schätzungen';
-        if (step4Text) step4Text.textContent = 'Wer falsch lag, bekommt eine Challenge!';
-
-        log('✅ UI updated for alcohol-free mode');
-    }
-}
-
-function showAgeModal() {
-    const modal = document.getElementById('age-modal');
-    const mainApp = document.getElementById('main-app');
-
-    if (modal) modal.style.display = 'flex';
-    if (mainApp) {
-        mainApp.style.filter = 'blur(5px)';
-        mainApp.style.pointerEvents = 'none';
-    }
-}
-
-function hideAgeModal() {
-    const modal = document.getElementById('age-modal');
-    const mainApp = document.getElementById('main-app');
-
-    if (modal) modal.style.display = 'none';
-    if (mainApp) {
-        mainApp.style.filter = 'none';
-        mainApp.style.pointerEvents = 'auto';
-    }
-}
-
-// ===== EVENT LISTENERS SETUP =====
-function setupEventListeners() {
-    log('🔧 Setting up event listeners...');
-
-    // Age checkbox handling
-    const ageCheckbox = document.getElementById('age-checkbox');
-    if (ageCheckbox) {
-        ageCheckbox.addEventListener('change', handleAgeCheckbox);
-    }
-
-    // Age verification buttons
-    const btn18Plus = document.getElementById('btn-18plus');
-    if (btn18Plus) {
-        btn18Plus.addEventListener('click', handleAdultVerification);
-    }
-
-    const btnUnder18 = document.getElementById('btn-under-18');
-    if (btnUnder18) {
-        btnUnder18.addEventListener('click', handleMinorVerification);
-    }
-
-    // Mode selection - using delegation
-    document.addEventListener('click', function(e) {
-        // Single device mode
-        if (e.target.closest('.mode-card:not(.featured):not([onclick*="join"])')) {
-            const card = e.target.closest('.mode-card');
-            if (card && card.textContent.includes('Ein Gerät')) {
-                startSingleDevice();
-            }
-        }
-        // Multiplayer mode (featured card)
-        else if (e.target.closest('.mode-card.featured')) {
-            startMultiplayer();
-        }
-        // Join game
-        else if (e.target.closest('.mode-card') && e.target.closest('.mode-card').textContent.includes('beitreten')) {
-            joinGame();
+        if (drinkIcon) {
+            drinkIcon.textContent = '🎯';
         }
 
-        // Scroll indicator
-        if (e.target.closest('.scroll-indicator')) {
-            const gameModes = document.querySelector('.game-modes');
-            if (gameModes) {
-                gameModes.scrollIntoView({ behavior: 'smooth' });
-            }
+        if (drinkText) {
+            drinkText.textContent = 'Bekomme Challenges bei falschen Schätzungen';
         }
-    });
 
-    log('✅ Event listeners setup complete');
-}
-
-function handleAgeCheckbox(e) {
-    const btn18Plus = document.getElementById('btn-18plus');
-    if (!btn18Plus) return;
-
-    btn18Plus.disabled = !e.target.checked;
-
-    if (e.target.checked) {
-        btn18Plus.classList.add('enabled');
-    } else {
-        btn18Plus.classList.remove('enabled');
+        if (step4Text) {
+            step4Text.textContent = 'Wer falsch lag, bekommt eine Challenge!';
+        }
     }
 }
 
-function handleAdultVerification() {
-    const checkbox = document.getElementById('age-checkbox');
-    if (!checkbox || !checkbox.checked) {
-        showNotification('Bitte bestätige zuerst die Checkbox', 'warning');
+// ===========================
+// FIREBASE INITIALIZATION
+// ===========================
+
+/**
+ * Initialize Firebase authentication
+ */
+async function initializeFirebase() {
+    if (!window.authService) {
+        console.warn('⚠️ Firebase authService not available');
         return;
     }
 
-    saveVerification(true, true);
-    updateUIForVerification();
-    hideAgeModal();
-    animateCards();
-    showNotification('Spiel mit allen Inhalten verfügbar', 'success');
+    try {
+        await authService.initialize();
+        console.log('✅ Firebase Auth initialized');
 
-    log('✅ Adult verification completed');
+        // Check if user is already authenticated
+        if (!authService.isUserAuthenticated()) {
+            // Automatically sign in anonymously for immediate gameplay
+            const result = await authService.signInAnonymously();
+            if (result.success) {
+                console.log('✅ Anonymous user created:', result.userId);
+            } else {
+                console.error('❌ Anonymous sign-in failed');
+            }
+        } else {
+            console.log('✅ User already authenticated:', authService.getUserId());
+        }
+    } catch (error) {
+        console.error('❌ Firebase initialization error:', error);
+        // App continues to work in offline mode
+    }
 }
 
-function handleMinorVerification() {
-    saveVerification(false, false);
-    updateUIForVerification();
-    hideAgeModal();
-    animateCards();
-    showNotification('Jugendschutz-Modus aktiviert - FSK 18+ Inhalte sind ausgeblendet', 'info');
+// ===========================
+// GAME MODE SELECTION
+// ===========================
 
-    log('✅ Minor verification completed (alcohol-free mode)');
-}
-
-// ===== GAME MODE SELECTION =====
+/**
+ * Start single device mode
+ */
 function startSingleDevice() {
     if (!ageVerified) {
         showNotification('Bitte bestätige zuerst dein Alter', 'warning');
         return;
     }
 
-    gameState.deviceMode = 'single';
-    gameState.save();
+    // Set device mode
+    gameState.setDeviceMode('single');
 
+    // Save age settings
     localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
     localStorage.setItem('nocap_is_adult', isAdult.toString());
 
-    log('🎮 Starting single device mode');
+    console.log('🎮 Starting single device mode');
     window.location.href = 'category-selection.html';
 }
 
+/**
+ * Start multiplayer mode
+ */
 function startMultiplayer() {
     if (!ageVerified) {
         showNotification('Bitte bestätige zuerst dein Alter', 'warning');
         return;
     }
 
-    gameState.deviceMode = 'multi';
-    gameState.save();
+    // Set device mode
+    gameState.setDeviceMode('multi');
 
+    // Save age settings
     localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
     localStorage.setItem('nocap_is_adult', isAdult.toString());
 
-    log('🌐 Starting multiplayer mode');
+    console.log('🌐 Starting multiplayer mode');
     window.location.href = 'multiplayer-category-selection.html';
 }
 
+/**
+ * Join existing game
+ */
 function joinGame() {
     if (!ageVerified) {
         showNotification('Bitte bestätige zuerst dein Alter', 'warning');
         return;
     }
 
-    gameState.deviceMode = 'multi';
-    gameState.save();
+    // Set device mode
+    gameState.setDeviceMode('multi');
 
+    // Save age settings
     localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
     localStorage.setItem('nocap_is_adult', isAdult.toString());
 
-    log('🔗 Joining multiplayer game');
+    console.log('🔗 Joining multiplayer game');
     window.location.href = 'join-game.html';
 }
 
-// ===== URL PARAMETERS HANDLING =====
-function handleURLParameters() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const gameId = urlParams.get('gameId');
+// ===========================
+// NOTIFICATION SYSTEM
+// ===========================
 
-    if (gameId) {
-        log(`🔗 Direct game join detected: ${gameId}`);
-
-        // Wait for age verification, then redirect
-        const checkVerification = setInterval(() => {
-            if (ageVerified) {
-                clearInterval(checkVerification);
-                log(`🚀 Redirecting to join-game with ID: ${gameId}`);
-                window.location.href = `join-game.html?gameId=${gameId}`;
-            }
-        }, 100);
-    }
-}
-
-// ===== ANIMATIONS =====
-function animateCards() {
-    setTimeout(() => {
-        const cards = document.querySelectorAll('.mode-card');
-        cards.forEach((card, index) => {
-            setTimeout(() => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(30px)';
-                card.style.transition = 'all 0.6s ease';
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 100);
-            }, index * 200);
-        });
-    }, 500);
-}
-
-// ===== UTILITY FUNCTIONS =====
+/**
+ * Show toast notification
+ */
 function showNotification(message, type = 'info') {
     // Remove existing notifications
     document.querySelectorAll('.toast-notification').forEach(n => n.remove());
 
+    // Create notification element
     const notification = document.createElement('div');
     notification.className = `toast-notification ${type}`;
 
-    const iconMap = {
-        'success': '✅',
-        'warning': '⚠️',
-        'error': '❌',
-        'info': 'ℹ️'
-    };
+    // Get icon based on type
+    let icon = 'ℹ️';
+    if (type === 'success') icon = '✅';
+    else if (type === 'warning') icon = '⚠️';
+    else if (type === 'error') icon = '❌';
 
-    const toastContent = document.createElement('div');
-    toastContent.className = 'toast-content';
+    // Sanitize message
+    const sanitizedMessage = DOMPurify.sanitize(message, { ALLOWED_TAGS: [] });
 
-    const toastIcon = document.createElement('div');
-    toastIcon.className = 'toast-icon';
-    toastIcon.textContent = iconMap[type] || 'ℹ️';
+    // Build notification HTML
+    const html = `
+        <div class="toast-content">
+            <div class="toast-icon">${icon}</div>
+            <div class="toast-message">${sanitizedMessage}</div>
+        </div>
+    `;
 
-    const toastMessage = document.createElement('div');
-    toastMessage.className = 'toast-message';
-    toastMessage.textContent = message;
+    notification.innerHTML = DOMPurify.sanitize(html);
 
-    toastContent.appendChild(toastIcon);
-    toastContent.appendChild(toastMessage);
-    notification.appendChild(toastContent);
-
+    // Add to DOM
     document.body.appendChild(notification);
+
+    // Show with animation
     setTimeout(() => notification.classList.add('show'), 100);
 
+    // Auto-hide after 3 seconds
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
@@ -387,31 +274,226 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-function log(message, type = 'info') {
-    const colors = {
-        info: '#4488ff',
-        warning: '#ffaa00',
-        error: '#ff4444',
-        success: '#00ff00'
-    };
+// ===========================
+// ANIMATION HELPERS
+// ===========================
 
-    console.log(`%c[Index] ${message}`, `color: ${colors[type] || colors.info}`);
+/**
+ * Animate mode cards on page load
+ */
+function animateCards() {
+    setTimeout(() => {
+        document.querySelectorAll('.mode-card').forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                card.style.transition = 'all 0.6s ease';
+
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            }, index * 200);
+        });
+    }, 500);
 }
 
-// ===== DEBUG FUNCTIONS =====
-window.debugIndex = function() {
-    console.log('🔍 === INDEX (LANDING PAGE) DEBUG ===');
-    console.log('GameState:', gameState?.getDebugInfo?.());
-    console.log('Age Verified:', ageVerified);
-    console.log('Is Adult:', isAdult);
-    console.log('Alcohol Mode:', alcoholMode);
-    console.log('LocalStorage:', {
-        gameState: localStorage.getItem('nocap_game_state'),
-        ageVerification: localStorage.getItem('nocap_age_verification'),
-        alcoholMode: localStorage.getItem('nocap_alcohol_mode'),
-        isAdult: localStorage.getItem('nocap_is_adult')
-    });
-};
+/**
+ * Smooth scroll to section
+ */
+function smoothScrollTo(target) {
+    const element = document.querySelector(target);
+    if (element) {
+        element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+}
 
-log('✅ No-Cap Landing Page - JS loaded!');
-log('🛠️ Debug: debugIndex()');
+// ===========================
+// URL PARAMETER HANDLING
+// ===========================
+
+/**
+ * Handle direct game join via URL parameter
+ */
+function handleDirectJoin() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameId = urlParams.get('gameId');
+
+    if (gameId) {
+        console.log('🔗 Direct join detected for game:', gameId);
+
+        // Wait for age verification
+        const checkInterval = setInterval(() => {
+            if (ageVerified) {
+                clearInterval(checkInterval);
+                window.location.href = `join-game.html?gameId=${encodeURIComponent(gameId)}`;
+            }
+        }, 100);
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            if (!ageVerified) {
+                console.warn('⚠️ Age verification timeout for direct join');
+            }
+        }, 10000);
+    }
+}
+
+// ===========================
+// EVENT LISTENERS
+// ===========================
+
+/**
+ * Setup all event listeners
+ */
+function setupEventListeners() {
+    // Age checkbox
+    const ageCheckbox = document.getElementById('age-checkbox');
+    const btn18Plus = document.getElementById('btn-18plus');
+
+    if (ageCheckbox && btn18Plus) {
+        ageCheckbox.addEventListener('change', function() {
+            btn18Plus.disabled = !this.checked;
+
+            if (this.checked) {
+                btn18Plus.classList.add('enabled');
+            } else {
+                btn18Plus.classList.remove('enabled');
+            }
+        });
+    }
+
+    // 18+ button
+    if (btn18Plus) {
+        btn18Plus.addEventListener('click', function() {
+            const checkbox = document.getElementById('age-checkbox');
+            if (checkbox && checkbox.checked) {
+                saveVerification(true, true);
+                updateUIForVerification();
+                hideAgeModal();
+                animateCards();
+                showNotification('Spiel mit allen Inhalten verfügbar', 'success');
+            }
+        });
+    }
+
+    // Under 18 button
+    const btnUnder18 = document.getElementById('btn-under-18');
+    if (btnUnder18) {
+        btnUnder18.addEventListener('click', function() {
+            saveVerification(false, false);
+            updateUIForVerification();
+            hideAgeModal();
+            animateCards();
+            showNotification('Jugendschutz-Modus aktiviert - FSK 18+ Inhalte sind ausgeblendet', 'info');
+        });
+    }
+
+    // Game mode buttons
+    const btnSingle = document.getElementById('btn-single');
+    if (btnSingle) {
+        btnSingle.addEventListener('click', startSingleDevice);
+    }
+
+    const btnMulti = document.getElementById('btn-multi');
+    if (btnMulti) {
+        btnMulti.addEventListener('click', startMultiplayer);
+    }
+
+    const btnJoin = document.getElementById('btn-join');
+    if (btnJoin) {
+        btnJoin.addEventListener('click', joinGame);
+    }
+
+    // Mode cards (click on card itself)
+    const modeSingle = document.getElementById('mode-single');
+    if (modeSingle) {
+        modeSingle.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'BUTTON') {
+                startSingleDevice();
+            }
+        });
+    }
+
+    const modeMulti = document.getElementById('mode-multi');
+    if (modeMulti) {
+        modeMulti.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'BUTTON') {
+                startMultiplayer();
+            }
+        });
+    }
+
+    const modeJoin = document.getElementById('mode-join');
+    if (modeJoin) {
+        modeJoin.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'BUTTON') {
+                joinGame();
+            }
+        });
+    }
+
+    // Scroll indicator
+    const scrollIndicator = document.getElementById('scroll-indicator');
+    if (scrollIndicator) {
+        scrollIndicator.addEventListener('click', function() {
+            smoothScrollTo('.game-modes');
+        });
+    }
+}
+
+// ===========================
+// INITIALIZATION
+// ===========================
+
+/**
+ * Main initialization function
+ */
+async function initialize() {
+    console.log('🧢 No-Cap Landing Page loading...');
+
+    // Initialize GameState
+    if (typeof GameState !== 'undefined') {
+        gameState = new GameState();
+        console.log('✅ GameState initialized');
+    } else {
+        console.error('❌ GameState class not found!');
+        showNotification('Fehler beim Laden der Spieldaten', 'error');
+        return;
+    }
+
+    // Check for existing age verification
+    if (loadVerification()) {
+        updateUIForVerification();
+        hideAgeModal();
+        animateCards();
+    } else {
+        showAgeModal();
+    }
+
+    // Setup event listeners
+    setupEventListeners();
+
+    // Initialize Firebase
+    await initializeFirebase();
+
+    // Handle direct game join via URL
+    handleDirectJoin();
+
+    console.log('✅ No-Cap Landing Page ready!');
+}
+
+// ===========================
+// DOM READY
+// ===========================
+
+// Wait for DOM to be fully loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
+}
