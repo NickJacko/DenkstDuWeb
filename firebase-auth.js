@@ -1,23 +1,32 @@
 // firebase-auth.js
 // Firebase Authentication Service für No-Cap
+// Version 2.0 - Security Hardened
 
 class FirebaseAuthService {
     constructor() {
         this.currentUser = null;
         this.isAnonymous = false;
         this.isAuthenticated = false;
+        this.initialized = false;
 
-        // Firebase Config
-        this.firebaseConfig = {
+        // Firebase Config - SECURE VERSION
+        // Lädt Config aus globalem window.FIREBASE_CONFIG (wird von Build-Script injiziert)
+        // Fallback für lokale Entwicklung (mit Warnung)
+        this.firebaseConfig = window.FIREBASE_CONFIG || {
             apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
             authDomain: "denkstduwebsite.firebaseapp.com",
             databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "denkstduwebsite",
-            storageBucket: "denkstduwebsite.firebasestorage.app",
+            storageBucket: "denkstduwebsite.appspot.com",
             messagingSenderId: "27029260611",
             appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
             measurementId: "G-BNKNW95HK8"
         };
+
+        // Warnung wenn Fallback-Config verwendet wird
+        if (!window.FIREBASE_CONFIG) {
+            console.warn('⚠️ Using fallback Firebase config. Set window.FIREBASE_CONFIG in production!');
+        }
     }
 
     // Firebase initialisieren
@@ -27,6 +36,8 @@ class FirebaseAuthService {
             if (!firebase.apps.length) {
                 firebase.initializeApp(this.firebaseConfig);
                 console.log('✅ Firebase initialized');
+            } else {
+                console.log('✅ Firebase app already initialized');
             }
 
             // Auth State Observer
@@ -49,9 +60,11 @@ class FirebaseAuthService {
                 }
             });
 
+            this.initialized = true;
             return true;
         } catch (error) {
             console.error('❌ Firebase initialization failed:', error);
+            this.initialized = false;
             return false;
         }
     }
@@ -78,6 +91,20 @@ class FirebaseAuthService {
     // OPTION 2: E-Mail/Passwort Registrierung
     async createAccountWithEmail(email, password) {
         try {
+            // Input-Validierung
+            if (!this.validateEmail(email)) {
+                return {
+                    success: false,
+                    error: 'Ungültige E-Mail-Adresse.'
+                };
+            }
+            if (!this.validatePassword(password)) {
+                return {
+                    success: false,
+                    error: 'Passwort muss mindestens 6 Zeichen lang sein.'
+                };
+            }
+
             // Wenn bereits anonym eingeloggt, upgrade zu permanent account
             if (this.isAnonymous) {
                 const credential = firebase.auth.EmailAuthProvider.credential(email, password);
@@ -110,6 +137,20 @@ class FirebaseAuthService {
     // OPTION 3: E-Mail/Passwort Login
     async signInWithEmail(email, password) {
         try {
+            // Input-Validierung
+            if (!this.validateEmail(email)) {
+                return {
+                    success: false,
+                    error: 'Ungültige E-Mail-Adresse.'
+                };
+            }
+            if (!password) {
+                return {
+                    success: false,
+                    error: 'Passwort erforderlich.'
+                };
+            }
+
             const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
             console.log('✅ Email sign-in successful:', userCredential.user.uid);
             return {
@@ -194,13 +235,22 @@ class FirebaseAuthService {
     // User Daten in Realtime DB speichern
     async saveUserToDatabase(profile) {
         try {
+            // Validierung der Daten
+            if (!profile.userId) {
+                throw new Error('userId is required');
+            }
+            if (profile.email && !this.validateEmail(profile.email)) {
+                throw new Error('Invalid email format');
+            }
+
             const userRef = firebase.database().ref(`users/${profile.userId}`);
             await userRef.set({
                 email: profile.email,
                 isAnonymous: profile.isAnonymous,
                 createdAt: profile.createdAt,
                 lastSignIn: profile.lastSignIn,
-                isAdult: this.getAgeVerification()
+                isAdult: this.getAgeVerification(),
+                lastUpdate: firebase.database.ServerValue.TIMESTAMP
             });
             console.log('✅ User profile saved to database');
         } catch (error) {
@@ -221,6 +271,22 @@ class FirebaseAuthService {
         return false;
     }
 
+    // Validation Helpers
+    validateEmail(email) {
+        if (!email) return false;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    validatePassword(password) {
+        return password && password.length >= 6;
+    }
+
+    // Status Checks
+    isInitialized() {
+        return this.initialized;
+    }
+
     // User ID abrufen
     getUserId() {
         return this.currentUser ? this.currentUser.uid : null;
@@ -234,6 +300,17 @@ class FirebaseAuthService {
     // Prüfen ob User eingeloggt ist
     isUserAuthenticated() {
         return this.isAuthenticated;
+    }
+
+    // Get Current User
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    // Get User Display Name
+    getUserDisplayName() {
+        if (!this.currentUser) return null;
+        return this.currentUser.displayName || this.currentUser.email || 'Anonymer Spieler';
     }
 
     // Error Messages in Deutsch
@@ -254,10 +331,16 @@ class FirebaseAuthService {
     }
 }
 
-// Singleton Instance
-const authService = new FirebaseAuthService();
+// Singleton Instance - Wird global verfügbar gemacht
+if (typeof window.authService === 'undefined') {
+    window.authService = new FirebaseAuthService();
+    console.log('✅ FirebaseAuthService v2.0 initialized');
+}
 
-// Export für Verwendung in anderen Dateien
+// Fallback für direkten Zugriff
+const authService = window.authService;
+
+// Export für Verwendung in anderen Dateien (Node.js/Module-Kompatibilität)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = authService;
 }

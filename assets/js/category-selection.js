@@ -1,5 +1,5 @@
 // ===== NO-CAP CATEGORY SELECTION (SINGLE DEVICE MODE) =====
-// Version: 2.0 - Refactored with central GameState
+// Version: 3.1 - Security Hardened with XSS Protection & Encoding Fixed
 // Mode: Single Device - Category Selection with Age-Gate & Premium
 
 'use strict';
@@ -57,7 +57,12 @@ async function initCategorySelection() {
         return;
     }
 
-    gameState = GameState.load();
+    gameState = new GameState();
+
+    // Validate game state
+    if (!validateGameState()) {
+        return;
+    }
 
     // Check age verification
     checkAgeVerification();
@@ -98,222 +103,143 @@ async function initCategorySelection() {
 function validateGameState() {
     // Check device mode
     if (gameState.deviceMode !== 'single') {
-        log('❌ Not in single device mode', 'error');
-        showNotification('Nicht im Einzelgerät-Modus. Weiterleitung...', 'error');
-        setTimeout(() => window.location.href = 'index.html', 2000);
+        log('❌ Wrong device mode, redirecting to index', 'error');
+        showNotification('Falscher Spielmodus. Zurück zur Startseite...', 'warning');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
         return false;
     }
-
     return true;
 }
 
-// ===== EVENT LISTENERS SETUP =====
-function setupEventListeners() {
-    log('🔧 Setting up event listeners...');
-
-    // Back button
-    const backBtn = document.querySelector('.back-button');
-    if (backBtn) {
-        backBtn.addEventListener('click', goBack);
-    }
-
-    // Continue button
-    const continueBtn = document.getElementById('continue-btn');
-    if (continueBtn) {
-        continueBtn.addEventListener('click', proceedWithCategories);
-    }
-
-    // Category cards - using delegation
-    const categoryGrid = document.getElementById('category-grid');
-    if (categoryGrid) {
-        categoryGrid.addEventListener('click', function(e) {
-            const card = e.target.closest('.category-card');
-            if (card) {
-                // Check if clicked on unlock button
-                const unlockBtn = e.target.closest('.unlock-btn');
-                if (unlockBtn) {
-                    showPremiumInfo(e);
-                    return;
-                }
-                toggleCategory(card);
-            }
-        });
-    }
-
-    // Modal close buttons
-    const closeModalBtns = document.querySelectorAll('.close-btn');
-    closeModalBtns.forEach(btn => {
-        btn.addEventListener('click', closePremiumModal);
-    });
-
-    // Premium modal buttons
-    const laterBtn = document.querySelector('.btn-outline');
-    if (laterBtn && laterBtn.textContent.includes('Später')) {
-        laterBtn.addEventListener('click', closePremiumModal);
-    }
-
-    const buyBtn = document.querySelector('.btn-premium');
-    if (buyBtn) {
-        buyBtn.addEventListener('click', purchasePremium);
-    }
-
-    log('✅ Event listeners setup complete');
-}
-
-// ===== AGE VERIFICATION =====
 function checkAgeVerification() {
     try {
-        const verification = localStorage.getItem('nocap_age_verification');
-        if (verification) {
-            const data = JSON.parse(verification);
-            isAdult = data.isAdult || false;
+        // Load from localStorage
+        const ageData = localStorage.getItem('nocap_age_verification');
 
-            // Lock FSK 18 if user is under 18
-            if (!isAdult) {
-                const fsk18Card = document.querySelector('[data-category="fsk18"]');
-                if (fsk18Card) {
-                    fsk18Card.classList.add('locked');
-                    const lockedOverlay = document.getElementById('fsk18-locked');
-                    if (lockedOverlay) {
-                        lockedOverlay.style.display = 'flex';
-                    }
-                }
-                log('🔒 FSK 18 locked (user under 18)');
-            } else {
-                log('✅ FSK 18 unlocked (user 18+)');
-            }
-        } else {
-            // If no verification found, lock FSK 18
+        if (!ageData) {
+            log('⚠️ No age verification found, redirecting', 'warning');
+            window.location.href = 'index.html';
+            return;
+        }
+
+        const verification = JSON.parse(ageData);
+        isAdult = verification.isAdult || false;
+
+        log(`✅ Age verification loaded: ${isAdult ? '18+' : 'U18'}`);
+
+        // Lock FSK18 category if not adult
+        if (!isAdult) {
             const fsk18Card = document.querySelector('[data-category="fsk18"]');
             if (fsk18Card) {
                 fsk18Card.classList.add('locked');
-                const lockedOverlay = document.getElementById('fsk18-locked');
-                if (lockedOverlay) {
-                    lockedOverlay.style.display = 'flex';
-                }
             }
-            log('⚠️ No age verification found, FSK 18 locked', 'warning');
+
+            const fsk18Locked = document.getElementById('fsk18-locked');
+            if (fsk18Locked) {
+                fsk18Locked.style.display = 'flex';
+            }
         }
+
     } catch (error) {
-        log(`❌ Error checking age verification: ${error.message}`, 'error');
+        log(`❌ Error loading age verification: ${error.message}`, 'error');
+        window.location.href = 'index.html';
     }
 }
 
-// ===== PREMIUM STATUS =====
 async function checkPremiumStatus() {
     try {
         // Check if Firebase is available
         if (typeof firebase === 'undefined' || !firebase.database) {
-            log('⚠️ Firebase not available, premium locked', 'warning');
+            log('⚠️ Firebase not available, premium check skipped');
             return;
         }
 
-        // Check if auth service is available
+        // Check if authService is available
         if (typeof authService === 'undefined' || !authService.getUserId) {
-            log('⚠️ Auth service not available, premium locked', 'warning');
+            log('⚠️ Auth service not available, premium check skipped');
             return;
         }
 
         const userId = authService.getUserId();
         if (!userId) {
-            log('⚠️ No user ID, premium locked', 'warning');
+            log('⚠️ No user ID, premium check skipped');
             return;
         }
 
-        // Check in Firebase if user has premium
-        const userRef = firebase.database().ref(`users/${userId}/purchases/special`);
-        const snapshot = await userRef.once('value');
+        // Check for premium purchase
+        const purchaseRef = firebase.database().ref(`users/${userId}/purchases/special`);
+        const snapshot = await purchaseRef.once('value');
 
         if (snapshot.exists()) {
             hasPremium = true;
+            log('✅ Premium status: Active');
+
             // Unlock special category
             const specialCard = document.querySelector('[data-category="special"]');
             if (specialCard) {
                 specialCard.classList.remove('locked');
-                const lockedOverlay = document.getElementById('special-locked');
-                if (lockedOverlay) {
-                    lockedOverlay.style.display = 'none';
-                }
             }
-            log('✅ Premium unlocked');
+
+            const specialLocked = document.getElementById('special-locked');
+            if (specialLocked) {
+                specialLocked.style.display = 'none';
+            }
         } else {
-            log('🔒 Premium locked (not purchased)');
+            log('ℹ️ Premium status: Not purchased');
         }
+
     } catch (error) {
-        log(`❌ Error checking premium status: ${error.message}`, 'error');
+        log(`⚠️ Premium check error: ${error.message}`, 'warning');
+        // Continue without premium
     }
 }
 
-// ===== QUESTION COUNTS =====
 async function loadQuestionCounts() {
     try {
         // Check if Firebase is available
         if (typeof firebase === 'undefined' || !firebase.database) {
-            log('⚠️ Firebase not available, using fallback counts', 'warning');
+            log('⚠️ Firebase not available, using fallback counts');
             useFallbackCounts();
             return;
         }
 
-        const categories = ['fsk0', 'fsk16', 'fsk18', 'special'];
+        const questionsRef = firebase.database().ref('questions');
+        const snapshot = await questionsRef.once('value');
 
-        for (const category of categories) {
-            try {
-                const questionsRef = firebase.database().ref(`questions/${category}`);
-                const snapshot = await questionsRef.once('value');
+        if (snapshot.exists()) {
+            const questions = snapshot.val();
 
-                if (snapshot.exists()) {
-                    const questions = snapshot.val();
-                    const count = Object.keys(questions).length;
-                    questionCounts[category] = count;
-
-                    // Update UI
-                    updateQuestionCountUI(category, count);
-
-                    log(`✅ ${category}: ${count} questions`);
+            Object.keys(categoryData).forEach(category => {
+                const categoryQuestions = questions[category];
+                if (categoryQuestions && Array.isArray(categoryQuestions)) {
+                    questionCounts[category] = categoryQuestions.length;
                 } else {
-                    // Fallback for this category
-                    const fallbackCount = getFallbackCount(category);
-                    questionCounts[category] = fallbackCount;
-                    updateQuestionCountUI(category, fallbackCount);
-                    log(`⚠️ No questions for ${category}, using fallback: ${fallbackCount}`, 'warning');
+                    questionCounts[category] = getFallbackCount(category);
                 }
-            } catch (error) {
-                log(`⚠️ Error loading ${category}: ${error.message}`, 'warning');
-                const fallbackCount = getFallbackCount(category);
-                questionCounts[category] = fallbackCount;
-                updateQuestionCountUI(category, fallbackCount);
-            }
-        }
 
-        // Update Special count in premium modal
-        const specialCountEl = document.getElementById('special-question-count');
-        if (specialCountEl) {
-            specialCountEl.textContent = `${questionCounts.special}+`;
-        }
+                updateQuestionCountUI(category, questionCounts[category]);
+            });
 
-        log('✅ Question counts loaded');
+            log('✅ Question counts loaded from Firebase');
+        } else {
+            log('⚠️ No questions found in Firebase, using fallbacks');
+            useFallbackCounts();
+        }
 
     } catch (error) {
-        log(`❌ Error loading question counts: ${error.message}`, 'error');
+        log(`⚠️ Error loading question counts: ${error.message}`, 'warning');
         useFallbackCounts();
     }
 }
 
 function useFallbackCounts() {
-    const fallbackCounts = {
-        fsk0: 200,
-        fsk16: 300,
-        fsk18: 250,
-        special: 150
-    };
-
-    Object.assign(questionCounts, fallbackCounts);
-
-    Object.keys(fallbackCounts).forEach(category => {
-        updateQuestionCountUI(category, fallbackCounts[category]);
+    Object.keys(categoryData).forEach(category => {
+        questionCounts[category] = getFallbackCount(category);
+        updateQuestionCountUI(category, questionCounts[category]);
     });
-
-    log('📊 Using fallback question counts');
+    log('✅ Using fallback question counts');
 }
 
 function getFallbackCount(category) {
@@ -324,7 +250,8 @@ function getFallbackCount(category) {
 function updateQuestionCountUI(category, count) {
     const countElement = document.querySelector(`[data-category-count="${category}"]`);
     if (countElement) {
-        countElement.innerHTML = `~${count} Fragen`;
+        // XSS-SAFE: textContent instead of innerHTML
+        countElement.textContent = `~${count} Fragen`;
     }
 }
 
@@ -332,6 +259,12 @@ function updateQuestionCountUI(category, count) {
 function toggleCategory(element) {
     const category = element.dataset.category;
     if (!category) return;
+
+    // Validate category exists in categoryData
+    if (!categoryData[category]) {
+        log(`❌ Invalid category: ${category}`, 'error');
+        return;
+    }
 
     // Check if category is locked
     if (element.classList.contains('locked')) {
@@ -380,27 +313,31 @@ function updateSelectionSummary() {
         continueBtn.disabled = false;
         continueHint.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''} ausgewählt`;
 
-        // Build category list
-        const categoriesHTML = selectedCategories.map(category => {
-            const data = categoryData[category];
-            return `
-                <div class="selected-category-tag">
-                    <span>${data.icon}</span>
-                    <span>${data.name}</span>
-                </div>
-            `;
-        }).join('');
+        // XSS-SAFE: Build list using DOM manipulation instead of innerHTML
+        categoriesListElement.innerHTML = ''; // Clear first
 
-        // Use DOMPurify if available
-        if (typeof DOMPurify !== 'undefined') {
-            categoriesListElement.innerHTML = DOMPurify.sanitize(categoriesHTML);
-        } else {
-            categoriesListElement.innerHTML = categoriesHTML;
-        }
+        selectedCategories.forEach(category => {
+            const data = categoryData[category];
+            if (!data) return; // Skip invalid categories
+
+            // Create tag element
+            const tag = document.createElement('div');
+            tag.className = 'selected-category-tag';
+
+            const iconSpan = document.createElement('span');
+            iconSpan.textContent = data.icon;
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = data.name;
+
+            tag.appendChild(iconSpan);
+            tag.appendChild(nameSpan);
+            categoriesListElement.appendChild(tag);
+        });
 
         // Calculate total questions
         const totalQuestions = selectedCategories.reduce((sum, category) => {
-            return sum + questionCounts[category];
+            return sum + (questionCounts[category] || 0);
         }, 0);
         totalQuestionsElement.textContent = totalQuestions;
     }
@@ -482,6 +419,46 @@ async function purchasePremium() {
     }
 }
 
+// ===== EVENT LISTENERS =====
+function setupEventListeners() {
+    // Category cards
+    document.querySelectorAll('.category-card').forEach(card => {
+        card.addEventListener('click', function() {
+            toggleCategory(this);
+        });
+    });
+
+    // Continue button
+    const continueBtn = document.getElementById('continue-btn');
+    if (continueBtn) {
+        continueBtn.addEventListener('click', proceedWithCategories);
+    }
+
+    // Back button
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', goBack);
+    }
+
+    // Premium modal
+    const closePremiumBtn = document.getElementById('close-premium-modal');
+    if (closePremiumBtn) {
+        closePremiumBtn.addEventListener('click', closePremiumModal);
+    }
+
+    const purchasePremiumBtn = document.getElementById('purchase-premium-btn');
+    if (purchasePremiumBtn) {
+        purchasePremiumBtn.addEventListener('click', purchasePremium);
+    }
+
+    // ESC key closes modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closePremiumModal();
+        }
+    });
+}
+
 // ===== NAVIGATION =====
 function proceedWithCategories() {
     if (selectedCategories.length === 0) {
@@ -525,6 +502,7 @@ function hideLoading() {
     }
 }
 
+// XSS-SAFE: Notification using DOM manipulation
 function showNotification(message, type = 'info', duration = 3000) {
     // Remove existing notifications
     document.querySelectorAll('.notification').forEach(n => n.remove());
@@ -537,22 +515,30 @@ function showNotification(message, type = 'info', duration = 3000) {
 
     const notificationText = document.createElement('span');
     notificationText.className = 'notification-text';
-    notificationText.textContent = message;
+    // XSS-SAFE: Sanitize message by removing HTML tags and using textContent
+    const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
+    notificationText.textContent = sanitizedMessage;
 
     notificationContent.appendChild(notificationText);
     notification.appendChild(notificationContent);
 
-    const container = document.getElementById('notification-container');
-    if (container) {
-        container.appendChild(notification);
+    const container = document.getElementById('notification-container') || document.body;
+    container.appendChild(notification);
 
-        // Auto remove
+    // Show animation
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    // Auto remove
+    setTimeout(() => {
+        notification.classList.remove('show');
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.remove();
             }
-        }, duration);
-    }
+        }, 300);
+    }, duration);
 }
 
 function log(message, type = 'info') {
@@ -577,5 +563,5 @@ window.debugCategorySelection = function() {
     console.log('LocalStorage:', localStorage.getItem('nocap_game_state'));
 };
 
-log('✅ No-Cap Category Selection - JS loaded!');
+log('✅ No-Cap Category Selection v3.1 - XSS Protected & Encoding Fixed!');
 log('🛠️ Debug: debugCategorySelection()');

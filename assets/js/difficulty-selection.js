@@ -1,5 +1,5 @@
 // ===== NO-CAP DIFFICULTY SELECTION (SINGLE DEVICE MODE) =====
-// Version: 2.0 - Refactored with central GameState
+// Version: 2.1 - Security hardened with DOMPurify, encoding fixed
 // Mode: Single Device - Difficulty Selection with Alcohol Mode
 
 'use strict';
@@ -29,6 +29,12 @@ function initDifficultySelection() {
         log('❌ GameState not found - Load central version', 'error');
         showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
         return;
+    }
+
+    // Check if DOMPurify is available
+    if (typeof DOMPurify === 'undefined') {
+        log('❌ DOMPurify not found - Security risk!', 'error');
+        console.error('SECURITY: DOMPurify library is required but not loaded!');
     }
 
     gameState = GameState.load();
@@ -192,15 +198,34 @@ function updateDifficultyUI(difficulty, content) {
     const baseEl = document.getElementById(`${difficulty}-base`);
     const formulaEl = document.getElementById(`${difficulty}-formula`);
 
+    // XSS Protection: Sanitize HTML content before inserting
     if (iconEl) iconEl.textContent = content.icon;
     if (baseEl) baseEl.textContent = content.base;
-    if (formulaEl) formulaEl.innerHTML = content.formula;
+    if (formulaEl) {
+        // Use DOMPurify for HTML content with line breaks
+        if (typeof DOMPurify !== 'undefined') {
+            formulaEl.innerHTML = DOMPurify.sanitize(content.formula, {
+                ALLOWED_TAGS: ['br'],
+                ALLOWED_ATTR: []
+            });
+        } else {
+            // Fallback: Use textContent (removes <br> but safer)
+            formulaEl.textContent = content.formula.replace(/<br>/g, ' ');
+            console.warn('DOMPurify not available - falling back to textContent');
+        }
+    }
 }
 
 // ===== DIFFICULTY SELECTION =====
 function selectDifficulty(element) {
     const difficulty = element.dataset.difficulty;
     if (!difficulty) return;
+
+    // Validate difficulty value
+    if (!difficultyNames[difficulty]) {
+        log(`❌ Invalid difficulty: ${difficulty}`, 'error');
+        return;
+    }
 
     // Remove previous selection
     document.querySelectorAll('.difficulty-card').forEach(card => {
@@ -295,7 +320,10 @@ function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     if (!notification) return;
 
-    notification.textContent = message;
+    // XSS Protection: Use textContent instead of innerHTML
+    // Sanitize message to prevent any script injection
+    const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
+    notification.textContent = sanitizedMessage;
     notification.className = `notification ${type} show`;
 
     setTimeout(() => {
@@ -321,6 +349,7 @@ window.debugDifficultySelection = function() {
     console.log('Selected Difficulty:', selectedDifficulty);
     console.log('Alcohol Mode:', alcoholMode);
     console.log('LocalStorage:', localStorage.getItem('nocap_game_state'));
+    console.log('DOMPurify available:', typeof DOMPurify !== 'undefined');
 };
 
 log('✅ No-Cap Difficulty Selection - JS loaded!');

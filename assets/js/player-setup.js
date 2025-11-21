@@ -1,5 +1,5 @@
 // ===== NO-CAP PLAYER SETUP (SINGLE DEVICE MODE) =====
-// Version: 2.0 - Refactored with central GameState
+// Version: 2.1 - Security Hardened with Input Sanitization & Encoding Fixed
 // Mode: Single Device (No Firebase needed)
 
 'use strict';
@@ -130,6 +130,8 @@ function setupEventListeners() {
     if (inputsList) {
         inputsList.addEventListener('input', function(e) {
             if (e.target.classList.contains('player-input')) {
+                // Sanitize input on the fly
+                e.target.value = sanitizePlayerName(e.target.value);
                 updatePlayersList();
                 updateUI();
             }
@@ -160,6 +162,23 @@ function setupEventListeners() {
     });
 
     log('✅ Event listeners setup complete');
+}
+
+// ===== INPUT SANITIZATION =====
+function sanitizePlayerName(input) {
+    // Remove any HTML tags
+    let sanitized = String(input).replace(/<[^>]*>/g, '');
+
+    // Allow only: letters (including umlauts), numbers, spaces, basic punctuation
+    // German umlauts: äöüÄÖÜß
+    sanitized = sanitized.replace(/[^a-zA-Z0-9äöüÄÖÜß\s\-_.,!?]/g, '');
+
+    // Limit length
+    if (sanitized.length > 15) {
+        sanitized = sanitized.substring(0, 15);
+    }
+
+    return sanitized;
 }
 
 // ===== ALCOHOL MODE CHECK =====
@@ -261,8 +280,11 @@ function loadPreviousPlayers() {
     const inputs = document.querySelectorAll('.player-input');
 
     gameState.players.forEach((playerName, index) => {
+        // Sanitize loaded player names
+        const sanitizedName = sanitizePlayerName(playerName);
+
         if (index < inputs.length) {
-            inputs[index].value = playerName;
+            inputs[index].value = sanitizedName;
         } else {
             // Need to add more inputs
             while (document.querySelectorAll('.player-input').length <= index) {
@@ -270,7 +292,7 @@ function loadPreviousPlayers() {
             }
             const newInputs = document.querySelectorAll('.player-input');
             if (newInputs[index]) {
-                newInputs[index].value = playerName;
+                newInputs[index].value = sanitizedName;
             }
         }
     });
@@ -303,12 +325,15 @@ function addPlayerInput() {
     input.placeholder = `Spieler ${newIndex + 1}...`;
     input.maxLength = 15;
     input.dataset.index = newIndex;
+    // Add input pattern for additional security
+    input.pattern = '[a-zA-Z0-9äöüÄÖÜß\\s\\-_.,!?]{2,15}';
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-player-btn';
     removeBtn.textContent = '×';
     removeBtn.dataset.index = newIndex;
     removeBtn.style.display = newIndex < 2 ? 'none' : 'flex';
+    removeBtn.setAttribute('aria-label', `Spieler ${newIndex + 1} entfernen`);
 
     newRow.appendChild(numberDiv);
     newRow.appendChild(input);
@@ -345,6 +370,7 @@ function removePlayerInput(index) {
         inputEl.dataset.index = newIndex;
         removeBtn.dataset.index = newIndex;
         removeBtn.style.display = newIndex < 2 ? 'none' : 'flex';
+        removeBtn.setAttribute('aria-label', `Spieler ${newIndex + 1} entfernen`);
     });
 
     updatePlayersList();
@@ -360,7 +386,7 @@ function updatePlayersList() {
     playersList = [];
 
     inputs.forEach(input => {
-        const name = input.value.trim();
+        const name = sanitizePlayerName(input.value.trim());
         if (name) {
             playersList.push(name);
         }
@@ -425,6 +451,7 @@ function updatePlayersPreview() {
             numberDiv.textContent = index + 1;
 
             const nameSpan = document.createElement('span');
+            // XSS-SAFE: Use textContent instead of innerHTML
             nameSpan.textContent = name;
 
             const handleSpan = document.createElement('span');
@@ -656,8 +683,8 @@ function startGame() {
 
     showLoading();
 
-    // Save players to GameState
-    gameState.players = [...playersList];
+    // Save players to GameState (sanitized)
+    gameState.players = playersList.map(name => sanitizePlayerName(name));
     gameState.gamePhase = 'playing';
     gameState.save();
 
@@ -703,7 +730,9 @@ function showNotification(message, type = 'info', duration = 3000) {
 
     const textSpan = document.createElement('span');
     textSpan.className = 'notification-text';
-    textSpan.textContent = message;
+    // XSS-SAFE: Sanitize and use textContent
+    const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
+    textSpan.textContent = sanitizedMessage;
 
     notification.appendChild(textSpan);
 
@@ -740,5 +769,5 @@ window.debugPlayerSetup = function() {
     console.log('LocalStorage:', localStorage.getItem('nocap_game_state'));
 };
 
-log('✅ No-Cap Player Setup - JS loaded!');
+log('✅ No-Cap Player Setup v2.1 - Input Sanitization & Encoding Fixed!');
 log('🛠️ Debug: debugPlayerSetup()');

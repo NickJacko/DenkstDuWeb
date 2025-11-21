@@ -1,38 +1,56 @@
-// Firebase Konfiguration für DenkstDu
+// ===== DEPRECATION NOTICE =====
+// Diese Datei ist DEPRECATED und wird in Zukunft entfernt!
+// Bitte verwende stattdessen firebase-service.js
+// Version: 1.5 (Final Legacy Version)
+
+console.warn('⚠️ firebase-config.js is DEPRECATED! Please use firebase-service.js instead.');
+console.warn('⚠️ This file will be removed in a future version.');
+
+// Firebase Konfiguration für No-Cap
 let firebaseApp = null;
 let database = null;
 
 function initFirebase() {
     try {
-        // Deine Firebase-Konfiguration aus der Android-App
-        const firebaseConfig = {
-        apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-        authDomain: "denkstduwebsite.firebaseapp.com",
-        databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "denkstduwebsite",
-        storageBucket: "denkstduwebsite.appspot.com",
-        messagingSenderId: "27029260611",
-        appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-        measurementId: "G-BNKNW95HK8"
+        console.warn('⚠️ initFirebase() is deprecated. Use FirebaseGameService.initialize() instead.');
+
+        // Firebase Config - SECURE VERSION (same as firebase-auth.js)
+        const firebaseConfig = window.FIREBASE_CONFIG || {
+            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+            authDomain: "denkstduwebsite.firebaseapp.com",
+            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "denkstduwebsite",
+            storageBucket: "denkstduwebsite.appspot.com",
+            messagingSenderId: "27029260611",
+            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+            measurementId: "G-BNKNW95HK8"
         };
+
+        // Warnung wenn Fallback-Config verwendet wird
+        if (!window.FIREBASE_CONFIG) {
+            console.warn('⚠️ Using fallback Firebase config. Set window.FIREBASE_CONFIG in production!');
+        }
 
         // Firebase initialisieren
         if (!firebaseApp) {
             firebaseApp = firebase.initializeApp(firebaseConfig);
             database = firebase.database();
-            console.log('Firebase initialized successfully');
+            console.log('✅ Firebase initialized (via deprecated firebase-config.js)');
         }
 
         return true;
     } catch (error) {
-        console.error('Firebase initialization failed:', error);
+        console.error('❌ Firebase initialization failed:', error);
         return false;
     }
 }
 
-// Game Management Functions
+// ===== LEGACY CLASS: FirebaseGameManager =====
+// Diese Klasse wird durch FirebaseGameService ersetzt!
+// Bitte migriere zu firebase-service.js
 class FirebaseGameManager {
     constructor() {
+        console.warn('⚠️ FirebaseGameManager is DEPRECATED! Use FirebaseGameService instead.');
         this.currentGameRef = null;
         this.playersRef = null;
         this.gameId = null;
@@ -69,7 +87,7 @@ class FirebaseGameManager {
 
             await this.currentGameRef.set(gameData);
             console.log(`Game created with ID: ${this.gameId}`);
-            
+
             return this.gameId;
         } catch (error) {
             console.error('Error creating game:', error);
@@ -94,7 +112,7 @@ class FirebaseGameManager {
             }
 
             const gameData = gameSnapshot.val();
-            
+
             // Prüfe ob Spiel noch offen ist
             if (gameData.gameState !== 'waiting') {
                 throw new Error('Spiel bereits gestartet');
@@ -107,7 +125,7 @@ class FirebaseGameManager {
             }
 
             // Prüfe ob Name bereits vergeben
-            if (currentPlayers.some(player => 
+            if (currentPlayers.some(player =>
                 gameData.players[player].name.toLowerCase() === playerName.toLowerCase())) {
                 throw new Error('Name bereits vergeben');
             }
@@ -186,35 +204,33 @@ class FirebaseGameManager {
             const responsesSnapshot = await this.currentGameRef
                 .child(`responses/round_${roundNumber}`)
                 .once('value');
-            
+
             const responses = responsesSnapshot.val() || {};
             const results = {};
+
+            // Hole Difficulty synchron
+            const gameSnapshot = await this.currentGameRef.once('value');
+            const gameData = gameSnapshot.val();
+            const difficulty = gameData.difficulty;
+
+            let baseSips = 1;
+            switch(difficulty) {
+                case 'easy': baseSips = 1; break;
+                case 'medium': baseSips = 2; break;
+                case 'hard': baseSips = 3; break;
+            }
 
             // Berechne Schlücke für jeden Spieler
             Object.entries(responses).forEach(([playerName, response]) => {
                 const difference = Math.abs(response.votedCount - correctCount);
-                
-                // Schlücke basierend auf Schwierigkeit
-                const gameSnapshot = this.currentGameRef.once('value');
-                gameSnapshot.then(snapshot => {
-                    const gameData = snapshot.val();
-                    const difficulty = gameData.difficulty;
-                    
-                    let baseSips = 1;
-                    switch(difficulty) {
-                        case 'easy': baseSips = 1; break;
-                        case 'medium': baseSips = 2; break;
-                        case 'hard': baseSips = 3; break;
-                    }
+                const sips = difference === 0 ? 0 : baseSips + difference;
 
-                    const sips = difference === 0 ? 0 : baseSips + difference;
-                    results[playerName] = {
-                        votedCount: response.votedCount,
-                        difference: difference,
-                        sips: sips,
-                        isExact: difference === 0
-                    };
-                });
+                results[playerName] = {
+                    votedCount: response.votedCount,
+                    difference: difference,
+                    sips: sips,
+                    isExact: difference === 0
+                };
             });
 
             // Speichere Ergebnisse
@@ -346,7 +362,7 @@ class FirebaseGameManager {
 
             await this.currentGameRef.child(`players/${playerName}`).remove();
             await this.currentGameRef.child(`scores/${playerName}`).remove();
-            
+
             console.log(`Player ${playerName} left the game`);
         } catch (error) {
             console.error('Error leaving game:', error);
@@ -369,16 +385,16 @@ class FirebaseGameManager {
 
             const now = Date.now();
             const gamesRef = database.ref('games');
-            
+
             const snapshot = await gamesRef.once('value');
             const games = snapshot.val() || {};
 
             const deletePromises = [];
             Object.entries(games).forEach(([gameId, gameData]) => {
                 // Lösche Spiele älter als 24h oder mit autoDeleteAfter timestamp
-                const deleteAfter = gameData.settings?.autoDeleteAfter || 
-                                  (gameData.createdAt + 24 * 60 * 60 * 1000);
-                
+                const deleteAfter = gameData.settings?.autoDeleteAfter ||
+                    (gameData.createdAt + 24 * 60 * 60 * 1000);
+
                 if (now > deleteAfter) {
                     console.log(`Deleting old game: ${gameId}`);
                     deletePromises.push(gamesRef.child(gameId).remove());
@@ -386,22 +402,37 @@ class FirebaseGameManager {
             });
 
             await Promise.all(deletePromises);
-            console.log(`Cleaned up ${deletePromises.length} old games`);
+            if (deletePromises.length > 0) {
+                console.log(`Cleaned up ${deletePromises.length} old games`);
+            }
         } catch (error) {
             console.error('Error during cleanup:', error);
         }
     }
 }
 
-// Globale Instanz
-window.firebaseGameManager = new FirebaseGameManager();
+// Globale Instanz (Legacy-Support)
+if (typeof window.firebaseGameManager === 'undefined') {
+    window.firebaseGameManager = new FirebaseGameManager();
+}
 
 // Automatische Bereinigung alle 6 Stunden
-setInterval(() => {
+const cleanupIntervalId = setInterval(() => {
     FirebaseGameManager.cleanupOldGames();
 }, 6 * 60 * 60 * 1000);
 
-// Bereinigung beim Laden der Seite
-document.addEventListener('DOMContentLoaded', () => {
-    FirebaseGameManager.cleanupOldGames();
+// Cleanup-Interval bei Unload entfernen (Memory Leak Prevention)
+window.addEventListener('beforeunload', () => {
+    clearInterval(cleanupIntervalId);
 });
+
+// Bereinigung beim Laden der Seite
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        FirebaseGameManager.cleanupOldGames();
+    });
+} else {
+    FirebaseGameManager.cleanupOldGames();
+}
+
+console.log('⚠️ firebase-config.js loaded (DEPRECATED - use firebase-service.js!)');

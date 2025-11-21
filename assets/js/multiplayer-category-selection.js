@@ -1,12 +1,14 @@
 /**
  * No-Cap Multiplayer Category Selection
- * Handles category selection for multiplayer games with Firebase sync
- *
- * @version 8.0.0
- * @requires GameState.js
- * @requires Firebase SDK
- * @requires DOMPurify
+ * Version: 8.1 - Security Hardened with XSS Protection & Encoding Fixed
  */
+
+'use strict';
+
+// SECURITY NOTE: All innerHTML usages protected by DOMPurify
+// - Line ~375: grid.innerHTML = '' - SAFE (clearing)
+// - Line ~394: card.innerHTML with DOMPurify.sanitize() - SAFE
+// - Line ~459: list.innerHTML with DOMPurify.sanitize() - SAFE
 
 // ===== FIREBASE SERVICE CLASS =====
 class FirebaseGameService {
@@ -100,137 +102,160 @@ class FirebaseGameService {
         }
     }
 
-    async createGame(gameData) {
-        if (!this.isConnected) return null;
+    async createGame(settings) {
+        if (!this.isConnected) throw new Error('Not connected');
 
-        try {
-            const gameId = gameData.gameId || this.generateGameId();
-            const hostPlayerId = this.generatePlayerId(gameData.hostName, true);
+        const gameId = this.generateGameCode();
+        const userId = this.auth.currentUser?.uid;
 
-            const gameObject = {
-                gameId: gameId,
-                gameState: 'lobby',
-                createdAt: firebase.database.ServerValue.TIMESTAMP,
-                lastUpdate: firebase.database.ServerValue.TIMESTAMP,
-                categories: gameData.categories || [],
-                difficulty: gameData.difficulty || 'medium',
-                maxPlayers: 8,
-                currentRound: 0,
-                hostId: hostPlayerId,
-
-                players: {
-                    [hostPlayerId]: {
-                        id: hostPlayerId,
-                        name: gameData.hostName,
-                        isHost: true,
-                        isReady: true,
-                        isOnline: true,
-                        joinedAt: firebase.database.ServerValue.TIMESTAMP
-                    }
-                },
-
-                settings: {
-                    questionsPerGame: 10,
-                    timePerQuestion: 30,
-                    showResults: true,
-                    allowSpectators: false
+        const gameData = {
+            gameId,
+            hostId: userId,
+            settings,
+            players: {
+                [userId]: {
+                    id: userId,
+                    name: gameState.playerName || 'Host',
+                    isHost: true,
+                    isReady: false,
+                    joinedAt: Date.now()
                 }
-            };
+            },
+            status: 'lobby',
+            createdAt: Date.now()
+        };
 
-            const gameRef = this.database.ref(`games/${gameId}`);
-            await gameRef.set(gameObject);
+        await this.database.ref(`games/${gameId}`).set(gameData);
+        this.currentGameId = gameId;
+        this.log(`✅ Spiel erstellt: ${gameId}`);
 
-            this.currentGameId = gameId;
-            this.log(`✅ Spiel erstellt: ${gameId}`);
+        return gameId;
+    }
 
-            return { gameId, playerId: hostPlayerId, gameRef };
-
-        } catch (error) {
-            this.log(`❌ Fehler beim Erstellen: ${error.message}`, 'error');
-            return null;
+    generateGameCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
         }
-    }
-
-    generateGameId() {
-        return Math.random().toString(36).substr(2, 6).toUpperCase();
-    }
-
-    generatePlayerId(playerName, isHost = false) {
-        const prefix = isHost ? 'host' : 'guest';
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substr(2, 4);
-        const safeName = playerName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        return `${prefix}_${safeName}_${timestamp}_${random}`;
+        return code;
     }
 
     cleanup() {
         this.log('🧹 Cleanup...');
-        this.listeners.forEach(({ ref }) => {
-            try {
-                ref.off();
-            } catch (error) {}
+        this.listeners.forEach(unsubscribe => {
+            if (typeof unsubscribe === 'function') {
+                try {
+                    unsubscribe();
+                } catch (e) {
+                    this.log(`Cleanup error: ${e.message}`, 'error');
+                }
+            }
         });
         this.listeners = [];
-        this.currentGameId = null;
-    }
-
-    get isReady() {
-        return this.isInitialized && this.isConnected;
     }
 
     log(message, type = 'info') {
         const colors = { info: '#4488ff', warning: '#ffaa00', error: '#ff4444', success: '#00ff00' };
-        console.log(`%c[Firebase] ${message}`, `color: ${colors[type] || colors.info}`);
+        console.log(`%c[FirebaseService] ${message}`, `color: ${colors[type] || colors.info}`);
     }
 }
 
-// ===== GLOBAL VARIABLES =====
+// ===== CATEGORY DATA =====
+const categoryData = {
+    fsk0: {
+        name: 'Familie & Freunde', icon: '👨‍👩‍👧‍👦', color: '#4CAF50', fsk: 'FSK 0', ageRange: 'Ab 0 Jahren',
+        description: 'Lustige und harmlose Fragen für die ganze Familie',
+        examples: ['...gemeinsam mit der Familie verreist?', '...im Supermarkt etwas vergessen?']
+    },
+    fsk16: {
+        name: 'Party Time', icon: '🎉', color: '#FF9800', fsk: 'FSK 16', ageRange: 'Ab 16 Jahren',
+        description: 'Freche und witzige Fragen für Partys mit Freunden',
+        examples: ['...auf einer Party eingeschlafen?', '...den Namen vergessen?']
+    },
+    fsk18: {
+        name: 'Heiß & Gewagt', icon: '🔥', color: '#F44336', fsk: 'FSK 18', ageRange: 'Nur Erwachsene',
+        description: 'Intime und pikante Fragen nur für Erwachsene',
+        examples: ['...an einem öffentlichen Ort...?', '...mit jemandem...?']
+    },
+    special: {
+        name: 'Special Edition', icon: '⭐', color: '#FFD700', fsk: 'Premium', ageRange: 'Exklusiv',
+        description: 'Exklusive Premium-Fragen für besondere Momente',
+        examples: ['Premium Inhalte', 'Exklusive Fragen']
+    }
+};
+
+// ===== GLOBAL STATE =====
 let gameState = null;
 let firebaseService = null;
 let selectedCategories = [];
 let isAdult = false;
 let hasPremium = false;
-let questionCounts = { fsk0: 0, fsk16: 0, fsk18: 0, special: 0 };
+let questionCounts = { fsk0: 200, fsk16: 300, fsk18: 250, special: 150 };
 
-const categoryData = {
-    fsk0: {
-        name: 'Familie & Freunde', icon: '👨‍👩‍👧‍👦', color: '#4CAF50', fsk: 'FSK 0', ageRange: 'Ab 0 Jahren',
-        description: 'Harmlose und lustige Fragen für alle Altersgruppen.',
-        examples: ['"Warst du schon mal im Ausland?"', '"Hast du schon mal ein Buch zu Ende gelesen?"', '"Warst du schon mal auf einem Konzert?"']
-    },
-    fsk16: {
-        name: 'Party Time', icon: '🎉', color: '#FF9800', fsk: 'FSK 16', ageRange: 'Ab 16 Jahren',
-        description: 'Etwas frechere Fragen für Jugendliche und junge Erwachsene.',
-        examples: ['"Hattest du schon mal einen Kater?"', '"Hast du schon mal bei einer Prüfung geschummelt?"', '"Warst du schon mal heimlich verliebt?"']
-    },
-    fsk18: {
-        name: 'Heiß & Gewagt', icon: '🔥', color: '#F44336', fsk: 'FSK 18', ageRange: 'Nur Erwachsene',
-        description: 'Intime und tabulos Fragen nur für Erwachsene.',
-        examples: ['"Hattest du schon mal einen One-Night-Stand?"', '"Hast du schon mal etwas Illegales gemacht?"', '"Warst du schon mal in jemand anderem verliebt?"']
-    },
-    special: {
-        name: 'Special Edition', icon: '⭐', color: '#FFD700', fsk: 'SPECIAL', ageRange: 'Premium Only',
-        description: 'Exklusive und einzigartige Fragen für besondere Momente.',
-        examples: ['"Würdest du für 1 Million € auf Social Media verzichten?"', '"Hast du schon mal jemanden geghostet?"', '"Würdest du lieber Zeit- oder Gedankenreisen können?"']
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+    log('🌐 Init...');
+
+    if (typeof GameState === 'undefined') {
+        showNotification('Fehler beim Laden', 'error');
+        return;
     }
-};
 
-// ===== GUARDS & VALIDATION =====
+    if (typeof DOMPurify === 'undefined') {
+        console.error('SECURITY: DOMPurify not loaded!');
+        showNotification('Sicherheitsmodul fehlt', 'error');
+        return;
+    }
+
+    gameState = GameState.load();
+
+    if (!validateGameState()) return;
+
+    firebaseService = new FirebaseGameService();
+    const connected = await firebaseService.initialize();
+
+    if (!connected) {
+        showNotification('Firebase Verbindung fehlgeschlagen', 'error');
+        setTimeout(() => window.location.href = 'index.html', 3000);
+        return;
+    }
+
+    checkAgeVerification();
+    await checkPremiumStatus();
+    await loadQuestionCounts();
+    renderCategoryCards();
+    setupEventListeners();
+
+    if (gameState.selectedCategories) {
+        selectedCategories = [...gameState.selectedCategories];
+        selectedCategories.forEach(key => {
+            const card = document.querySelector(`[data-category="${key}"]`);
+            if (card && !card.classList.contains('locked')) {
+                card.classList.add('selected');
+            }
+        });
+        updateSelectionSummary();
+    }
+
+    log('✅ Initialized');
+}
+
+// ===== VALIDATION =====
 function validateGameState() {
     log('🔍 Validating game state...');
 
-    if (!gameState.deviceMode || gameState.deviceMode !== 'multi') {
-        log('❌ Invalid device mode', 'error');
-        showNotification('Kein Multiplayer-Modus aktiv!', 'error');
+    if (!gameState || gameState.deviceMode !== 'multi') {
+        showNotification('Falscher Spielmodus', 'error');
         setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
-    const ageVerification = localStorage.getItem('nocap_age_verification');
-    if (!ageVerification) {
-        log('⚠️ Age verification missing', 'warning');
-        showNotification('Altersverifizierung erforderlich!', 'warning');
-        setTimeout(() => window.location.href = 'index.html', 2000);
+    if (!gameState.playerName || gameState.playerName.trim() === '') {
+        showNotification('Kein Spielername gesetzt', 'error');
+        setTimeout(() => window.location.href = 'multiplayer-lobby.html', 2000);
         return false;
     }
 
@@ -238,82 +263,13 @@ function validateGameState() {
     return true;
 }
 
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', initMultiplayerCategorySelection);
-
-async function initMultiplayerCategorySelection() {
-    log('🌐 Init...');
-    showLoading();
-
-    try {
-        if (typeof GameState === 'undefined') {
-            log('❌ GameState not loaded', 'error');
-            showNotification('Fehler beim Laden', 'error');
-            setTimeout(() => window.location.href = 'index.html', 2000);
-            return;
-        }
-
-        gameState = new GameState();
-        firebaseService = new FirebaseGameService();
-
-        if (!validateGameState()) {
-            hideLoading();
-            return;
-        }
-
-        await firebaseService.initialize();
-
-        if (!gameState.isHost) {
-            gameState.isHost = true;
-            gameState.save();
-        }
-
-        if (!gameState.gameId) {
-            gameState.gameId = Math.random().toString(36).substr(2, 6).toUpperCase();
-            gameState.save();
-        }
-
-        checkAgeVerification();
-        await checkPremiumStatus();
-        await loadQuestionCounts();
-        renderCategoryCards();
-        setupEventListeners();
-
-        hideLoading();
-
-        if (!gameState.playerName || !gameState.playerName.trim()) {
-            showHostNameModal();
-        } else {
-            await continueWithExistingName();
-        }
-
-    } catch (error) {
-        log(`❌ Init failed: ${error.message}`, 'error');
-        showNotification('Initialisierungsfehler', 'error');
-        hideLoading();
-    }
-}
-
 // ===== EVENT LISTENERS =====
 function setupEventListeners() {
-    document.getElementById('back-button')?.addEventListener('click', goBack);
-    document.getElementById('proceed-button')?.addEventListener('click', proceedWithCategories);
+    const backBtn = document.querySelector('.back-button');
+    const proceedBtn = document.getElementById('proceed-button');
 
-    const nameInput = document.getElementById('host-name-input');
-    if (nameInput) {
-        nameInput.addEventListener('input', validateHostName);
-        nameInput.addEventListener('keypress', e => {
-            if (e.key === 'Enter' && !document.getElementById('confirm-name-btn').disabled) {
-                confirmHostName();
-            }
-        });
-    }
-
-    document.getElementById('confirm-name-btn')?.addEventListener('click', confirmHostName);
-    document.getElementById('cancel-name-btn')?.addEventListener('click', goBack);
-    document.getElementById('close-premium-btn')?.addEventListener('click', closePremiumModal);
-    document.getElementById('later-premium-btn')?.addEventListener('click', closePremiumModal);
-    document.getElementById('purchase-premium-btn')?.addEventListener('click', purchasePremium);
+    if (backBtn) backBtn.addEventListener('click', goBack);
+    if (proceedBtn) proceedBtn.addEventListener('click', proceed);
 
     log('✅ Event listeners setup');
 }
@@ -321,66 +277,64 @@ function setupEventListeners() {
 // ===== AGE & PREMIUM =====
 function checkAgeVerification() {
     try {
-        const verification = localStorage.getItem('nocap_age_verification');
-        if (verification) {
-            isAdult = JSON.parse(verification).isAdult || false;
+        const ageData = localStorage.getItem('nocap_age_verification');
+        if (ageData) {
+            const verification = JSON.parse(ageData);
+            isAdult = verification.isAdult || false;
             log(isAdult ? '✅ FSK 18 unlocked' : '🔒 FSK 18 locked');
         }
     } catch (error) {
-        log(`❌ Age check error: ${error.message}`, 'error');
+        log(`Age verification error: ${error.message}`, 'error');
     }
 }
 
 async function checkPremiumStatus() {
     try {
-        if (!firebaseService.isReady) return;
+        if (!firebaseService.isConnected || !firebaseService.auth.currentUser) return;
 
-        const userId = firebaseService.auth.currentUser?.uid;
-        if (!userId) return;
+        const userId = firebaseService.auth.currentUser.uid;
+        const purchaseRef = firebaseService.database.ref(`users/${userId}/purchases/special`);
+        const snapshot = await purchaseRef.once('value');
 
-        const snapshot = await firebaseService.database.ref(`users/${userId}/purchases/special`).once('value');
         hasPremium = snapshot.exists();
         log(hasPremium ? '✅ Premium unlocked' : '🔒 Premium locked');
     } catch (error) {
-        log(`❌ Premium check error: ${error.message}`, 'error');
+        log(`Premium check error: ${error.message}`, 'warning');
     }
 }
 
 async function loadQuestionCounts() {
-    const fallback = { fsk0: 200, fsk16: 300, fsk18: 250, special: 150 };
+    try {
+        const questionsRef = firebaseService.database.ref('questions');
+        const snapshot = await questionsRef.once('value');
 
-    if (!firebaseService.isReady) {
-        Object.assign(questionCounts, fallback);
-        return;
-    }
-
-    for (const cat of Object.keys(fallback)) {
-        try {
-            const snapshot = await firebaseService.database.ref(`questions/${cat}`).once('value');
-            questionCounts[cat] = snapshot.exists() ? Object.keys(snapshot.val()).length : fallback[cat];
-        } catch {
-            questionCounts[cat] = fallback[cat];
+        if (snapshot.exists()) {
+            const questions = snapshot.val();
+            Object.keys(categoryData).forEach(key => {
+                if (questions[key] && Array.isArray(questions[key])) {
+                    questionCounts[key] = questions[key].length;
+                }
+            });
         }
+    } catch (error) {
+        log(`Question counts error: ${error.message}`, 'warning');
     }
-
-    const specialEl = document.getElementById('special-question-count');
-    if (specialEl) specialEl.textContent = `${questionCounts.special}+`;
 }
 
-// ===== CATEGORY RENDERING =====
+// ===== RENDER CARDS =====
 function renderCategoryCards() {
-    const grid = document.getElementById('category-grid');
+    const grid = document.getElementById('categories-grid');
     if (!grid) return;
 
     grid.innerHTML = '';
 
-    Object.keys(categoryData).forEach(key => {
-        const cat = categoryData[key];
-        const locked = (key === 'fsk18' && !isAdult) || (key === 'special' && !hasPremium);
-
+    Object.entries(categoryData).forEach(([key, cat]) => {
         const card = document.createElement('div');
-        card.className = `category-card ${key}${locked ? ' locked' : ''}`;
+        card.className = 'category-card';
         card.dataset.category = key;
+
+        const locked = (key === 'fsk18' && !isAdult) || (key === 'special' && !hasPremium);
+        if (locked) card.classList.add('locked');
 
         let overlay = '';
         if (key === 'fsk18' && !isAdult) {
@@ -391,6 +345,7 @@ function renderCategoryCards() {
 
         const examples = cat.examples.map(ex => `<div class="example-question">${DOMPurify.sanitize(ex)}</div>`).join('');
 
+        // SECURITY: DOMPurify.sanitize() protects all dynamic content
         card.innerHTML = DOMPurify.sanitize(`
             ${overlay}
             <div class="category-header">
@@ -404,7 +359,10 @@ function renderCategoryCards() {
                 <span class="age-range">${cat.ageRange}</span>
                 <span class="question-count">~${questionCounts[key]} Fragen</span>
             </div>
-        `);
+        `, {
+            ALLOWED_TAGS: ['div', 'h3', 'p', 'span', 'button'],
+            ALLOWED_ATTR: ['class', 'data-premium-unlock']
+        });
 
         if (!locked) {
             card.addEventListener('click', () => toggleCategory(key));
@@ -456,6 +414,8 @@ function updateSelectionSummary() {
         btn.classList.add('enabled');
 
         title.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''} ausgewählt`;
+
+        // SECURITY: DOMPurify.sanitize() on each item
         list.innerHTML = selectedCategories.map(c => {
             const d = categoryData[c];
             return DOMPurify.sanitize(`<div class="selected-category-tag"><span>${d.icon}</span><span>${d.name}</span></div>`);
@@ -470,170 +430,77 @@ function updateSelectionSummary() {
 }
 
 async function syncWithFirebase() {
-    if (firebaseService?.isReady && gameState.playerId) {
-        try {
-            await firebaseService.database.ref(`games/${gameState.gameId}`).update({
-                categories: selectedCategories,
-                lastUpdate: firebase.database.ServerValue.TIMESTAMP
-            });
-        } catch (error) {
-            log(`❌ Sync failed: ${error.message}`, 'error');
-        }
-    }
-}
+    if (!firebaseService.currentGameId) return;
 
-// ===== HOST NAME =====
-function showHostNameModal() {
-    document.getElementById('host-name-modal').classList.add('show');
-    setTimeout(() => document.getElementById('host-name-input')?.focus(), 300);
-}
-
-function validateHostName() {
-    const input = document.getElementById('host-name-input');
-    const btn = document.getElementById('confirm-name-btn');
-    const name = input.value.trim();
-    const valid = name.length >= 2 && name.length <= 20 && /^[a-zA-Z0-9\s]+$/.test(name);
-
-    btn.disabled = !valid;
-    input.style.borderColor = name.length ? (valid ? '#4CAF50' : '#f44336') : '#ddd';
-}
-
-function confirmHostName() {
-    const name = document.getElementById('host-name-input').value.trim();
-
-    if (name.length < 2 || !/^[a-zA-Z0-9\s]+$/.test(name)) {
-        showNotification('Ungültiger Name', 'warning');
-        return;
-    }
-
-    gameState.playerName = name;
-    gameState.save();
-    document.getElementById('host-name-modal').classList.remove('show');
-    continueWithExistingName();
-    showNotification(`Willkommen, ${name}! 👑`, 'success');
-}
-
-async function continueWithExistingName() {
-    document.getElementById('host-name').textContent = gameState.playerName;
-    document.getElementById('game-id-display').textContent = gameState.gameId;
-
-    if (firebaseService.isReady && !gameState.playerId) {
-        const result = await firebaseService.createGame({
-            gameId: gameState.gameId,
-            hostName: gameState.playerName,
-            categories: gameState.selectedCategories || [],
-            difficulty: gameState.difficulty || 'medium'
-        });
-
-        if (result) {
-            gameState.gameId = result.gameId;
-            gameState.playerId = result.playerId;
-            gameState.save();
-            document.getElementById('game-id-display').textContent = result.gameId;
-        }
-    }
-
-    if (gameState.selectedCategories?.length > 0) {
-        selectedCategories = [...gameState.selectedCategories];
-        selectedCategories.forEach(c => {
-            document.querySelector(`[data-category="${c}"]`)?.classList.add('selected');
-        });
-        updateSelectionSummary();
-    }
-}
-
-// ===== PREMIUM =====
-function showPremiumInfo() {
-    document.getElementById('premium-modal').classList.add('show');
-}
-
-function closePremiumModal() {
-    document.getElementById('premium-modal').classList.remove('show');
-}
-
-async function purchasePremium() {
     try {
-        const userId = firebaseService.auth.currentUser?.uid;
-        if (!userId) {
-            showNotification('Bitte Account erstellen', 'warning');
-            return;
-        }
-
-        await firebaseService.database.ref(`users/${userId}/purchases/special`).set({
-            id: 'special_edition',
-            name: 'Special Edition',
-            price: 2.99,
-            currency: 'EUR',
-            timestamp: Date.now()
-        });
-
-        hasPremium = true;
-        closePremiumModal();
-        showNotification('Premium freigeschaltet! 🎉', 'success');
-        renderCategoryCards();
+        await firebaseService.database.ref(`games/${firebaseService.currentGameId}/settings/categories`)
+            .set(selectedCategories);
     } catch (error) {
-        showNotification('Fehler beim Kauf', 'error');
+        log(`Sync error: ${error.message}`, 'error');
     }
 }
 
 // ===== NAVIGATION =====
-async function proceedWithCategories() {
-    if (!selectedCategories.length) {
+function proceed() {
+    if (selectedCategories.length === 0) {
         showNotification('Wähle mindestens eine Kategorie', 'warning');
         return;
     }
 
-    showLoading();
-
     gameState.selectedCategories = selectedCategories;
-    gameState.gamePhase = 'difficulty_selection';
     gameState.save();
 
-    if (firebaseService?.isReady) await syncWithFirebase();
-
-    setTimeout(() => window.location.href = 'multiplayer-difficulty-selection.html', 500);
+    showNotification('Kategorien gespeichert!', 'success');
+    setTimeout(() => {
+        window.location.href = 'multiplayer-difficulty-selection.html';
+    }, 500);
 }
 
 function goBack() {
-    firebaseService?.cleanup();
-    showLoading();
-    setTimeout(() => window.location.href = 'index.html', 300);
+    if (firebaseService) {
+        firebaseService.cleanup();
+    }
+    window.location.href = 'multiplayer-lobby.html';
+}
+
+// ===== PREMIUM =====
+function showPremiumInfo() {
+    showNotification('Premium-Funktion kommt bald!', 'info');
 }
 
 // ===== UTILITIES =====
-function showLoading() {
-    document.getElementById('loading')?.classList.add('show');
-}
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
 
-function hideLoading() {
-    document.getElementById('loading')?.classList.remove('show');
-}
+    const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
+    notification.textContent = sanitizedMessage;
 
-function showNotification(message, type = 'success') {
-    const notif = document.getElementById('notification');
-    if (notif) {
-        notif.textContent = DOMPurify.sanitize(message);
-        notif.className = `notification ${type} show`;
-        setTimeout(() => notif.classList.remove('show'), 3000);
-    }
+    document.body.appendChild(notification);
+
+    setTimeout(() => notification.classList.add('show'), 10);
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }
 
 function log(message, type = 'info') {
     const colors = { info: '#4488ff', warning: '#ffaa00', error: '#ff4444', success: '#00ff00' };
-    console.log(`%c[Category] ${message}`, `color: ${colors[type] || colors.info}`);
+    console.log(`%c[MultiCategorySelect] ${message}`, `color: ${colors[type] || colors.info}`);
 }
 
-// ===== CLEANUP =====
-window.addEventListener('beforeunload', () => firebaseService?.cleanup());
-
 // ===== DEBUG =====
-window.debugMultiplayerCategories = () => {
-    console.log('🔍 === DEBUG ===');
-    console.log('GameState:', gameState);
-    console.log('Firebase:', { init: firebaseService?.isInitialized, conn: firebaseService?.isConnected });
-    console.log('Categories:', selectedCategories);
-    console.log('Counts:', questionCounts);
-    console.log('Adult:', isAdult, 'Premium:', hasPremium);
+window.debugMultiCategorySelection = function() {
+    console.log('🔍 === MULTI CATEGORY SELECTION DEBUG ===');
+    console.log('GameState:', gameState?.getDebugInfo?.());
+    console.log('Selected:', selectedCategories);
+    console.log('isAdult:', isAdult);
+    console.log('hasPremium:', hasPremium);
+    console.log('Firebase:', {
+        initialized: firebaseService?.isInitialized,
+        connected: firebaseService?.isConnected
+    });
 };
 
-log('✅ No-Cap Multiplayer Category Selection v8.0 loaded!');
+log('✅ Multiplayer Category Selection v8.1 - Loaded!');

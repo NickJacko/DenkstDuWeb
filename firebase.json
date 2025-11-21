@@ -4,7 +4,14 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "**/*.log",
+      "**/denkstduwebsite-default-rtdb-export*.json",
+      "**/*.md",
+      "LICENSE",
+      ".env*",
+      "*.config.js",
+      "migration.js"
     ],
     "headers": [
       {
@@ -17,6 +24,10 @@
           {
             "key": "X-Content-Type-Options",
             "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
           },
           {
             "key": "Referrer-Policy",
@@ -36,7 +47,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; connect-src 'self' https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app https://www.googleapis.com; script-src 'self' https://www.gstatic.com/firebasejs 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+            "value": "default-src 'self'; connect-src 'self' https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app https://www.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; script-src 'self' https://www.gstatic.com/firebasejs https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
           }
         ]
       }

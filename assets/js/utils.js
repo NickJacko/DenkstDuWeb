@@ -1,4 +1,5 @@
-// DenkstDu - Utility Functions
+// No-Cap - Utility Functions
+// Version 2.0 - Security Hardened
 // Gemeinsame Hilfsfunktionen für die gesamte App
 
 // ============================================================================
@@ -21,29 +22,44 @@ function hideLoading() {
     }
 }
 
-// Show notification
+// Show notification - XSS PROTECTED
 function showNotification(message, type = 'info', duration = 3000) {
     // Remove existing notifications
     document.querySelectorAll('.notification').forEach(n => n.remove());
-    
+
+    // Sanitize message to prevent XSS
+    const sanitizedMessage = typeof DOMPurify !== 'undefined'
+        ? DOMPurify.sanitize(message, { ALLOWED_TAGS: [] })
+        : String(message).replace(/[<>]/g, '');
+
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <span class="notification-icon">${getNotificationIcon(type)}</span>
-            <span class="notification-text">${message}</span>
-        </div>
-    `;
-    
+
+    // Create elements safely without innerHTML
+    const content = document.createElement('div');
+    content.className = 'notification-content';
+
+    const icon = document.createElement('span');
+    icon.className = 'notification-icon';
+    icon.textContent = getNotificationIcon(type);
+
+    const text = document.createElement('span');
+    text.className = 'notification-text';
+    text.textContent = sanitizedMessage;
+
+    content.appendChild(icon);
+    content.appendChild(text);
+    notification.appendChild(content);
+
     document.body.appendChild(notification);
-    
+
     // Show notification
     setTimeout(() => {
         notification.classList.add('show');
     }, 100);
-    
+
     // Auto hide
-    setTimeout(() => {
+    const hideTimeout = setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
             if (notification.parentNode) {
@@ -51,6 +67,9 @@ function showNotification(message, type = 'info', duration = 3000) {
             }
         }, 300);
     }, duration);
+
+    // Store timeout for cleanup
+    notification._hideTimeout = hideTimeout;
 }
 
 // Get notification icon
@@ -65,15 +84,57 @@ function getNotificationIcon(type) {
 }
 
 // ============================================================================
+// SANITIZATION HELPERS
+// ============================================================================
+
+// Sanitize user input (防XSS)
+function sanitizeInput(input) {
+    if (!input) return '';
+
+    // If DOMPurify is available, use it
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
+    }
+
+    // Fallback: Basic HTML escaping
+    return String(input)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/\//g, '&#x2F;');
+}
+
+// Sanitize HTML for safe innerHTML usage
+function sanitizeHTML(html) {
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(html);
+    }
+
+    // Fallback: Remove all HTML tags
+    return String(html).replace(/<[^>]*>/g, '');
+}
+
+// ============================================================================
 // MOBILE OPTIMIZATIONS
 // ============================================================================
+
+// Tracking für Event-Listener (Memory-Leak-Prevention)
+const _eventListeners = [];
 
 // Initialize mobile optimizations
 function initMobileOptimizations() {
     // Prevent zoom on input focus (iOS)
     if (isMobile()) {
-        document.addEventListener('touchstart', {}, true);
-        
+        const touchHandler = () => {};
+        document.addEventListener('touchstart', touchHandler, true);
+        _eventListeners.push({
+            element: document,
+            event: 'touchstart',
+            handler: touchHandler
+        });
+
         // Add viewport meta tag if not present
         if (!document.querySelector('meta[name="viewport"]')) {
             const meta = document.createElement('meta');
@@ -81,21 +142,33 @@ function initMobileOptimizations() {
             meta.content = 'width=device-width, initial-scale=1.0, user-scalable=no';
             document.head.appendChild(meta);
         }
-        
+
         // Handle safe area insets
         handleSafeAreaInsets();
-        
+
         // Handle orientation changes
-        window.addEventListener('orientationchange', handleOrientationChange);
-        
+        const orientationHandler = handleOrientationChange;
+        window.addEventListener('orientationchange', orientationHandler);
+        _eventListeners.push({
+            element: window,
+            event: 'orientationchange',
+            handler: orientationHandler
+        });
+
         // Prevent bounce scrolling on iOS
-        document.body.addEventListener('touchmove', function(e) {
+        const touchMoveHandler = function(e) {
             if (e.target === document.body) {
                 e.preventDefault();
             }
-        }, { passive: false });
+        };
+        document.body.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        _eventListeners.push({
+            element: document.body,
+            event: 'touchmove',
+            handler: touchMoveHandler
+        });
     }
-    
+
     // Handle keyboard visibility
     handleVirtualKeyboard();
 }
@@ -108,7 +181,7 @@ function isMobile() {
 // Handle safe area insets (for devices with notches)
 function handleSafeAreaInsets() {
     const root = document.documentElement;
-    
+
     // Add CSS custom properties for safe areas
     root.style.setProperty('--safe-area-inset-top', 'env(safe-area-inset-top)');
     root.style.setProperty('--safe-area-inset-right', 'env(safe-area-inset-right)');
@@ -127,18 +200,37 @@ function handleOrientationChange() {
 // Handle virtual keyboard
 function handleVirtualKeyboard() {
     let initialViewportHeight = window.innerHeight;
-    
-    window.addEventListener('resize', () => {
+
+    const resizeHandler = () => {
         const currentHeight = window.innerHeight;
         const heightDifference = initialViewportHeight - currentHeight;
-        
+
         // If height decreased significantly, keyboard is probably open
         if (heightDifference > 150) {
             document.body.classList.add('keyboard-open');
         } else {
             document.body.classList.remove('keyboard-open');
         }
+    };
+
+    window.addEventListener('resize', resizeHandler);
+    _eventListeners.push({
+        element: window,
+        event: 'resize',
+        handler: resizeHandler
     });
+}
+
+// Cleanup event listeners (call on page unload)
+function cleanupEventListeners() {
+    _eventListeners.forEach(({ element, event, handler }) => {
+        try {
+            element.removeEventListener(event, handler);
+        } catch (error) {
+            console.warn('Error removing event listener:', error);
+        }
+    });
+    _eventListeners.length = 0;
 }
 
 // ============================================================================
@@ -147,10 +239,14 @@ function handleVirtualKeyboard() {
 
 // Add entrance animation to elements
 function addEntranceAnimation(elements, delay = 100) {
+    if (!elements || !elements.forEach) return;
+
     elements.forEach((element, index) => {
+        if (!element) return;
+
         element.style.opacity = '0';
         element.style.transform = 'translateY(20px)';
-        
+
         setTimeout(() => {
             element.style.transition = 'all 0.5s ease';
             element.style.opacity = '1';
@@ -161,17 +257,23 @@ function addEntranceAnimation(elements, delay = 100) {
 
 // Animate element removal
 function animateRemoval(element, callback) {
+    if (!element) return;
+
     element.style.transition = 'all 0.3s ease';
     element.style.opacity = '0';
     element.style.transform = 'translateX(-20px)';
-    
+
     setTimeout(() => {
-        if (callback) callback();
+        if (callback && typeof callback === 'function') {
+            callback();
+        }
     }, 300);
 }
 
 // Bounce animation
 function bounceElement(element) {
+    if (!element) return;
+
     element.style.transform = 'scale(1.1)';
     setTimeout(() => {
         element.style.transform = 'scale(1)';
@@ -187,23 +289,23 @@ function validatePlayerName(name) {
     if (!name || typeof name !== 'string') {
         return { valid: false, message: 'Name ist erforderlich' };
     }
-    
+
     const trimmedName = name.trim();
-    
+
     if (trimmedName.length < 2) {
         return { valid: false, message: 'Name muss mindestens 2 Zeichen haben' };
     }
-    
+
     if (trimmedName.length > 20) {
         return { valid: false, message: 'Name darf maximal 20 Zeichen haben' };
     }
-    
-    // Check for invalid characters
+
+    // Check for invalid characters (erlaubt: Buchstaben, Zahlen, Umlaute, Leerzeichen, Bindestrich, Unterstrich)
     if (!/^[a-zA-ZäöüÄÖÜß0-9\s\-_]+$/.test(trimmedName)) {
         return { valid: false, message: 'Name enthält ungültige Zeichen' };
     }
-    
-    return { valid: true, name: trimmedName };
+
+    return { valid: true, name: sanitizeInput(trimmedName) };
 }
 
 // Validate game ID
@@ -211,13 +313,13 @@ function validateGameId(gameId) {
     if (!gameId || typeof gameId !== 'string') {
         return { valid: false, message: 'Game ID ist erforderlich' };
     }
-    
+
     const cleanId = gameId.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    
+
     if (cleanId.length !== 6) {
         return { valid: false, message: 'Game ID muss 6 Zeichen haben' };
     }
-    
+
     return { valid: true, gameId: cleanId };
 }
 
@@ -264,17 +366,24 @@ function removeLocalStorage(key) {
     }
 }
 
-// Clear all app-related localStorage
+// Clear all app-related storage
 function clearAppStorage() {
     try {
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('denkstdu_')) {
-                localStorage.removeItem(key);
+        // Remove all nocap_* keys
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('nocap_')) {
+                keysToRemove.push(key);
             }
-        });
+        }
+
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+
+        console.log(`✅ Cleared ${keysToRemove.length} storage items`);
         return true;
     } catch (error) {
-        console.warn('Error clearing app storage:', error);
+        console.error('Error clearing app storage:', error);
         return false;
     }
 }
@@ -283,79 +392,85 @@ function clearAppStorage() {
 // GAME UTILITIES
 // ============================================================================
 
-// Calculate sips based on estimation and actual count
-function calculateSips(estimation, actualCount, difficulty = 'medium') {
-    const difference = Math.abs(estimation - actualCount);
-    
-    if (difference === 0) {
-        return 0; // Perfect guess
-    }
-    
-    const baseSips = {
+// Calculate sips based on difference and difficulty
+function calculateSips(difference, difficulty = 'medium') {
+    const baseValues = {
         'easy': 1,
         'medium': 2,
         'hard': 3
     };
-    
-    return (baseSips[difficulty] || 2) + difference;
+
+    const base = baseValues[difficulty] || 2;
+    return difference === 0 ? 0 : base + Math.abs(difference);
 }
 
 // Generate random game ID
 function generateGameId() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let id = '';
     for (let i = 0; i < 6; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
+        id += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    return result;
+    return id;
 }
 
 // Shuffle array
 function shuffleArray(array) {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    return newArray;
+    return shuffled;
 }
 
-// Get category display info
+// ============================================================================
+// CATEGORY & DIFFICULTY INFO
+// ============================================================================
+
+// Get category information
 function getCategoryInfo(categoryId) {
     const categories = {
         'fsk0': {
             id: 'fsk0',
             name: 'Familie & Freunde',
-            emoji: '👨‍👩‍👧‍👦',
-            description: 'Harmlose Fragen für alle Altersgruppen',
-            color: '#4CAF50'
+            icon: '👨‍👩‍👧‍👦',
+            color: '#4CAF50',
+            description: 'Harmlose Fragen für alle'
         },
         'fsk16': {
             id: 'fsk16',
-            name: 'Party Time',
-            emoji: '🎉',
-            description: 'Unterhaltsame und lustige Fragen',
-            color: '#FF9800'
+            name: 'Party & Frech',
+            icon: '🎉',
+            color: '#FF9800',
+            description: 'Lustige Party-Fragen'
         },
         'fsk18': {
             id: 'fsk18',
-            name: 'Heiß & Gewagt',
-            emoji: '🔥',
-            description: 'Nur für Erwachsene',
-            color: '#F44336'
+            name: 'Intim & Tabu',
+            icon: '🔞',
+            color: '#F44336',
+            description: 'Nur für Erwachsene'
+        },
+        'special': {
+            id: 'special',
+            name: 'Special Edition',
+            icon: '⭐',
+            color: '#9C27B0',
+            description: 'Premium Inhalte'
         }
     };
-    
+
     return categories[categoryId] || {
         id: categoryId,
         name: 'Unbekannt',
-        emoji: '❓',
-        description: 'Unbekannte Kategorie',
-        color: '#9E9E9E'
+        icon: '❓',
+        color: '#9E9E9E',
+        description: 'Unbekannte Kategorie'
     };
 }
 
-// Get difficulty display info
+// Get difficulty information
 function getDifficultyInfo(difficultyId) {
     const difficulties = {
         'easy': {
@@ -368,7 +483,7 @@ function getDifficultyInfo(difficultyId) {
         },
         'medium': {
             id: 'medium',
-            name: 'Standard',
+            name: 'Normal',
             emoji: '🍺🍺',
             description: '2 Schlücke + Abweichung',
             baseSips: 2,
@@ -383,7 +498,7 @@ function getDifficultyInfo(difficultyId) {
             color: '#F44336'
         }
     };
-    
+
     return difficulties[difficultyId] || {
         id: difficultyId,
         name: 'Unbekannt',
@@ -405,16 +520,22 @@ function isOnline() {
 
 // Add network status listeners
 function initNetworkListeners() {
-    window.addEventListener('online', () => {
+    const onlineHandler = () => {
         showNotification('Verbindung wiederhergestellt', 'success');
         document.body.classList.remove('offline');
-    });
-    
-    window.addEventListener('offline', () => {
+    };
+
+    const offlineHandler = () => {
         showNotification('Keine Internetverbindung', 'warning');
         document.body.classList.add('offline');
-    });
-    
+    };
+
+    window.addEventListener('online', onlineHandler);
+    window.addEventListener('offline', offlineHandler);
+
+    _eventListeners.push({ element: window, event: 'online', handler: onlineHandler });
+    _eventListeners.push({ element: window, event: 'offline', handler: offlineHandler });
+
     // Initial check
     if (!isOnline()) {
         document.body.classList.add('offline');
@@ -433,7 +554,7 @@ function formatTimestamp(timestamp) {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-    
+
     if (diffMins < 1) {
         return 'Gerade eben';
     } else if (diffMins < 60) {
@@ -453,20 +574,20 @@ function formatTimestamp(timestamp) {
 
 // Global error handler
 function setupErrorHandling() {
-    window.addEventListener('error', (event) => {
+    const errorHandler = (event) => {
         console.error('Global error:', event.error);
-        
+
         // Don't show notifications for script loading errors
         if (event.filename && event.filename.includes('.js')) {
             return;
         }
-        
+
         showNotification('Ein unerwarteter Fehler ist aufgetreten', 'error');
-    });
-    
-    window.addEventListener('unhandledrejection', (event) => {
+    };
+
+    const rejectionHandler = (event) => {
         console.error('Unhandled promise rejection:', event.reason);
-        
+
         // Handle specific Firebase errors
         if (event.reason && event.reason.code) {
             const message = getFirebaseErrorMessage(event.reason.code);
@@ -474,7 +595,13 @@ function setupErrorHandling() {
         } else {
             showNotification('Verbindungsfehler aufgetreten', 'error');
         }
-    });
+    };
+
+    window.addEventListener('error', errorHandler);
+    window.addEventListener('unhandledrejection', rejectionHandler);
+
+    _eventListeners.push({ element: window, event: 'error', handler: errorHandler });
+    _eventListeners.push({ element: window, event: 'unhandledrejection', handler: rejectionHandler });
 }
 
 // Get user-friendly Firebase error messages
@@ -489,7 +616,7 @@ function getFirebaseErrorMessage(errorCode) {
         'not-found': 'Nicht gefunden',
         'failed-precondition': 'Voraussetzungen nicht erfüllt'
     };
-    
+
     return messages[errorCode] || 'Ein Fehler ist aufgetreten';
 }
 
@@ -530,14 +657,16 @@ function throttle(func, limit) {
 
 // Focus management
 function trapFocus(element) {
+    if (!element) return;
+
     const focusableElements = element.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    
+
     const firstFocusable = focusableElements[0];
     const lastFocusable = focusableElements[focusableElements.length - 1];
-    
-    element.addEventListener('keydown', (e) => {
+
+    const keydownHandler = (e) => {
         if (e.key === 'Tab') {
             if (e.shiftKey) {
                 if (document.activeElement === firstFocusable) {
@@ -551,12 +680,14 @@ function trapFocus(element) {
                 }
             }
         }
-        
+
         if (e.key === 'Escape') {
             element.dispatchEvent(new CustomEvent('modal-close'));
         }
-    });
-    
+    };
+
+    element.addEventListener('keydown', keydownHandler);
+
     // Focus first element
     if (firstFocusable) {
         firstFocusable.focus();
@@ -573,12 +704,14 @@ function announceToScreenReader(message) {
     announcement.style.width = '1px';
     announcement.style.height = '1px';
     announcement.style.overflow = 'hidden';
-    
+
     document.body.appendChild(announcement);
-    announcement.textContent = message;
-    
+    announcement.textContent = sanitizeInput(message);
+
     setTimeout(() => {
-        document.body.removeChild(announcement);
+        if (document.body.contains(announcement)) {
+            document.body.removeChild(announcement);
+        }
     }, 1000);
 }
 
@@ -587,12 +720,18 @@ function announceToScreenReader(message) {
 // ============================================================================
 
 // Initialize utilities when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeUtils);
+} else {
+    initializeUtils();
+}
+
+function initializeUtils() {
     setupErrorHandling();
     initNetworkListeners();
-    
+
     // Add common keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
+    const escapeHandler = (e) => {
         // Escape key closes modals
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal').forEach(modal => {
@@ -601,33 +740,86 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+    };
+
+    document.addEventListener('keydown', escapeHandler);
+    _eventListeners.push({ element: document, event: 'keydown', handler: escapeHandler });
+
+    console.log('✅ No-Cap Utils v2.0 initialized');
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    cleanupEventListeners();
+
+    // Clear notification timeouts
+    document.querySelectorAll('.notification').forEach(n => {
+        if (n._hideTimeout) {
+            clearTimeout(n._hideTimeout);
+        }
     });
 });
 
+// ============================================================================
+// EXPORT FUNCTIONS
+// ============================================================================
+
 // Export functions for use in other scripts
 if (typeof window !== 'undefined') {
-    window.DenkstDuUtils = {
+    window.NocapUtils = {
+        // UI
         showLoading,
         hideLoading,
         showNotification,
+
+        // Security
+        sanitizeInput,
+        sanitizeHTML,
+
+        // Mobile
         initMobileOptimizations,
+        isMobile,
+
+        // Validation
         validatePlayerName,
         validateGameId,
         formatGameIdDisplay,
+
+        // Storage
         getLocalStorage,
         setLocalStorage,
         removeLocalStorage,
         clearAppStorage,
+
+        // Game
         calculateSips,
         generateGameId,
         shuffleArray,
         getCategoryInfo,
         getDifficultyInfo,
+
+        // Network
         isOnline,
+
+        // Time
         formatTimestamp,
+
+        // Performance
         debounce,
         throttle,
+
+        // Accessibility
         trapFocus,
-        announceToScreenReader
+        announceToScreenReader,
+
+        // Animation
+        addEntranceAnimation,
+        animateRemoval,
+        bounceElement,
+
+        // Cleanup
+        cleanupEventListeners
     };
+
+    console.log('✅ NocapUtils exported to window.NocapUtils');
 }

@@ -1,5 +1,6 @@
 /**
  * No-Cap Landing Page - Main Script
+ * Version 2.0 - Security Hardened
  * Handles age verification, game mode selection, and Firebase initialization
  */
 
@@ -10,6 +11,7 @@ let ageVerified = false;
 let isAdult = false;
 let alcoholMode = false;
 let gameState = null;
+let directJoinInterval = null; // Track interval for cleanup
 
 // ===========================
 // AGE VERIFICATION
@@ -63,6 +65,10 @@ function saveVerification(isAdultUser, allowAlcohol) {
         console.log('✅ Age verification saved:', verification);
     } catch (error) {
         console.error('❌ Could not save age verification:', error);
+        // Show user-friendly error
+        if (typeof showNotification === 'function') {
+            showNotification('Fehler beim Speichern der Altersverifikation', 'error');
+        }
     }
 }
 
@@ -132,30 +138,48 @@ function updateUIForVerification() {
  * Initialize Firebase authentication
  */
 async function initializeFirebase() {
+    // Check if authService is available
     if (!window.authService) {
-        console.warn('⚠️ Firebase authService not available');
-        return;
+        console.warn('⚠️ Firebase authService not available - running in offline mode');
+        return false;
     }
 
     try {
-        await authService.initialize();
+        // Check if already initialized
+        if (typeof window.authService.isInitialized === 'function' &&
+            window.authService.isInitialized()) {
+            console.log('✅ Firebase Auth already initialized');
+            return true;
+        }
+
+        // Initialize authService
+        const initialized = await window.authService.initialize();
+
+        if (!initialized) {
+            console.warn('⚠️ Firebase Auth initialization failed - offline mode');
+            return false;
+        }
+
         console.log('✅ Firebase Auth initialized');
 
         // Check if user is already authenticated
-        if (!authService.isUserAuthenticated()) {
+        if (!window.authService.isUserAuthenticated()) {
             // Automatically sign in anonymously for immediate gameplay
-            const result = await authService.signInAnonymously();
+            const result = await window.authService.signInAnonymously();
             if (result.success) {
                 console.log('✅ Anonymous user created:', result.userId);
             } else {
-                console.error('❌ Anonymous sign-in failed');
+                console.warn('⚠️ Anonymous sign-in failed - offline mode enabled');
             }
         } else {
-            console.log('✅ User already authenticated:', authService.getUserId());
+            console.log('✅ User already authenticated:', window.authService.getUserId());
         }
+
+        return true;
     } catch (error) {
         console.error('❌ Firebase initialization error:', error);
         // App continues to work in offline mode
+        return false;
     }
 }
 
@@ -172,17 +196,29 @@ function startSingleDevice() {
         return;
     }
 
-    // Set device mode
-    gameState.deviceMode = 'single';
-    gameState.alcoholMode = alcoholMode;
-    gameState.save();
+    // Check if GameState is available
+    if (!gameState) {
+        console.error('❌ GameState not initialized');
+        showNotification('Fehler beim Laden der Spieldaten', 'error');
+        return;
+    }
 
-    // Save age settings
-    localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
-    localStorage.setItem('nocap_is_adult', isAdult.toString());
+    try {
+        // Set device mode
+        gameState.deviceMode = 'single';
+        gameState.alcoholMode = alcoholMode;
+        gameState.save();
 
-    console.log('🎮 Starting single device mode');
-    window.location.href = 'category-selection.html';
+        // Save age settings
+        localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+        localStorage.setItem('nocap_is_adult', isAdult.toString());
+
+        console.log('🎮 Starting single device mode');
+        window.location.href = 'category-selection.html';
+    } catch (error) {
+        console.error('❌ Error starting single device mode:', error);
+        showNotification('Fehler beim Starten des Spiels', 'error');
+    }
 }
 
 /**
@@ -194,17 +230,29 @@ function startMultiplayer() {
         return;
     }
 
-    // Set device mode
-    gameState.deviceMode = 'multi';
-    gameState.alcoholMode = alcoholMode;
-    gameState.save();
+    // Check if GameState is available
+    if (!gameState) {
+        console.error('❌ GameState not initialized');
+        showNotification('Fehler beim Laden der Spieldaten', 'error');
+        return;
+    }
 
-    // Save age settings
-    localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
-    localStorage.setItem('nocap_is_adult', isAdult.toString());
+    try {
+        // Set device mode
+        gameState.deviceMode = 'multi';
+        gameState.alcoholMode = alcoholMode;
+        gameState.save();
 
-    console.log('🌐 Starting multiplayer mode');
-    window.location.href = 'multiplayer-category-selection.html';
+        // Save age settings
+        localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+        localStorage.setItem('nocap_is_adult', isAdult.toString());
+
+        console.log('🌐 Starting multiplayer mode');
+        window.location.href = 'multiplayer-category-selection.html';
+    } catch (error) {
+        console.error('❌ Error starting multiplayer mode:', error);
+        showNotification('Fehler beim Starten des Spiels', 'error');
+    }
 }
 
 /**
@@ -216,18 +264,30 @@ function joinGame() {
         return;
     }
 
-    // Set device mode
-    gameState.deviceMode = 'multi';
-    gameState.alcoholMode = alcoholMode;
-    gameState.isGuest = true;
-    gameState.save();
+    // Check if GameState is available
+    if (!gameState) {
+        console.error('❌ GameState not initialized');
+        showNotification('Fehler beim Laden der Spieldaten', 'error');
+        return;
+    }
 
-    // Save age settings
-    localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
-    localStorage.setItem('nocap_is_adult', isAdult.toString());
+    try {
+        // Set device mode
+        gameState.deviceMode = 'multi';
+        gameState.alcoholMode = alcoholMode;
+        gameState.isGuest = true;
+        gameState.save();
 
-    console.log('🔗 Joining multiplayer game');
-    window.location.href = 'join-game.html';
+        // Save age settings
+        localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
+        localStorage.setItem('nocap_is_adult', isAdult.toString());
+
+        console.log('🔗 Joining multiplayer game');
+        window.location.href = 'join-game.html';
+    } catch (error) {
+        console.error('❌ Error joining game:', error);
+        showNotification('Fehler beim Beitreten', 'error');
+    }
 }
 
 // ===========================
@@ -235,34 +295,48 @@ function joinGame() {
 // ===========================
 
 /**
- * Show toast notification
+ * Show toast notification - XSS PROTECTED
  */
 function showNotification(message, type = 'info') {
     // Remove existing notifications
     document.querySelectorAll('.toast-notification').forEach(n => n.remove());
 
-    // Create notification element
+    // Get icon based on type
+    const icons = {
+        'success': '✅',
+        'error': '❌',
+        'warning': '⚠️',
+        'info': 'ℹ️'
+    };
+    const icon = icons[type] || 'ℹ️';
+
+    // Sanitize message - prefer DOMPurify if available
+    let sanitizedMessage;
+    if (typeof DOMPurify !== 'undefined') {
+        sanitizedMessage = DOMPurify.sanitize(message, { ALLOWED_TAGS: [] });
+    } else {
+        // Fallback: basic escaping
+        sanitizedMessage = String(message).replace(/[<>]/g, '');
+    }
+
+    // Create notification element using DOM (NO innerHTML!)
     const notification = document.createElement('div');
     notification.className = `toast-notification ${type}`;
 
-    // Get icon based on type
-    let icon = 'ℹ️';
-    if (type === 'success') icon = '✅';
-    else if (type === 'warning') icon = '⚠️';
-    else if (type === 'error') icon = '❌';
+    const content = document.createElement('div');
+    content.className = 'toast-content';
 
-    // Sanitize message
-    const sanitizedMessage = DOMPurify.sanitize(message, { ALLOWED_TAGS: [] });
+    const iconElement = document.createElement('div');
+    iconElement.className = 'toast-icon';
+    iconElement.textContent = icon;
 
-    // Build notification HTML
-    const html = `
-        <div class="toast-content">
-            <div class="toast-icon">${icon}</div>
-            <div class="toast-message">${sanitizedMessage}</div>
-        </div>
-    `;
+    const messageElement = document.createElement('div');
+    messageElement.className = 'toast-message';
+    messageElement.textContent = sanitizedMessage;
 
-    notification.innerHTML = DOMPurify.sanitize(html);
+    content.appendChild(iconElement);
+    content.appendChild(messageElement);
+    notification.appendChild(content);
 
     // Add to DOM
     document.body.appendChild(notification);
@@ -290,7 +364,9 @@ function showNotification(message, type = 'info') {
  */
 function animateCards() {
     setTimeout(() => {
-        document.querySelectorAll('.mode-card').forEach((card, index) => {
+        const cards = document.querySelectorAll('.mode-card');
+
+        cards.forEach((card, index) => {
             setTimeout(() => {
                 card.style.opacity = '0';
                 card.style.transform = 'translateY(30px)';
@@ -324,30 +400,46 @@ function smoothScrollTo(target) {
 
 /**
  * Handle direct game join via URL parameter
+ * FIXED: Proper interval cleanup to prevent memory leaks
  */
 function handleDirectJoin() {
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('gameId');
 
-    if (gameId) {
-        console.log('🔗 Direct join detected for game:', gameId);
+    if (!gameId) {
+        return; // No direct join requested
+    }
 
-        // Wait for age verification
-        const checkInterval = setInterval(() => {
-            if (ageVerified) {
-                clearInterval(checkInterval);
-                window.location.href = `join-game.html?gameId=${encodeURIComponent(gameId)}`;
-            }
-        }, 100);
+    console.log('🔗 Direct join detected for game:', gameId);
 
-        // Timeout after 10 seconds
-        setTimeout(() => {
-            clearInterval(checkInterval);
+    // Clear any existing interval
+    if (directJoinInterval) {
+        clearInterval(directJoinInterval);
+    }
+
+    // Wait for age verification
+    directJoinInterval = setInterval(() => {
+        if (ageVerified) {
+            clearInterval(directJoinInterval);
+            directJoinInterval = null;
+
+            console.log('✅ Age verified, redirecting to join page');
+            window.location.href = `join-game.html?gameId=${encodeURIComponent(gameId)}`;
+        }
+    }, 100);
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+        if (directJoinInterval) {
+            clearInterval(directJoinInterval);
+            directJoinInterval = null;
+
             if (!ageVerified) {
                 console.warn('⚠️ Age verification timeout for direct join');
+                showNotification('Altersverifikation erforderlich', 'warning');
             }
-        }, 10000);
-    }
+        }
+    }, 10000);
 }
 
 // ===========================
@@ -454,6 +546,21 @@ function setupEventListeners() {
 }
 
 // ===========================
+// CLEANUP
+// ===========================
+
+/**
+ * Cleanup on page unload (Memory-Leak-Prevention)
+ */
+window.addEventListener('beforeunload', () => {
+    // Clear direct join interval
+    if (directJoinInterval) {
+        clearInterval(directJoinInterval);
+        directJoinInterval = null;
+    }
+});
+
+// ===========================
 // INITIALIZATION
 // ===========================
 
@@ -461,15 +568,21 @@ function setupEventListeners() {
  * Main initialization function
  */
 async function initialize() {
-    console.log('🧢 No-Cap Landing Page loading...');
+    console.log('🧢 No-Cap Landing Page v2.0 loading...');
 
-    // Initialize GameState
+    // Initialize GameState FIRST (before age verification check)
     if (typeof GameState !== 'undefined') {
-        gameState = new GameState();
-        console.log('✅ GameState initialized');
+        try {
+            gameState = new GameState();
+            console.log('✅ GameState initialized');
+        } catch (error) {
+            console.error('❌ GameState initialization failed:', error);
+            showNotification('Fehler beim Laden der Spieldaten', 'error');
+            return;
+        }
     } else {
         console.error('❌ GameState class not found!');
-        showNotification('Fehler beim Laden der Spieldaten', 'error');
+        showNotification('Fehler: Spieldaten konnten nicht geladen werden', 'error');
         return;
     }
 
@@ -485,8 +598,11 @@ async function initialize() {
     // Setup event listeners
     setupEventListeners();
 
-    // Initialize Firebase
-    await initializeFirebase();
+    // Initialize Firebase (async, non-blocking)
+    initializeFirebase().catch(error => {
+        console.error('Firebase initialization error:', error);
+        // Continue in offline mode
+    });
 
     // Handle direct game join via URL
     handleDirectJoin();
@@ -504,3 +620,5 @@ if (document.readyState === 'loading') {
 } else {
     initialize();
 }
+
+console.log('📄 index.js v2.0 loaded');
