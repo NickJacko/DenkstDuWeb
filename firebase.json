@@ -11,9 +11,9 @@
       "LICENSE",
       ".env*",
       "*.config.js",
-      "migration.js",
       "**/.idea/**",
-      "**/*.iml"
+      "**/*.iml",
+      "functions/**"
     ],
     "rewrites": [],
     "headers": [
@@ -23,6 +23,10 @@
           {
             "key": "Cache-Control",
             "value": "public, max-age=31536000, immutable"
+          },
+          {
+            "key": "Content-Type",
+            "value": "text/javascript; charset=utf-8"
           }
         ]
       },
@@ -90,11 +94,11 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "require-corp"
+            "value": "credentialless"
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; connect-src 'self' https://*.firebasedatabase.app https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com; script-src 'self' 'unsafe-inline' https://www.gstatic.com/firebasejs/ https://cdnjs.cloudflare.com/ajax/libs/dompurify/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.googleusercontent.com; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+            "value": "default-src 'self'; connect-src 'self' https://*.firebasedatabase.app https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com wss://*.firebasedatabase.app; script-src 'self' 'unsafe-inline' https://www.gstatic.com/firebasejs/ https://cdnjs.cloudflare.com/ajax/libs/dompurify/ https://cdn.jsdelivr.net/npm/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.googleusercontent.com; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
           }
         ]
       }

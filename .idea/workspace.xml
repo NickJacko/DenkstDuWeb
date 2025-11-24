@@ -6,6 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Change from html to js &amp; html">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-config.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/firebase-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-service.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -105,15 +108,7 @@
       <workItem from="1763711262985" duration="4965000" />
       <workItem from="1763731158961" duration="4398000" />
       <workItem from="1763970102958" duration="420000" />
-      <workItem from="1763972698983" duration="5386000" />
-    </task>
-    <task id="LOCAL-00012" summary="Update MGP">
-      <option name="closed" value="true" />
-      <created>1762335134575</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1762335134575</updated>
+      <workItem from="1763972698983" duration="7559000" />
     </task>
     <task id="LOCAL-00013" summary="GesErgebnisse MGP">
       <option name="closed" value="true" />
@@ -499,7 +494,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763977483749</updated>
     </task>
-    <option name="localTasksCounter" value="61" />
+    <task id="LOCAL-00061" summary="Change from html to js &amp; html">
+      <option name="closed" value="true" />
+      <created>1763978286314</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1763978286314</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
