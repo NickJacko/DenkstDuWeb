@@ -3,390 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No-Cap - Schwierigkeit wÃ¤hlen</title>
+    <title>No-Cap - Schwierigkeit wählen</title>
+
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðŸ§¢</text></svg>">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <!-- P1 FIX: External CSS ONLY -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/difficulty-selection.css">
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
+    <!-- P1 FIX: DOMPurify FIRST -->
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+            integrity="sha384-4H2AhFFkPX3w8LpZY7TElhVfDrFxWbQXXwZ6P1k7fP0WKY8a4EvP7VtbUvwC2eOL"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
 
-        /* Background Particles */
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { top: 20%; left: 20%; animation-delay: 0s; }
-        .particle:nth-child(2) { top: 80%; left: 80%; animation-delay: 2s; }
-        .particle:nth-child(3) { top: 40%; left: 40%; animation-delay: 4s; }
-        .particle:nth-child(4) { top: 60%; left: 10%; animation-delay: 6s; }
-        .particle:nth-child(5) { top: 10%; left: 90%; animation-delay: 8s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        /* Back Button */
-        .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateX(-5px);
-        }
-
-        /* Loading Spinner */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .loading.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* App Container */
-        .app-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .screen {
-            width: 100%;
-            max-width: 500px;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.5s ease;
-        }
-
-        .screen.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .content-area {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 40px 30px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .screen-title {
-            color: white;
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 15px;
-        }
-
-        .selection-description {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .selection-description small {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-        }
-
-        /* Difficulty Cards */
-        .difficulty-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .difficulty-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            text-align: left;
-        }
-
-        .difficulty-card:hover {
-            transform: scale(1.02);
-            border-color: rgba(255, 255, 255, 0.4);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .difficulty-card.selected {
-            transform: scale(1.03);
-        }
-
-        .difficulty-card.easy.selected {
-            border-color: #4CAF50;
-            background: rgba(76, 175, 80, 0.2);
-            box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
-        }
-
-        .difficulty-card.medium.selected {
-            border-color: #FF9800;
-            background: rgba(255, 152, 0, 0.2);
-            box-shadow: 0 0 30px rgba(255, 152, 0, 0.3);
-        }
-
-        .difficulty-card.hard.selected {
-            border-color: #F44336;
-            background: rgba(244, 67, 54, 0.2);
-            box-shadow: 0 0 30px rgba(244, 67, 54, 0.3);
-        }
-
-        .difficulty-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-        }
-
-        .difficulty-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .sips-indicator {
-            font-size: 2.8rem;
-            line-height: 1;
-        }
-
-        .difficulty-info h3 {
-            color: white;
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .difficulty-badge {
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .easy-badge { background: #4CAF50; }
-        .medium-badge { background: #FF9800; }
-        .hard-badge { background: #F44336; }
-
-        .sips-explanation {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .base-sips {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .sips-formula {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .difficulty-description {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
-            line-height: 1.5;
-        }
-
-        /* Control Buttons */
-        .controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 30px;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 140px;
-            font-family: inherit;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn-primary:disabled {
-            background: rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.5);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            z-index: 1001;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification.success { background: #4CAF50; }
-        .notification.error { background: #F44336; }
-        .notification.warning { background: #FF9800; }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .app-container {
-                padding: 15px;
-            }
-
-            .content-area {
-                padding: 30px 25px;
-            }
-
-            .screen-title {
-                font-size: 1.8rem;
-            }
-
-            .difficulty-header {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
-            }
-
-            .difficulty-left {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
-            }
-
-            .sips-indicator {
-                font-size: 2.2rem;
-            }
-
-            .difficulty-info h3 {
-                font-size: 1.2rem;
-            }
-
-            .controls {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .btn {
-                width: 100%;
-            }
-        }
-    </style>
+    <!-- P1 FIX: Core Scripts in correct order -->
+    <script defer src="/assets/js/GameState.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/difficulty-selection.js"></script>
 </head>
 <body>
 <!-- Background Particles -->
-<div class="background-particles">
+<div class="background-particles" aria-hidden="true">
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
@@ -395,35 +42,35 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button">â† ZurÃ¼ck</button>
+<button class="back-button" id="back-btn" type="button" aria-label="Zurück zur Kategorieauswahl">
+    ← Zurück
+</button>
 
 <!-- Loading Spinner -->
-<div class="loading" id="loading">
-    <div class="spinner"></div>
+<div class="loading" id="loading" role="status" aria-live="polite" aria-label="Lädt">
+    <div class="spinner" aria-hidden="true"></div>
+    <span class="sr-only">Lädt...</span>
 </div>
-
-<!-- Notification -->
-<div class="notification" id="notification"></div>
 
 <!-- App Container -->
 <div class="app-container">
     <div class="screen active">
         <div class="content-area">
-            <h2 class="screen-title">âš¡ Schwierigkeitsgrad</h2>
+            <h1 class="screen-title">⚡ Schwierigkeitsgrad</h1>
 
             <p class="selection-description">
                 Wie hart soll es werden?<br>
-                <small id="description-subtitle">Bestimmt die Konsequenz bei falschen SchÃ¤tzungen</small>
+                <small id="description-subtitle">Bestimmt die Konsequenz bei falschen Schätzungen</small>
             </p>
 
-            <div class="difficulty-grid">
+            <div class="difficulty-grid" role="group" aria-label="Schwierigkeitsgrad auswählen">
                 <!-- Easy -->
-                <div class="difficulty-card easy" data-difficulty="easy">
+                <article class="difficulty-card easy" data-difficulty="easy" tabindex="0" role="button" aria-pressed="false">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
-                            <div class="sips-indicator" id="easy-icon">ðŸ’§</div>
+                            <div class="sips-indicator" id="easy-icon" aria-hidden="true">💧</div>
                             <div class="difficulty-info">
-                                <h3>Entspannt</h3>
+                                <h2>Entspannt</h2>
                                 <div class="difficulty-badge easy-badge">LEICHT</div>
                             </div>
                         </div>
@@ -432,24 +79,24 @@
                     <div class="sips-explanation">
                         <div class="base-sips" id="easy-base">1 Grundpunkt bei falscher Antwort</div>
                         <div class="sips-formula" id="easy-formula">
-                            Punkte = Abweichung der SchÃ¤tzung<br>
-                            Perfekt fÃ¼r entspannte Runden
+                            <div>Punkte = Abweichung der Schätzung</div>
+                            <div>Perfekt für entspannte Runden</div>
                         </div>
                     </div>
 
                     <div class="difficulty-description">
-                        FÃ¼r gemÃ¼tliche Runden mit Familie und Freunden.
-                        Weniger Bestrafung, mehr SpaÃŸ am Raten und Kennenlernen.
+                        Für gemütliche Runden mit Familie und Freunden.
+                        Weniger Bestrafung, mehr Spaß am Raten und Kennenlernen.
                     </div>
-                </div>
+                </article>
 
                 <!-- Medium -->
-                <div class="difficulty-card medium" data-difficulty="medium">
+                <article class="difficulty-card medium" data-difficulty="medium" tabindex="0" role="button" aria-pressed="false">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
-                            <div class="sips-indicator" id="medium-icon">ðŸŽ‰</div>
+                            <div class="sips-indicator" id="medium-icon" aria-hidden="true">🎉</div>
                             <div class="difficulty-info">
-                                <h3>Normal</h3>
+                                <h2>Normal</h2>
                                 <div class="difficulty-badge medium-badge">MITTEL</div>
                             </div>
                         </div>
@@ -458,24 +105,24 @@
                     <div class="sips-explanation">
                         <div class="base-sips" id="medium-base">Abweichung = Punkte</div>
                         <div class="sips-formula" id="medium-formula">
-                            Punkte = Abweichung der SchÃ¤tzung<br>
-                            Der Standard fÃ¼r lustige Partyabende
+                            <div>Punkte = Abweichung der Schätzung</div>
+                            <div>Der Standard für lustige Partyabende</div>
                         </div>
                     </div>
 
                     <div class="difficulty-description">
-                        Die perfekte Balance zwischen SpaÃŸ und Herausforderung.
-                        Ideal fÃ¼r die meisten Partys und Spieleabende.
+                        Die perfekte Balance zwischen Spaß und Herausforderung.
+                        Ideal für die meisten Partys und Spieleabende.
                     </div>
-                </div>
+                </article>
 
                 <!-- Hard -->
-                <div class="difficulty-card hard" data-difficulty="hard">
+                <article class="difficulty-card hard" data-difficulty="hard" tabindex="0" role="button" aria-pressed="false">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
-                            <div class="sips-indicator" id="hard-icon">ðŸ”¥</div>
+                            <div class="sips-indicator" id="hard-icon" aria-hidden="true">🔥</div>
                             <div class="difficulty-info">
-                                <h3>Hardcore</h3>
+                                <h2>Hardcore</h2>
                                 <div class="difficulty-badge hard-badge">SCHWER</div>
                             </div>
                         </div>
@@ -484,36 +131,25 @@
                     <div class="sips-explanation">
                         <div class="base-sips" id="hard-base">Doppelte Abweichung!</div>
                         <div class="sips-formula" id="hard-formula">
-                            Punkte = Abweichung Ã— 2<br>
-                            Nur fÃ¼r erfahrene Spieler!
+                            <div>Punkte = Abweichung × 2</div>
+                            <div>Nur für erfahrene Spieler!</div>
                         </div>
                     </div>
 
                     <div class="difficulty-description">
-                        FÃ¼r Profis und mutige Gruppen. Hohe Strafen machen jede
-                        falsche SchÃ¤tzung richtig teuer - seid ihr bereit?
+                        Für Profis und mutige Gruppen. Hohe Strafen machen jede
+                        falsche Schätzung richtig teuer - seid ihr bereit?
                     </div>
-                </div>
+                </article>
             </div>
 
             <div class="controls">
-                <button class="btn btn-primary" id="continueBtn" disabled>
-                    Weiter
+                <button class="btn btn-primary" id="continue-btn" type="button" disabled aria-disabled="true">
+                    Schwierigkeitsgrad wählen
                 </button>
             </div>
         </div>
     </div>
 </div>
-
-
-<!-- DOMPurify for XSS Protection -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-<!-- Central Scripts (MUST load before page script) -->
-<script src="/assets/js/migration.js"></script>
-<script src="/assets/js/GameState.js"></script>
-
-<!-- External Page Script (MUST load AFTER DOM is ready) -->
-<script src="/assets/js/difficulty-selection.js"></script>
 </body>
 </html>

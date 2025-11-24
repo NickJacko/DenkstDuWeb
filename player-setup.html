@@ -4,638 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Spieler hinzufügen</title>
+
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
+    <!-- P1 FIX: External CSS ONLY -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/player-setup.css">
+
+    <!-- P1 FIX: DOMPurify FIRST -->
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+            integrity="sha384-4H2AhFFkPX3w8LpZY7TElhVfDrFxWbQXXwZ6P1k7fP0WKY8a4EvP7VtbUvwC2eOL"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
 
     <!-- Firebase SDK (for question counts only) -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-    <!-- DOMPurify for XSS Protection -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <!-- Central Scripts (MUST load before page script) -->
-    <script src="/assets/js/migration.js"></script>
-    <script src="/assets/js/GameState.js"></script>
-
-    <style>
-        /* Reset und Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Animated Background */
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
-        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
-        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
-        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
-            50% { transform: translateY(0px) rotate(180deg); opacity: 0.3; }
-            75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
-        }
-
-        /* Layout */
-        .app-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1;
-            padding: 20px;
-        }
-
-        .screen {
-            display: none;
-            min-height: 100vh;
-            animation: slideInUp 0.6s ease-out;
-        }
-
-        .screen.active {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .content-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            max-width: 700px;
-            margin: 0 auto;
-            width: 100%;
-            padding-top: 1rem;
-        }
-
-        /* Back Button */
-        .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        /* Screen Title */
-        .screen-title {
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 2rem;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Glass Card */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 35px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 650px;
-        }
-
-        /* Game Mode Reminder */
-        .game-mode-reminder {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-            padding: 15px 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-        }
-
-        .mode-icon {
-            font-size: 2rem;
-        }
-
-        .mode-text {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .selection-description {
-            color: rgba(255, 255, 255, 0.9);
-            text-align: center;
-            margin-bottom: 40px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            line-height: 1.5;
-        }
-
-        /* Players Input Section */
-        .players-input-section {
-            margin-bottom: 30px;
-        }
-
-        .input-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .input-header h3 {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-
-        .player-count-badge {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        /* Player Input Rows */
-        .players-input-list {
-            margin-bottom: 20px;
-        }
-
-        .player-input-row {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-            animation: slideInScale 0.3s ease-out;
-        }
-
-        .player-number {
-            width: 35px;
-            height: 35px;
-            background: linear-gradient(45deg, #4CAF50, #81C784);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-
-        .player-input {
-            flex: 1;
-            padding: 15px 20px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-            font-weight: 500;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .player-input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .player-input:focus {
-            outline: none;
-            border-color: #4CAF50;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
-        }
-
-        .remove-player-btn {
-            width: 35px;
-            height: 35px;
-            background: rgba(244, 67, 54, 0.2);
-            border: 2px solid rgba(244, 67, 54, 0.3);
-            color: #F44336;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .remove-player-btn:hover {
-            background: rgba(244, 67, 54, 0.3);
-            border-color: rgba(244, 67, 54, 0.5);
-            transform: scale(1.1);
-        }
-
-        /* Add Player Button */
-        .add-player-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px dashed rgba(255, 255, 255, 0.3);
-            color: rgba(255, 255, 255, 0.8);
-            padding: 15px 25px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            width: 100%;
-            font-family: inherit;
-        }
-
-        .add-player-btn:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.5);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .add-player-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Players Preview with Drag & Drop */
-        .players-preview {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .players-preview h4 {
-            color: white;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-
-        .reorder-hint {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.85rem;
-            margin-bottom: 15px;
-            font-style: italic;
-        }
-
-        .players-order {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .player-order-item {
-            background: rgba(76, 175, 80, 0.2);
-            border: 2px solid rgba(76, 175, 80, 0.3);
-            color: white;
-            padding: 12px 15px;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: move;
-            transition: all 0.3s ease;
-            user-select: none;
-        }
-
-        .player-order-item:hover {
-            background: rgba(76, 175, 80, 0.3);
-            border-color: rgba(76, 175, 80, 0.5);
-            transform: translateX(5px);
-        }
-
-        .player-order-item.dragging {
-            opacity: 0.5;
-            transform: scale(0.95);
-        }
-
-        .player-order-item.drag-over {
-            border-color: #4CAF50;
-            background: rgba(76, 175, 80, 0.4);
-        }
-
-        .player-order-number {
-            background: rgba(76, 175, 80, 0.4);
-            color: white;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-
-        .drag-handle {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 1.2rem;
-            margin-left: auto;
-        }
-
-        /* Game Summary */
-        .game-summary {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .game-summary h4 {
-            color: white;
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-            text-align: center;
-        }
-
-        .summary-grid {
-            display: grid;
-            gap: 15px;
-        }
-
-        .summary-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 10px;
-        }
-
-        .summary-icon {
-            font-size: 1.8rem;
-            flex-shrink: 0;
-        }
-
-        .summary-content {
-            flex: 1;
-        }
-
-        .summary-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.85rem;
-            margin-bottom: 3px;
-        }
-
-        .summary-value {
-            color: white;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .loading-dots {
-            animation: blink 1.5s ease-in-out infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
-        }
-
-        /* Start Section */
-        .start-section {
-            text-align: center;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .btn-large {
-            padding: 18px 40px;
-            font-size: 1.3rem;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #4CAF50, #81C784);
-            color: white;
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn:disabled {
-            background: rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.5);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        .btn:disabled:hover {
-            transform: none;
-        }
-
-        .start-hint {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-            margin-top: 15px;
-        }
-
-        /* Loading and Animations */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            gap: 20px;
-        }
-
-        .loading.show {
-            display: flex;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        .loading-text {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes slideInUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes slideInScale {
-            from { transform: scale(0.8) translateY(20px); opacity: 0; }
-            to { transform: scale(1) translateY(0); opacity: 1; }
-        }
-
-        /* Notifications */
-        .notification-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10001;
-        }
-
-        .notification {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border-left: 4px solid #4CAF50;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            animation: slideInRight 0.3s ease-out;
-            max-width: 300px;
-        }
-
-        .notification.success { border-left-color: #4CAF50; }
-        .notification.warning { border-left-color: #FFC107; }
-        .notification.error { border-left-color: #F44336; }
-        .notification.info { border-left-color: #2196F3; }
-
-        .notification-text {
-            color: #333;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* Privacy Footer */
-        .privacy-footer {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .privacy-link {
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-        }
-
-        .privacy-link:hover {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        /* Mobile Optimizations */
-        @media (max-width: 768px) {
-            .app-container {
-                padding: 15px;
-            }
-
-            .screen-title {
-                font-size: 2rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .glass-card {
-                padding: 25px;
-            }
-
-            .player-input-row {
-                gap: 10px;
-            }
-
-            .btn-large {
-                padding: 15px 30px;
-                font-size: 1.1rem;
-            }
-
-            .summary-grid {
-                gap: 12px;
-            }
-
-            .summary-item {
-                padding: 12px;
-            }
-        }
-    </style>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <!-- P1 FIX: Core Scripts in correct order -->
+    <script defer src="/assets/js/GameState.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/player-setup.js"></script>
 </head>
 <body>
 <!-- Background Particles -->
-<div class="background-particles">
+<div class="background-particles" aria-hidden="true">
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
@@ -644,11 +47,13 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button">← Zurück</button>
+<button class="back-button" id="back-btn" type="button" aria-label="Zurück zur Schwierigkeitsauswahl">
+    ← Zurück
+</button>
 
 <!-- Loading Spinner -->
-<div class="loading" id="loading">
-    <div class="spinner"></div>
+<div class="loading" id="loading" role="status" aria-live="polite" aria-label="Lädt">
+    <div class="spinner" aria-hidden="true"></div>
     <p class="loading-text">Lade Fragen...</p>
 </div>
 
@@ -656,11 +61,11 @@
 <div class="app-container">
     <div class="screen active">
         <div class="content-area">
-            <h2 class="screen-title">👥 Spieler hinzufügen</h2>
+            <h1 class="screen-title">👥 Spieler hinzufügen</h1>
 
             <div class="glass-card">
-                <div class="game-mode-reminder">
-                    <span class="mode-icon">📱</span>
+                <div class="game-mode-reminder" role="status">
+                    <span class="mode-icon" aria-hidden="true">📱</span>
                     <div class="mode-text">
                         <strong>Ein Gerät Modus</strong><br>
                         Das Handy wird zwischen den Spielern weitergegeben
@@ -674,62 +79,60 @@
                 <!-- Player Input Section -->
                 <div class="players-input-section">
                     <div class="input-header">
-                        <h3>Spieler eingeben</h3>
-                        <div class="player-count-badge">
+                        <h2>Spieler eingeben</h2>
+                        <div class="player-count-badge" aria-live="polite">
                             <span id="current-count">0</span>/8 Spieler
                         </div>
                     </div>
 
                     <!-- Dynamic Player Inputs -->
-                    <div class="players-input-list" id="players-input-list">
-                        <div class="player-input-row">
-                            <div class="player-number">1</div>
-                            <input type="text" class="player-input" placeholder="Erster Spieler..." maxlength="15" data-index="0">
-                            <button class="remove-player-btn" data-index="0" style="display: none;">×</button>
+                    <div class="players-input-list" id="players-input-list" role="list" aria-label="Spielerliste">
+                        <div class="player-input-row" role="listitem">
+                            <div class="player-number" aria-hidden="true">1</div>
+                            <input type="text" class="player-input" placeholder="Erster Spieler..." maxlength="15" data-index="0" aria-label="Spieler 1 Name" autocomplete="off">
+                            <button class="remove-player-btn" data-index="0" type="button" style="display: none;" aria-label="Spieler 1 entfernen">×</button>
                         </div>
-                        <div class="player-input-row">
-                            <div class="player-number">2</div>
-                            <input type="text" class="player-input" placeholder="Zweiter Spieler..." maxlength="15" data-index="1">
-                            <button class="remove-player-btn" data-index="1" style="display: none;">×</button>
+                        <div class="player-input-row" role="listitem">
+                            <div class="player-number" aria-hidden="true">2</div>
+                            <input type="text" class="player-input" placeholder="Zweiter Spieler..." maxlength="15" data-index="1" aria-label="Spieler 2 Name" autocomplete="off">
+                            <button class="remove-player-btn" data-index="1" type="button" style="display: none;" aria-label="Spieler 2 entfernen">×</button>
                         </div>
                     </div>
 
                     <!-- Add Player Button -->
-                    <button class="add-player-btn" id="add-player-btn">
-                        <span class="btn-icon">➕</span>
+                    <button class="add-player-btn" id="add-player-btn" type="button">
+                        <span class="btn-icon" aria-hidden="true">➕</span>
                         <span class="btn-text">Spieler hinzufügen</span>
                     </button>
                 </div>
 
                 <!-- Players Preview with Drag & Drop -->
                 <div class="players-preview" id="players-preview" style="display: none;">
-                    <h4>🪑 Bitte passe die Reihenfolge nach der Sitzfolge an</h4>
+                    <h3>🪑 Bitte passe die Reihenfolge nach der Sitzfolge an</h3>
                     <p class="reorder-hint">Halte einen Namen gedrückt und ziehe ihn an die richtige Position</p>
-                    <div class="players-order" id="players-order">
-                        <!-- Wird dynamisch gefüllt -->
-                    </div>
+                    <div class="players-order" id="players-order" role="list" aria-label="Spielerreihenfolge"></div>
                 </div>
 
                 <!-- Game Summary -->
                 <div class="game-summary">
-                    <h4>📋 Spiel-Übersicht</h4>
+                    <h3>📋 Spiel-Übersicht</h3>
                     <div class="summary-grid">
                         <div class="summary-item">
-                            <span class="summary-icon">🎯</span>
+                            <span class="summary-icon" aria-hidden="true">🎯</span>
                             <div class="summary-content">
                                 <div class="summary-label">Kategorien</div>
                                 <div class="summary-value" id="categories-summary">Lädt...</div>
                             </div>
                         </div>
                         <div class="summary-item">
-                            <span class="summary-icon" id="difficulty-icon">🍺</span>
+                            <span class="summary-icon" id="difficulty-icon" aria-hidden="true">🍺</span>
                             <div class="summary-content">
                                 <div class="summary-label">Schwierigkeit</div>
                                 <div class="summary-value" id="difficulty-summary">Lädt...</div>
                             </div>
                         </div>
                         <div class="summary-item">
-                            <span class="summary-icon">🎮</span>
+                            <span class="summary-icon" aria-hidden="true">🎮</span>
                             <div class="summary-content">
                                 <div class="summary-label">Fragen insgesamt</div>
                                 <div class="summary-value" id="questions-total">
@@ -742,10 +145,10 @@
 
                 <!-- Start Game Button -->
                 <div class="start-section">
-                    <button class="btn btn-primary btn-large" id="start-btn" disabled>
+                    <button class="btn btn-primary btn-large" id="start-btn" type="button" disabled aria-disabled="true">
                         🚀 Spiel starten!
                     </button>
-                    <p class="start-hint" id="start-hint">Mindestens 2 Spieler nötig</p>
+                    <p class="start-hint" id="start-hint" aria-live="polite">Mindestens 2 Spieler nötig</p>
                 </div>
 
                 <!-- Privacy Footer -->
@@ -758,11 +161,5 @@
         </div>
     </div>
 </div>
-
-<!-- Notification Container -->
-<div class="notification-container" id="notification-container"></div>
-
-<!-- External Page Script (MUST load AFTER DOM is ready) -->
-<script src="/assets/js/player-setup.js"></script>
 </body>
 </html>

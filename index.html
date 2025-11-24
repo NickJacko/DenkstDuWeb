@@ -16,44 +16,50 @@
     <meta property="og:description" content="Spiele das ultimative Schätzspiel mit deinen Freunden!">
     <meta property="og:type" content="website">
     <meta property="og:image" content="/assets/img/og-image.png">
+    <meta property="og:url" content="https://no-cap.app">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="No-Cap - Das ultimative Schätzspiel">
+    <meta name="twitter:description" content="Spiele das ultimative Schätzspiel mit deinen Freunden!">
+    <meta name="twitter:image" content="/assets/img/og-image.png">
 
     <!-- Preconnect für Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://firebasedatabase.app">
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 
-    <!-- Styles - EXTERNAL CSS ONLY -->
+    <!-- P1 FIX: Styles - EXTERNAL CSS ONLY -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/index.css">
+
+    <!-- P1 FIX: DOMPurify FIRST (before any other scripts) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+            integrity="sha384-4H2AhFFkPX3w8LpZY7TElhVfDrFxWbQXXwZ6P1k7fP0WKY8a4EvP7VtbUvwC2eOL"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
 
     <!-- Firebase SDK - DEFER for non-blocking -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    <!-- DOMPurify for XSS protection - REQUIRED -- crossorigin="anonymous" referrerpolicy="no-referrer">
-    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <!-- P0 FIX: Firebase Config aus sicherer Quelle laden -->
-    <script>
-        // Diese Config sollte vom Build-Prozess oder Server injiziert werden
-        // Für lokale Entwicklung wird sie im firebase-service.js als Fallback geladen
-        // window.FIREBASE_CONFIG = { ... };
-    </script>
-
-    <!-- Core Scripts - DEFER für besseres Laden -->
-    <script defer src="/assets/js/migration.js"></script>
+    <!-- P1 FIX: Core Scripts in correct order - DEFER -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
-    <script defer src="/assets/js/firebase-service.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
     <script defer src="/assets/js/firebase-auth.js"></script>
+    <script defer src="/assets/js/firebase-service.js"></script>
+    <script defer src="/assets/js/privacy.js"></script>
     <script defer src="/assets/js/index.js"></script>
 </head>
 <body>
@@ -185,7 +191,7 @@
 
             <div class="mode-cards">
                 <!-- Single Device Mode -->
-                <article class="mode-card" id="mode-single">
+                <article class="mode-card" id="mode-single" tabindex="0">
                     <div class="mode-header">
                         <span class="mode-icon" aria-hidden="true">📱</span>
                         <h4 class="mode-title">Ein Gerät</h4>
@@ -198,13 +204,13 @@
                         <span class="feature-badge">✅ Sofort spielbereit</span>
                         <span class="feature-badge">✅ Offline verfügbar</span>
                     </div>
-                    <button class="mode-btn" id="btn-single">
+                    <button class="mode-btn" id="btn-single" type="button">
                         <span aria-hidden="true">🎮</span> Einzelgerät-Spiel starten
                     </button>
                 </article>
 
                 <!-- Multiplayer Mode -->
-                <article class="mode-card featured" id="mode-multi">
+                <article class="mode-card featured" id="mode-multi" tabindex="0">
                     <div class="featured-badge" aria-label="Beliebt"><span aria-hidden="true">🔥</span> Beliebt</div>
                     <div class="mode-header">
                         <span class="mode-icon" aria-hidden="true">🌐</span>
@@ -218,13 +224,13 @@
                         <span class="feature-badge">🚀 Bis zu 8 Spieler</span>
                         <span class="feature-badge">📱 Jeder am eigenen Handy</span>
                     </div>
-                    <button class="mode-btn primary" id="btn-multi">
+                    <button class="mode-btn primary" id="btn-multi" type="button" data-requires-privacy>
                         <span aria-hidden="true">🌐</span> Multiplayer-Spiel erstellen
                     </button>
                 </article>
 
                 <!-- Join Game -->
-                <article class="mode-card" id="mode-join">
+                <article class="mode-card" id="mode-join" tabindex="0">
                     <div class="mode-header">
                         <span class="mode-icon" aria-hidden="true">🔗</span>
                         <h4 class="mode-title">Spiel beitreten</h4>
@@ -237,7 +243,7 @@
                         <span class="feature-badge">⚡ Schneller Einstieg</span>
                         <span class="feature-badge">🎯 Mit Code beitreten</span>
                     </div>
-                    <button class="mode-btn" id="btn-join">
+                    <button class="mode-btn" id="btn-join" type="button" data-requires-privacy>
                         <span aria-hidden="true">🔗</span> Spiel beitreten
                     </button>
                 </article>
@@ -298,15 +304,13 @@
 
 <!-- Loading Indicator -->
 <div id="loading" class="loading" role="status" aria-live="polite" aria-label="Lädt...">
-    <div class="loading-spinner"></div>
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <span class="sr-only">Lädt...</span>
 </div>
-
-<!-- Toast Notification Container -->
-<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- No Script Fallback -->
 <noscript>
-    <div class="noscript-warning">
+    <div class="noscript-warning" role="alert">
         <h2>JavaScript erforderlich</h2>
         <p>Diese Anwendung benötigt JavaScript. Bitte aktiviere JavaScript in deinem Browser.</p>
     </div>

@@ -4,12 +4,37 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Change from html to js &amp; html">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="new changes after audit">
+      <change afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/difficulty-selection.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/gameplay.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/join-game.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-gameplay.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-results.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/player-setup.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/privacy.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/GameState.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/GameState.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/firebase-config.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-service.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firebase-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-service.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/player-setup.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/utils.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database.rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database.rules.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/firebase-auth.js" beforeDir="false" afterPath="$PROJECT_DIR$/firebase-auth.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/player-setup.html" beforeDir="false" afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/privacy.html" beforeDir="false" afterPath="$PROJECT_DIR$/privacy.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -108,15 +133,7 @@
       <workItem from="1763711262985" duration="4965000" />
       <workItem from="1763731158961" duration="4398000" />
       <workItem from="1763970102958" duration="420000" />
-      <workItem from="1763972698983" duration="7559000" />
-    </task>
-    <task id="LOCAL-00013" summary="GesErgebnisse MGP">
-      <option name="closed" value="true" />
-      <created>1762336739652</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
-      <option name="project" value="LOCAL" />
-      <updated>1762336739652</updated>
+      <workItem from="1763972698983" duration="13251000" />
     </task>
     <task id="LOCAL-00014" summary="Index anpassungen">
       <option name="closed" value="true" />
@@ -502,7 +519,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763978286314</updated>
     </task>
-    <option name="localTasksCounter" value="62" />
+    <task id="LOCAL-00062" summary="new changes after audit">
+      <option name="closed" value="true" />
+      <created>1763980672342</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1763980672342</updated>
+    </task>
+    <option name="localTasksCounter" value="63" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -545,6 +570,7 @@
     <MESSAGE value="Firebase fix" />
     <MESSAGE value="Backup" />
     <MESSAGE value="Change from html to js &amp; html" />
-    <option name="LAST_COMMIT_MESSAGE" value="Change from html to js &amp; html" />
+    <MESSAGE value="new changes after audit" />
+    <option name="LAST_COMMIT_MESSAGE" value="new changes after audit" />
   </component>
 </project>

@@ -3,6 +3,9 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      "database.rules.json",
+      "database_rules.json",
+      "database-debug.log",
       "**/.*",
       "**/node_modules/**",
       "**/*.log",
@@ -13,12 +16,27 @@
       "*.config.js",
       "**/.idea/**",
       "**/*.iml",
-      "functions/**"
+      "**/functions/**",
+      "**/_*",
+      "**/package*.json"
     ],
-    "rewrites": [],
+    "rewrites": [
+      {
+        "source": "/privacy",
+        "destination": "/privacy.html"
+      },
+      {
+        "source": "/imprint",
+        "destination": "/imprint.html"
+      },
+      {
+        "source": "/404",
+        "destination": "/404.html"
+      }
+    ],
     "headers": [
       {
-        "source": "**/*.@(js|css)",
+        "source": "**/*.@(js|mjs)",
         "headers": [
           {
             "key": "Cache-Control",
@@ -31,7 +49,20 @@
         ]
       },
       {
-        "source": "**/*.@(jpg|jpeg|gif|png|webp|svg|ico)",
+        "source": "**/*.css",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          },
+          {
+            "key": "Content-Type",
+            "value": "text/css; charset=utf-8"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|webp|svg|ico|avif)",
         "headers": [
           {
             "key": "Cache-Control",
@@ -40,11 +71,24 @@
         ]
       },
       {
-        "source": "**/*.@(json|woff|woff2|ttf|eot)",
+        "source": "**/*.@(woff|woff2|ttf|eot|otf)",
         "headers": [
           {
             "key": "Cache-Control",
             "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600, must-revalidate"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json; charset=utf-8"
           }
         ]
       },
@@ -54,6 +98,10 @@
           {
             "key": "Cache-Control",
             "value": "public, max-age=0, must-revalidate"
+          },
+          {
+            "key": "Content-Type",
+            "value": "text/html; charset=utf-8"
           }
         ]
       },
@@ -82,7 +130,7 @@
           },
           {
             "key": "Permissions-Policy",
-            "value": "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+            "value": "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), interest-cohort=()"
           },
           {
             "key": "Cross-Origin-Opener-Policy",
@@ -98,44 +146,69 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; connect-src 'self' https://*.firebasedatabase.app https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com wss://*.firebasedatabase.app; script-src 'self' 'unsafe-inline' https://www.gstatic.com/firebasejs/ https://cdnjs.cloudflare.com/ajax/libs/dompurify/ https://cdn.jsdelivr.net/npm/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.googleusercontent.com; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+            "value": "default-src 'self'; connect-src 'self' https://*.firebasedatabase.app https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com wss://*.firebasedatabase.app; script-src 'self' https://www.gstatic.com/firebasejs/ https://cdn.jsdelivr.net/npm/dompurify@3.0.6/ https://cdnjs.cloudflare.com/ajax/libs/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.googleusercontent.com https://lh3.googleusercontent.com; font-src 'self' https://fonts.gstatic.com data:; frame-src https://accounts.google.com https://*.firebaseapp.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; worker-src 'self' blob:; manifest-src 'self'; media-src 'self'"
           }
         ]
       }
     ],
     "cleanUrls": true,
-    "trailingSlash": false
+    "trailingSlash": false,
+    "redirects": [
+      {
+        "source": "/denkstdu",
+        "destination": "/",
+        "type": 301
+      },
+      {
+        "source": "/denkstdu/**",
+        "destination": "/",
+        "type": 301
+      }
+    ],
+    "i18n": {
+      "root": "/"
+    }
   },
   "database": {
     "rules": "database.rules.json"
   },
   "emulators": {
     "auth": {
-      "port": 9099
+      "port": 9099,
+      "host": "localhost"
     },
     "database": {
-      "port": 9000
+      "port": 9000,
+      "host": "localhost"
     },
     "hosting": {
-      "port": 5000
+      "port": 5000,
+      "host": "localhost"
     },
     "ui": {
       "enabled": true,
-      "port": 4000
-    }
+      "port": 4000,
+      "host": "localhost"
+    },
+    "singleProjectMode": true
   },
   "functions": [
     {
       "source": "functions",
       "codebase": "default",
       "disallowLegacyRuntimeConfig": true,
+      "runtime": "nodejs18",
       "ignore": [
         "node_modules",
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
-        "*.local"
+        "*.local",
+        ".env*"
       ]
     }
-  ]
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  }
 }
