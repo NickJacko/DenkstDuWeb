@@ -4,9 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Audit changes/ Extract to css">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update Hash">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/player-setup.html" beforeDir="false" afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,15 +108,7 @@
       <workItem from="1763711262985" duration="4965000" />
       <workItem from="1763731158961" duration="4398000" />
       <workItem from="1763970102958" duration="420000" />
-      <workItem from="1763972698983" duration="15247000" />
-    </task>
-    <task id="LOCAL-00016" summary="category-selection.html update">
-      <option name="closed" value="true" />
-      <created>1762353574548</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1762353574548</updated>
+      <workItem from="1763972698983" duration="15487000" />
     </task>
     <task id="LOCAL-00017" summary="difficulty-selection.html update">
       <option name="closed" value="true" />
@@ -499,7 +494,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763994323261</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="Update Hash">
+      <option name="closed" value="true" />
+      <created>1763994895083</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1763994895083</updated>
+    </task>
+    <option name="localTasksCounter" value="66" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -544,6 +547,7 @@
     <MESSAGE value="Change from html to js &amp; html" />
     <MESSAGE value="new changes after audit" />
     <MESSAGE value="Audit changes/ Extract to css" />
-    <option name="LAST_COMMIT_MESSAGE" value="Audit changes/ Extract to css" />
+    <MESSAGE value="Update Hash" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update Hash" />
   </component>
 </project>
