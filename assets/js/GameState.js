@@ -1,5 +1,5 @@
 // ===== NO-CAP GAMESTATE - ZENTRALE KLASSE =====
-// Version: 4.0 (Refactored & Secured)
+// Version: 4.1 - Security Hardened & Production Ready
 // Diese Datei wird in ALLE HTML-Dateien eingebunden
 
 (function(window) {
@@ -9,7 +9,7 @@
         constructor() {
             // EINHEITLICHE KEY-KONVENTION (nocap_*)
             this.STORAGE_KEY = 'nocap_game_state';
-            this.VERSION = 4;
+            this.VERSION = 4.1;
             this.MAX_AGE_HOURS = 24;
 
             // State Properties
@@ -30,7 +30,7 @@
             this.load();
         }
 
-        // ===== LOAD STATE FROM LOCALSTORAGE =====
+        // ===== P0 FIX: LOAD STATE WITH VALIDATION =====
         load() {
             try {
                 // WICHTIG: Migration von alten Keys ZUERST
@@ -44,28 +44,35 @@
 
                 const state = JSON.parse(saved);
 
-                // Prüfe Alter des State (max 24h)
-                if (this.isStateExpired(state)) {
-                    this.log('⚠️ Saved state too old, cleared');
+                // P0 FIX: Validiere State-Struktur
+                if (!this.validateStateStructure(state)) {
+                    this.log('⚠️ Invalid state structure, cleared', 'warning');
                     this.clearStorage();
                     return false;
                 }
 
-                // Lade alle Properties
-                this.deviceMode = state.deviceMode || null;
-                this.selectedCategories = state.selectedCategories || [];
-                this.difficulty = state.difficulty || null;
-                this.alcoholMode = state.alcoholMode !== undefined ? state.alcoholMode : true;
-                this.questionCount = state.questionCount || 10;
-                this.playerName = state.playerName || '';
-                this.gameId = state.gameId || null;
-                this.playerId = state.playerId || null;
-                this.isHost = state.isHost || false;
-                this.isGuest = state.isGuest || false;
-                this.gamePhase = state.gamePhase || 'lobby';
-                this.timestamp = state.timestamp || Date.now();
+                // Prüfe Alter des State (max 24h)
+                if (this.isStateExpired(state)) {
+                    this.log('⚠️ Saved state too old, cleared', 'warning');
+                    this.clearStorage();
+                    return false;
+                }
 
-                this.log('✅ State loaded from localStorage');
+                // P0 FIX: Sanitize alle String-Werte beim Laden
+                this.deviceMode = this.sanitizeValue(state.deviceMode, ['single', 'multi']);
+                this.selectedCategories = this.sanitizeCategories(state.selectedCategories);
+                this.difficulty = this.sanitizeValue(state.difficulty, ['easy', 'medium', 'hard']);
+                this.alcoholMode = state.alcoholMode === true;
+                this.questionCount = this.sanitizeNumber(state.questionCount, 1, 50, 10);
+                this.playerName = this.sanitizeString(state.playerName);
+                this.gameId = this.sanitizeGameId(state.gameId);
+                this.playerId = this.sanitizeString(state.playerId);
+                this.isHost = state.isHost === true;
+                this.isGuest = state.isGuest === true;
+                this.gamePhase = this.sanitizeValue(state.gamePhase, ['lobby', 'playing', 'results'], 'lobby');
+                this.timestamp = this.sanitizeNumber(state.timestamp, 0, Date.now(), Date.now());
+
+                this.log('✅ State loaded and validated');
                 return true;
 
             } catch (error) {
@@ -75,44 +82,164 @@
             }
         }
 
+        // ===== P0 FIX: VALIDATE STATE STRUCTURE =====
+        validateStateStructure(state) {
+            if (!state || typeof state !== 'object') {
+                return false;
+            }
+
+            // Version check
+            if (state.version && state.version < 4) {
+                this.log('⚠️ Outdated state version', 'warning');
+                return false;
+            }
+
+            return true;
+        }
+
+        // ===== P0 FIX: SANITIZATION HELPERS =====
+
+        /**
+         * Sanitize string values (prevent XSS in stored data)
+         */
+        sanitizeString(value) {
+            if (!value || typeof value !== 'string') {
+                return '';
+            }
+
+            // Use NocapUtils if available, otherwise basic sanitization
+            if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+                return window.NocapUtils.sanitizeInput(value);
+            }
+
+            // Fallback: Remove dangerous characters
+            return value.replace(/[<>&"']/g, '').trim();
+        }
+
+        /**
+         * Sanitize enum values (only allow specific values)
+         */
+        sanitizeValue(value, allowedValues, defaultValue = null) {
+            if (!value || typeof value !== 'string') {
+                return defaultValue;
+            }
+
+            const sanitized = value.toLowerCase().trim();
+            return allowedValues.includes(sanitized) ? sanitized : defaultValue;
+        }
+
+        /**
+         * Sanitize number values
+         */
+        sanitizeNumber(value, min, max, defaultValue) {
+            const num = parseInt(value);
+            if (isNaN(num) || num < min || num > max) {
+                return defaultValue;
+            }
+            return num;
+        }
+
+        /**
+         * Sanitize categories array
+         */
+        sanitizeCategories(categories) {
+            if (!Array.isArray(categories)) {
+                return [];
+            }
+
+            const allowedCategories = ['fsk0', 'fsk16', 'fsk18', 'special'];
+            return categories
+                .filter(cat => typeof cat === 'string')
+                .map(cat => cat.toLowerCase().trim())
+                .filter(cat => allowedCategories.includes(cat));
+        }
+
+        /**
+         * Sanitize Game ID (6 uppercase alphanumeric)
+         */
+        sanitizeGameId(gameId) {
+            if (!gameId || typeof gameId !== 'string') {
+                return null;
+            }
+
+            const cleaned = gameId.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            return cleaned.length === 6 ? cleaned : null;
+        }
+
         // ===== SAVE STATE TO LOCALSTORAGE =====
         save() {
             try {
+                // P0 FIX: Validate before saving
                 const state = {
                     deviceMode: this.deviceMode,
                     selectedCategories: this.selectedCategories,
                     difficulty: this.difficulty,
-                    alcoholMode: this.alcoholMode,
+                    alcoholMode: this.alcoholMode === true,
                     questionCount: this.questionCount,
-                    playerName: this.playerName,
-                    gameId: this.gameId,
-                    playerId: this.playerId,
-                    isHost: this.isHost,
-                    isGuest: this.isGuest,
+                    playerName: this.sanitizeString(this.playerName),
+                    gameId: this.sanitizeGameId(this.gameId),
+                    playerId: this.sanitizeString(this.playerId),
+                    isHost: this.isHost === true,
+                    isGuest: this.isGuest === true,
                     gamePhase: this.gamePhase,
                     timestamp: Date.now(),
                     version: this.VERSION
                 };
 
-                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(state));
+                // P0 FIX: Additional security - check state size
+                const stateString = JSON.stringify(state);
+                if (stateString.length > 10000) {
+                    this.log('⚠️ State too large, not saving', 'warning');
+                    return false;
+                }
+
+                localStorage.setItem(this.STORAGE_KEY, stateString);
                 this.log('✅ State saved successfully');
                 return true;
 
             } catch (error) {
                 this.log(`❌ Save failed: ${error.message}`, 'error');
+
+                // P1 FIX: Handle QuotaExceededError
+                if (error.name === 'QuotaExceededError') {
+                    this.log('⚠️ Storage quota exceeded, clearing old data', 'warning');
+                    this.clearOldData();
+                }
+
                 return false;
+            }
+        }
+
+        // ===== P1 FIX: CLEAR OLD DATA =====
+        clearOldData() {
+            try {
+                // Clear only nocap_* keys that are not critical
+                const keysToCheck = ['nocap_game_history', 'nocap_cached_questions'];
+                keysToCheck.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                this.log('✅ Old data cleared');
+            } catch (error) {
+                this.log(`❌ Clear old data failed: ${error.message}`, 'error');
             }
         }
 
         // ===== CLEAR STATE =====
         clearStorage() {
-            localStorage.removeItem(this.STORAGE_KEY);
-            this.log('🗑️ Storage cleared');
+            try {
+                localStorage.removeItem(this.STORAGE_KEY);
+                this.log('🗑️ Storage cleared');
+            } catch (error) {
+                this.log(`❌ Clear storage failed: ${error.message}`, 'error');
+            }
         }
 
         // ===== CHECK IF STATE IS EXPIRED =====
         isStateExpired(state) {
-            if (!state.timestamp) return true;
+            if (!state.timestamp || typeof state.timestamp !== 'number') {
+                return true;
+            }
+
             const ageHours = (Date.now() - state.timestamp) / (1000 * 60 * 60);
             return ageHours > this.MAX_AGE_HOURS;
         }
@@ -120,20 +247,26 @@
         // ===== MIGRATION FROM OLD KEYS =====
         migrateOldKeys() {
             const migrations = [
-                { old: 'denkstdu_game_state', new: 'nocap_game_state' }
+                { old: 'denkstdu_game_state', new: 'nocap_game_state' },
+                { old: 'denkstdu_age_verification', new: 'nocap_age_verification' },
+                { old: 'denkstdu_alcohol_mode', new: 'nocap_alcohol_mode' }
             ];
 
             migrations.forEach(({ old, new: newKey }) => {
-                if (old === newKey) return; // Skip if same
+                if (old === newKey) return;
 
                 const oldData = localStorage.getItem(old);
                 if (oldData) {
                     try {
+                        // P0 FIX: Validate data before migrating
+                        JSON.parse(oldData); // Check if valid JSON
+
                         localStorage.setItem(newKey, oldData);
                         localStorage.removeItem(old);
                         this.log(`✅ Migrated: ${old} → ${newKey}`);
                     } catch (error) {
                         this.log(`❌ Migration failed for ${old}: ${error.message}`, 'error');
+                        localStorage.removeItem(old);
                     }
                 }
             });
@@ -143,10 +276,11 @@
         isValidForMultiplayer() {
             return (
                 this.deviceMode === 'multi' &&
+                Array.isArray(this.selectedCategories) &&
                 this.selectedCategories.length > 0 &&
-                this.gameId &&
-                this.playerId &&
-                this.difficulty
+                this.gameId !== null &&
+                this.playerId !== null &&
+                this.difficulty !== null
             );
         }
 
@@ -154,26 +288,71 @@
         isValidForSingleDevice() {
             return (
                 this.deviceMode === 'single' &&
+                Array.isArray(this.selectedCategories) &&
                 this.selectedCategories.length > 0 &&
-                this.difficulty
+                this.difficulty !== null
             );
         }
 
-        // ===== GENERATE PLAYER ID =====
+        // ===== P0 FIX: GENERATE PLAYER ID (SECURE) =====
         generatePlayerId(isHost = false) {
             const timestamp = Date.now();
-            const random = Math.random().toString(36).substr(2, 4);
-            const safeName = (this.playerName || 'player')
+            const random = Math.random().toString(36).substr(2, 6);
+            const extraRandom = Math.random().toString(36).substr(2, 4);
+
+            // P0 FIX: Sanitize player name
+            const safeName = this.sanitizeString(this.playerName || 'player')
                 .replace(/[^a-zA-Z0-9]/g, '')
                 .toLowerCase()
                 .substr(0, 10);
+
             const prefix = isHost ? 'host' : 'guest';
 
-            this.playerId = `${prefix}_${safeName}_${timestamp}_${random}`;
+            this.playerId = `${prefix}_${safeName}_${timestamp}_${random}${extraRandom}`;
             this.save();
 
-            this.log(`✅ Player ID generated: ${this.playerId}`);
+            this.log(`✅ Player ID generated: ${this.playerId.substr(0, 20)}...`);
             return this.playerId;
+        }
+
+        // ===== P1 FIX: CHECK PREMIUM STATUS =====
+        isPremiumUser() {
+            // P0 FIX: Premium status MUST be validated server-side
+            // This is only a client-side indicator, NOT authoritative
+            try {
+                // Check if authService has premium status
+                if (window.authService && typeof window.authService.getUserId === 'function') {
+                    const userId = window.authService.getUserId();
+                    if (userId) {
+                        // TODO: This should query Firebase with proper rules
+                        // For now, return false (no premium)
+                        return false;
+                    }
+                }
+                return false;
+            } catch (error) {
+                this.log(`⚠️ Premium check failed: ${error.message}`, 'warning');
+                return false;
+            }
+        }
+
+        // ===== P1 FIX: CHECK FSK ACCESS =====
+        canAccessFSK(level) {
+            try {
+                const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+
+                const levelMap = {
+                    'fsk0': 0,
+                    'fsk16': 16,
+                    'fsk18': 18
+                };
+
+                const requiredAge = levelMap[level] || 0;
+                return ageLevel >= requiredAge;
+            } catch (error) {
+                this.log(`⚠️ FSK check failed: ${error.message}`, 'warning');
+                return false;
+            }
         }
 
         // ===== DEBUG INFORMATION =====
@@ -183,7 +362,7 @@
                 isHost: this.isHost,
                 isGuest: this.isGuest,
                 gameId: this.gameId,
-                playerId: this.playerId,
+                playerId: this.playerId ? this.playerId.substr(0, 20) + '...' : null,
                 categories: this.selectedCategories,
                 difficulty: this.difficulty,
                 alcoholMode: this.alcoholMode,
@@ -194,12 +373,19 @@
                 validSingle: this.isValidForSingleDevice(),
                 timestamp: this.timestamp,
                 ageMinutes: Math.floor((Date.now() - this.timestamp) / 1000 / 60),
-                version: this.VERSION
+                version: this.VERSION,
+                isPremium: this.isPremiumUser()
             };
         }
 
         // ===== LOGGING =====
         log(message, type = 'info') {
+            // P2 FIX: Logging nur im Development-Mode
+            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                // In production: nur Errors loggen
+                if (type !== 'error') return;
+            }
+
             const prefix = '[GameState]';
             const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
             const colors = {
@@ -219,7 +405,9 @@
     // ===== EXPORT AS GLOBAL CLASS =====
     window.GameState = GameState;
 
-    // Auto-log on load
-    console.log('%c✅ GameState v4.0 loaded', 'color: #4CAF50; font-weight: bold');
+    // Auto-log on load (only in development)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('%c✅ GameState v4.1 loaded (Security Hardened)', 'color: #4CAF50; font-weight: bold');
+    }
 
 })(window);

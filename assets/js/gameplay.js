@@ -1,86 +1,28 @@
 // ===== NO-CAP GAMEPLAY (SINGLE DEVICE MODE) =====
-// Version: 2.1 - Security Hardened with XSS Protection & Encoding Fixed
+// Version: 2.2 - Security Hardened & Production Ready
 // Mode: Single Device - Endless Gameplay
 
 'use strict';
 
-// SECURITY NOTE: XSS Protection Review
-// - innerHTML usages: Line ~495, ~726, ~851 (clearing only - SAFE)
-// - innerHTML with template literals: Line ~900, ~907 (controlled values only - SAFE)
-// - All player names and user input: textContent only (XSS-SAFE)
-// - Question text: textContent only (XSS-SAFE)
+// ===== GLOBAL VARIABLES =====
+let gameState = null;
+let firebaseService = null;
+let alcoholMode = false;
+let isExitDialogShown = false;
 
-// ===== FIREBASE SERVICE =====
-class FirebaseService {
-    constructor() {
-        this.app = null;
-        this.database = null;
-        this.isInitialized = false;
-        this.isConnected = false;
-        this.config = {
-            apiKey: "AIzaSyAcUgQ6rHZXQvKsMQmzMPr77Hk-W4R2Zt0",
-            authDomain: "denkstduwebsite.firebaseapp.com",
-            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "denkstduwebsite",
-            storageBucket: "denkstduwebsite.appspot.com",
-            messagingSenderId: "27029260611",
-            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-            measurementId: "G-BNKNW95HK8"
-        };
-    }
+let currentGame = {
+    players: [],
+    allQuestions: [],
+    usedQuestions: [],
+    currentQuestionNumber: 1,
+    currentPlayerIndex: 0,
+    currentAnswers: {},
+    currentEstimates: {},
+    gameHistory: []
+};
 
-    async initialize() {
-        try {
-            log('🔥 Initializing Firebase...');
-
-            if (typeof firebase === 'undefined') {
-                log('⚠️ Firebase SDK not loaded, using fallback mode', 'warning');
-                return false;
-            }
-
-            if (!firebase.apps || firebase.apps.length === 0) {
-                this.app = firebase.initializeApp(this.config);
-            } else {
-                this.app = firebase.app();
-            }
-
-            this.database = firebase.database();
-            this.isInitialized = true;
-
-            // Test connection
-            const connectedRef = this.database.ref('.info/connected');
-            const snapshot = await connectedRef.once('value');
-            this.isConnected = snapshot.val() === true;
-
-            log(`✅ Firebase ${this.isConnected ? 'connected' : 'initialized (offline)'}`);
-            return true;
-
-        } catch (error) {
-            log(`❌ Firebase initialization failed: ${error.message}`, 'error');
-            return false;
-        }
-    }
-
-    async loadQuestionsFromCategory(category) {
-        if (!this.isInitialized || !this.isConnected) {
-            return null;
-        }
-
-        try {
-            const questionsRef = this.database.ref(`questions/${category}`);
-            const snapshot = await questionsRef.once('value');
-
-            if (snapshot.exists()) {
-                const questionsObj = snapshot.val();
-                return Object.values(questionsObj);
-            }
-            return null;
-        } catch (error) {
-            log(`❌ Error loading ${category} questions: ${error.message}`, 'error');
-            return null;
-        }
-    }
-}
+let currentAnswer = null;
+let currentEstimation = null;
 
 // ===== FALLBACK QUESTIONS DATABASE =====
 const fallbackQuestionsDatabase = {
@@ -104,33 +46,10 @@ const fallbackQuestionsDatabase = {
     ]
 };
 
-// ===== GLOBAL VARIABLES =====
-let gameState = null;
-let firebaseService = null;
-let alcoholMode = false;
-let isExitDialogShown = false;
-
-let currentGame = {
-    players: [],
-    allQuestions: [],
-    usedQuestions: [],
-    currentQuestionNumber: 1,
-    currentPlayerIndex: 0,
-    currentAnswers: {},
-    currentEstimates: {},
-    gameHistory: []
-};
-
-let currentAnswer = null;
-let currentEstimation = null;
-
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    initializeGame();
-});
 
-async function initializeGame() {
-    log('🎮 Initializing endless single device gameplay...');
+async function initialize() {
+    console.log('🎮 Initializing single device gameplay...');
 
     // Setup page leave protection
     setupPageLeaveProtection();
@@ -138,36 +57,39 @@ async function initializeGame() {
     // Check alcohol mode
     checkAlcoholMode();
 
-    // Load central GameState
+    // P0 FIX: Check dependencies
     if (typeof GameState === 'undefined') {
-        log('❌ GameState not found - Load central version', 'error');
+        console.error('❌ GameState not found');
         showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
         return;
     }
 
-    gameState = GameState.load();
+    gameState = new GameState();
 
-    // Debug: Log loaded state
-    log('📊 Loaded GameState:', {
-        deviceMode: gameState.deviceMode,
-        categories: gameState.selectedCategories,
-        difficulty: gameState.difficulty,
-        players: gameState.players,
-        playersCount: gameState.players ? gameState.players.length : 0
-    });
-
-    // Initialize Firebase
-    firebaseService = new FirebaseService();
-    await firebaseService.initialize();
+    // P0 FIX: Use global FirebaseService instead of local class
+    if (typeof window.firebaseGameService !== 'undefined') {
+        firebaseService = window.firebaseGameService;
+    } else {
+        console.warn('⚠️ Firebase service not available');
+    }
 
     // Validate game state
     if (!validateGameState()) {
-        return; // Redirects handled in function
+        return;
     }
 
-    // Setup game
+    // P1 FIX: Check for rejoin data
+    if (await attemptRejoin()) {
+        console.log('✅ Rejoined previous game');
+        return;
+    }
+
+    // Setup new game
     currentGame.players = [...gameState.players];
-    await generateAllQuestions();
+    await loadQuestions();
+
+    // Save rejoin data
+    saveGameProgress();
 
     // Initialize UI
     updateGameDisplay();
@@ -179,55 +101,156 @@ async function initializeGame() {
     // Start first question
     startNewQuestion();
 
-    log('✅ Endless game initialized:', {
-        players: currentGame.players,
-        categories: gameState.selectedCategories,
-        difficulty: gameState.difficulty,
-        totalQuestions: currentGame.allQuestions.length
-    });
+    console.log('✅ Game initialized');
 }
 
 // ===== VALIDATION & GUARDS =====
+
+/**
+ * P0 FIX: Comprehensive validation with FSK checks
+ */
 function validateGameState() {
-    // Check device mode
     if (gameState.deviceMode !== 'single') {
-        log('❌ Not in single device mode', 'error');
-        showNotification('Nicht im Einzelgerät-Modus. Weiterleitung...', 'error');
+        console.error('❌ Wrong device mode');
+        showNotification('Nicht im Einzelgerät-Modus', 'error');
         setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
-    // Check players
     if (!gameState.players || gameState.players.length < 2) {
-        log('❌ Not enough players', 'error');
+        console.error('❌ Not enough players');
         showNotification('Keine Spieler gefunden!', 'error');
         setTimeout(() => window.location.href = 'player-setup.html', 2000);
         return false;
     }
 
-    // Check categories
     if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-        log('❌ No categories selected', 'error');
+        console.error('❌ No categories selected');
         showNotification('Keine Kategorien ausgewählt!', 'error');
         setTimeout(() => window.location.href = 'category-selection.html', 2000);
         return false;
     }
 
-    // Check difficulty
     if (!gameState.difficulty) {
-        log('❌ No difficulty selected', 'error');
+        console.error('❌ No difficulty selected');
         showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
         setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
+        return false;
+    }
+
+    // P0 FIX: Validate FSK access
+    const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+    const hasInvalidCategory = gameState.selectedCategories.some(category => {
+        if (category === 'fsk18' && ageLevel < 18) return true;
+        if (category === 'fsk16' && ageLevel < 16) return true;
+        return false;
+    });
+
+    if (hasInvalidCategory) {
+        console.error('❌ Invalid categories for age level');
+        showNotification('Ungültige Kategorien für dein Alter!', 'error');
+        setTimeout(() => window.location.href = 'category-selection.html', 2000);
         return false;
     }
 
     return true;
 }
 
-// ===== EVENT LISTENERS SETUP =====
-function setupEventListeners() {
-    log('🔧 Setting up event listeners...');
+// ===== P1 FIX: REJOIN MECHANISM =====
 
+/**
+ * Save game progress for rejoin
+ */
+function saveGameProgress() {
+    try {
+        const progressData = {
+            deviceMode: 'single',
+            players: currentGame.players,
+            currentQuestionNumber: currentGame.currentQuestionNumber,
+            currentPlayerIndex: currentGame.currentPlayerIndex,
+            usedQuestions: currentGame.usedQuestions,
+            gameHistory: currentGame.gameHistory,
+            timestamp: Date.now()
+        };
+
+        localStorage.setItem('nocap_game_progress', JSON.stringify(progressData));
+        localStorage.setItem('nocap_last_active', Date.now().toString());
+    } catch (error) {
+        console.warn('⚠️ Could not save progress:', error);
+    }
+}
+
+/**
+ * Attempt to rejoin previous game
+ */
+async function attemptRejoin() {
+    try {
+        const progressStr = localStorage.getItem('nocap_game_progress');
+        if (!progressStr) return false;
+
+        const progress = JSON.parse(progressStr);
+        const lastActive = parseInt(localStorage.getItem('nocap_last_active')) || 0;
+        const now = Date.now();
+
+        // P0 FIX: Only rejoin if less than 5 minutes ago
+        const maxInactiveTime = 5 * 60 * 1000; // 5 minutes
+        if (now - lastActive > maxInactiveTime) {
+            localStorage.removeItem('nocap_game_progress');
+            return false;
+        }
+
+        // Restore game state
+        currentGame.players = progress.players || [];
+        currentGame.currentQuestionNumber = progress.currentQuestionNumber || 1;
+        currentGame.currentPlayerIndex = progress.currentPlayerIndex || 0;
+        currentGame.usedQuestions = progress.usedQuestions || [];
+        currentGame.gameHistory = progress.gameHistory || [];
+
+        // Reload questions
+        await loadQuestions();
+
+        // Restore UI
+        updateGameDisplay();
+        createNumberGrid();
+        setupEventListeners();
+
+        // Continue from where we left off
+        if (currentGame.currentPlayerIndex === 0) {
+            startNewQuestion();
+        } else {
+            // Mid-question rejoin
+            const question = getNextQuestion();
+            loadQuestion(question);
+            resetPlayerUI();
+            updateGameDisplay();
+            showGameView();
+        }
+
+        showNotification('Spiel wiederhergestellt! 🔄', 'success');
+        return true;
+
+    } catch (error) {
+        console.error('❌ Rejoin error:', error);
+        localStorage.removeItem('nocap_game_progress');
+        return false;
+    }
+}
+
+/**
+ * Clear rejoin data on game end
+ */
+function clearGameProgress() {
+    try {
+        localStorage.removeItem('nocap_game_progress');
+        localStorage.removeItem('nocap_last_active');
+    } catch (error) {
+        console.warn('⚠️ Could not clear progress:', error);
+    }
+}
+
+// ===== EVENT LISTENERS SETUP =====
+
+function setupEventListeners() {
     // Answer buttons
     const yesBtn = document.getElementById('yes-btn');
     const noBtn = document.getElementById('no-btn');
@@ -256,7 +279,7 @@ function setupEventListeners() {
         exitConfirm.addEventListener('click', confirmExit);
     }
 
-    // Results navigation buttons - using delegation since they might be hidden/shown
+    // Results navigation - delegation
     document.addEventListener('click', function(e) {
         if (e.target.closest('.nav-btn.primary')) {
             const btn = e.target.closest('.nav-btn.primary');
@@ -270,15 +293,22 @@ function setupEventListeners() {
         }
     });
 
-    log('✅ Event listeners setup complete');
+    // P1 FIX: Auto-save on visibility change
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            saveGameProgress();
+        }
+    });
 }
 
 // ===== PAGE LEAVE PROTECTION =====
+
 function setupPageLeaveProtection() {
     window.addEventListener('beforeunload', function(e) {
         if (!isExitDialogShown) {
+            saveGameProgress();
             e.preventDefault();
-            e.returnValue = 'Möchtest du das Spiel wirklich verlassen? Der Fortschritt geht verloren.';
+            e.returnValue = 'Möchtest du das Spiel wirklich verlassen?';
             return e.returnValue;
         }
     });
@@ -296,6 +326,7 @@ function showExitConfirmation() {
     const exitDialog = document.getElementById('exit-confirmation');
     if (exitDialog) {
         exitDialog.classList.add('show');
+        exitDialog.setAttribute('aria-hidden', 'false');
     }
 }
 
@@ -303,80 +334,203 @@ function cancelExit() {
     const exitDialog = document.getElementById('exit-confirmation');
     if (exitDialog) {
         exitDialog.classList.remove('show');
+        exitDialog.setAttribute('aria-hidden', 'true');
     }
 }
 
 function confirmExit() {
-    try {
-        localStorage.clear();
-        sessionStorage.clear();
-        isExitDialogShown = true;
-        window.location.replace('index.html');
-    } catch (error) {
-        log(`Exit error: ${error.message}`, 'error');
-        window.location.href = 'index.html?t=' + Date.now();
-    }
+    clearGameProgress();
+    gameState.reset();
+    isExitDialogShown = true;
+    window.location.replace('index.html');
 }
 
 function goHome() {
-    try {
-        localStorage.clear();
-        sessionStorage.clear();
-        isExitDialogShown = true;
-        window.location.replace('index.html');
-    } catch (error) {
-        window.location.href = 'index.html?t=' + Date.now();
-    }
+    clearGameProgress();
+    gameState.reset();
+    isExitDialogShown = true;
+    window.location.replace('index.html');
 }
 
 // ===== ALCOHOL MODE CHECK =====
+
 function checkAlcoholMode() {
     try {
         const alcoholModeStr = localStorage.getItem('nocap_alcohol_mode');
         alcoholMode = alcoholModeStr === 'true';
-        log(`🍺 Alcohol mode: ${alcoholMode}`);
+        console.log(`🍺 Alcohol mode: ${alcoholMode}`);
     } catch (error) {
-        log(`❌ Error checking alcohol mode: ${error.message}`, 'error');
+        console.error('❌ Error checking alcohol mode:', error);
         alcoholMode = false;
     }
 }
 
-// ===== QUESTION GENERATION =====
-async function generateAllQuestions() {
+// ===== P0 FIX: QUESTION LOADING WITH CACHING =====
+
+/**
+ * Load questions from Firebase with caching
+ */
+async function loadQuestions() {
     currentGame.allQuestions = [];
 
-    // Try to load questions from Firebase first
-    for (const category of gameState.selectedCategories) {
-        const firebaseQuestions = await firebaseService.loadQuestionsFromCategory(category);
-
-        if (firebaseQuestions && firebaseQuestions.length > 0) {
-            log(`✅ Loaded ${firebaseQuestions.length} questions from Firebase for ${category}`);
-            firebaseQuestions.forEach(q => {
-                currentGame.allQuestions.push({
-                    text: q,
-                    category: category
-                });
-            });
-        } else {
-            // Fallback to local questions
-            log(`⚠️ Using fallback questions for ${category}`, 'warning');
-            if (fallbackQuestionsDatabase[category]) {
-                fallbackQuestionsDatabase[category].forEach(q => {
-                    currentGame.allQuestions.push({
-                        text: q,
-                        category: category
-                    });
-                });
-            }
-        }
+    // P0 FIX: Try to load from cache first
+    const cachedQuestions = loadQuestionsFromCache();
+    if (cachedQuestions && cachedQuestions.length > 0) {
+        console.log('✅ Loaded questions from cache');
+        currentGame.allQuestions = cachedQuestions;
+        return;
     }
 
-    // Shuffle questions
+    // Load from Firebase
+    if (firebaseService && typeof firebaseService.isInitialized !== 'undefined') {
+        for (const category of gameState.selectedCategories) {
+            try {
+                const questions = await loadCategoryQuestions(category);
+                if (questions && questions.length > 0) {
+                    console.log(`✅ Loaded ${questions.length} questions for ${category}`);
+                    questions.forEach(q => {
+                        currentGame.allQuestions.push({
+                            text: sanitizeQuestionText(q),
+                            category: category
+                        });
+                    });
+                }
+            } catch (error) {
+                console.warn(`⚠️ Error loading ${category}:`, error);
+                loadFallbackQuestions(category);
+            }
+        }
+    } else {
+        // No Firebase - use fallback
+        console.warn('⚠️ Firebase not available, using fallback');
+        gameState.selectedCategories.forEach(category => {
+            loadFallbackQuestions(category);
+        });
+    }
+
+    // Shuffle
     currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
 
-    log(`📚 Total questions loaded: ${currentGame.allQuestions.length}`);
+    // P0 FIX: Cache questions
+    cacheQuestions(currentGame.allQuestions);
+
+    console.log(`📚 Total questions: ${currentGame.allQuestions.length}`);
 }
 
+/**
+ * P0 FIX: Sanitize question text
+ */
+function sanitizeQuestionText(text) {
+    if (!text) return '';
+
+    // Use NocapUtils if available
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+        return window.NocapUtils.sanitizeInput(String(text));
+    }
+
+    // Fallback: Remove HTML tags
+    return String(text).replace(/<[^>]*>/g, '').substring(0, 500);
+}
+
+/**
+ * Load category questions from Firebase
+ */
+async function loadCategoryQuestions(category) {
+    if (!firebaseService) return null;
+
+    try {
+        // Check if we have the new firebase-service.js API
+        if (typeof firebase !== 'undefined' && firebase.database) {
+            const questionsRef = firebase.database().ref(`questions/${category}`);
+            const snapshot = await questionsRef.once('value');
+
+            if (snapshot.exists()) {
+                const questionsData = snapshot.val();
+
+                // Handle both array and object structures
+                if (Array.isArray(questionsData)) {
+                    return questionsData;
+                } else if (typeof questionsData === 'object') {
+                    return Object.values(questionsData);
+                }
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error(`❌ Error loading ${category}:`, error);
+        return null;
+    }
+}
+
+/**
+ * Load fallback questions for category
+ */
+function loadFallbackQuestions(category) {
+    if (fallbackQuestionsDatabase[category]) {
+        fallbackQuestionsDatabase[category].forEach(q => {
+            currentGame.allQuestions.push({
+                text: sanitizeQuestionText(q),
+                category: category
+            });
+        });
+    }
+}
+
+/**
+ * P0 FIX: Cache questions in localStorage
+ */
+function cacheQuestions(questions) {
+    try {
+        const cacheData = {
+            questions: questions,
+            categories: gameState.selectedCategories,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('nocap_cached_questions', JSON.stringify(cacheData));
+    } catch (error) {
+        console.warn('⚠️ Could not cache questions:', error);
+    }
+}
+
+/**
+ * Load questions from cache
+ */
+function loadQuestionsFromCache() {
+    try {
+        const cacheStr = localStorage.getItem('nocap_cached_questions');
+        if (!cacheStr) return null;
+
+        const cache = JSON.parse(cacheStr);
+        const now = Date.now();
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+        // Check if cache is valid
+        if (now - cache.timestamp > maxAge) {
+            localStorage.removeItem('nocap_cached_questions');
+            return null;
+        }
+
+        // Check if categories match
+        const categoriesMatch =
+            cache.categories &&
+            cache.categories.length === gameState.selectedCategories.length &&
+            cache.categories.every(c => gameState.selectedCategories.includes(c));
+
+        if (!categoriesMatch) {
+            localStorage.removeItem('nocap_cached_questions');
+            return null;
+        }
+
+        return cache.questions;
+    } catch (error) {
+        console.warn('⚠️ Could not load cache:', error);
+        return null;
+    }
+}
+
+/**
+ * Get next question
+ */
 function getNextQuestion() {
     if (currentGame.usedQuestions.length >= currentGame.allQuestions.length) {
         currentGame.usedQuestions = [];
@@ -394,6 +548,9 @@ function getNextQuestion() {
     return currentGame.allQuestions[0];
 }
 
+/**
+ * Shuffle array
+ */
 function shuffleArray(array) {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -404,8 +561,9 @@ function shuffleArray(array) {
 }
 
 // ===== GAME FLOW =====
+
 function startNewQuestion() {
-    log(`🎲 Starting question ${currentGame.currentQuestionNumber}`);
+    console.log(`🎲 Starting question ${currentGame.currentQuestionNumber}`);
 
     currentGame.currentPlayerIndex = 0;
     currentGame.currentAnswers = {};
@@ -417,6 +575,9 @@ function startNewQuestion() {
     resetPlayerUI();
     updateGameDisplay();
     showGameView();
+
+    // Save progress
+    saveGameProgress();
 }
 
 function nextQuestion() {
@@ -429,17 +590,22 @@ function endGame() {
     showFinalResults();
 }
 
+/**
+ * P0 FIX: Load question with textContent
+ */
 function loadQuestion(question) {
     const categoryNames = {
         'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
         'fsk16': '🎉 Party Time',
-        'fsk18': '🔥 Heiß & Gewagt'
+        'fsk18': '🔥 Heiß & Gewagt',
+        'special': '⭐ Special Edition'
     };
 
     const questionText = document.getElementById('question-text');
     const questionCategory = document.getElementById('question-category');
 
     if (questionText) {
+        // P0 FIX: Use textContent for safety
         questionText.textContent = question.text;
     }
     if (questionCategory) {
@@ -460,6 +626,7 @@ function updateGameDisplay() {
     const progressEl = document.getElementById('player-progress');
 
     if (playerNameEl) {
+        // P0 FIX: Use textContent
         playerNameEl.textContent = currentPlayerName;
     }
     if (avatarEl) {
@@ -471,12 +638,10 @@ function updateGameDisplay() {
 }
 
 function resetPlayerUI() {
-    // Reset answer buttons
     document.querySelectorAll('.answer-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
 
-    // Reset estimation to unselected state
     currentAnswer = null;
     currentEstimation = null;
     updateNumberSelection();
@@ -485,6 +650,7 @@ function resetPlayerUI() {
 }
 
 // ===== UI CONTROLS =====
+
 function createNumberGrid() {
     const numberGrid = document.getElementById('number-grid');
     if (!numberGrid) return;
@@ -492,7 +658,6 @@ function createNumberGrid() {
     const playerCount = currentGame.players.length;
     numberGrid.innerHTML = '';
 
-    // Dynamische Grid-Klasse basierend auf Anzahl
     if (playerCount <= 6) {
         numberGrid.className = 'number-grid small';
     } else if (playerCount <= 10) {
@@ -506,6 +671,7 @@ function createNumberGrid() {
         numberBtn.className = 'number-btn';
         numberBtn.textContent = i;
         numberBtn.id = `number-btn-${i}`;
+        numberBtn.setAttribute('aria-label', `${i} Spieler schätzen`);
         numberBtn.addEventListener('click', () => selectNumber(i));
 
         numberGrid.appendChild(numberBtn);
@@ -534,7 +700,6 @@ function updateSelectedNumber(number) {
 
     const selectionDisplay = document.querySelector('.selection-display');
     if (selectionDisplay) {
-        // Smooth bounce animation
         selectionDisplay.style.transform = 'scale(1.08)';
         setTimeout(() => {
             selectionDisplay.style.transform = 'scale(1)';
@@ -545,7 +710,6 @@ function updateSelectedNumber(number) {
 function showSelectionDisplay() {
     const selectionEl = document.getElementById('current-selection');
     if (selectionEl) {
-        // Kleine Verzögerung für smooth animation
         requestAnimationFrame(() => {
             selectionEl.classList.add('visible');
         });
@@ -594,13 +758,16 @@ function updateSubmitButton() {
     if (currentAnswer !== null && currentEstimation !== null) {
         submitBtn.classList.add('enabled');
         submitBtn.disabled = false;
+        submitBtn.setAttribute('aria-disabled', 'false');
     } else {
         submitBtn.classList.remove('enabled');
         submitBtn.disabled = true;
+        submitBtn.setAttribute('aria-disabled', 'true');
     }
 }
 
 // ===== GAME ACTIONS =====
+
 function submitAnswer() {
     if (currentAnswer === null || currentEstimation === null) {
         showNotification('Bitte wähle eine Antwort und eine Schätzung aus!', 'warning');
@@ -612,10 +779,13 @@ function submitAnswer() {
     currentGame.currentAnswers[currentPlayerName] = currentAnswer;
     currentGame.currentEstimates[currentPlayerName] = currentEstimation;
 
-    log(`📤 ${currentPlayerName} answered:`, {
+    console.log(`📤 ${currentPlayerName} answered:`, {
         answer: currentAnswer,
         estimation: currentEstimation
     });
+
+    // Save progress
+    saveGameProgress();
 
     if (currentGame.currentPlayerIndex < currentGame.players.length - 1) {
         currentGame.currentPlayerIndex++;
@@ -630,6 +800,7 @@ function submitAnswer() {
 }
 
 // ===== PLAYER CHANGE POPUP =====
+
 function showPlayerChangePopup() {
     const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
 
@@ -660,8 +831,9 @@ function showPlayerChangePopup() {
 }
 
 // ===== RESULTS =====
+
 function showResults() {
-    log('📊 Calculating results...');
+    console.log('📊 Calculating results...');
 
     const actualYesCount = Object.values(currentGame.currentAnswers).filter(answer => answer === true).length;
 
@@ -673,8 +845,8 @@ function showResults() {
 
         let sips = 0;
         if (!isCorrect) {
-            const baseSips = getDifficultyMultiplier();
-            sips = baseSips + difference;
+            const multiplier = getDifficultyMultiplier();
+            sips = difference * multiplier;
         }
 
         return {
@@ -695,16 +867,22 @@ function showResults() {
 
     displayResults(results, actualYesCount);
     showResultsView();
+
+    // Save progress
+    saveGameProgress();
 }
 
 function getDifficultyMultiplier() {
     switch (gameState.difficulty) {
         case 'easy': return 1;
-        case 'hard': return 3;
-        default: return 2;
+        case 'hard': return 2;
+        default: return 1; // medium
     }
 }
 
+/**
+ * P0 FIX: Display results with textContent only
+ */
 function displayResults(results, actualYesCount) {
     const resultsSummary = document.getElementById('results-summary');
     if (resultsSummary) {
@@ -723,7 +901,6 @@ function displayResults(results, actualYesCount) {
 
     resultsGrid.innerHTML = '';
 
-    // Emoji basierend auf Alcohol Mode
     const drinkEmoji = alcoholMode ? '🍺' : '💧';
 
     sortedResults.forEach(result => {
@@ -732,7 +909,6 @@ function displayResults(results, actualYesCount) {
 
         const avatar = result.playerName.charAt(0).toUpperCase();
 
-        // Singular/Plural bei Schlücken
         const sipsText = result.sips === 0 ? 'Perfekt! 🎯' :
             result.sips === 1 ? `1 Schluck ${drinkEmoji}` :
                 `${result.sips} Schlücke ${drinkEmoji}`;
@@ -750,6 +926,7 @@ function displayResults(results, actualYesCount) {
 
         const playerResultName = document.createElement('div');
         playerResultName.className = 'player-result-name';
+        // P0 FIX: Use textContent
         playerResultName.textContent = result.playerName;
 
         const playerAnswer = document.createElement('div');
@@ -804,14 +981,18 @@ function showGameView() {
 }
 
 // ===== FINAL RESULTS =====
+
 function showFinalResults() {
-    log('🏆 Calculating final results...');
+    console.log('🏆 Calculating final results...');
 
     const playerStats = calculatePlayerStatistics();
     const finalRankings = playerStats.sort((a, b) => a.totalSips - b.totalSips);
 
     displayFinalResults(finalRankings);
     showFinalResultsView();
+
+    // Clear progress on game end
+    clearGameProgress();
 }
 
 function calculatePlayerStatistics() {
@@ -842,13 +1023,15 @@ function calculatePlayerStatistics() {
     return Object.values(playerStats);
 }
 
+/**
+ * P0 FIX: Display final results with textContent
+ */
 function displayFinalResults(finalRankings) {
     const leaderboardList = document.getElementById('leaderboard-list');
     if (!leaderboardList) return;
 
     leaderboardList.innerHTML = '';
 
-    // Emoji basierend auf Alcohol Mode
     const drinkEmoji = alcoholMode ? '🍺' : '💧';
 
     finalRankings.forEach((player, index) => {
@@ -862,11 +1045,9 @@ function displayFinalResults(finalRankings) {
         const rankText = index + 1;
         const avatar = player.playerName.charAt(0).toUpperCase();
 
-        // Singular/Plural bei Schlücken und Fragen
         const sipsText = player.totalSips === 1 ? '1 Schluck' : `${player.totalSips} Schlücke`;
         const questionsText = player.correctGuesses === 1 ? '1 Frage richtig' : `${player.correctGuesses} Fragen richtig`;
 
-        // Build elements
         const rankNumber = document.createElement('div');
         rankNumber.className = `rank-number ${rankClass}`;
         rankNumber.textContent = rankText;
@@ -880,26 +1061,38 @@ function displayFinalResults(finalRankings) {
 
         const playerFinalName = document.createElement('div');
         playerFinalName.className = 'player-final-name';
+        // P0 FIX: Use textContent
         playerFinalName.textContent = player.playerName;
 
         const playerFinalDetails = document.createElement('div');
         playerFinalDetails.className = 'player-final-details';
 
+        // P0 FIX: Build with textContent instead of innerHTML
         const detailItem1 = document.createElement('div');
         detailItem1.className = 'detail-item';
-        // SECURITY: Safe - drinkEmoji and sipsText are controlled (no user input)
-        detailItem1.innerHTML = `
-            <span class="detail-icon">${drinkEmoji}</span>
-            <span>${sipsText}</span>
-        `;
+
+        const icon1 = document.createElement('span');
+        icon1.className = 'detail-icon';
+        icon1.textContent = drinkEmoji;
+
+        const text1 = document.createElement('span');
+        text1.textContent = sipsText;
+
+        detailItem1.appendChild(icon1);
+        detailItem1.appendChild(text1);
 
         const detailItem2 = document.createElement('div');
         detailItem2.className = 'detail-item';
-        // SECURITY: Safe - emoji and questionsText are controlled (no user input)
-        detailItem2.innerHTML = `
-            <span class="detail-icon">🎯</span>
-            <span>${questionsText}</span>
-        `;
+
+        const icon2 = document.createElement('span');
+        icon2.className = 'detail-icon';
+        icon2.textContent = '🎯';
+
+        const text2 = document.createElement('span');
+        text2.textContent = questionsText;
+
+        detailItem2.appendChild(icon2);
+        detailItem2.appendChild(text2);
 
         playerFinalDetails.appendChild(detailItem1);
         playerFinalDetails.appendChild(detailItem2);
@@ -940,8 +1133,17 @@ function showFinalResultsView() {
 }
 
 // ===== UTILITY FUNCTIONS =====
+
+/**
+ * P0 FIX: Safe notification using NocapUtils
+ */
 function showNotification(message, type = 'info', duration = 3000) {
-    // Remove existing notifications
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type);
+        return;
+    }
+
+    // Fallback
     document.querySelectorAll('.toast-notification').forEach(n => n.remove());
 
     const notification = document.createElement('div');
@@ -963,9 +1165,7 @@ function showNotification(message, type = 'info', duration = 3000) {
 
     const toastMessage = document.createElement('div');
     toastMessage.className = 'toast-message';
-    // XSS-SAFE: Sanitize message
-    const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
-    toastMessage.textContent = sanitizedMessage;
+    toastMessage.textContent = String(message).replace(/<[^>]*>/g, '');
 
     toastContent.appendChild(toastIcon);
     toastContent.appendChild(toastMessage);
@@ -985,30 +1185,10 @@ function showNotification(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
-function log(message, type = 'info') {
-    const colors = {
-        info: '#4488ff',
-        warning: '#ffaa00',
-        error: '#ff4444',
-        success: '#00ff00'
-    };
+// ===== INITIALIZATION =====
 
-    console.log(`%c[Gameplay] ${message}`, `color: ${colors[type] || colors.info}`);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
 }
-
-// ===== DEBUG FUNCTIONS =====
-window.debugGameplay = function() {
-    console.log('🔍 === GAMEPLAY DEBUG ===');
-    console.log('GameState:', gameState?.getDebugInfo?.());
-    console.log('Current Game:', currentGame);
-    console.log('Current Answer:', currentAnswer);
-    console.log('Current Estimation:', currentEstimation);
-    console.log('Alcohol Mode:', alcoholMode);
-    console.log('Firebase:', {
-        initialized: firebaseService?.isInitialized,
-        connected: firebaseService?.isConnected
-    });
-};
-
-log('✅ No-Cap Gameplay - JS loaded!');
-log('🛠️ Debug: debugGameplay()');

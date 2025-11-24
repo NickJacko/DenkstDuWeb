@@ -2,218 +2,13 @@
  * No-Cap Multiplayer Gameplay
  * Handles real-time multiplayer game rounds with Firebase sync
  *
- * @version 8.0.0
+ * @version 8.1.0 - Security Hardened & Production Ready
  * @requires GameState.js
  * @requires Firebase SDK
- * @requires DOMPurify
+ * @requires firebase-service.js
  */
 
-// ===== FIREBASE SERVICE CLASS =====
-class FirebaseGameService {
-    constructor() {
-        this.app = null;
-        this.auth = null;
-        this.database = null;
-        this.isInitialized = false;
-        this.isConnected = false;
-        this.listeners = [];
-
-        this.config = {
-            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-            authDomain: "denkstduwebsite.firebaseapp.com",
-            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "denkstduwebsite",
-            storageBucket: "denkstduwebsite.appspot.com",
-            messagingSenderId: "27029260611",
-            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-            measurementId: "G-BNKNW95HK8"
-        };
-    }
-
-    async initialize() {
-        try {
-            this.log('🔥 Firebase Service - Initialisierung...');
-
-            if (typeof firebase === 'undefined') {
-                throw new Error('Firebase SDK nicht geladen');
-            }
-
-            if (!firebase.apps || firebase.apps.length === 0) {
-                this.app = firebase.initializeApp(this.config);
-            } else {
-                this.app = firebase.app();
-            }
-
-            // Anonymous Auth
-            this.log('🔐 Starte anonyme Authentifizierung...');
-            this.auth = firebase.auth();
-
-            try {
-                await this.auth.signInAnonymously();
-                this.log('✅ Anonym angemeldet');
-            } catch (authError) {
-                this.log(`❌ Auth Fehler: ${authError.message}`, 'error');
-                throw authError;
-            }
-
-            this.database = firebase.database();
-
-            // Verbindungsprüfung
-            this.log('🔗 Warte auf Datenbankverbindung...');
-            let connected = false;
-            let attempts = 0;
-
-            while (!connected && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                try {
-                    const connectedRef = this.database.ref('.info/connected');
-                    const snapshot = await connectedRef.once('value');
-                    connected = snapshot.val() === true;
-
-                    if (connected) {
-                        this.log('✅ Datenbankverbindung hergestellt!');
-                    } else {
-                        attempts++;
-                        this.log(`🔄 Verbindungsversuch ${attempts}/10...`);
-                    }
-                } catch (error) {
-                    attempts++;
-                }
-            }
-
-            this.isConnected = connected;
-            this.isInitialized = connected;
-
-            if (this.isConnected) {
-                this.log('✅ Firebase vollständig verbunden!');
-            } else {
-                this.log('❌ Firebase Verbindung fehlgeschlagen');
-            }
-
-            return this.isInitialized;
-
-        } catch (error) {
-            this.log(`❌ Firebase Fehler: ${error.message}`, 'error');
-            this.isInitialized = false;
-            this.isConnected = false;
-            return false;
-        }
-    }
-
-    async getGameData(gameId) {
-        if (!this.isConnected || !gameId) return null;
-
-        try {
-            const gameRef = this.database.ref(`games/${gameId}`);
-            const snapshot = await gameRef.once('value');
-            return snapshot.exists() ? snapshot.val() : null;
-        } catch (error) {
-            this.log(`❌ Fehler beim Laden: ${error.message}`, 'error');
-            return null;
-        }
-    }
-
-    listenToGame(gameId, callback) {
-        if (!this.isConnected || !gameId) return null;
-
-        try {
-            const gameRef = this.database.ref(`games/${gameId}`);
-            gameRef.on('value', callback);
-            this.listeners.push({ ref: gameRef, type: 'game' });
-            return gameRef;
-        } catch (error) {
-            this.log(`❌ Fehler beim Game Listener: ${error.message}`, 'error');
-            return null;
-        }
-    }
-
-    listenToRound(gameId, roundNumber, callback) {
-        if (!this.isConnected || !gameId) return null;
-
-        try {
-            const roundRef = this.database.ref(`games/${gameId}/rounds/round_${roundNumber}`);
-            roundRef.on('value', callback);
-            this.listeners.push({ ref: roundRef, type: 'round' });
-            return roundRef;
-        } catch (error) {
-            this.log(`❌ Fehler beim Round Listener: ${error.message}`, 'error');
-            return null;
-        }
-    }
-
-    async startNewRound(gameId, roundNumber, question) {
-        if (!this.isConnected) return false;
-
-        try {
-            const roundRef = this.database.ref(`games/${gameId}/rounds/round_${roundNumber}`);
-            await roundRef.set({
-                question: question,
-                answers: {},
-                startedAt: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            const gameRef = this.database.ref(`games/${gameId}`);
-            await gameRef.update({
-                currentRound: roundNumber,
-                lastUpdate: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            this.log(`✅ Round ${roundNumber} started`);
-            return true;
-        } catch (error) {
-            this.log(`❌ Fehler beim Starten der Runde: ${error.message}`, 'error');
-            return false;
-        }
-    }
-
-    async submitAnswer(gameId, roundNumber, playerId, answerData) {
-        if (!this.isConnected) throw new Error('Keine Firebase-Verbindung');
-
-        try {
-            const answerRef = this.database.ref(`games/${gameId}/rounds/round_${roundNumber}/answers/${playerId}`);
-            await answerRef.set({
-                ...answerData,
-                submittedAt: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            this.log(`✅ Answer submitted for round ${roundNumber}`);
-            return true;
-        } catch (error) {
-            this.log(`❌ Fehler beim Absenden: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-
-    cleanup() {
-        this.log('🧹 Cleanup...');
-
-        this.listeners.forEach(({ ref }) => {
-            try {
-                ref.off();
-            } catch (error) {
-                this.log(`❌ Fehler beim Entfernen: ${error.message}`, 'error');
-            }
-        });
-
-        this.listeners = [];
-        this.log('✅ Cleanup abgeschlossen');
-    }
-
-    get isReady() {
-        return this.isInitialized && this.isConnected;
-    }
-
-    log(message, type = 'info') {
-        const colors = {
-            info: '#4488ff',
-            warning: '#ffaa00',
-            error: '#ff4444',
-            success: '#00ff00'
-        };
-        console.log(`%c[Firebase] ${message}`, `color: ${colors[type] || colors.info}`);
-    }
-}
+'use strict';
 
 // ===== QUESTIONS DATABASE =====
 const questionsDatabase = {
@@ -227,16 +22,14 @@ const questionsDatabase = {
     ],
     fsk16: [
         "Ich habe schon mal... heimlich Süßigkeiten vor dem Abendessen gegessen",
-        "Ich habe schon mal... so getan, als wäre ich krank, um nicht zur Schule zu müssen",
+        "Ich habe schon mal... so getan, als wäre ich krank",
         "Ich habe schon mal... bis 3 Uhr morgens Netflix geschaut",
-        "Ich habe schon mal... ein Lied so laut gesungen, dass die Nachbarn sich beschwert haben",
         "Ich habe schon mal... vergessen, wo ich mein Auto geparkt habe"
     ],
     fsk18: [
         "Ich habe schon mal... an einem öffentlichen Ort Sex gehabt",
         "Ich habe schon mal... eine Affäre gehabt",
-        "Ich habe schon mal... in einer Beziehung betrogen",
-        "Ich habe schon mal... Sex mit jemandem gehabt, nur um es auszuprobieren"
+        "Ich habe schon mal... in einer Beziehung betrogen"
     ]
 };
 
@@ -254,6 +47,7 @@ let userEstimation = null;
 let totalPlayers = 0;
 let currentQuestionNumber = 1;
 let currentPhase = 'question';
+let hasSubmittedThisRound = false; // P0: Anti-cheat
 
 // Overall stats tracking
 let overallStats = {
@@ -264,89 +58,134 @@ let overallStats = {
 const categoryNames = {
     'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
     'fsk16': '🎉 Party Time',
-    'fsk18': '🔥 Heiß & Gewagt'
+    'fsk18': '🔥 Heiß & Gewagt',
+    'special': '⭐ Special Edition'
 };
 
 const difficultyMultipliers = {
     'easy': 1,
-    'medium': 2,
-    'hard': 3
+    'medium': 1,
+    'hard': 2
 };
 
+// ===== P0 FIX: INPUT SANITIZATION =====
+
+/**
+ * Sanitize text with NocapUtils or fallback
+ */
+function sanitizeText(input) {
+    if (!input) return '';
+
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+        return window.NocapUtils.sanitizeInput(String(input));
+    }
+
+    // Fallback
+    return String(input).replace(/<[^>]*>/g, '').substring(0, 500);
+}
+
+/**
+ * Sanitize player name
+ */
+function sanitizePlayerName(name) {
+    if (!name) return 'Spieler';
+
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+        return window.NocapUtils.sanitizeInput(String(name)).substring(0, 20);
+    }
+
+    return String(name).replace(/<[^>]*>/g, '').substring(0, 20);
+}
+
 // ===== GUARDS & VALIDATION =====
+
+/**
+ * P0 FIX: Comprehensive validation with FSK checks
+ */
 function validateGameState() {
-    log('🔍 Validating game state...');
+    console.log('🔍 Validating game state...');
 
-    // Check device mode
     if (!gameState.deviceMode || gameState.deviceMode !== 'multi') {
-        log('❌ Invalid device mode - redirecting', 'error');
+        console.error('❌ Invalid device mode');
         showNotification('Kein Multiplayer-Spiel aktiv!', 'error');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
+        setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
-    // Check game ID
     if (!gameState.gameId) {
-        log('❌ No game ID - redirecting', 'error');
+        console.error('❌ No game ID');
         showNotification('Keine Spiel-ID gefunden!', 'error');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
+        setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
-    // Check age verification (Age-Gate)
-    const ageVerification = localStorage.getItem('nocap_age_verification');
-    if (!ageVerification) {
-        log('⚠️ Age verification missing - redirecting to index', 'warning');
-        showNotification('Altersverifizierung erforderlich!', 'warning');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
+    // P0 FIX: Validate age verification with expiration
+    const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+    const ageTimestamp = parseInt(localStorage.getItem('nocap_age_timestamp')) || 0;
+    const now = Date.now();
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+    if (now - ageTimestamp > maxAge) {
+        console.error('❌ Age verification expired');
+        showNotification('Altersverifizierung abgelaufen!', 'warning');
+        setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
-    log('✅ Game state valid');
+    // P0 FIX: Validate FSK access for selected categories
+    if (gameState.selectedCategories) {
+        const hasInvalidCategory = gameState.selectedCategories.some(cat => {
+            if (cat === 'fsk18' && ageLevel < 18) return true;
+            if (cat === 'fsk16' && ageLevel < 16) return true;
+            return false;
+        });
+
+        if (hasInvalidCategory) {
+            console.error('❌ Invalid categories for age level');
+            showNotification('Ungültige Kategorien für dein Alter!', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return false;
+        }
+    }
+
+    console.log('✅ Game state valid');
     return true;
 }
 
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    initializeGameplay();
-});
 
-async function initializeGameplay() {
-    log('🎮 Initializing multiplayer gameplay...');
+async function initialize() {
+    console.log('🎮 Initializing multiplayer gameplay...');
     showLoading();
 
-    // Initialize services
+    // Check dependencies
     if (typeof GameState === 'undefined') {
-        log('❌ GameState class not loaded!', 'error');
-        showNotification('Fehler beim Laden der App', 'error');
+        console.error('❌ GameState not loaded');
+        showNotification('Fehler beim Laden', 'error');
         setTimeout(() => window.location.href = 'index.html', 2000);
         return;
     }
 
     gameState = new GameState();
 
-    // Validate state with guards
+    // Validate state
     if (!validateGameState()) {
         hideLoading();
         return;
     }
 
-    firebaseService = new FirebaseGameService();
-
-    // Initialize Firebase
-    const firebaseReady = await firebaseService.initialize();
-
-    if (firebaseReady) {
-        await setupFirebaseListeners();
+    // P0 FIX: Use global firebaseGameService
+    if (typeof window.firebaseGameService !== 'undefined') {
+        firebaseService = window.firebaseGameService;
     } else {
-        showNotification('Firebase-Verbindung fehlgeschlagen', 'error');
+        console.error('❌ Firebase service not available');
+        showNotification('Firebase nicht verfügbar', 'error');
+        hideLoading();
+        return;
     }
+
+    // Setup Firebase listeners
+    await setupFirebaseListeners();
 
     // Initialize UI
     updateGameDisplay();
@@ -357,26 +196,38 @@ async function initializeGameplay() {
     setupEventListeners();
 
     // Show/hide host controls
-    if (gameState.isHost) {
-        document.getElementById('host-controls').style.display = 'block';
-        document.getElementById('player-controls').style.display = 'none';
-    } else {
-        document.getElementById('host-controls').style.display = 'none';
-        document.getElementById('player-controls').style.display = 'block';
+    const hostControls = document.getElementById('host-controls');
+    const playerControls = document.getElementById('player-controls');
+
+    if (hostControls && playerControls) {
+        if (gameState.isHost) {
+            hostControls.style.display = 'block';
+            playerControls.style.display = 'none';
+        } else {
+            hostControls.style.display = 'none';
+            playerControls.style.display = 'block';
+        }
     }
 
     hideLoading();
-    log('✅ Gameplay initialized');
+    console.log('✅ Gameplay initialized');
 }
 
 // ===== EVENT LISTENERS =====
+
 function setupEventListeners() {
     // Answer buttons
-    document.getElementById('yes-btn').addEventListener('click', () => selectAnswer(true));
-    document.getElementById('no-btn').addEventListener('click', () => selectAnswer(false));
+    const yesBtn = document.getElementById('yes-btn');
+    const noBtn = document.getElementById('no-btn');
+
+    if (yesBtn) yesBtn.addEventListener('click', () => selectAnswer(true));
+    if (noBtn) noBtn.addEventListener('click', () => selectAnswer(false));
 
     // Submit button
-    document.getElementById('submit-btn').addEventListener('click', submitAnswers);
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitAnswers);
+    }
 
     // Host controls
     const nextQuestionBtn = document.getElementById('next-question-btn');
@@ -400,91 +251,95 @@ function setupEventListeners() {
         endGameBtn.addEventListener('click', endGameForAll);
     }
 
-    log('✅ Event listeners setup complete');
+    console.log('✅ Event listeners setup');
 }
 
 // ===== FIREBASE LISTENERS =====
+
 async function setupFirebaseListeners() {
-    if (!firebaseService.isReady || !gameState.gameId) {
-        log('⚠️ Cannot setup listeners - Firebase not ready');
+    if (!firebaseService || !gameState.gameId) {
+        console.warn('⚠️ Cannot setup listeners');
         return;
     }
 
-    log('🎧 Setting up Firebase listeners...');
+    console.log('🎧 Setting up Firebase listeners...');
 
     // Listen to game updates
-    gameListener = firebaseService.listenToGame(gameState.gameId, (snapshot) => {
-        if (snapshot.exists()) {
-            currentGameData = snapshot.val();
-            log('🎮 Game update received');
+    try {
+        const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
 
-            // Update players
+        gameListener = gameRef.on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                currentGameData = snapshot.val();
+                console.log('🎮 Game update received');
+
+                // Update players
+                currentPlayers = currentGameData.players || {};
+                updatePlayersCount();
+
+                // Check for overall results
+                if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
+                    console.log('📊 Overall results triggered');
+                    if (currentGameData.overallStats) {
+                        overallStats = currentGameData.overallStats;
+                    }
+                    displayOverallResults();
+                }
+
+                // Check if results closed
+                if (currentGameData.showOverallResults === false && currentPhase === 'overall-results') {
+                    console.log('▶️ Game continues');
+                    handleNewRound(currentGameData.currentRound);
+                }
+
+                // Check for game end
+                if (currentGameData.gameState === 'finished') {
+                    console.log('🛑 Game finished');
+                    showNotification('Spiel beendet! 👋', 'info');
+                    setTimeout(() => {
+                        cleanup();
+                        window.location.href = 'index.html';
+                    }, 3000);
+                }
+
+                // Check for round changes
+                if (currentGameData.currentRound &&
+                    currentGameData.currentRound !== currentQuestionNumber &&
+                    currentPhase !== 'overall-results') {
+                    handleNewRound(currentGameData.currentRound);
+                }
+            }
+        });
+
+        // Load initial game data
+        const initialData = await gameRef.once('value');
+        if (initialData.exists()) {
+            currentGameData = initialData.val();
             currentPlayers = currentGameData.players || {};
             updatePlayersCount();
 
-            // Check for overall results trigger
-            if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
-                log('📊 Overall results triggered by host');
-
-                if (currentGameData.overallStats) {
-                    overallStats = currentGameData.overallStats;
-                }
-
-                displayOverallResults();
+            if (currentGameData.currentRound) {
+                currentQuestionNumber = currentGameData.currentRound;
+                updateGameDisplay();
+                await loadRoundFromFirebase(currentQuestionNumber);
+            } else if (gameState.isHost) {
+                await startNewRound();
             }
-
-            // Check if overall results were closed (continue game)
-            if (currentGameData.showOverallResults === false && currentPhase === 'overall-results') {
-                log('▶️ Game continues - triggered by host');
-                handleNewRound(currentGameData.currentRound);
-            }
-
-            // Check for game end
-            if (currentGameData.gameState === 'finished') {
-                log('🛑 Game finished by host');
-                showNotification('Spiel wurde vom Host beendet! 👋', 'info');
-
-                setTimeout(() => {
-                    cleanup();
-                    window.location.href = 'index.html';
-                }, 3000);
-            }
-
-            // Check for round changes
-            if (currentGameData.currentRound && currentGameData.currentRound !== currentQuestionNumber && currentPhase !== 'overall-results') {
-                handleNewRound(currentGameData.currentRound);
-            }
-        }
-    });
-
-    // Load initial game data
-    const initialData = await firebaseService.getGameData(gameState.gameId);
-    if (initialData) {
-        currentGameData = initialData;
-        currentPlayers = initialData.players || {};
-        updatePlayersCount();
-
-        if (initialData.currentRound) {
-            currentQuestionNumber = initialData.currentRound;
-            updateGameDisplay();
-            await loadRoundFromFirebase(currentQuestionNumber);
         } else if (gameState.isHost) {
             await startNewRound();
         }
-    } else if (gameState.isHost) {
-        await startNewRound();
-    }
 
-    log('✅ Firebase listeners setup complete');
+        console.log('✅ Firebase listeners setup');
+    } catch (error) {
+        console.error('❌ Error setting up listeners:', error);
+    }
 }
 
 async function loadRoundFromFirebase(roundNumber) {
-    if (!firebaseService.isReady) return;
-
     try {
-        log(`📥 Loading round ${roundNumber} from Firebase...`);
+        console.log(`📥 Loading round ${roundNumber}...`);
 
-        const roundRef = firebaseService.database.ref(`games/${gameState.gameId}/rounds/round_${roundNumber}`);
+        const roundRef = firebase.database().ref(`games/${gameState.gameId}/rounds/round_${roundNumber}`);
         const snapshot = await roundRef.once('value');
 
         if (snapshot.exists()) {
@@ -494,28 +349,27 @@ async function loadRoundFromFirebase(roundNumber) {
             if (currentQuestion) {
                 displayQuestion(currentQuestion);
                 setupRoundListener(roundNumber);
-                log('✅ Question loaded and listener setup');
+                console.log('✅ Round loaded');
             }
-        } else {
-            log('⚠️ Round not found in Firebase');
         }
     } catch (error) {
-        log(`❌ Error loading round: ${error.message}`, 'error');
+        console.error('❌ Error loading round:', error);
     }
 }
 
 function setupRoundListener(roundNumber) {
-    // Remove old listener if exists
+    // Remove old listener
     if (roundListener) {
         try {
-            roundListener.off();
-            log('🗑️ Removed old round listener');
+            firebase.database().ref(`games/${gameState.gameId}/rounds/round_${roundNumber - 1}`).off();
         } catch (e) {}
     }
 
-    log(`🎧 Setting up round listener for round ${roundNumber}`);
+    console.log(`🎧 Setting up round listener for round ${roundNumber}`);
 
-    roundListener = firebaseService.listenToRound(gameState.gameId, roundNumber, (snapshot) => {
+    const roundRef = firebase.database().ref(`games/${gameState.gameId}/rounds/round_${roundNumber}`);
+
+    roundListener = roundRef.on('value', (snapshot) => {
         if (snapshot.exists()) {
             currentRoundData = snapshot.val();
 
@@ -523,16 +377,15 @@ function setupRoundListener(roundNumber) {
             const answerCount = Object.keys(answers).length;
             const playerCount = Object.keys(currentPlayers).length;
 
-            log(`📊 Round ${roundNumber} listener triggered: ${answerCount}/${playerCount} answers (Phase: ${currentPhase})`);
+            console.log(`📊 Round update: ${answerCount}/${playerCount} answers`);
 
-            // Update waiting status if in waiting phase
+            // Update waiting status
             if (currentPhase === 'waiting') {
                 updateWaitingStatus(answers);
 
-                // CHECK: All players answered?
+                // Check if all answered
                 if (answerCount >= playerCount && playerCount >= 2) {
-                    log('🎉 ALL PLAYERS ANSWERED! Showing results for EVERYONE...');
-
+                    console.log('🎉 All players answered!');
                     setTimeout(() => {
                         if (currentPhase === 'waiting') {
                             calculateAndShowResults();
@@ -540,44 +393,57 @@ function setupRoundListener(roundNumber) {
                     }, 300);
                 }
             }
-        } else {
-            log('⚠️ Round data not found in listener');
         }
     });
 
-    log('✅ Round listener active and waiting for updates');
+    console.log('✅ Round listener active');
 }
 
 function handleNewRound(roundNumber) {
     if (roundNumber > currentQuestionNumber) {
         currentQuestionNumber = roundNumber;
+        hasSubmittedThisRound = false; // P0: Reset anti-cheat
         updateGameDisplay();
         loadRoundFromFirebase(roundNumber);
         resetForNewQuestion();
         showPhase('question');
-        showNotification('Neue Frage gestartet! 🎮', 'success');
+        showNotification('Neue Frage! 🎮', 'success');
     }
 }
 
 // ===== GAME FLOW =====
+
 async function startNewRound() {
     if (!gameState.isHost) return;
 
-    log(`🎲 Starting round ${currentQuestionNumber}`);
+    console.log(`🎲 Starting round ${currentQuestionNumber}`);
 
-    // Generate new question
+    // Generate question
     currentQuestion = generateRandomQuestion();
 
     // Display question
     displayQuestion(currentQuestion);
 
     // Start round in Firebase
-    if (firebaseService.isReady) {
-        await firebaseService.startNewRound(gameState.gameId, currentQuestionNumber, currentQuestion);
-        setupRoundListener(currentQuestionNumber);
-    }
+    try {
+        const roundRef = firebase.database().ref(`games/${gameState.gameId}/rounds/round_${currentQuestionNumber}`);
+        await roundRef.set({
+            question: currentQuestion,
+            answers: {},
+            startedAt: firebase.database.ServerValue.TIMESTAMP
+        });
 
-    log('✅ New round started and listener setup');
+        const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
+        await gameRef.update({
+            currentRound: currentQuestionNumber,
+            lastUpdate: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        setupRoundListener(currentQuestionNumber);
+        console.log('✅ New round started');
+    } catch (error) {
+        console.error('❌ Error starting round:', error);
+    }
 }
 
 function generateRandomQuestion() {
@@ -587,7 +453,7 @@ function generateRandomQuestion() {
         if (questionsDatabase[category]) {
             questionsDatabase[category].forEach(q => {
                 availableQuestions.push({
-                    text: q,
+                    text: sanitizeText(q),
                     category: category
                 });
             });
@@ -604,63 +470,89 @@ function generateRandomQuestion() {
     return availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
 }
 
+/**
+ * P0 FIX: Display question with textContent only
+ */
 function displayQuestion(question) {
     if (!question) return;
 
-    // Sanitize question text
     const questionTextEl = document.getElementById('question-text');
-    questionTextEl.textContent = question.text; // Use textContent for safety
-
     const categoryEl = document.getElementById('question-category');
-    categoryEl.textContent = categoryNames[question.category] || '🎮 Spiel';
 
-    log('📝 Question displayed:', question.text);
+    if (questionTextEl) {
+        // P0 FIX: Use textContent for safety
+        questionTextEl.textContent = sanitizeText(question.text);
+    }
+
+    if (categoryEl) {
+        categoryEl.textContent = categoryNames[question.category] || '🎮 Spiel';
+    }
+
+    console.log('📝 Question displayed');
 }
 
 function resetForNewQuestion() {
     userAnswer = null;
     userEstimation = null;
+    hasSubmittedThisRound = false; // P0: Reset anti-cheat
 
     document.querySelectorAll('.answer-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
 
-    // Hide personal result box
     const personalBox = document.getElementById('personal-result');
     if (personalBox) {
         personalBox.style.display = 'none';
     }
 
-    // Hide selection display
     const selectionDisplay = document.getElementById('current-selection');
-    selectionDisplay.classList.remove('show');
-    document.getElementById('selected-number').textContent = '-';
+    if (selectionDisplay) {
+        selectionDisplay.classList.remove('show');
+    }
+
+    const selectedNumber = document.getElementById('selected-number');
+    if (selectedNumber) {
+        selectedNumber.textContent = '-';
+    }
 
     updateNumberSelection();
     updateSubmitButton();
 }
 
 // ===== UI FUNCTIONS =====
+
 function updateGameDisplay() {
     const gameIdEl = document.getElementById('game-id-display');
-    gameIdEl.textContent = gameState.gameId;
+    if (gameIdEl) {
+        gameIdEl.textContent = gameState.gameId;
+    }
+
+    const roundEl = document.getElementById('current-round');
+    if (roundEl) {
+        roundEl.textContent = currentQuestionNumber;
+    }
 }
 
 function updatePlayersCount() {
     totalPlayers = Object.keys(currentPlayers).length;
 
     const playersCountEl = document.getElementById('players-count');
-    playersCountEl.textContent = `${totalPlayers} Spieler`;
+    if (playersCountEl) {
+        playersCountEl.textContent = `${totalPlayers} Spieler`;
+    }
 
     const totalPlayersEl = document.getElementById('total-players');
-    totalPlayersEl.textContent = totalPlayers;
+    if (totalPlayersEl) {
+        totalPlayersEl.textContent = totalPlayers;
+    }
 
-    // Recreate number grid
     createNumberGrid();
 }
 
 function createNumberGrid() {
     const numberGrid = document.getElementById('number-grid');
+    if (!numberGrid) return;
+
     numberGrid.innerHTML = '';
 
     const maxPlayers = totalPlayers || 8;
@@ -669,8 +561,7 @@ function createNumberGrid() {
         numberBtn.className = 'number-btn';
         numberBtn.textContent = i;
         numberBtn.id = `number-btn-${i}`;
-
-        // Use addEventListener instead of onclick
+        numberBtn.setAttribute('aria-label', `${i} Spieler schätzen`);
         numberBtn.addEventListener('click', () => selectNumber(i));
 
         numberGrid.appendChild(numberBtn);
@@ -687,15 +578,22 @@ function selectNumber(number) {
         updateNumberSelection();
         updateSubmitButton();
 
-        // Show selection display after selection
         const selectionDisplay = document.getElementById('current-selection');
-        selectionDisplay.classList.add('show');
+        if (selectionDisplay) {
+            selectionDisplay.classList.add('show');
+        }
+
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+        }
     }
 }
 
 function updateSelectedNumber(number) {
     const selectedNumberEl = document.getElementById('selected-number');
-    selectedNumberEl.textContent = number;
+    if (selectedNumberEl) {
+        selectedNumberEl.textContent = number;
+    }
 }
 
 function updateNumberSelection() {
@@ -718,71 +616,109 @@ function selectAnswer(answer) {
         btn.classList.remove('selected');
     });
 
-    const selectedBtn = answer ? document.getElementById('yes-btn') : document.getElementById('no-btn');
-    selectedBtn.classList.add('selected');
+    const selectedBtn = answer ?
+        document.getElementById('yes-btn') :
+        document.getElementById('no-btn');
+
+    if (selectedBtn) {
+        selectedBtn.classList.add('selected');
+    }
 
     updateSubmitButton();
 }
 
 function updateSubmitButton() {
     const submitBtn = document.getElementById('submit-btn');
-    if (userAnswer !== null && userEstimation !== null) {
-        submitBtn.classList.add('enabled');
-        submitBtn.disabled = false;
-    } else {
+    if (!submitBtn) return;
+
+    // P0: Disable if already submitted
+    if (hasSubmittedThisRound) {
         submitBtn.classList.remove('enabled');
         submitBtn.disabled = true;
-    }
-}
-
-// ===== GAME ACTIONS =====
-async function submitAnswers() {
-    if (userAnswer === null || userEstimation === null) {
-        showNotification('Bitte wähle eine Antwort UND eine Schätzung aus!', 'warning');
+        submitBtn.textContent = 'Bereits abgesendet';
         return;
     }
 
-    log('📤 Submitting answers:', { answer: userAnswer, estimation: userEstimation });
+    if (userAnswer !== null && userEstimation !== null) {
+        submitBtn.classList.add('enabled');
+        submitBtn.disabled = false;
+        submitBtn.setAttribute('aria-disabled', 'false');
+    } else {
+        submitBtn.classList.remove('enabled');
+        submitBtn.disabled = true;
+        submitBtn.setAttribute('aria-disabled', 'true');
+    }
+}
+
+// ===== P0 FIX: GAME ACTIONS WITH ANTI-CHEAT =====
+
+/**
+ * P0 FIX: Submit with anti-cheat check
+ */
+async function submitAnswers() {
+    // P0: Anti-cheat - prevent double submission
+    if (hasSubmittedThisRound) {
+        showNotification('Du hast bereits abgesendet!', 'warning');
+        return;
+    }
+
+    if (userAnswer === null || userEstimation === null) {
+        showNotification('Bitte wähle Antwort UND Schätzung!', 'warning');
+        return;
+    }
+
+    console.log('📤 Submitting answers:', { answer: userAnswer, estimation: userEstimation });
+
+    // P0: Validate estimation range
+    if (userEstimation < 0 || userEstimation > totalPlayers) {
+        showNotification('Ungültige Schätzung!', 'error');
+        return;
+    }
 
     const answerData = {
         playerId: gameState.playerId,
-        playerName: gameState.playerName,
+        playerName: sanitizePlayerName(gameState.playerName),
         answer: userAnswer,
         estimation: userEstimation,
         isHost: gameState.isHost,
-        alcoholMode: gameState.alcoholMode
+        alcoholMode: gameState.alcoholMode,
+        timestamp: Date.now()
     };
 
     try {
-        if (firebaseService.isReady) {
-            await firebaseService.submitAnswer(
-                gameState.gameId,
-                currentQuestionNumber,
-                gameState.playerId,
-                answerData
-            );
+        const answerRef = firebase.database().ref(
+            `games/${gameState.gameId}/rounds/round_${currentQuestionNumber}/answers/${gameState.playerId}`
+        );
 
-            log('✅ Answer submitted to Firebase');
-        }
+        await answerRef.set({
+            ...answerData,
+            submittedAt: firebase.database.ServerValue.TIMESTAMP
+        });
 
+        // P0: Mark as submitted
+        hasSubmittedThisRound = true;
+
+        console.log('✅ Answer submitted');
         showNotification('Antworten gesendet! 🎯', 'success');
         showPhase('waiting');
+        updateSubmitButton();
 
         setTimeout(() => {
             checkIfAllAnswered();
         }, 1000);
 
     } catch (error) {
-        log(`❌ Error submitting: ${error.message}`, 'error');
+        console.error('❌ Error submitting:', error);
         showNotification('Fehler beim Senden', 'error');
+        hasSubmittedThisRound = false; // Allow retry on error
     }
 }
 
 async function checkIfAllAnswered() {
-    if (!firebaseService.isReady || !currentQuestionNumber) return;
-
     try {
-        const roundRef = firebaseService.database.ref(`games/${gameState.gameId}/rounds/round_${currentQuestionNumber}`);
+        const roundRef = firebase.database().ref(
+            `games/${gameState.gameId}/rounds/round_${currentQuestionNumber}`
+        );
         const snapshot = await roundRef.once('value');
 
         if (snapshot.exists()) {
@@ -791,34 +727,44 @@ async function checkIfAllAnswered() {
             const answerCount = Object.keys(answers).length;
             const playerCount = Object.keys(currentPlayers).length;
 
-            log(`🔍 Manual check: ${answerCount}/${playerCount} answers`);
+            console.log(`🔍 Check: ${answerCount}/${playerCount} answers`);
 
             if (answerCount >= playerCount && playerCount >= 2 && currentPhase === 'waiting') {
-                log('✅ All answered detected in manual check!');
+                console.log('✅ All answered!');
                 currentRoundData = roundData;
                 calculateAndShowResults();
             }
         }
     } catch (error) {
-        log(`❌ Error in manual check: ${error.message}`, 'error');
+        console.error('❌ Error checking:', error);
     }
 }
 
 // ===== PHASE MANAGEMENT =====
+
 function showPhase(phase) {
     document.querySelectorAll('.game-phase').forEach(p => {
         p.classList.remove('active');
     });
 
-    document.getElementById(`${phase}-phase`).classList.add('active');
-    currentPhase = phase;
+    const phaseEl = document.getElementById(`${phase}-phase`);
+    if (phaseEl) {
+        phaseEl.classList.add('active');
+    }
 
-    log(`📍 Phase: ${phase}`);
+    currentPhase = phase;
+    console.log(`📍 Phase: ${phase}`);
 }
 
-// ===== WAITING PHASE =====
+// ===== P0 FIX: WAITING PHASE WITH SAFE DOM =====
+
+/**
+ * P0 FIX: Update waiting status with textContent
+ */
 function updateWaitingStatus(answers = {}) {
     const statusContainer = document.getElementById('players-status');
+    if (!statusContainer) return;
+
     statusContainer.innerHTML = '';
 
     Object.entries(currentPlayers).forEach(([playerId, player]) => {
@@ -827,32 +773,31 @@ function updateWaitingStatus(answers = {}) {
         const statusItem = document.createElement('div');
         statusItem.className = 'player-status-item';
 
-        // Sanitize player name
-        const playerName = DOMPurify.sanitize(player.name || 'Spieler');
-        const statusIndicator = hasAnswered ?
-            '<span class="status-indicator status-done">✅ Fertig</span>' :
-            '<span class="status-indicator status-waiting">⏳ Wartet...</span>';
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = sanitizePlayerName(player.name || 'Spieler');
 
-        statusItem.innerHTML = DOMPurify.sanitize(`
-            <span>${playerName}</span>
-            ${statusIndicator}
-        `);
+        const statusSpan = document.createElement('span');
+        statusSpan.className = `status-indicator ${hasAnswered ? 'status-done' : 'status-waiting'}`;
+        statusSpan.textContent = hasAnswered ? '✅ Fertig' : '⏳ Wartet...';
 
+        statusItem.appendChild(nameSpan);
+        statusItem.appendChild(statusSpan);
         statusContainer.appendChild(statusItem);
     });
 }
 
 // ===== RESULTS CALCULATION =====
+
 function calculateAndShowResults() {
     if (!currentRoundData || !currentRoundData.answers) {
-        log('❌ No round data available');
+        console.error('❌ No round data');
         return;
     }
 
     const answers = currentRoundData.answers;
     const actualYesCount = Object.values(answers).filter(a => a.answer === true).length;
 
-    log(`✅ Alle haben geantwortet! Richtige Antwort: ${actualYesCount} Spieler`);
+    console.log(`✅ Results: ${actualYesCount} said yes`);
 
     // Calculate results
     const results = Object.values(answers).map(playerAnswer => {
@@ -861,13 +806,13 @@ function calculateAndShowResults() {
 
         let sips = 0;
         if (!isCorrect) {
-            const baseSips = difficultyMultipliers[gameState.difficulty] || 2;
-            sips = baseSips + Math.floor(difference / 2);
+            const multiplier = difficultyMultipliers[gameState.difficulty] || 1;
+            sips = difference * multiplier;
         }
 
         return {
             playerId: playerAnswer.playerId,
-            playerName: playerAnswer.playerName,
+            playerName: sanitizePlayerName(playerAnswer.playerName),
             answer: playerAnswer.answer,
             estimation: playerAnswer.estimation,
             difference: difference,
@@ -877,10 +822,10 @@ function calculateAndShowResults() {
         };
     });
 
-    // SORT BY SIPS (DESCENDING - Most sips first)
+    // Sort by sips (descending)
     results.sort((a, b) => b.sips - a.sips);
 
-    // UPDATE OVERALL STATS
+    // Update overall stats
     overallStats.totalRounds = currentQuestionNumber;
 
     results.forEach(result => {
@@ -904,85 +849,119 @@ function calculateAndShowResults() {
     displayRoundResults(results, actualYesCount);
     showPhase('results');
 
-    log('📊 Results calculated and displayed for all players');
+    console.log('📊 Results displayed');
 }
 
+/**
+ * P0 FIX: Display results with textContent only
+ */
 function displayRoundResults(results, actualYesCount) {
-    // Show question as title
+    // Show question
     if (currentQuestion && currentQuestion.text) {
         const resultsQuestionEl = document.getElementById('results-question-text');
-        resultsQuestionEl.textContent = currentQuestion.text;
+        if (resultsQuestionEl) {
+            resultsQuestionEl.textContent = sanitizeText(currentQuestion.text);
+        }
     }
 
     const resultsSummaryEl = document.getElementById('results-summary');
-    resultsSummaryEl.textContent = `✅ ${actualYesCount} von ${totalPlayers || results.length} Spielern haben mit "Ja" geantwortet`;
+    if (resultsSummaryEl) {
+        resultsSummaryEl.textContent =
+            `✅ ${actualYesCount} von ${totalPlayers || results.length} Spielern haben mit "Ja" geantwortet`;
+    }
 
     // Find current player's result
     const myResult = results.find(r => r.playerId === gameState.playerId);
 
     if (myResult) {
-        // Show personal result box
         const personalBox = document.getElementById('personal-result');
-        personalBox.style.display = 'block';
+        if (personalBox) {
+            personalBox.style.display = 'block';
+        }
 
-        document.getElementById('personal-estimation').textContent = myResult.estimation;
+        const estEl = document.getElementById('personal-estimation');
+        if (estEl) {
+            estEl.textContent = myResult.estimation;
+        }
 
         const statusText = myResult.isCorrect ?
             '✅ Richtig geschätzt!' :
             `❌ Falsch (Diff: ${myResult.difference})`;
+
         const statusEl = document.getElementById('personal-status');
-        statusEl.textContent = statusText;
-        statusEl.style.color = myResult.isCorrect ? '#4CAF50' : '#f44336';
+        if (statusEl) {
+            statusEl.textContent = statusText;
+            statusEl.style.color = myResult.isCorrect ? '#4CAF50' : '#f44336';
+        }
 
         const drinkEmoji = myResult.alcoholMode ? '🍺' : '💧';
         const sipsText = myResult.sips === 0 ?
             '🎯 Keine! Perfekt!' :
             `${myResult.sips} ${drinkEmoji}`;
-        document.getElementById('personal-sips').textContent = sipsText;
+
+        const sipsEl = document.getElementById('personal-sips');
+        if (sipsEl) {
+            sipsEl.textContent = sipsText;
+        }
     }
 
-    // Display results grid (sorted by sips - descending)
+    // Display results grid
     const resultsGrid = document.getElementById('results-grid');
+    if (!resultsGrid) return;
+
     resultsGrid.innerHTML = '';
 
     results.forEach((result) => {
         const resultItem = document.createElement('div');
         resultItem.className = 'result-item';
 
-        // Color coding
         const isMe = result.playerId === gameState.playerId;
-        const isCorrect = result.isCorrect;
+        if (isMe) resultItem.classList.add('is-me');
+        else if (result.isCorrect) resultItem.classList.add('correct-not-me');
+        else resultItem.classList.add('wrong');
 
-        if (isMe) {
-            resultItem.classList.add('is-me');
-        } else if (isCorrect) {
-            resultItem.classList.add('correct-not-me');
-        } else {
-            resultItem.classList.add('wrong');
-        }
-
-        const avatar = DOMPurify.sanitize(result.playerName.substring(0, 2).toUpperCase());
-        const playerName = DOMPurify.sanitize(result.playerName);
+        const avatar = result.playerName.substring(0, 2).toUpperCase();
         const drinkEmoji = result.alcoholMode ? '🍺' : '💧';
         const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} ${drinkEmoji}`;
-        const sipsClass = result.sips === 0 ? 'none' : '';
 
-        resultItem.innerHTML = DOMPurify.sanitize(`
-            <div class="player-result">
-                <div class="player-avatar">${avatar}</div>
-                <div class="player-info">
-                    <div class="player-name">${playerName}</div>
-                    <div class="player-answer">Tipp: ${result.estimation}</div>
-                </div>
-            </div>
-            <div class="sips-penalty ${sipsClass}">${sipsText}</div>
-        `);
+        // P0 FIX: Build with textContent
+        const playerResult = document.createElement('div');
+        playerResult.className = 'player-result';
+
+        const playerAvatar = document.createElement('div');
+        playerAvatar.className = 'player-avatar';
+        playerAvatar.textContent = avatar;
+
+        const playerInfo = document.createElement('div');
+        playerInfo.className = 'player-info';
+
+        const playerName = document.createElement('div');
+        playerName.className = 'player-name';
+        playerName.textContent = result.playerName;
+
+        const playerAnswer = document.createElement('div');
+        playerAnswer.className = 'player-answer';
+        playerAnswer.textContent = `Tipp: ${result.estimation}`;
+
+        playerInfo.appendChild(playerName);
+        playerInfo.appendChild(playerAnswer);
+
+        playerResult.appendChild(playerAvatar);
+        playerResult.appendChild(playerInfo);
+
+        const sipsPenalty = document.createElement('div');
+        sipsPenalty.className = `sips-penalty ${result.sips === 0 ? 'none' : ''}`;
+        sipsPenalty.textContent = sipsText;
+
+        resultItem.appendChild(playerResult);
+        resultItem.appendChild(sipsPenalty);
 
         resultsGrid.appendChild(resultItem);
     });
 }
 
 // ===== GAME CONTROLS =====
+
 async function nextQuestion() {
     if (!gameState.isHost) {
         showNotification('Nur der Host kann weitermachen!', 'warning');
@@ -990,12 +969,13 @@ async function nextQuestion() {
     }
 
     currentQuestionNumber++;
+    hasSubmittedThisRound = false; // Reset anti-cheat
     updateGameDisplay();
     resetForNewQuestion();
     showPhase('question');
 
     await startNewRound();
-    showNotification('Neue Frage geladen! 🎮', 'success');
+    showNotification('Neue Frage! 🎮', 'success');
 }
 
 async function showOverallResults() {
@@ -1004,40 +984,46 @@ async function showOverallResults() {
         return;
     }
 
-    log('📊 Showing overall results...');
+    console.log('📊 Showing overall results...');
 
-    // Notify all players via Firebase
-    if (firebaseService.isReady) {
-        try {
-            const gameRef = firebaseService.database.ref(`games/${gameState.gameId}`);
-            await gameRef.update({
-                showOverallResults: true,
-                overallStats: overallStats,
-                lastUpdate: firebase.database.ServerValue.TIMESTAMP
-            });
+    try {
+        const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
+        await gameRef.update({
+            showOverallResults: true,
+            overallStats: overallStats,
+            lastUpdate: firebase.database.ServerValue.TIMESTAMP
+        });
 
-            log('✅ Overall results notification sent to all players');
-        } catch (error) {
-            log(`❌ Error sending notification: ${error.message}`, 'error');
-        }
+        console.log('✅ Overall results notification sent');
+    } catch (error) {
+        console.error('❌ Error:', error);
     }
 
-    // Show for host
     displayOverallResults();
 }
 
+/**
+ * P0 FIX: Display overall results with textContent
+ */
 function displayOverallResults() {
-    log('🏆 Displaying overall results');
+    console.log('🏆 Displaying overall results');
 
-    // Update stats
-    document.getElementById('total-rounds').textContent = overallStats.totalRounds;
-    document.getElementById('total-players-overall').textContent = Object.keys(overallStats.playerStats).length;
+    const totalRoundsEl = document.getElementById('total-rounds');
+    if (totalRoundsEl) {
+        totalRoundsEl.textContent = overallStats.totalRounds;
+    }
 
-    // Create leaderboard
+    const totalPlayersEl = document.getElementById('total-players-overall');
+    if (totalPlayersEl) {
+        totalPlayersEl.textContent = Object.keys(overallStats.playerStats).length;
+    }
+
     const leaderboardList = document.getElementById('overall-leaderboard-list');
+    if (!leaderboardList) return;
+
     leaderboardList.innerHTML = '';
 
-    // Convert to array and sort by total sips (ascending - least sips = winner)
+    // Sort by total sips (ascending)
     const leaderboard = Object.values(overallStats.playerStats).sort((a, b) => a.totalSips - b.totalSips);
 
     leaderboard.forEach((player, index) => {
@@ -1048,30 +1034,51 @@ function displayOverallResults() {
             index === 1 ? 'rank-2' :
                 index === 2 ? 'rank-3' : 'rank-other';
 
-        const correctText = `${player.correctGuesses} Fragen richtig`;
-        const playerName = DOMPurify.sanitize(player.name);
+        // P0 FIX: Build with textContent
+        const rankBadge = document.createElement('div');
+        rankBadge.className = `rank-badge ${rankClass}`;
+        rankBadge.textContent = index + 1;
 
-        leaderboardItem.innerHTML = DOMPurify.sanitize(`
-            <div class="rank-badge ${rankClass}">${index + 1}</div>
-            <div class="leaderboard-player-info">
-                <div class="leaderboard-player-name">${playerName}</div>
-                <div class="leaderboard-player-stats">
-                    <span>🍺 ${player.totalSips} Schlücke</span>
-                    <span>🎯 ${correctText}</span>
-                </div>
-            </div>
-        `);
+        const playerInfoDiv = document.createElement('div');
+        playerInfoDiv.className = 'leaderboard-player-info';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'leaderboard-player-name';
+        nameDiv.textContent = sanitizePlayerName(player.name);
+
+        const statsDiv = document.createElement('div');
+        statsDiv.className = 'leaderboard-player-stats';
+
+        const sipsSpan = document.createElement('span');
+        sipsSpan.textContent = `🍺 ${player.totalSips} Schlücke`;
+
+        const correctSpan = document.createElement('span');
+        correctSpan.textContent = `🎯 ${player.correctGuesses} Fragen richtig`;
+
+        statsDiv.appendChild(sipsSpan);
+        statsDiv.appendChild(correctSpan);
+
+        playerInfoDiv.appendChild(nameDiv);
+        playerInfoDiv.appendChild(statsDiv);
+
+        leaderboardItem.appendChild(rankBadge);
+        leaderboardItem.appendChild(playerInfoDiv);
 
         leaderboardList.appendChild(leaderboardItem);
     });
 
     // Show/hide controls
-    if (gameState.isHost) {
-        document.getElementById('overall-host-controls').style.display = 'block';
-        document.getElementById('overall-player-controls').style.display = 'none';
-    } else {
-        document.getElementById('overall-host-controls').style.display = 'none';
-        document.getElementById('overall-player-controls').style.display = 'block';
+    const hostControls = document.getElementById('overall-host-controls');
+    const playerControls = document.getElementById('overall-player-controls');
+
+    if (hostControls && playerControls) {
+        if (gameState.isHost) {
+            hostControls.style.display = 'block';
+            playerControls.style.display = 'none';
+        } else {
+            hostControls.style.display = 'none';
+            playerControls.style.display = 'block';
+        }
     }
 
     showPhase('overall-results');
@@ -1079,27 +1086,24 @@ function displayOverallResults() {
 
 async function continueGame() {
     if (!gameState.isHost) {
-        showNotification('Nur der Host kann das Spiel fortfahren!', 'warning');
+        showNotification('Nur der Host kann fortfahren!', 'warning');
         return;
     }
 
-    log('▶️ Continuing game...');
+    console.log('▶️ Continuing game...');
 
-    // Clear overall results flag
-    if (firebaseService.isReady) {
-        try {
-            const gameRef = firebaseService.database.ref(`games/${gameState.gameId}`);
-            await gameRef.update({
-                showOverallResults: false,
-                lastUpdate: firebase.database.ServerValue.TIMESTAMP
-            });
-        } catch (error) {
-            log(`❌ Error: ${error.message}`, 'error');
-        }
+    try {
+        const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
+        await gameRef.update({
+            showOverallResults: false,
+            lastUpdate: firebase.database.ServerValue.TIMESTAMP
+        });
+    } catch (error) {
+        console.error('❌ Error:', error);
     }
 
-    // Start next question
     currentQuestionNumber++;
+    hasSubmittedThisRound = false;
     updateGameDisplay();
     resetForNewQuestion();
     showPhase('question');
@@ -1110,56 +1114,47 @@ async function continueGame() {
 
 async function endGameForAll() {
     if (!gameState.isHost) {
-        showNotification('Nur der Host kann das Spiel beenden!', 'warning');
+        showNotification('Nur der Host kann beenden!', 'warning');
         return;
     }
 
-    if (!confirm('Spiel wirklich für ALLE Spieler beenden?')) {
+    if (!confirm('Spiel wirklich für ALLE beenden?')) {
         return;
     }
 
-    log('🛑 Ending game for all players...');
+    console.log('🛑 Ending game...');
 
-    if (firebaseService.isReady) {
-        try {
-            const gameRef = firebaseService.database.ref(`games/${gameState.gameId}`);
-            await gameRef.update({
-                gameState: 'finished',
-                endedAt: firebase.database.ServerValue.TIMESTAMP,
-                finalStats: overallStats
-            });
+    try {
+        const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
+        await gameRef.update({
+            gameState: 'finished',
+            endedAt: firebase.database.ServerValue.TIMESTAMP,
+            finalStats: overallStats
+        });
 
-            showNotification('Spiel wurde beendet! 👋', 'success');
+        showNotification('Spiel beendet! 👋', 'success');
 
-            setTimeout(() => {
-                cleanup();
-                window.location.href = 'index.html';
-            }, 2000);
+        setTimeout(() => {
+            cleanup();
+            window.location.href = 'index.html';
+        }, 2000);
 
-        } catch (error) {
-            log(`❌ Error ending game: ${error.message}`, 'error');
-            showNotification('Fehler beim Beenden', 'error');
-        }
-    } else {
-        // Offline fallback
-        cleanup();
-        window.location.href = 'index.html';
+    } catch (error) {
+        console.error('❌ Error ending game:', error);
+        showNotification('Fehler beim Beenden', 'error');
     }
 }
 
 function cleanup() {
     if (gameListener) {
         try {
-            gameListener.off();
+            firebase.database().ref(`games/${gameState.gameId}`).off();
         } catch (e) {}
     }
     if (roundListener) {
         try {
-            roundListener.off();
+            firebase.database().ref(`games/${gameState.gameId}/rounds/round_${currentQuestionNumber}`).off();
         } catch (e) {}
-    }
-    if (firebaseService) {
-        firebaseService.cleanup();
     }
 }
 
@@ -1167,15 +1162,31 @@ function cleanup() {
 window.addEventListener('beforeunload', cleanup);
 
 // ===== UTILITY FUNCTIONS =====
+
 function showLoading() {
-    document.getElementById('loading-screen').classList.add('show');
+    const loading = document.getElementById('loading-screen');
+    if (loading) {
+        loading.classList.add('show');
+    }
 }
 
 function hideLoading() {
-    document.getElementById('loading-screen').classList.remove('show');
+    const loading = document.getElementById('loading-screen');
+    if (loading) {
+        loading.classList.remove('show');
+    }
 }
 
+/**
+ * P0 FIX: Safe notification using NocapUtils
+ */
 function showNotification(message, type = 'info') {
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type);
+        return;
+    }
+
+    // Fallback
     document.querySelectorAll('.toast-notification').forEach(n => n.remove());
 
     const notification = document.createElement('div');
@@ -1188,14 +1199,20 @@ function showNotification(message, type = 'info') {
         'info': 'ℹ️'
     };
 
-    const sanitizedMessage = DOMPurify.sanitize(message);
+    const toastContent = document.createElement('div');
+    toastContent.className = 'toast-content';
 
-    notification.innerHTML = DOMPurify.sanitize(`
-        <div class="toast-content">
-            <div class="toast-icon">${iconMap[type] || iconMap.info}</div>
-            <div class="toast-message">${sanitizedMessage}</div>
-        </div>
-    `);
+    const toastIcon = document.createElement('div');
+    toastIcon.className = 'toast-icon';
+    toastIcon.textContent = iconMap[type] || '✅';
+
+    const toastMessage = document.createElement('div');
+    toastMessage.className = 'toast-message';
+    toastMessage.textContent = sanitizeText(message);
+
+    toastContent.appendChild(toastIcon);
+    toastContent.appendChild(toastMessage);
+    notification.appendChild(toastContent);
 
     document.body.appendChild(notification);
 
@@ -1211,29 +1228,12 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
-function log(message, type = 'info') {
-    const colors = {
-        info: '#4488ff',
-        warning: '#ffaa00',
-        error: '#ff4444',
-        success: '#00ff00'
-    };
-    console.log(`%c[Gameplay] ${message}`, `color: ${colors[type] || colors.info}`);
+// ===== INITIALIZATION =====
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
 }
 
-// ===== DEBUG =====
-window.debugGameplay = function() {
-    console.log('🔍 === GAMEPLAY DEBUG ===');
-    console.log('GameState:', gameState);
-    console.log('Firebase:', {
-        initialized: firebaseService?.isInitialized,
-        connected: firebaseService?.isConnected
-    });
-    console.log('Current Game Data:', currentGameData);
-    console.log('Current Round Data:', currentRoundData);
-    console.log('Current Question:', currentQuestion);
-    console.log('Players:', currentPlayers);
-};
-
-log('✅ No-Cap Multiplayer Gameplay v8.0 - Production Ready - vollständig geladen!');
-log('🛠️ Debug: debugGameplay()');
+console.log('✅ No-Cap Multiplayer Gameplay v8.1 - Production Ready!');

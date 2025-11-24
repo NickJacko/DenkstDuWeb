@@ -1,314 +1,16 @@
-// ===== AGE GATE =====
-function checkAgeGate() {
-    const ageConfirmed = localStorage.getItem('nocap_age_confirmed');
+/**
+ * No-Cap - Join Game Page
+ * Version 2.0 - Security Hardened & Production Ready
+ * Handles joining existing multiplayer games
+ */
 
-    if (ageConfirmed === 'true') {
-        log('Alter bereits bestätigt');
-        return true;
-    } else {
-        log('Altersbestätigung erforderlich');
-        document.getElementById('age-gate').classList.add('show');
-        return false;
-    }
-}
-
-function confirmAge(isAdult) {
-    if (isAdult) {
-        localStorage.setItem('nocap_age_confirmed', 'true');
-        document.getElementById('age-gate').classList.remove('show');
-        log('Alter bestätigt');
-
-        // Continue with initialization
-        continueInitialization();
-    } else {
-        showNotification('Du musst mindestens 18 Jahre alt sein.', 'warning');
-        setTimeout(() => {
-            window.location.href = 'https://www.google.com';
-        }, 2000);
-    }
-}
-
-// ===== GAMESTATE CLASS =====
-class GameState {
-    constructor() {
-        this.deviceMode = null;
-        this.selectedCategories = [];
-        this.difficulty = null;
-        this.playerName = '';
-        this.gameId = null;
-        this.playerId = null;
-        this.isHost = false;
-        this.isGuest = false;
-        this.gamePhase = 'lobby';
-        this.timestamp = Date.now();
-        this.load();
-    }
-
-    load() {
-        try {
-            const saved = localStorage.getItem('nocap_game_state');
-            if (saved) {
-                const state = JSON.parse(saved);
-                if (state.timestamp && Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
-                    Object.assign(this, state);
-                    this.log('State loaded');
-                }
-            }
-        } catch (error) {
-            this.log(`Load failed: ${error.message}`, 'error');
-        }
-    }
-
-    save() {
-        try {
-            const state = {
-                deviceMode: this.deviceMode,
-                selectedCategories: this.selectedCategories,
-                difficulty: this.difficulty,
-                playerName: this.playerName,
-                gameId: this.gameId,
-                playerId: this.playerId,
-                isHost: this.isHost,
-                isGuest: this.isGuest,
-                gamePhase: this.gamePhase,
-                timestamp: Date.now(),
-                version: 3
-            };
-            localStorage.setItem('nocap_game_state', JSON.stringify(state));
-            this.log('State saved');
-            return true;
-        } catch (error) {
-            this.log(`Save failed: ${error.message}`, 'error');
-            return false;
-        }
-    }
-
-    clearStorage() {
-        localStorage.removeItem('nocap_game_state');
-        this.log('Storage cleared');
-    }
-
-    log(message, type = 'info') {
-        console.log(`[GameState] ${message}`);
-    }
-}
-
-// ===== FIREBASE SERVICE CLASS =====
-class FirebaseGameService {
-    constructor() {
-        this.app = null;
-        this.auth = null;
-        this.database = null;
-        this.isInitialized = false;
-        this.isConnected = false;
-        this.listeners = [];
-
-        this.config = {
-            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-            authDomain: "denkstduwebsite.firebaseapp.com",
-            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "denkstduwebsite",
-            storageBucket: "denkstduwebsite.appspot.com",
-            messagingSenderId: "27029260611",
-            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-            measurementId: "G-BNKNW95HK8"
-        };
-    }
-
-    async initialize() {
-        try {
-            this.log('Firebase Service - Initialisierung...');
-
-            if (typeof firebase === 'undefined') {
-                throw new Error('Firebase SDK nicht geladen');
-            }
-
-            if (!firebase.apps || firebase.apps.length === 0) {
-                this.app = firebase.initializeApp(this.config);
-                this.log('Firebase App initialisiert');
-            } else {
-                this.app = firebase.app();
-                this.log('Firebase App bereits initialisiert');
-            }
-
-            // WICHTIG: Anonymous Auth
-            this.log('Starte anonyme Authentifizierung...');
-            this.auth = firebase.auth();
-
-            try {
-                const userCredential = await this.auth.signInAnonymously();
-                this.log(`Anonym angemeldet: ${userCredential.user.uid}`);
-            } catch (authError) {
-                this.log(`Auth Fehler: ${authError.message}`, 'error');
-                throw authError;
-            }
-
-            this.database = firebase.database();
-            this.log('Database-Referenz erhalten');
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            this.isConnected = await this.testConnectionWithTimeout(15000);
-
-            if (this.isConnected) {
-                this.isInitialized = true;
-                this.log('Firebase verbunden und bereit');
-                return true;
-            } else {
-                this.log('Erster Verbindungsversuch fehlgeschlagen, versuche erneut...');
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                this.isConnected = await this.testConnectionWithTimeout(15000);
-
-                if (this.isConnected) {
-                    this.isInitialized = true;
-                    this.log('Firebase verbunden nach Retry');
-                    return true;
-                } else {
-                    this.log('Firebase Verbindung fehlgeschlagen');
-                    return false;
-                }
-            }
-
-        } catch (error) {
-            this.log(`Firebase Fehler: ${error.message}`, 'error');
-            console.error('Firebase Init Error:', error);
-            this.isInitialized = false;
-            this.isConnected = false;
-            return false;
-        }
-    }
-
-    async testConnectionWithTimeout(timeout = 15000) {
-        return new Promise(async (resolve) => {
-            const timeoutId = setTimeout(() => {
-                this.log('Verbindungstest Timeout', 'warning');
-                resolve(false);
-            }, timeout);
-
-            try {
-                const connectedRef = this.database.ref('.info/connected');
-                const snapshot = await connectedRef.once('value');
-                clearTimeout(timeoutId);
-
-                const connected = snapshot.val() === true;
-                this.log(`Verbindungstest: ${connected ? 'Verbunden' : 'Nicht verbunden'}`);
-                resolve(connected);
-            } catch (error) {
-                clearTimeout(timeoutId);
-                this.log(`Verbindungstest Fehler: ${error.message}`, 'error');
-                resolve(false);
-            }
-        });
-    }
-
-    async getGameData(gameId) {
-        if (!this.isReady) {
-            this.log('getGameData: Firebase nicht bereit');
-            return null;
-        }
-
-        if (!gameId) {
-            this.log('getGameData: Keine gameId');
-            return null;
-        }
-
-        try {
-            this.log(`Suche Spiel mit ID: ${gameId}`);
-            const gameRef = this.database.ref(`games/${gameId}`);
-
-            const snapshot = await gameRef.once('value');
-
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                this.log('Spieldaten gefunden');
-                console.log('Game Data Structure:', data);
-                return data;
-            } else {
-                this.log('Kein Spiel gefunden mit dieser ID');
-                return null;
-            }
-        } catch (error) {
-            this.log(`Fehler beim Laden: ${error.message}`, 'error');
-            console.error('getGameData Error:', error);
-            return null;
-        }
-    }
-
-    async joinGame(gameId, playerName) {
-        if (!this.isConnected) {
-            throw new Error('Keine Firebase-Verbindung');
-        }
-
-        try {
-            this.log(`Trete Spiel bei: ${gameId} als ${playerName}`);
-
-            const playerId = `guest_${playerName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
-
-            const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
-            await playerRef.set({
-                name: playerName,
-                isHost: false,
-                isOnline: true,
-                isReady: false,
-                joinedAt: firebase.database.ServerValue.TIMESTAMP
-            });
-
-            this.log(`âœ… Player ${playerId} hinzugefÃ¼gt`);
-
-            const gameData = await this.getGameData(gameId);
-
-            this.log(`âœ… Erfolgreich beigetreten`);
-
-            return {
-                playerId: playerId,
-                gameData: gameData
-            };
-
-        } catch (error) {
-            this.log(`Fehler beim Beitreten: ${error.message}`, 'error');
-            console.error('joinGame Error:', error);
-            throw error;
-        }
-    }
-
-    cleanup() {
-        this.log('Cleanup...');
-        this.listeners.forEach(({ ref, listener }) => {
-            try {
-                ref.off('value', listener);
-            } catch (error) {
-                this.log(`Fehler beim Entfernen: ${error.message}`, 'error');
-            }
-        });
-        this.listeners = [];
-    }
-
-    get isReady() {
-        return this.isInitialized && this.isConnected;
-    }
-
-    log(message, type = 'info', data = null) {
-        const colors = {
-            info: '#4488ff',
-            warning: '#ffaa00',
-            error: '#ff4444',
-            success: '#00ff00'
-        };
-        console.log(`%c[Firebase] ${message}`, `color: ${colors[type] || colors.info}`);
-        if (data) {
-            console.log(data);
-        }
-    }
-}
-
-// ===== GLOBAL VARIABLES =====
+// ===========================
+// GLOBAL VARIABLES
+// ===========================
 let gameState = null;
 let firebaseService = null;
 let currentGameData = null;
 let checkTimeout = null;
-let firebaseInitialized = false;
-let pendingGameCode = null;
 
 const categoryData = {
     fsk0: { name: 'Familie & Freunde', icon: '👨‍👩‍👧‍👦' },
@@ -323,68 +25,179 @@ const difficultyNames = {
     hard: 'Hardcore 💀'
 };
 
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    initJoinGame();
-});
+// ===========================
+// INITIALIZATION
+// ===========================
 
-async function initJoinGame() {
-    log('Join Game - Initialisierung...');
+/**
+ * Main initialization function
+ */
+async function initialize() {
+    console.log('🔗 Join Game - Initialisierung...');
 
-    gameState = new GameState();
-    gameState.clearStorage();
-
-    // Check for URL parameter FIRST
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    if (code && code.length === 6) {
-        pendingGameCode = code.toUpperCase();
-        log(`URL-Parameter gefunden: ${pendingGameCode}`);
+    // P0 FIX: Check for required dependencies
+    if (typeof GameState === 'undefined') {
+        console.error('❌ GameState not loaded!');
+        showNotification('Fehler: Spieldaten nicht geladen', 'error');
+        return;
     }
 
-    // Check age gate
-    const ageConfirmed = checkAgeGate();
+    if (typeof window.firebaseGameService === 'undefined') {
+        console.error('❌ FirebaseGameService not loaded!');
+        showNotification('Fehler: Firebase-Service nicht geladen', 'error');
+        return;
+    }
 
-    if (ageConfirmed) {
-        await continueInitialization();
+    // Use global services
+    gameState = new GameState();
+    firebaseService = window.firebaseGameService;
+
+    // P1 FIX: Check age verification
+    if (!checkAgeVerification()) {
+        showNotification('Altersverifikation erforderlich', 'warning');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
+        return;
+    }
+
+    // Initialize Firebase
+    showLoading();
+
+    try {
+        const initialized = await firebaseService.initialize();
+
+        if (!initialized) {
+            throw new Error('Firebase-Verbindung fehlgeschlagen');
+        }
+
+        console.log('✅ Firebase bereit');
+
+        // P0 FIX: Check URL parameter with validation
+        handleUrlParameter();
+
+    } catch (error) {
+        console.error('❌ Initialization failed:', error);
+        showNotification('Verbindung fehlgeschlagen. Bitte Seite neu laden.', 'error');
+    } finally {
+        hideLoading();
+    }
+
+    // Setup event listeners
+    setupEventListeners();
+
+    console.log('✅ Join Game bereit!');
+}
+
+/**
+ * P1 FIX: Check age verification
+ */
+function checkAgeVerification() {
+    try {
+        const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+        const ageVerified = localStorage.getItem('nocap_age_verification');
+
+        if (!ageVerified) {
+            return false;
+        }
+
+        const verification = JSON.parse(ageVerified);
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+
+        // Check if still valid
+        if (verification.timestamp && now - verification.timestamp < oneDay) {
+            return true;
+        }
+
+        return false;
+    } catch (error) {
+        console.error('Age verification check failed:', error);
+        return false;
     }
 }
 
-async function continueInitialization() {
-    log('Setze Initialisierung fort...');
+/**
+ * P0 FIX: Handle URL parameter with strict validation
+ */
+function handleUrlParameter() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameId = urlParams.get('gameId') || urlParams.get('code');
 
-    firebaseService = new FirebaseGameService();
+    if (!gameId) {
+        return;
+    }
 
-    log('Firebase wird initialisiert...');
-    showLoading();
+    // P0 FIX: Validate and sanitize gameId
+    const sanitized = typeof window.NocapUtils !== 'undefined'
+        ? window.NocapUtils.sanitizeInput(gameId)
+        : gameId.replace(/[^A-Z0-9]/gi, '');
 
-    firebaseInitialized = await firebaseService.initialize();
+    const cleaned = sanitized.toUpperCase().substring(0, 6);
 
-    hideLoading();
+    if (cleaned.length === 6) {
+        console.log(`📋 URL-Parameter: ${cleaned}`);
 
-    if (firebaseInitialized) {
-        log('âœ… Firebase bereit');
+        const gameCodeInput = document.getElementById('game-code');
+        if (gameCodeInput) {
+            gameCodeInput.value = cleaned;
 
-        // NOW apply pending game code if exists
-        if (pendingGameCode) {
-            const gameCodeInput = document.getElementById('game-code');
-            gameCodeInput.value = pendingGameCode;
-
+            // Trigger check after short delay
             setTimeout(() => {
                 handleGameCodeInput();
             }, 500);
         }
     } else {
-        log('Firebase nicht verfügbar');
-        showNotification('Verbindung zu Firebase fehlgeschlagen. Bitte Seite neu laden.', 'error');
+        console.warn('⚠️ Invalid gameId in URL');
+        showNotification('Ungültiger Spiel-Code in URL', 'warning');
     }
-
-    log('Join Game bereit!');
 }
 
-// ===== GAME CODE HANDLING =====
+// ===========================
+// EVENT LISTENERS
+// ===========================
+
+function setupEventListeners() {
+    // Game code input
+    const gameCodeInput = document.getElementById('game-code');
+    if (gameCodeInput) {
+        gameCodeInput.addEventListener('input', handleGameCodeInput);
+        gameCodeInput.addEventListener('paste', (e) => {
+            setTimeout(() => handleGameCodeInput(), 10);
+        });
+    }
+
+    // Player name input
+    const playerNameInput = document.getElementById('player-name');
+    if (playerNameInput) {
+        playerNameInput.addEventListener('input', validateForm);
+    }
+
+    // Join button
+    const joinBtn = document.getElementById('join-btn');
+    if (joinBtn) {
+        joinBtn.addEventListener('click', joinGame);
+    }
+
+    // Back button
+    const backBtn = document.querySelector('.back-button');
+    if (backBtn) {
+        backBtn.addEventListener('click', goBack);
+    }
+}
+
+// ===========================
+// GAME CODE HANDLING
+// ===========================
+
+/**
+ * P0 FIX: Handle game code input with sanitization
+ */
 function handleGameCodeInput() {
     const input = document.getElementById('game-code');
+    if (!input) return;
+
+    // P0 FIX: Sanitize input
     let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
     if (value.length > 6) {
@@ -393,13 +206,19 @@ function handleGameCodeInput() {
 
     input.value = value;
 
+    // Clear previous timeout
     if (checkTimeout) {
         clearTimeout(checkTimeout);
     }
 
+    // Reset UI
     input.classList.remove('valid', 'error');
-    document.getElementById('game-info').classList.remove('show');
+    const gameInfo = document.getElementById('game-info');
+    if (gameInfo) {
+        gameInfo.classList.remove('show');
+    }
 
+    // Check if complete
     if (value.length === 6) {
         checkTimeout = setTimeout(() => {
             checkGameExists(value);
@@ -409,22 +228,37 @@ function handleGameCodeInput() {
     validateForm();
 }
 
+/**
+ * P0 FIX: Check if game exists with server validation
+ */
 async function checkGameExists(gameCode) {
     const input = document.getElementById('game-code');
+    if (!input) return;
 
     try {
-        log(`Checking game: ${gameCode}`);
+        console.log(`🔍 Checking game: ${gameCode}`);
 
-        if (!firebaseService.isReady) {
-            throw new Error('Firebase nicht verbunden. Bitte warten oder Seite neu laden.');
+        // P0 FIX: Check Firebase connection
+        if (!firebaseService || !firebaseService.isReady) {
+            throw new Error('Keine Firebase-Verbindung');
         }
 
-        const gameData = await firebaseService.getGameData(gameCode);
+        // P0 FIX: Validate game code format
+        if (!/^[A-Z0-9]{6}$/.test(gameCode)) {
+            throw new Error('Ungültiges Code-Format');
+        }
 
-        if (!gameData) {
+        // Query Firebase
+        const gameRef = firebase.database().ref(`games/${gameCode}`);
+        const snapshot = await gameRef.once('value');
+
+        if (!snapshot.exists()) {
             throw new Error('Spiel nicht gefunden');
         }
 
+        const gameData = snapshot.val();
+
+        // P0 FIX: Validate game state
         if (gameData.gameState === 'finished') {
             throw new Error('Spiel bereits beendet');
         }
@@ -433,199 +267,262 @@ async function checkGameExists(gameCode) {
             throw new Error('Spiel läuft bereits');
         }
 
-        currentGameData = gameData;
+        // P1 FIX: Check FSK restrictions
+        const categories = gameData.categories || gameData.selectedCategories || [];
+        const hasFSK18 = categories.includes('fsk18');
 
+        if (hasFSK18 && gameState && !gameState.canAccessFSK('fsk18')) {
+            throw new Error('Du musst mindestens 18 Jahre alt sein für dieses Spiel');
+        }
+
+        // P1 FIX: Check max players
+        const playerCount = gameData.players ? Object.keys(gameData.players).length : 0;
+        const maxPlayers = gameData.maxPlayers || 8;
+
+        if (playerCount >= maxPlayers) {
+            throw new Error(`Spiel ist voll (${maxPlayers}/${maxPlayers})`);
+        }
+
+        // Success
+        currentGameData = gameData;
         displayGameInfo(gameData);
         input.classList.add('valid');
-
         showNotification('Spiel gefunden!', 'success');
-        validateForm();
 
     } catch (error) {
-        log(`Check failed: ${error.message}`, 'error');
+        console.error('❌ Check failed:', error.message);
         input.classList.add('error');
         showNotification(error.message, 'error');
         currentGameData = null;
-        validateForm();
     }
+
+    validateForm();
 }
 
+/**
+ * Display game information
+ */
 function displayGameInfo(gameData) {
     const infoDiv = document.getElementById('game-info');
+    if (!infoDiv) return;
 
-    log('Displaying game info:', gameData);
+    console.log('📊 Displaying game info');
+
+    // P0 FIX: Use textContent instead of innerHTML
+    const setTextSafe = (id, text) => {
+        const elem = document.getElementById(id);
+        if (elem) {
+            elem.textContent = text || '-';
+        }
+    };
 
     // Host
     const hostPlayer = Object.values(gameData.players || {}).find(p => p.isHost);
-    document.getElementById('info-host').textContent = hostPlayer ? hostPlayer.name : 'Unbekannt';
+    const hostName = hostPlayer ? hostPlayer.name : 'Unbekannt';
+    setTextSafe('info-host', hostName);
 
     // Difficulty
-    document.getElementById('info-difficulty').textContent =
-        difficultyNames[gameData.difficulty] || 'Standard';
+    const difficultyText = difficultyNames[gameData.difficulty] || 'Standard';
+    setTextSafe('info-difficulty', difficultyText);
 
     // Players
     const playerCount = gameData.players ? Object.keys(gameData.players).length : 0;
-    document.getElementById('info-players').textContent = `${playerCount}/8`;
+    const maxPlayers = gameData.maxPlayers || 8;
+    setTextSafe('info-players', `${playerCount}/${maxPlayers}`);
 
-    // Categories - UNTERSTÃœTZT BEIDE FORMATE
+    // Categories
     const categoriesArray = gameData.categories || gameData.selectedCategories || [];
-    log('Categories found:', categoriesArray);
-
     const categories = categoriesArray
-        .map(cat => {
-            const catData = categoryData[cat];
-            if (!catData) {
-                log(`Unknown category: ${cat}`, 'warning');
-                return cat;
-            }
-            return catData.icon;
-        })
+        .map(cat => categoryData[cat]?.icon || '❓')
         .join(' ');
-    document.getElementById('info-categories').textContent = categories || '-';
+    setTextSafe('info-categories', categories || '-');
 
     // Status
     const statusNames = {
         waiting: 'Wartet',
         lobby: 'Lobby',
-        playing: 'LÃ¤uft',
+        playing: 'Läuft',
         finished: 'Beendet'
     };
-    document.getElementById('info-status').textContent = statusNames[gameData.gameState] || 'Lobby';
+    setTextSafe('info-status', statusNames[gameData.gameState] || 'Lobby');
 
     infoDiv.classList.add('show');
 }
 
+/**
+ * Validate form inputs
+ */
 function validateForm() {
-    const gameCode = document.getElementById('game-code').value;
-    const playerName = document.getElementById('player-name').value.trim();
+    const gameCodeInput = document.getElementById('game-code');
+    const playerNameInput = document.getElementById('player-name');
     const joinBtn = document.getElementById('join-btn');
 
-    const isValid = gameCode.length === 6 &&
+    if (!gameCodeInput || !playerNameInput || !joinBtn) return;
+
+    const gameCode = gameCodeInput.value;
+    const playerName = playerNameInput.value.trim();
+
+    // P0 FIX: Strict validation
+    const isValid =
+        /^[A-Z0-9]{6}$/.test(gameCode) &&
         playerName.length >= 2 &&
+        playerName.length <= 20 &&
         currentGameData !== null &&
+        firebaseService &&
         firebaseService.isReady;
 
     joinBtn.disabled = !isValid;
+    joinBtn.setAttribute('aria-disabled', !isValid);
 }
 
-// ===== JOIN GAME =====
-async function joinGame() {
-    const gameCode = document.getElementById('game-code').value.toUpperCase();
-    const playerName = document.getElementById('player-name').value.trim();
+// ===========================
+// JOIN GAME
+// ===========================
 
+/**
+ * P0 FIX: Join game with validation
+ */
+async function joinGame() {
+    const gameCodeInput = document.getElementById('game-code');
+    const playerNameInput = document.getElementById('player-name');
+
+    if (!gameCodeInput || !playerNameInput) return;
+
+    const gameCode = gameCodeInput.value.toUpperCase();
+    const playerName = playerNameInput.value.trim();
+
+    // P0 FIX: Validate inputs
     if (!currentGameData) {
         showNotification('Spiel-Code ungültig', 'error');
         return;
     }
 
-    if (playerName.length < 2) {
-        showNotification('Name zu kurz (min. 2 Zeichen)', 'error');
+    // P0 FIX: Validate player name with utils
+    const nameValidation = typeof window.NocapUtils !== 'undefined'
+        ? window.NocapUtils.validatePlayerName(playerName)
+        : { valid: playerName.length >= 2 && playerName.length <= 20, name: playerName };
+
+    if (!nameValidation.valid) {
+        showNotification(nameValidation.message || 'Ungültiger Name', 'error');
         return;
     }
 
-    if (!firebaseService.isReady) {
+    if (!firebaseService || !firebaseService.isReady) {
         showNotification('Firebase nicht verbunden', 'error');
         return;
     }
 
-    log(`Joining game: ${gameCode} as ${playerName}`);
+    console.log(`🔗 Joining: ${gameCode} as ${nameValidation.name}`);
     showLoading();
 
     try {
-        const joinResult = await firebaseService.joinGame(gameCode, playerName);
+        // P0 FIX: Use firebaseService.joinGame (with sanitization)
+        const result = await firebaseService.joinGame(gameCode, nameValidation.name);
 
-        log('Successfully joined!');
-        log('Join Result:', joinResult);
+        console.log('✅ Successfully joined!');
 
-        // Setup game state - UNTERSTÃœTZT BEIDE FORMATE
+        // Setup game state
         gameState.gameId = gameCode;
-        gameState.playerId = joinResult.playerId;
-        gameState.playerName = playerName;
+        gameState.playerId = result.playerId;
+        gameState.playerName = nameValidation.name;
         gameState.deviceMode = 'multi';
         gameState.isHost = false;
         gameState.isGuest = true;
-        // WICHTIG: Beide Formate unterstÃ¼tzen
-        gameState.selectedCategories = joinResult.gameData.categories || joinResult.gameData.selectedCategories || [];
-        gameState.difficulty = joinResult.gameData.difficulty || 'medium';
+        gameState.selectedCategories = result.gameData.categories || result.gameData.selectedCategories || [];
+        gameState.difficulty = result.gameData.difficulty || 'medium';
         gameState.gamePhase = 'lobby';
-        gameState.timestamp = Date.now();
-
-        log('Saving game state:', gameState);
         gameState.save();
 
-        log('âœ… Game state saved');
+        console.log('✅ Game state saved');
 
         hideLoading();
         showNotification('Erfolgreich beigetreten!', 'success');
 
+        // Redirect to lobby
         setTimeout(() => {
             window.location.href = 'multiplayer-lobby.html';
         }, 1500);
 
     } catch (error) {
-        log(`Join failed: ${error.message}`, 'error');
+        console.error('❌ Join failed:', error);
         hideLoading();
-        showNotification('Fehler beim Beitreten: ' + error.message, 'error');
+
+        // P0 FIX: User-friendly error messages
+        const errorMessage = error.message.includes('bereits vergeben')
+            ? 'Dieser Name ist bereits vergeben'
+            : error.message.includes('voll')
+                ? 'Das Spiel ist bereits voll'
+                : error.message.includes('gestartet')
+                    ? 'Das Spiel wurde bereits gestartet'
+                    : 'Fehler beim Beitreten';
+
+        showNotification(errorMessage, 'error');
     }
 }
 
+/**
+ * Go back to home
+ */
 function goBack() {
-    if (firebaseService) {
-        firebaseService.cleanup();
-    }
     window.location.href = 'index.html';
 }
 
-// ===== UTILITY FUNCTIONS =====
+// ===========================
+// UTILITY FUNCTIONS
+// ===========================
+
 function showLoading() {
-    document.getElementById('loading').classList.add('show');
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.classList.add('show');
+    }
 }
 
 function hideLoading() {
-    document.getElementById('loading').classList.remove('show');
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.classList.remove('show');
+    }
 }
 
-function showNotification(message, type = 'success') {
+/**
+ * P0 FIX: Safe notification function
+ */
+function showNotification(message, type = 'info') {
+    // Use NocapUtils if available
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type);
+        return;
+    }
+
+    // Fallback
     const notification = document.getElementById('notification');
-    notification.textContent = message;
-    notification.className = `notification ${type} show`;
+    if (notification) {
+        notification.textContent = message;
+        notification.className = `notification ${type} show`;
 
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
 }
 
-function log(message, type = 'info') {
-    const colors = {
-        info: '#4488ff',
-        warning: '#ffaa00',
-        error: '#ff4444',
-        success: '#00ff00'
-    };
-    console.log(`%c[JoinGame] ${message}`, `color: ${colors[type] || colors.info}`);
-}
+// ===========================
+// CLEANUP
+// ===========================
 
-// ===== CLEANUP =====
-window.addEventListener('beforeunload', function() {
-    if (firebaseService) {
-        firebaseService.cleanup();
+window.addEventListener('beforeunload', () => {
+    if (checkTimeout) {
+        clearTimeout(checkTimeout);
     }
 });
 
-// ===== DEBUG =====
-window.debugJoinGame = function() {
-    console.log('=== JOIN GAME DEBUG ===');
-    console.log('GameState:', gameState);
-    console.log('Current Game Data:', currentGameData);
-    console.log('Firebase Status:', {
-        initialized: firebaseService?.isInitialized,
-        connected: firebaseService?.isConnected,
-        ready: firebaseService?.isReady,
-        auth: firebaseService?.auth?.currentUser
-    });
-    console.log('Firebase Initialized Flag:', firebaseInitialized);
-    console.log('Pending Game Code:', pendingGameCode);
-};
+// ===========================
+// INITIALIZATION
+// ===========================
 
-log('âœ… No-Cap Join Game - vollstÃ¤ndig geladen!');
-log('ðŸ› ï¸ Debug: debugJoinGame()');
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
+}

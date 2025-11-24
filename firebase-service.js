@@ -1,5 +1,5 @@
 // ===== FIREBASE GAME SERVICE - PRIMARY SERVICE =====
-// Version 3.0 - Security Hardened & Production Ready
+// Version 3.1 - Security Hardened & Production Ready
 // Dies ist der EINZIGE Firebase-Service der verwendet werden soll
 
 class FirebaseGameService {
@@ -13,42 +13,74 @@ class FirebaseGameService {
         this.settingsRef = null;
         this.currentRoundRef = null;
         this.currentGameId = null;
+        this.currentPlayerId = null;
         this.listeners = [];
         this.connectionListeners = [];
+        this.rejoinAttempted = false;
 
-        // Firebase Config - SECURE VERSION
-        // Lädt aus window.FIREBASE_CONFIG (wird von Build-Script injiziert)
-        // Fallback für lokale Entwicklung (mit Warnung)
-        this.config = window.FIREBASE_CONFIG || {
-            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-            authDomain: "denkstduwebsite.firebaseapp.com",
-            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "denkstduwebsite",
-            storageBucket: "denkstduwebsite.appspot.com",
-            messagingSenderId: "27029260611",
-            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-            measurementId: "G-BNKNW95HK8"
-        };
+        // ===== P0 FIX: KEINE API-KEYS IM CLIENT! =====
+        // Firebase Config wird NUR aus window.FIREBASE_CONFIG geladen
+        // Diese Variable muss vom Build-Prozess oder Server-Side injiziert werden
+        this.config = null;
+    }
 
-        // Warnung wenn Fallback-Config verwendet wird
-        if (!window.FIREBASE_CONFIG) {
-            console.warn('⚠️ Using fallback Firebase config. Set window.FIREBASE_CONFIG in production!');
+    // ===== SICHERE CONFIG-LADUNG =====
+    loadConfig() {
+        if (window.FIREBASE_CONFIG && typeof window.FIREBASE_CONFIG === 'object') {
+            this.config = window.FIREBASE_CONFIG;
+            return true;
         }
+
+        // PRODUCTION: Keine Fallback-Config!
+        // Nur im Development (localhost) Fallback erlauben
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.warn(
+                '%c⚠️ DEVELOPMENT MODE',
+                'background: #ff6b6b; color: white; font-weight: bold; padding: 5px;'
+            );
+            console.warn('Using fallback config. Set window.FIREBASE_CONFIG for production!');
+
+            // Fallback nur für lokale Entwicklung
+            this.config = {
+                apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+                authDomain: "denkstduwebsite.firebaseapp.com",
+                databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                projectId: "denkstduwebsite",
+                storageBucket: "denkstduwebsite.appspot.com",
+                messagingSenderId: "27029260611",
+                appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+                measurementId: "G-BNKNW95HK8"
+            };
+            return true;
+        }
+
+        // PRODUCTION ohne Config = FEHLER
+        console.error(
+            '%c❌ FIREBASE CONFIG MISSING',
+            'background: #c92a2a; color: white; font-weight: bold; padding: 5px; font-size: 14px;'
+        );
+        console.error('window.FIREBASE_CONFIG not found. Application cannot start in production mode.');
+        return false;
     }
 
     // ===== VERBESSERTE INITIALISIERUNG =====
     async initialize(gameId = null, callbacks = {}) {
         try {
-            console.log('🔥 Firebase Service v3.0 - Initialisierung gestartet...');
+            console.log('🔥 Firebase Service v3.1 - Initialisierung gestartet...');
 
-            // SCHRITT 1: Prüfe Firebase SDK
+            // SCHRITT 1: Config laden
+            if (!this.loadConfig()) {
+                throw new Error('Firebase Configuration nicht verfügbar. Bitte Administrator kontaktieren.');
+            }
+
+            // SCHRITT 2: Prüfe Firebase SDK
             if (typeof firebase === 'undefined') {
                 throw new Error('Firebase SDK nicht geladen. Prüfe die Script-Tags.');
             }
 
             console.log('✅ Firebase SDK gefunden');
 
-            // SCHRITT 2: Firebase App initialisieren
+            // SCHRITT 3: Firebase App initialisieren
             if (!firebase.apps || firebase.apps.length === 0) {
                 console.log('🔧 Initialisiere Firebase App...');
                 this.app = firebase.initializeApp(this.config);
@@ -57,7 +89,7 @@ class FirebaseGameService {
                 this.app = firebase.app();
             }
 
-            // SCHRITT 3: Database-Service initialisieren
+            // SCHRITT 4: Database-Service initialisieren
             this.database = firebase.database();
             if (!this.database) {
                 throw new Error('Firebase Database konnte nicht initialisiert werden');
@@ -65,28 +97,34 @@ class FirebaseGameService {
 
             console.log('✅ Firebase Database Service bereit');
 
-            // SCHRITT 4: Verbindungstest mit Timeout
+            // SCHRITT 5: Verbindungstest mit Timeout
             console.log('🔄 Teste Firebase-Verbindung...');
             this.isConnected = await this.testConnectionWithRetry();
 
             if (!this.isConnected) {
                 console.warn('⚠️ Firebase-Verbindung fehlgeschlagen - Offline-Modus aktiv');
-                // Nicht werfen, da Offline-Persistence funktionieren könnte
             } else {
                 console.log('✅ Firebase-Verbindung erfolgreich');
             }
 
-            // SCHRITT 5: Connection monitoring setup
+            // SCHRITT 6: Connection monitoring setup
             this.setupConnectionMonitoring();
 
-            // SCHRITT 6: Spiel-spezifische Verbindung (optional)
-            let gameConnectionSuccess = true;
-            if (this.isConnected && gameId) {
-                console.log(`🎮 Verbinde zu Spiel: ${gameId}`);
-                gameConnectionSuccess = await this.connectToGame(gameId, callbacks);
+            // SCHRITT 7: P1 FIX - Rejoin-Mechanismus
+            if (this.isConnected && !gameId) {
+                const rejoinSuccess = await this.attemptRejoin();
+                if (rejoinSuccess) {
+                    console.log('✅ Automatischer Rejoin erfolgreich');
+                }
             }
 
-            this.isInitialized = true; // Service ist initialisiert, auch wenn offline
+            // SCHRITT 8: Spiel-spezifische Verbindung (optional)
+            if (this.isConnected && gameId) {
+                console.log(`🎮 Verbinde zu Spiel: ${gameId}`);
+                await this.connectToGame(gameId, callbacks);
+            }
+
+            this.isInitialized = true;
 
             if (this.isInitialized && this.isConnected) {
                 console.log(`🎉 Firebase Service vollständig bereit! ${gameId ? `(Spiel: ${gameId})` : ''}`);
@@ -100,10 +138,91 @@ class FirebaseGameService {
             console.error('❌ Firebase Initialisierung fehlgeschlagen:', error);
             this.isInitialized = false;
             this.isConnected = false;
-
-            // Detaillierte Fehlermeldung für Debugging
             this.logDetailedError(error);
+            throw error; // Werfe Fehler weiter für User-Feedback
+        }
+    }
+
+    // ===== P1 FIX: REJOIN-MECHANISMUS =====
+    async attemptRejoin() {
+        if (this.rejoinAttempted) return false;
+        this.rejoinAttempted = true;
+
+        try {
+            // Lade GameState aus localStorage
+            const gameId = localStorage.getItem('nocap_currentGameId');
+            const playerId = localStorage.getItem('nocap_currentPlayerId');
+            const playerName = localStorage.getItem('nocap_playerName');
+
+            if (!gameId || !playerId) {
+                console.log('ℹ️ Keine Rejoin-Daten gefunden');
+                return false;
+            }
+
+            console.log(`🔄 Versuche Rejoin: ${gameId} als ${playerId}`);
+
+            // Prüfe ob Spiel noch existiert
+            const gameRef = this.database.ref(`games/${gameId}`);
+            const snapshot = await gameRef.once('value');
+
+            if (!snapshot.exists()) {
+                console.warn('⚠️ Spiel existiert nicht mehr - Lösche lokale Daten');
+                this.clearRejoinData();
+                return false;
+            }
+
+            const gameData = snapshot.val();
+
+            // Prüfe ob Spieler noch im Spiel ist
+            if (!gameData.players || !gameData.players[playerId]) {
+                console.warn('⚠️ Spieler nicht mehr im Spiel - Lösche lokale Daten');
+                this.clearRejoinData();
+                return false;
+            }
+
+            // Setze Spieler als online
+            await this.updatePlayerStatus(gameId, playerId, {
+                isOnline: true,
+                rejoined: true,
+                rejoinedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // Stelle Verbindung wieder her
+            this.currentGameId = gameId;
+            this.currentPlayerId = playerId;
+            this.gameRef = gameRef;
+
+            console.log('✅ Rejoin erfolgreich');
+            return true;
+
+        } catch (error) {
+            console.error('❌ Rejoin fehlgeschlagen:', error);
+            this.clearRejoinData();
             return false;
+        }
+    }
+
+    // Speichere Rejoin-Daten
+    saveRejoinData(gameId, playerId, playerName) {
+        try {
+            localStorage.setItem('nocap_currentGameId', gameId);
+            localStorage.setItem('nocap_currentPlayerId', playerId);
+            localStorage.setItem('nocap_playerName', playerName);
+            localStorage.setItem('nocap_lastActive', Date.now().toString());
+        } catch (error) {
+            console.warn('⚠️ Konnte Rejoin-Daten nicht speichern:', error);
+        }
+    }
+
+    // Lösche Rejoin-Daten
+    clearRejoinData() {
+        try {
+            localStorage.removeItem('nocap_currentGameId');
+            localStorage.removeItem('nocap_currentPlayerId');
+            localStorage.removeItem('nocap_playerName');
+            localStorage.removeItem('nocap_lastActive');
+        } catch (error) {
+            console.warn('⚠️ Konnte Rejoin-Daten nicht löschen:', error);
         }
     }
 
@@ -122,9 +241,8 @@ class FirebaseGameService {
                 console.warn(`⚠️ Versuch ${attempt} fehlgeschlagen:`, error.message);
             }
 
-            // Warte zwischen Versuchen (außer beim letzten)
             if (attempt < maxRetries) {
-                await this.delay(1000 * attempt); // Exponentieller Backoff
+                await this.delay(1000 * attempt);
             }
         }
 
@@ -144,7 +262,6 @@ class FirebaseGameService {
                 connectedRef.once('value', (snapshot) => {
                     clearTimeout(timeout);
                     const isConnected = snapshot.val() === true;
-                    console.log(`🔍 Firebase Verbindungsstatus: ${isConnected ? 'Verbunden' : 'Getrennt'}`);
                     resolve(isConnected);
                 }, (error) => {
                     clearTimeout(timeout);
@@ -170,13 +287,19 @@ class FirebaseGameService {
                 this.isConnected = snapshot.val() === true;
 
                 if (wasConnected !== this.isConnected) {
-                    console.log(`🔄 Verbindungsstatus geändert: ${this.isConnected ? 'Verbunden' : 'Getrennt'}`);
+                    console.log(`🔄 Verbindungsstatus: ${this.isConnected ? '✅ Verbunden' : '⚠️ Getrennt'}`);
                     this.notifyConnectionChange(this.isConnected);
+
+                    // P1 FIX: Auto-Rejoin bei Wiederverbindung
+                    if (this.isConnected && this.currentGameId && this.currentPlayerId) {
+                        this.updatePlayerStatus(this.currentGameId, this.currentPlayerId, {
+                            isOnline: true
+                        });
+                    }
                 }
             });
 
             this.listeners.push({ ref: connectedRef, listener: connectionListener });
-            console.log('✅ Verbindungsüberwachung aktiv');
 
         } catch (error) {
             console.error('❌ Fehler beim Setup der Verbindungsüberwachung:', error);
@@ -201,8 +324,7 @@ class FirebaseGameService {
 
     // ===== GAME OPERATIONS =====
     generateGameId() {
-        // Verbesserte Game-ID-Generierung (6 Zeichen, alphanumerisch uppercase)
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Ohne I, O, 0, 1 (leichter lesbar)
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let gameId = '';
         for (let i = 0; i < 6; i++) {
             gameId += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -245,7 +367,6 @@ class FirebaseGameService {
                 currentRound: 0,
                 hostId: hostPlayerId,
 
-                // Host als ersten Spieler hinzufügen
                 players: {
                     [hostPlayerId]: {
                         id: hostPlayerId,
@@ -258,7 +379,6 @@ class FirebaseGameService {
                     }
                 },
 
-                // Spieleinstellungen
                 settings: {
                     questionsPerGame: gameData.questionCount || 10,
                     timePerQuestion: 30,
@@ -267,15 +387,17 @@ class FirebaseGameService {
                 }
             };
 
-            // Spiel in Firebase erstellen
             const gameRef = this.database.ref(`games/${gameId}`);
             await gameRef.set(gameObject);
 
             console.log(`✅ Spiel erstellt: ${gameId}`);
 
-            // Game reference speichern
             this.currentGameId = gameId;
+            this.currentPlayerId = hostPlayerId;
             this.gameRef = gameRef;
+
+            // P1 FIX: Speichere für Rejoin
+            this.saveRejoinData(gameId, hostPlayerId, gameData.hostName);
 
             return {
                 gameId: gameId,
@@ -298,16 +420,20 @@ class FirebaseGameService {
         try {
             console.log(`🔄 Trete Spiel bei: ${gameId} als ${playerName}`);
 
-            // Input-Validierung
+            // P0 FIX: Strikte Input-Validierung mit sanitizeInput
             if (!gameId || gameId.length !== 6) {
                 throw new Error('Ungültiger Spiel-Code. Der Code muss 6 Zeichen lang sein.');
             }
 
-            if (!playerName || playerName.trim().length === 0) {
+            // Sanitize mit utils.js (falls verfügbar)
+            const sanitizedName = typeof window.NocapUtils !== 'undefined'
+                ? window.NocapUtils.sanitizeInput(playerName)
+                : playerName.trim();
+
+            if (!sanitizedName || sanitizedName.length === 0) {
                 throw new Error('Spielername darf nicht leer sein.');
             }
 
-            // Prüfe ob Spiel existiert
             const gameRef = this.database.ref(`games/${gameId.toUpperCase()}`);
             const gameSnapshot = await gameRef.once('value');
 
@@ -317,34 +443,29 @@ class FirebaseGameService {
 
             const gameData = gameSnapshot.val();
 
-            // Prüfe Spielzustand
             if (gameData.gameState !== 'lobby') {
                 throw new Error('Spiel bereits gestartet. Beitritt nicht mehr möglich.');
             }
 
-            // Prüfe maximale Spieleranzahl
             const currentPlayerCount = gameData.players ? Object.keys(gameData.players).length : 0;
             if (currentPlayerCount >= gameData.maxPlayers) {
                 throw new Error('Spiel ist voll. Maximal ' + gameData.maxPlayers + ' Spieler erlaubt.');
             }
 
-            // Prüfe ob Name bereits vergeben
             const existingPlayers = gameData.players || {};
             const nameTaken = Object.values(existingPlayers).some(
-                p => p.name.toLowerCase() === playerName.trim().toLowerCase()
+                p => p.name.toLowerCase() === sanitizedName.toLowerCase()
             );
             if (nameTaken) {
                 throw new Error('Name bereits vergeben. Bitte anderen Namen wählen.');
             }
 
-            // Erstelle Spieler-ID
-            const playerId = this.generatePlayerId(playerName, false);
+            const playerId = this.generatePlayerId(sanitizedName, false);
 
-            // Füge Spieler hinzu
             const playerRef = gameRef.child(`players/${playerId}`);
             await playerRef.set({
                 id: playerId,
-                name: playerName.trim(),
+                name: sanitizedName,
                 isHost: false,
                 isReady: false,
                 isOnline: true,
@@ -354,9 +475,12 @@ class FirebaseGameService {
 
             console.log(`✅ Erfolgreich beigetreten: ${gameId} als ${playerId}`);
 
-            // Game reference speichern
             this.currentGameId = gameId.toUpperCase();
+            this.currentPlayerId = playerId;
             this.gameRef = gameRef;
+
+            // P1 FIX: Speichere für Rejoin
+            this.saveRejoinData(gameId.toUpperCase(), playerId, sanitizedName);
 
             return {
                 gameId: gameId.toUpperCase(),
@@ -367,7 +491,6 @@ class FirebaseGameService {
 
         } catch (error) {
             console.error('❌ Fehler beim Beitreten des Spiels:', error);
-            // Werfe user-friendly Error oder original Error
             if (error.message.includes('Spiel nicht gefunden') ||
                 error.message.includes('bereits gestartet') ||
                 error.message.includes('ist voll') ||
@@ -390,14 +513,12 @@ class FirebaseGameService {
             this.currentGameId = gameId;
             this.gameRef = this.database.ref(`games/${gameId}`);
 
-            // Überprüfe ob Spiel existiert
             const snapshot = await this.gameRef.once('value');
             if (!snapshot.exists()) {
                 console.warn(`⚠️ Spiel ${gameId} existiert nicht`);
                 return false;
             }
 
-            // Setup Game Listeners
             if (callbacks.onGameUpdate && typeof callbacks.onGameUpdate === 'function') {
                 const gameListener = this.gameRef.on('value', callbacks.onGameUpdate);
                 this.listeners.push({ ref: this.gameRef, listener: gameListener });
@@ -428,14 +549,12 @@ class FirebaseGameService {
         try {
             const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
 
-            // Füge automatisch lastSeen hinzu
             const updatesWithTimestamp = {
                 ...updates,
                 lastSeen: firebase.database.ServerValue.TIMESTAMP
             };
 
             await playerRef.update(updatesWithTimestamp);
-            console.log(`✅ Spielerstatus aktualisiert: ${playerId}`, updates);
             return true;
         } catch (error) {
             console.error('❌ Fehler beim Aktualisieren des Spielerstatus:', error);
@@ -444,9 +563,7 @@ class FirebaseGameService {
     }
 
     async setPlayerOnline(gameId, playerId, online = true) {
-        return this.updatePlayerStatus(gameId, playerId, {
-            isOnline: online
-        });
+        return this.updatePlayerStatus(gameId, playerId, { isOnline: online });
     }
 
     async setPlayerReady(gameId, playerId, ready = true) {
@@ -486,7 +603,6 @@ class FirebaseGameService {
             const gameRef = this.database.ref(`games/${gameId}/lastUpdate`);
             await gameRef.set(firebase.database.ServerValue.TIMESTAMP);
 
-            console.log(`✅ Spieleinstellungen aktualisiert: ${gameId}`);
             return true;
         } catch (error) {
             console.error('❌ Fehler beim Aktualisieren der Spieleinstellungen:', error);
@@ -495,6 +611,18 @@ class FirebaseGameService {
     }
 
     // ===== CLEANUP & UTILITY =====
+    async leaveGame(gameId, playerId) {
+        console.log(`👋 Verlasse Spiel: ${gameId}`);
+
+        // Markiere Spieler als offline
+        await this.setPlayerOnline(gameId, playerId, false);
+
+        // Lösche Rejoin-Daten
+        this.clearRejoinData();
+
+        return true;
+    }
+
     async removePlayer(gameId, playerId) {
         if (!this.isConnected) return false;
 
@@ -516,6 +644,7 @@ class FirebaseGameService {
             const gameRef = this.database.ref(`games/${gameId}`);
             await gameRef.remove();
             console.log(`🗑️ Spiel gelöscht: ${gameId}`);
+            this.clearRejoinData();
             return true;
         } catch (error) {
             console.error('❌ Fehler beim Löschen des Spiels:', error);
@@ -526,7 +655,11 @@ class FirebaseGameService {
     cleanup() {
         console.log('🧹 Firebase Service Cleanup...');
 
-        // Entferne alle Listener
+        // P1 FIX: Setze Spieler offline bei Cleanup
+        if (this.currentGameId && this.currentPlayerId) {
+            this.setPlayerOnline(this.currentGameId, this.currentPlayerId, false);
+        }
+
         this.listeners.forEach(({ ref, listener }) => {
             try {
                 ref.off('value', listener);
@@ -539,6 +672,7 @@ class FirebaseGameService {
         this.connectionListeners = [];
         this.gameRef = null;
         this.currentGameId = null;
+        this.currentPlayerId = null;
 
         console.log('✅ Firebase Service bereinigt');
     }
@@ -552,6 +686,7 @@ class FirebaseGameService {
         console.log('Verbindungsstatus:', this.isConnected);
         console.log('Initialisiert:', this.isInitialized);
         console.log('Aktuelle Spiel-ID:', this.currentGameId);
+        console.log('Aktuelle Player-ID:', this.currentPlayerId);
         console.groupEnd();
     }
 
@@ -569,61 +704,68 @@ class FirebaseGameService {
             initialized: this.isInitialized,
             connected: this.isConnected,
             currentGameId: this.currentGameId,
+            currentPlayerId: this.currentPlayerId,
             hasGameRef: !!this.gameRef,
             listenersCount: this.listeners.length,
-            connectionListenersCount: this.connectionListeners.length
+            connectionListenersCount: this.connectionListeners.length,
+            canRejoin: !!(this.currentGameId && this.currentPlayerId)
         };
     }
 }
 
 // ===== SINGLETON INSTANCE =====
-// Nur EINE globale Instanz erstellen
 if (typeof window.firebaseGameService === 'undefined') {
     window.firebaseGameService = new FirebaseGameService();
-    console.log('✅ FirebaseGameService v3.0 initialized (Singleton)');
+    console.log('✅ FirebaseGameService v3.1 initialized (Security Hardened)');
 } else {
     console.warn('⚠️ FirebaseGameService already exists - using existing instance');
 }
 
-// Cleanup bei Page Unload (Memory-Leak-Prevention)
+// P1 FIX: Cleanup bei Page Unload + Offline-Status setzen
 window.addEventListener('beforeunload', () => {
     if (window.firebaseGameService) {
         window.firebaseGameService.cleanup();
     }
 });
 
-// ===== GLOBALE DEBUG-FUNKTIONEN =====
-window.testFirebaseService = async function() {
-    console.log('🧪 Firebase Service Test gestartet...');
-
-    const result = await window.firebaseGameService.initialize();
-
-    console.log('Test Ergebnis:', result);
-    console.log('Service Status:', window.firebaseGameService.getStatus());
-
-    return window.firebaseGameService;
-};
-
-window.debugFirebaseConnection = async function() {
-    console.log('🔍 Firebase Verbindungstest...');
-
-    // Teste Firebase SDK
-    console.log('Firebase SDK verfügbar:', typeof firebase !== 'undefined');
-
-    if (typeof firebase !== 'undefined') {
-        console.log('Firebase Apps:', firebase.apps.length);
-
-        try {
-            const testRef = firebase.database().ref('.info/connected');
-            const snapshot = await testRef.once('value');
-
-            console.log('Direkte Verbindung:', snapshot.val());
-
-        } catch (error) {
-            console.error('Direkter Test fehlgeschlagen:', error);
-        }
+// P1 FIX: Page Visibility API - Setze Online/Offline bei Tab-Wechsel
+document.addEventListener('visibilitychange', () => {
+    if (window.firebaseGameService && window.firebaseGameService.currentGameId && window.firebaseGameService.currentPlayerId) {
+        const online = !document.hidden;
+        window.firebaseGameService.setPlayerOnline(
+            window.firebaseGameService.currentGameId,
+            window.firebaseGameService.currentPlayerId,
+            online
+        );
     }
-};
+});
 
-console.log('✅ Firebase Service v3.0 geladen - Production Ready!');
-console.log('🛠️ Debug-Befehle: testFirebaseService(), debugFirebaseConnection()');
+// ===== GLOBALE DEBUG-FUNKTIONEN (nur Development) =====
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    window.testFirebaseService = async function() {
+        console.log('🧪 Firebase Service Test gestartet...');
+        const result = await window.firebaseGameService.initialize();
+        console.log('Test Ergebnis:', result);
+        console.log('Service Status:', window.firebaseGameService.getStatus());
+        return window.firebaseGameService;
+    };
+
+    window.debugFirebaseConnection = async function() {
+        console.log('🔍 Firebase Verbindungstest...');
+        console.log('Firebase SDK verfügbar:', typeof firebase !== 'undefined');
+        if (typeof firebase !== 'undefined') {
+            console.log('Firebase Apps:', firebase.apps.length);
+            try {
+                const testRef = firebase.database().ref('.info/connected');
+                const snapshot = await testRef.once('value');
+                console.log('Direkte Verbindung:', snapshot.val());
+            } catch (error) {
+                console.error('Direkter Test fehlgeschlagen:', error);
+            }
+        }
+    };
+
+    console.log('🛠️ Debug-Befehle: testFirebaseService(), debugFirebaseConnection()');
+}
+
+console.log('✅ Firebase Service v3.1 geladen - Security Hardened!');

@@ -1,24 +1,12 @@
-/**
- * No-Cap Landing Page Styles
- * Extracted from inline styles for CSP compliance
- */
+/* ============================================================================
+   NO-CAP - INDEX PAGE STYLES
+   Version 2.0 - CSP-compliant, Extracted from inline styles
+   ============================================================================ */
 
-/* ==================== RESET & BASE ==================== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* ============================================================================
+   AGE VERIFICATION MODAL
+   ============================================================================ */
 
-body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    color: white;
-    overflow-x: hidden;
-}
-
-/* ==================== AGE MODAL ==================== */
 .age-modal {
     position: fixed;
     top: 0;
@@ -238,46 +226,10 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* ==================== BACKGROUND PARTICLES ==================== */
-.background-particles {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: -1;
-}
+/* ============================================================================
+   SITE HEADER
+   ============================================================================ */
 
-.particle {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    animation: float 8s ease-in-out infinite;
-}
-
-.particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
-.particle:nth-child(2) { width: 80px; height: 80px; left: 80%; animation-delay: 2s; }
-.particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 4s; }
-.particle:nth-child(4) { width: 100px; height: 100px; left: 70%; animation-delay: 6s; }
-.particle:nth-child(5) { width: 50px; height: 50px; left: 50%; animation-delay: 8s; }
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-    50% { transform: translateY(-30px) rotate(180deg); opacity: 0.6; }
-}
-
-/* ==================== CONTAINER ==================== */
-.app-container {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* ==================== HEADER ==================== */
 .site-header {
     text-align: center;
     margin-bottom: 40px;
@@ -314,12 +266,10 @@ body {
     margin: 0;
 }
 
-/* ==================== MAIN CONTENT ==================== */
-.main-content {
-    flex: 1;
-}
+/* ============================================================================
+   HERO SECTION
+   ============================================================================ */
 
-/* ==================== HERO SECTION ==================== */
 .hero-section {
     text-align: center;
     margin-bottom: 60px;
@@ -377,7 +327,10 @@ body {
     font-size: 0.95rem;
 }
 
-/* ==================== SCROLL INDICATOR ==================== */
+/* ============================================================================
+   SCROLL INDICATOR
+   ============================================================================ */
+
 .scroll-indicator {
     margin-top: 40px;
     cursor: pointer;
@@ -407,18 +360,20 @@ body {
     60% { transform: translateY(-5px); }
 }
 
-/* ==================== SECTIONS ==================== */
+/* ============================================================================
+   GAME MODES SECTION
+   ============================================================================ */
+
+.game-modes {
+    margin-bottom: 80px;
+}
+
 .section-title {
     text-align: center;
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 40px;
     color: white;
-}
-
-/* ==================== GAME MODES ==================== */
-.game-modes {
-    margin-bottom: 80px;
 }
 
 .mode-cards {
@@ -535,7 +490,10 @@ body {
     transform: translateY(-2px);
 }
 
-/* ==================== HOW IT WORKS ==================== */
+/* ============================================================================
+   HOW IT WORKS SECTION
+   ============================================================================ */
+
 .how-it-works {
     margin-bottom: 60px;
 }
@@ -581,7 +539,10 @@ body {
     line-height: 1.4;
 }
 
-/* ==================== FOOTER ==================== */
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+
 .site-footer {
     margin-top: auto;
     padding-top: 40px;
@@ -625,67 +586,72 @@ body {
     font-weight: 600;
 }
 
-/* ==================== TOAST NOTIFICATIONS ==================== */
-.toast-notification {
+/* ============================================================================
+   LOADING INDICATOR
+   ============================================================================ */
+
+.loading {
+    display: none;
     position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(25px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 20px;
-    padding: 20px;
-    z-index: 10000;
-    opacity: 0;
-    transform: translateX(100%);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    max-width: 350px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-}
-
-.toast-notification.show {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.toast-notification.success {
-    border-color: rgba(76, 175, 80, 0.5);
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
-}
-
-.toast-notification.warning {
-    border-color: rgba(255, 152, 0, 0.5);
-    background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.25));
-}
-
-.toast-notification.error {
-    border-color: rgba(244, 67, 54, 0.5);
-    background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.25));
-}
-
-.toast-notification.info {
-    border-color: rgba(33, 150, 243, 0.5);
-    background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.25));
-}
-
-.toast-content {
-    display: flex;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
     align-items: center;
-    gap: 15px;
-    color: white;
+    justify-content: center;
 }
 
-.toast-icon {
-    font-size: 1.5rem;
+.loading.show {
+    display: flex;
 }
 
-.toast-message {
-    font-weight: 600;
-    font-size: 0.95rem;
-    line-height: 1.4;
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-/* ==================== MOBILE RESPONSIVE ==================== */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   NOSCRIPT WARNING
+   ============================================================================ */
+
+.noscript-warning {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    color: #333;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.noscript-warning h2 {
+    color: #f44336;
+    margin-bottom: 15px;
+}
+
+.noscript-warning p {
+    line-height: 1.6;
+}
+
+/* ============================================================================
+   MOBILE RESPONSIVE
+   ============================================================================ */
+
 @media (max-width: 768px) {
     .app-container {
         padding: 15px;
@@ -734,16 +700,23 @@ body {
     }
 }
 
-/* ==================== ACCESSIBILITY ==================== */
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
 .mode-card:focus,
 .mode-btn:focus,
 .footer-link:focus,
-.btn-age:focus {
+.btn-age:focus,
+.scroll-indicator:focus {
     outline: 2px solid #4facfe;
     outline-offset: 2px;
 }
 
-/* ==================== REDUCED MOTION ==================== */
+/* ============================================================================
+   REDUCED MOTION SUPPORT
+   ============================================================================ */
+
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;
@@ -752,6 +725,10 @@ body {
     }
 
     .scroll-arrow {
+        animation: none;
+    }
+
+    .particle {
         animation: none;
     }
 }

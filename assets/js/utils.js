@@ -1,6 +1,22 @@
 // No-Cap - Utility Functions
-// Version 2.0 - Security Hardened
+// Version 2.1 - Security Hardened (P0 Fixes Applied)
 // Gemeinsame Hilfsfunktionen für die gesamte App
+
+// ============================================================================
+// SECURITY CHECK: DOMPurify REQUIRED
+// ============================================================================
+
+// Check if DOMPurify is available - CRITICAL SECURITY REQUIREMENT
+(function checkDOMPurify() {
+    if (typeof DOMPurify === 'undefined') {
+        console.error(
+            '❌ CRITICAL SECURITY ERROR: DOMPurify is not loaded!\n' +
+            'This is a security requirement. Add to your HTML:\n' +
+            '<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>'
+        );
+        throw new Error('DOMPurify is required for security. Application cannot start.');
+    }
+})();
 
 // ============================================================================
 // LOADING & UI FUNCTIONS
@@ -22,20 +38,18 @@ function hideLoading() {
     }
 }
 
-// Show notification - XSS PROTECTED
+// Show notification - XSS PROTECTED (textContent only)
 function showNotification(message, type = 'info', duration = 3000) {
     // Remove existing notifications
     document.querySelectorAll('.notification').forEach(n => n.remove());
 
-    // Sanitize message to prevent XSS
-    const sanitizedMessage = typeof DOMPurify !== 'undefined'
-        ? DOMPurify.sanitize(message, { ALLOWED_TAGS: [] })
-        : String(message).replace(/[<>]/g, '');
+    // Sanitize message - plain text only, no HTML allowed
+    const sanitizedMessage = sanitizeInput(message);
 
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
 
-    // Create elements safely without innerHTML
+    // Create elements safely without innerHTML - USE textContent ONLY
     const content = document.createElement('div');
     content.className = 'notification-content';
 
@@ -45,7 +59,7 @@ function showNotification(message, type = 'info', duration = 3000) {
 
     const text = document.createElement('span');
     text.className = 'notification-text';
-    text.textContent = sanitizedMessage;
+    text.textContent = sanitizedMessage; // textContent prevents XSS
 
     content.appendChild(icon);
     content.appendChild(text);
@@ -84,36 +98,57 @@ function getNotificationIcon(type) {
 }
 
 // ============================================================================
-// SANITIZATION HELPERS
+// SANITIZATION HELPERS - P0 SECURITY FIXES
 // ============================================================================
 
-// Sanitize user input (防XSS)
+/**
+ * Sanitize user input - STRICT TEXT ONLY
+ * Use this for player names, game IDs, and any user-generated text
+ * NO HTML ALLOWED - strips all tags
+ */
 function sanitizeInput(input) {
     if (!input) return '';
 
-    // If DOMPurify is available, use it
-    if (typeof DOMPurify !== 'undefined') {
-        return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
-    }
-
-    // Fallback: Basic HTML escaping
-    return String(input)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/\//g, '&#x2F;');
+    // DOMPurify with ALLOWED_TAGS: [] strips ALL HTML
+    return DOMPurify.sanitize(String(input), {
+        ALLOWED_TAGS: [],
+        ALLOWED_ATTR: [],
+        KEEP_CONTENT: true
+    });
 }
 
-// Sanitize HTML for safe innerHTML usage
+/**
+ * Sanitize HTML for safe innerHTML usage
+ * Use ONLY when you explicitly need HTML content (e.g., markdown rendering)
+ * For most cases, prefer textContent instead
+ */
 function sanitizeHTML(html) {
-    if (typeof DOMPurify !== 'undefined') {
-        return DOMPurify.sanitize(html);
-    }
+    // Strict whitelist of allowed tags
+    return DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'span', 'p', 'br'],
+        ALLOWED_ATTR: ['class'],
+        KEEP_CONTENT: true,
+        RETURN_TRUSTED_TYPE: false
+    });
+}
 
-    // Fallback: Remove all HTML tags
-    return String(html).replace(/<[^>]*>/g, '');
+/**
+ * Create text node safely - USE THIS INSTEAD OF innerHTML
+ * This is the safest way to add user content to DOM
+ */
+function setTextContent(element, text) {
+    if (!element) return;
+    element.textContent = sanitizeInput(text);
+}
+
+/**
+ * Create HTML element with text content safely
+ */
+function createElementWithText(tag, text, className = '') {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = sanitizeInput(text);
+    return element;
 }
 
 // ============================================================================
@@ -128,7 +163,7 @@ function initMobileOptimizations() {
     // Prevent zoom on input focus (iOS)
     if (isMobile()) {
         const touchHandler = () => {};
-        document.addEventListener('touchstart', touchHandler, true);
+        document.addEventListener('touchstart', touchHandler, { passive: true });
         _eventListeners.push({
             element: document,
             event: 'touchstart',
@@ -139,7 +174,7 @@ function initMobileOptimizations() {
         if (!document.querySelector('meta[name="viewport"]')) {
             const meta = document.createElement('meta');
             meta.name = 'viewport';
-            meta.content = 'width=device-width, initial-scale=1.0, user-scalable=no';
+            meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
             document.head.appendChild(meta);
         }
 
@@ -300,8 +335,9 @@ function validatePlayerName(name) {
         return { valid: false, message: 'Name darf maximal 20 Zeichen haben' };
     }
 
-    // Check for invalid characters (erlaubt: Buchstaben, Zahlen, Umlaute, Leerzeichen, Bindestrich, Unterstrich)
-    if (!/^[a-zA-ZäöüÄÖÜß0-9\s\-_]+$/.test(trimmedName)) {
+    // Check for invalid characters (erlaubt: Buchstaben, Zahlen, Umlaute, Emojis, Leerzeichen, Bindestrich, Unterstrich)
+    // Blockiere nur gefährliche Zeichen: < > & " ' / \ =
+    if (/[<>&"'\/\\=]/.test(trimmedName)) {
         return { valid: false, message: 'Name enthält ungültige Zeichen' };
     }
 
@@ -337,7 +373,16 @@ function formatGameIdDisplay(gameId) {
 function getLocalStorage(key, defaultValue = null) {
     try {
         const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : defaultValue;
+        if (!item) return defaultValue;
+
+        const parsed = JSON.parse(item);
+
+        // Validate that stored data doesn't contain XSS attempts
+        if (typeof parsed === 'string') {
+            return sanitizeInput(parsed);
+        }
+
+        return parsed;
     } catch (error) {
         console.warn(`Error reading localStorage key "${key}":`, error);
         return defaultValue;
@@ -347,7 +392,9 @@ function getLocalStorage(key, defaultValue = null) {
 // Safe localStorage set
 function setLocalStorage(key, value) {
     try {
-        localStorage.setItem(key, JSON.stringify(value));
+        // Sanitize string values before storing
+        const toStore = typeof value === 'string' ? sanitizeInput(value) : value;
+        localStorage.setItem(key, JSON.stringify(toStore));
         return true;
     } catch (error) {
         console.warn(`Error writing localStorage key "${key}":`, error);
@@ -640,15 +687,14 @@ function debounce(func, wait) {
 // Throttle function
 function throttle(func, limit) {
     let inThrottle;
-    return function() {
-        const args = arguments;
+    return function(...args) {
         const context = this;
         if (!inThrottle) {
             func.apply(context, args);
             inThrottle = true;
             setTimeout(() => inThrottle = false, limit);
         }
-    }
+    };
 }
 
 // ============================================================================
@@ -692,6 +738,8 @@ function trapFocus(element) {
     if (firstFocusable) {
         firstFocusable.focus();
     }
+
+    return keydownHandler; // Return for cleanup
 }
 
 // Announce to screen readers
@@ -699,13 +747,11 @@ function announceToScreenReader(message) {
     const announcement = document.createElement('div');
     announcement.setAttribute('aria-live', 'polite');
     announcement.setAttribute('aria-atomic', 'true');
-    announcement.style.position = 'absolute';
-    announcement.style.left = '-10000px';
-    announcement.style.width = '1px';
-    announcement.style.height = '1px';
-    announcement.style.overflow = 'hidden';
+    announcement.style.cssText = 'position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;';
 
     document.body.appendChild(announcement);
+
+    // Use textContent to prevent XSS
     announcement.textContent = sanitizeInput(message);
 
     setTimeout(() => {
@@ -745,7 +791,7 @@ function initializeUtils() {
     document.addEventListener('keydown', escapeHandler);
     _eventListeners.push({ element: document, event: 'keydown', handler: escapeHandler });
 
-    console.log('✅ No-Cap Utils v2.0 initialized');
+    console.log('✅ No-Cap Utils v2.1 initialized (Security Hardened)');
 }
 
 // Cleanup on page unload
@@ -772,9 +818,11 @@ if (typeof window !== 'undefined') {
         hideLoading,
         showNotification,
 
-        // Security
+        // Security - NEW SAFE HELPERS
         sanitizeInput,
         sanitizeHTML,
+        setTextContent,
+        createElementWithText,
 
         // Mobile
         initMobileOptimizations,

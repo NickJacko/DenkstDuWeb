@@ -1,46 +1,104 @@
 {
   "rules": {
-    "users": {
-      "$uid": {
-        ".read": "$uid === auth.uid",
-        ".write": "$uid === auth.uid"
-      }
-    },
+    ".read": false,
+    ".write": false,
+
     "games": {
       "$gameId": {
-        ".read": "auth != null",
-        ".write": "auth != null",
+        ".read": "auth != null && (data.child('host').val() === auth.uid || data.child('players').child(auth.uid).exists())",
+
+        ".write": "auth != null && (!data.exists() || data.child('host').val() === auth.uid)",
+
+        "settings": {
+          ".write": "auth != null && root.child('games').child($gameId).child('host').val() === auth.uid"
+        },
+
         "players": {
           "$playerId": {
-            ".read": "auth != null",
-            ".write": "auth != null"
+            ".write": "auth != null && ($playerId === auth.uid || root.child('games').child($gameId).child('host').val() === auth.uid)"
           }
         },
-        "questions": {
-          ".read": "auth != null",
-          ".write": "auth != null"
-        },
+
         "currentQuestion": {
-          ".read": "auth != null",
-          ".write": "auth != null"
+          ".write": "auth != null && root.child('games').child($gameId).child('host').val() === auth.uid"
         },
+
         "responses": {
-          ".read": "auth != null",
-          ".write": "auth != null"
+          "$playerId": {
+            ".write": "auth != null && $playerId === auth.uid"
+          }
         },
-        "results": {
-          ".read": "auth != null",
-          ".write": "auth != null"
+
+        "estimates": {
+          "$playerId": {
+            ".write": "auth != null && $playerId === auth.uid"
+          }
+        },
+
+        "scores": {
+          ".write": "auth != null && root.child('games').child($gameId).child('host').val() === auth.uid"
+        },
+
+        "phase": {
+          ".write": "auth != null && root.child('games').child($gameId).child('host').val() === auth.uid"
+        },
+
+        "status": {
+          ".write": "auth != null && root.child('games').child($gameId).child('host').val() === auth.uid"
         }
       }
     },
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "profile": {
+          ".validate": "newData.hasChildren(['displayName', 'createdAt'])"
+        },
+
+        "ageVerified": {
+          ".validate": "newData.isBoolean()"
+        },
+
+        "ageVerificationLevel": {
+          ".validate": "newData.val() === 0 || newData.val() === 16 || newData.val() === 18"
+        },
+
+        "premiumStatus": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": false
+        }
+      }
+    },
+
+    "premiumUsers": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
     "questions": {
       ".read": "auth != null",
-      ".write": false
-    },
-    "shop": {
-      ".read": "auth != null",
-      ".write": false
+      ".write": false,
+
+      "fsk0": {
+        ".read": "auth != null"
+      },
+
+      "fsk16": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('ageVerificationLevel').val() >= 16"
+      },
+
+      "fsk18": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('ageVerificationLevel').val() >= 18"
+      },
+
+      "premium": {
+        ".read": "auth != null && root.child('premiumUsers').child(auth.uid).exists()"
+      }
     }
   }
 }

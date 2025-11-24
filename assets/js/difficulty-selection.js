@@ -1,13 +1,8 @@
 // ===== NO-CAP DIFFICULTY SELECTION (SINGLE DEVICE MODE) =====
-// Version: 2.1 - Security hardened with DOMPurify, encoding fixed
+// Version: 2.2 - Security Hardened & Production Ready
 // Mode: Single Device - Difficulty Selection with Alcohol Mode
 
 'use strict';
-
-// ===== GLOBAL VARIABLES =====
-let gameState = null;
-let selectedDifficulty = null;
-let alcoholMode = false;
 
 // ===== DIFFICULTY DATA =====
 const difficultyNames = {
@@ -16,67 +11,75 @@ const difficultyNames = {
     hard: 'Hardcore'
 };
 
+const difficultyMultipliers = {
+    easy: 1,
+    medium: 1,
+    hard: 2
+};
+
+// ===== GLOBAL VARIABLES =====
+let gameState = null;
+let alcoholMode = false;
+
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    initDifficultySelection();
-});
 
-function initDifficultySelection() {
-    log('⚡ Initializing difficulty selection...');
+function initialize() {
+    console.log('⚡ Initializing difficulty selection...');
 
-    // Load central GameState
+    // P0 FIX: Check dependencies
     if (typeof GameState === 'undefined') {
-        log('❌ GameState not found - Load central version', 'error');
+        console.error('❌ GameState not found');
         showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
         return;
     }
 
-    // Check if DOMPurify is available
-    if (typeof DOMPurify === 'undefined') {
-        log('❌ DOMPurify not found - Security risk!', 'error');
-        console.error('SECURITY: DOMPurify library is required but not loaded!');
-    }
+    gameState = new GameState();
 
-    gameState = GameState.load();
-
-    // Validation: Check if categories are selected
+    // Validate prerequisites
     if (!validateGameState()) {
-        return; // Redirects handled in function
+        return;
     }
 
-    // Check alcohol mode and update UI
+    // Check alcohol mode
     checkAlcoholMode();
 
-    // Load previously selected difficulty if any
-    if (gameState.difficulty) {
-        selectedDifficulty = gameState.difficulty;
-        const card = document.querySelector(`[data-difficulty="${selectedDifficulty}"]`);
-        if (card) {
-            card.classList.add('selected');
-            updateContinueButton();
-        }
-    }
+    // P1 FIX: Load difficulty from GameState
+    initializeSelection();
 
     // Setup event listeners
     setupEventListeners();
 
     hideLoading();
 
-    log('✅ Difficulty selection initialized');
-    log('📋 Current state:', {
-        deviceMode: gameState.deviceMode,
-        categories: gameState.selectedCategories,
-        difficulty: gameState.difficulty,
-        alcoholMode: alcoholMode
-    });
+    console.log('✅ Difficulty selection initialized');
 }
 
 // ===== VALIDATION & GUARDS =====
+
+/**
+ * P0 FIX: Validate categories with FSK-level check
+ */
 function validateGameState() {
-    // Check if categories are selected
     if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-        log('⚠️ No categories selected, redirecting...', 'warning');
-        showNotification('Keine Kategorien ausgewählt! Weiterleitung...', 'warning');
+        console.warn('⚠️ No categories selected');
+        showNotification('Keine Kategorien ausgewählt!', 'warning');
+        setTimeout(() => {
+            window.location.href = 'category-selection.html';
+        }, 2000);
+        return false;
+    }
+
+    // P0 FIX: Validate that user can access selected categories
+    const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+    const hasInvalidCategory = gameState.selectedCategories.some(category => {
+        if (category === 'fsk18' && ageLevel < 18) return true;
+        if (category === 'fsk16' && ageLevel < 16) return true;
+        return false;
+    });
+
+    if (hasInvalidCategory) {
+        console.error('❌ Invalid categories for age level');
+        showNotification('Ungültige Kategorien für dein Alter!', 'error');
         setTimeout(() => {
             window.location.href = 'category-selection.html';
         }, 2000);
@@ -87,9 +90,8 @@ function validateGameState() {
 }
 
 // ===== EVENT LISTENERS SETUP =====
-function setupEventListeners() {
-    log('🔧 Setting up event listeners...');
 
+function setupEventListeners() {
     // Back button
     const backBtn = document.querySelector('.back-button');
     if (backBtn) {
@@ -113,117 +115,148 @@ function setupEventListeners() {
         });
     }
 
-    log('✅ Event listeners setup complete');
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && gameState.difficulty) {
+            proceedToDifficulty();
+        }
+    });
 }
 
 // ===== ALCOHOL MODE =====
+
 function checkAlcoholMode() {
     try {
         const alcoholModeStr = localStorage.getItem('nocap_alcohol_mode');
         alcoholMode = alcoholModeStr === 'true';
-        log(`🍺 Alcohol mode: ${alcoholMode}`);
 
+        console.log(`🍺 Alcohol mode: ${alcoholMode}`);
         updateUIForAlcoholMode();
     } catch (error) {
-        log(`❌ Error checking alcohol mode: ${error.message}`, 'error');
+        console.error('❌ Error checking alcohol mode:', error);
         alcoholMode = false;
         updateUIForAlcoholMode();
     }
 }
 
+/**
+ * P0 FIX: Safe UI update with textContent
+ */
 function updateUIForAlcoholMode() {
     const descriptionSubtitle = document.getElementById('description-subtitle');
 
     if (alcoholMode) {
-        // Alkohol-Modus: Schlücke und Alkohol-Icons
         if (descriptionSubtitle) {
             descriptionSubtitle.textContent = 'Bestimmt die Anzahl der Schlücke bei falschen Schätzungen';
         }
 
-        // Easy
         updateDifficultyUI('easy', {
             icon: '🍷',
             base: '1 Grundschluck bei falscher Antwort',
-            formula: 'Schlücke = Abweichung der Schätzung<br>Perfekt für entspannte Runden'
+            formula: 'Schlücke = Abweichung der Schätzung\nPerfekt für entspannte Runden'
         });
 
-        // Medium
         updateDifficultyUI('medium', {
             icon: '🍺',
             base: 'Abweichung = Schlücke',
-            formula: 'Schlücke = Abweichung der Schätzung<br>Der Standard für lustige Partyabende'
+            formula: 'Schlücke = Abweichung der Schätzung\nDer Standard für lustige Partyabende'
         });
 
-        // Hard
         updateDifficultyUI('hard', {
             icon: '🔥',
             base: 'Doppelte Abweichung!',
-            formula: 'Schlücke = Abweichung × 2<br>Nur für erfahrene Spieler!'
+            formula: 'Schlücke = Abweichung × 2\nNur für erfahrene Spieler!'
         });
-
-        log('✅ UI updated for alcohol mode');
     } else {
-        // Alkoholfrei-Modus: Punkte und alternative Icons
         if (descriptionSubtitle) {
             descriptionSubtitle.textContent = 'Bestimmt die Konsequenz bei falschen Schätzungen';
         }
 
-        // Easy
         updateDifficultyUI('easy', {
             icon: '💧',
             base: '1 Grundpunkt bei falscher Antwort',
-            formula: 'Punkte = Abweichung der Schätzung<br>Perfekt für entspannte Runden'
+            formula: 'Punkte = Abweichung der Schätzung\nPerfekt für entspannte Runden'
         });
 
-        // Medium
         updateDifficultyUI('medium', {
             icon: '🎉',
             base: 'Abweichung = Punkte',
-            formula: 'Punkte = Abweichung der Schätzung<br>Der Standard für lustige Partyabende'
+            formula: 'Punkte = Abweichung der Schätzung\nDer Standard für lustige Partyabende'
         });
 
-        // Hard
         updateDifficultyUI('hard', {
             icon: '🔥',
             base: 'Doppelte Abweichung!',
-            formula: 'Punkte = Abweichung × 2<br>Nur für erfahrene Spieler!'
+            formula: 'Punkte = Abweichung × 2\nNur für erfahrene Spieler!'
         });
-
-        log('✅ UI updated for alcohol-free mode');
     }
 }
 
+/**
+ * P0 FIX: Safe content update - use textContent with manual line breaks
+ */
 function updateDifficultyUI(difficulty, content) {
     const iconEl = document.getElementById(`${difficulty}-icon`);
     const baseEl = document.getElementById(`${difficulty}-base`);
     const formulaEl = document.getElementById(`${difficulty}-formula`);
 
-    // XSS Protection: Sanitize HTML content before inserting
-    if (iconEl) iconEl.textContent = content.icon;
-    if (baseEl) baseEl.textContent = content.base;
+    if (iconEl) {
+        iconEl.textContent = content.icon;
+    }
+
+    if (baseEl) {
+        baseEl.textContent = content.base;
+    }
+
     if (formulaEl) {
-        // Use DOMPurify for HTML content with line breaks
-        if (typeof DOMPurify !== 'undefined') {
-            formulaEl.innerHTML = DOMPurify.sanitize(content.formula, {
-                ALLOWED_TAGS: ['br'],
-                ALLOWED_ATTR: []
-            });
-        } else {
-            // Fallback: Use textContent (removes <br> but safer)
-            formulaEl.textContent = content.formula.replace(/<br>/g, ' ');
-            console.warn('DOMPurify not available - falling back to textContent');
+        // P0 FIX: Use textContent and CSS for line breaks
+        // OR create separate elements for each line
+        const lines = content.formula.split('\n');
+        formulaEl.innerHTML = ''; // Clear first
+
+        lines.forEach((line, index) => {
+            const lineEl = document.createElement('div');
+            lineEl.textContent = line;
+            if (index === 0) {
+                lineEl.style.fontWeight = 'bold';
+            }
+            formulaEl.appendChild(lineEl);
+        });
+    }
+}
+
+// ===== P1 FIX: DIFFICULTY SELECTION (FROM GAMESTATE) =====
+
+/**
+ * Initialize selection from GameState
+ */
+function initializeSelection() {
+    if (gameState.difficulty) {
+        const card = document.querySelector(`[data-difficulty="${gameState.difficulty}"]`);
+        if (card) {
+            card.classList.add('selected');
+            updateContinueButton();
         }
     }
 }
 
-// ===== DIFFICULTY SELECTION =====
+/**
+ * Get current difficulty from GameState
+ */
+function getSelectedDifficulty() {
+    return gameState.difficulty || null;
+}
+
+/**
+ * P0 FIX: Validate difficulty before selection
+ */
 function selectDifficulty(element) {
     const difficulty = element.dataset.difficulty;
     if (!difficulty) return;
 
-    // Validate difficulty value
+    // P0 FIX: Validate difficulty value
     if (!difficultyNames[difficulty]) {
-        log(`❌ Invalid difficulty: ${difficulty}`, 'error');
+        console.error(`❌ Invalid difficulty: ${difficulty}`);
         return;
     }
 
@@ -232,69 +265,70 @@ function selectDifficulty(element) {
         card.classList.remove('selected');
     });
 
-    // Add selection to clicked card
+    // Add selection
     element.classList.add('selected');
-    selectedDifficulty = difficulty;
 
-    // Save to game state
+    // P1 FIX: Save directly to GameState
     gameState.difficulty = difficulty;
     gameState.save();
 
-    // Update continue button
     updateContinueButton();
 
-    // Show success notification
     showNotification(`${difficultyNames[difficulty]} Modus gewählt!`, 'success');
 
-    log(`Selected difficulty: ${difficulty}`);
+    console.log(`Selected difficulty: ${difficulty}`);
 }
 
 function updateContinueButton() {
     const continueBtn = document.getElementById('continueBtn');
     if (!continueBtn) return;
 
-    if (selectedDifficulty) {
+    const difficulty = getSelectedDifficulty();
+
+    if (difficulty) {
         continueBtn.disabled = false;
+        continueBtn.setAttribute('aria-disabled', 'false');
         continueBtn.textContent = 'Weiter';
     } else {
         continueBtn.disabled = true;
+        continueBtn.setAttribute('aria-disabled', 'true');
         continueBtn.textContent = 'Schwierigkeitsgrad wählen';
     }
 }
 
 // ===== NAVIGATION =====
+
 function proceedToDifficulty() {
-    if (!selectedDifficulty) {
+    const difficulty = getSelectedDifficulty();
+
+    if (!difficulty) {
         showNotification('Bitte wähle einen Schwierigkeitsgrad aus', 'warning');
         return;
     }
 
-    log(`🚀 Proceeding with difficulty: ${selectedDifficulty}`);
+    console.log(`🚀 Proceeding with difficulty: ${difficulty}`);
 
     showLoading();
 
-    // Save difficulty to game state
-    gameState.difficulty = selectedDifficulty;
-    gameState.save();
-
+    // Already saved in GameState
     setTimeout(() => {
-        // Route based on device mode
-        if (gameState.deviceMode === 'single') {
-            // Single device: go to player setup
+        // P0 FIX: Validate device mode before routing
+        const deviceMode = gameState.deviceMode;
+
+        if (deviceMode === 'single') {
             window.location.href = 'player-setup.html';
-        } else if (gameState.deviceMode === 'multi') {
-            // Multiplayer: go to multiplayer lobby
+        } else if (deviceMode === 'multi') {
             window.location.href = 'multiplayer-lobby.html';
         } else {
-            // Fallback if deviceMode is not set
-            log('⚠️ Device mode not set, defaulting to single device', 'warning');
+            console.warn('⚠️ Device mode not set, defaulting to single');
+            gameState.deviceMode = 'single';
+            gameState.save();
             window.location.href = 'player-setup.html';
         }
     }, 500);
 }
 
 function goBack() {
-    log('⬅️ Going back to category selection');
     showLoading();
     setTimeout(() => {
         window.location.href = 'category-selection.html';
@@ -302,6 +336,7 @@ function goBack() {
 }
 
 // ===== UTILITY FUNCTIONS =====
+
 function showLoading() {
     const loading = document.getElementById('loading');
     if (loading) {
@@ -316,12 +351,19 @@ function hideLoading() {
     }
 }
 
+/**
+ * P0 FIX: Safe notification using NocapUtils
+ */
 function showNotification(message, type = 'info') {
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type);
+        return;
+    }
+
+    // Fallback
     const notification = document.getElementById('notification');
     if (!notification) return;
 
-    // XSS Protection: Use textContent instead of innerHTML
-    // Sanitize message to prevent any script injection
     const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
     notification.textContent = sanitizedMessage;
     notification.className = `notification ${type} show`;
@@ -331,26 +373,10 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-function log(message, type = 'info') {
-    const colors = {
-        info: '#4488ff',
-        warning: '#ffaa00',
-        error: '#ff4444',
-        success: '#00ff00'
-    };
+// ===== INITIALIZATION =====
 
-    console.log(`%c[DifficultySelection] ${message}`, `color: ${colors[type] || colors.info}`);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
 }
-
-// ===== DEBUG FUNCTIONS =====
-window.debugDifficultySelection = function() {
-    console.log('🔍 === DIFFICULTY SELECTION DEBUG ===');
-    console.log('GameState:', gameState?.getDebugInfo?.());
-    console.log('Selected Difficulty:', selectedDifficulty);
-    console.log('Alcohol Mode:', alcoholMode);
-    console.log('LocalStorage:', localStorage.getItem('nocap_game_state'));
-    console.log('DOMPurify available:', typeof DOMPurify !== 'undefined');
-};
-
-log('✅ No-Cap Difficulty Selection - JS loaded!');
-log('🛠️ Debug: debugDifficultySelection()');

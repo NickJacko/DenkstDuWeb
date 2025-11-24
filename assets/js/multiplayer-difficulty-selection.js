@@ -1,110 +1,7 @@
 // ===== NO-CAP MULTIPLAYER DIFFICULTY SELECTION =====
-// Version: 2.1 - Security Hardened with XSS Protection & Encoding Fixed
+// Version: 2.2 - Security Hardened & Production Ready
 
 'use strict';
-
-// SECURITY NOTE: All innerHTML usages protected
-// - Line ~449: innerHTML with DOMPurify.sanitize() - SAFE
-// - Line ~620: Helper function (controlled content) - SAFE
-
-// ===== FIREBASE SERVICE CLASS =====
-class FirebaseGameService {
-    constructor() {
-        this.app = null;
-        this.database = null;
-        this.isInitialized = false;
-        this.isConnected = false;
-        this.currentGameId = null;
-        this.listeners = [];
-        this.connectionListeners = [];
-        this.retryAttempts = 0;
-        this.maxRetries = 3;
-
-        this.config = {
-            apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-            authDomain: "denkstduwebsite.firebaseapp.com",
-            databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "denkstduwebsite",
-            storageBucket: "denkstduwebsite.appspot.com",
-            messagingSenderId: "27029260611",
-            appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-            measurementId: "G-BNKNW95HK8"
-        };
-    }
-
-    async initialize() {
-        try {
-            this.log('🔥 Firebase Service - Initialisierung gestartet...');
-
-            if (typeof firebase === 'undefined') {
-                this.log('❌ Firebase SDK nicht gefunden', 'error');
-                throw new Error('Firebase SDK nicht geladen');
-            }
-
-            this.log('✅ Firebase SDK geladen');
-
-            if (!firebase.apps || firebase.apps.length === 0) {
-                this.log('🔧 Initialisiere Firebase App...');
-                this.app = firebase.initializeApp(this.config);
-                this.log('✅ Firebase App initialisiert');
-            } else {
-                this.log('ℹ️ Firebase App bereits initialisiert');
-                this.app = firebase.app();
-            }
-
-            this.database = firebase.database();
-            this.log('✅ Database Referenz erstellt');
-
-            const connectedRef = this.database.ref('.info/connected');
-            const snapshot = await connectedRef.once('value');
-            this.isConnected = snapshot.val() === true;
-
-            this.isInitialized = true;
-            this.log(`✅ Firebase ${this.isConnected ? 'verbunden' : 'initialisiert (offline)'}`);
-
-            return true;
-
-        } catch (error) {
-            this.log(`❌ Firebase Init Fehler: ${error.message}`, 'error');
-            this.isInitialized = false;
-            this.isConnected = false;
-            return false;
-        }
-    }
-
-    async updateGameSettings(gameId, difficulty) {
-        if (!this.isConnected) {
-            throw new Error('Nicht verbunden');
-        }
-
-        try {
-            await this.database.ref(`games/${gameId}/settings/difficulty`).set(difficulty);
-            this.log(`✅ Difficulty gesetzt: ${difficulty}`);
-        } catch (error) {
-            this.log(`❌ Update Fehler: ${error.message}`, 'error');
-            throw error;
-        }
-    }
-
-    cleanup() {
-        this.log('🧹 Cleanup...');
-        this.listeners.forEach(unsubscribe => {
-            if (typeof unsubscribe === 'function') {
-                try {
-                    unsubscribe();
-                } catch (e) {
-                    this.log(`Cleanup error: ${e.message}`, 'error');
-                }
-            }
-        });
-        this.listeners = [];
-    }
-
-    log(message, type = 'info') {
-        const colors = { info: '#4488ff', warning: '#ffaa00', error: '#ff4444', success: '#00ff00' };
-        console.log(`%c[FirebaseService] ${message}`, `color: ${colors[type] || colors.info}`);
-    }
-}
 
 // ===== DIFFICULTY DATA =====
 const difficultyData = {
@@ -114,6 +11,7 @@ const difficultyData = {
         description: 'Perfekt für lockere Runden',
         penalty: '1 Punkt bei falscher Schätzung',
         formula: 'Punkte = Abweichung',
+        multiplier: 1,
         color: '#4CAF50'
     },
     medium: {
@@ -122,6 +20,7 @@ const difficultyData = {
         description: 'Der Standard für lustige Abende',
         penalty: 'Abweichung = Punkte',
         formula: 'Punkte = Abweichung',
+        multiplier: 1,
         color: '#FF9800'
     },
     hard: {
@@ -130,11 +29,12 @@ const difficultyData = {
         description: 'Nur für Profis!',
         penalty: 'Doppelte Abweichung!',
         formula: 'Punkte = Abweichung × 2',
+        multiplier: 2,
         color: '#F44336'
     }
 };
 
-// ===== CATEGORY DATA FOR DISPLAY =====
+// ===== CATEGORY DATA =====
 const categoryIcons = {
     fsk0: '👨‍👩‍👧‍👦',
     fsk16: '🎉',
@@ -152,39 +52,48 @@ const categoryNames = {
 // ===== GLOBAL STATE =====
 let gameState = null;
 let firebaseService = null;
-let selectedDifficulty = null;
 let alcoholMode = false;
 
+// ===== P0 FIX: INPUT SANITIZATION =====
+
+/**
+ * Sanitize text with NocapUtils or fallback
+ */
+function sanitizeText(input) {
+    if (!input) return '';
+
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+        return window.NocapUtils.sanitizeInput(String(input));
+    }
+
+    return String(input).replace(/<[^>]*>/g, '').substring(0, 500);
+}
+
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', init);
 
-async function init() {
-    log('🎮 Initializing multiplayer difficulty selection...');
+async function initialize() {
+    console.log('🎮 Initializing multiplayer difficulty selection...');
 
-    // Check dependencies
     if (typeof GameState === 'undefined') {
         showNotification('Fehler: GameState nicht gefunden', 'error');
         return;
     }
 
-    if (typeof DOMPurify === 'undefined') {
-        console.error('SECURITY: DOMPurify not loaded!');
-        showNotification('Sicherheitsmodul fehlt', 'error');
+    gameState = new GameState();
+
+    if (!validateGameState()) {
         return;
     }
-
-    gameState = GameState.load();
-
-    if (!validateGameState()) return;
 
     checkAlcoholMode();
     updateAlcoholModeUI();
 
-    firebaseService = new FirebaseGameService();
-    const connected = await firebaseService.initialize();
-
-    if (!connected) {
-        showNotification('Firebase Verbindung fehlgeschlagen', 'error');
+    // P0 FIX: Use global firebaseGameService
+    if (typeof window.firebaseGameService !== 'undefined') {
+        firebaseService = window.firebaseGameService;
+    } else {
+        console.error('❌ Firebase service not available');
+        showNotification('Firebase nicht verfügbar', 'error');
         setTimeout(() => window.location.href = 'multiplayer-lobby.html', 3000);
         return;
     }
@@ -193,19 +102,23 @@ async function init() {
     renderDifficultyCards();
     setupEventListeners();
 
+    // P1 FIX: Load from GameState
     if (gameState.difficulty) {
-        selectedDifficulty = gameState.difficulty;
-        const card = document.querySelector(`[data-difficulty="${selectedDifficulty}"]`);
+        const card = document.querySelector(`[data-difficulty="${gameState.difficulty}"]`);
         if (card) {
             card.classList.add('selected');
             updateContinueButton();
         }
     }
 
-    log('✅ Initialized');
+    console.log('✅ Initialized');
 }
 
 // ===== VALIDATION =====
+
+/**
+ * P0 FIX: Validate game state with FSK checks
+ */
 function validateGameState() {
     if (!gameState || gameState.deviceMode !== 'multi') {
         showNotification('Falscher Spielmodus', 'error');
@@ -225,17 +138,33 @@ function validateGameState() {
         return false;
     }
 
+    // P0 FIX: Validate FSK access
+    const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+    const hasInvalidCategory = gameState.selectedCategories.some(cat => {
+        if (cat === 'fsk18' && ageLevel < 18) return true;
+        if (cat === 'fsk16' && ageLevel < 16) return true;
+        return false;
+    });
+
+    if (hasInvalidCategory) {
+        console.error('❌ Invalid categories for age level');
+        showNotification('Ungültige Kategorien für dein Alter!', 'error');
+        setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
+        return false;
+    }
+
     return true;
 }
 
 // ===== ALCOHOL MODE =====
+
 function checkAlcoholMode() {
     try {
         const alcoholModeStr = localStorage.getItem('nocap_alcohol_mode');
         alcoholMode = alcoholModeStr === 'true';
-        log(`🍺 Alcohol mode: ${alcoholMode}`);
+        console.log(`🍺 Alcohol mode: ${alcoholMode}`);
     } catch (error) {
-        log(`❌ Error checking alcohol mode: ${error.message}`, 'error');
+        console.error('❌ Error checking alcohol mode:', error);
         alcoholMode = false;
     }
 }
@@ -248,7 +177,7 @@ function updateAlcoholModeUI() {
             : 'Bestimmt die Konsequenz bei falschen Schätzungen';
     }
 
-    // Update difficulty data based on alcohol mode
+    // Update difficulty data
     if (alcoholMode) {
         difficultyData.easy.penalty = '1 Schluck bei falscher Schätzung';
         difficultyData.medium.penalty = 'Abweichung = Schlücke';
@@ -260,36 +189,46 @@ function updateAlcoholModeUI() {
     }
 }
 
-// ===== DISPLAY CATEGORIES =====
+// ===== P0 FIX: DISPLAY CATEGORIES WITH TEXTCONTENT =====
+
+/**
+ * Display selected categories with safe DOM manipulation
+ */
 function displaySelectedCategories() {
     const container = document.getElementById('selected-categories-display');
     if (!container) return;
 
-    const categoriesHTML = gameState.selectedCategories.map(cat => {
+    container.innerHTML = '';
+
+    gameState.selectedCategories.forEach(cat => {
         const icon = categoryIcons[cat] || '❓';
         const name = categoryNames[cat] || cat;
-        return createCategoryTag(icon, name);
-    }).join('');
 
-    // SECURITY: DOMPurify.sanitize() protects dynamic content
-    if (typeof DOMPurify !== 'undefined') {
-        container.innerHTML = DOMPurify.sanitize(categoriesHTML, {
-            ALLOWED_TAGS: ['div', 'span'],
-            ALLOWED_ATTR: ['class']
-        });
-    } else {
-        log('⚠️ DOMPurify not available, using innerHTML directly', 'warning');
-        container.innerHTML = categoriesHTML;
-    }
+        const tag = document.createElement('div');
+        tag.className = 'category-tag';
 
-    log('✅ Categories displayed');
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'tag-icon';
+        iconSpan.textContent = icon;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'tag-name';
+        nameSpan.textContent = name;
+
+        tag.appendChild(iconSpan);
+        tag.appendChild(nameSpan);
+
+        container.appendChild(tag);
+    });
+
+    console.log('✅ Categories displayed');
 }
 
-function createCategoryTag(icon, name) {
-    return `<div class="category-tag"><span class="tag-icon">${icon}</span><span class="tag-name">${name}</span></div>`;
-}
+// ===== P0 FIX: RENDER CARDS WITH TEXTCONTENT =====
 
-// ===== RENDER DIFFICULTY CARDS =====
+/**
+ * Render difficulty cards with safe DOM manipulation
+ */
 function renderDifficultyCards() {
     const grid = document.getElementById('difficulty-grid');
     if (!grid) return;
@@ -300,6 +239,9 @@ function renderDifficultyCards() {
         const card = document.createElement('div');
         card.className = 'difficulty-card';
         card.dataset.difficulty = key;
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `${data.name} Schwierigkeitsgrad wählen`);
 
         const header = document.createElement('div');
         header.className = 'difficulty-header';
@@ -334,54 +276,71 @@ function renderDifficultyCards() {
 
         card.addEventListener('click', () => selectDifficulty(key));
 
+        // Keyboard support
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                selectDifficulty(key);
+            }
+        });
+
         grid.appendChild(card);
     });
 
-    log('✅ Difficulty cards rendered');
+    console.log('✅ Difficulty cards rendered');
 }
 
 // ===== DIFFICULTY SELECTION =====
+
+/**
+ * P0 FIX: Select difficulty with validation
+ */
 function selectDifficulty(difficulty) {
+    // P0 FIX: Validate difficulty
     if (!difficultyData[difficulty]) {
-        log(`❌ Invalid difficulty: ${difficulty}`, 'error');
+        console.error(`❌ Invalid difficulty: ${difficulty}`);
         return;
     }
 
     document.querySelectorAll('.difficulty-card').forEach(card => {
         card.classList.remove('selected');
+        card.setAttribute('aria-selected', 'false');
     });
 
     const selectedCard = document.querySelector(`[data-difficulty="${difficulty}"]`);
     if (selectedCard) {
         selectedCard.classList.add('selected');
+        selectedCard.setAttribute('aria-selected', 'true');
     }
 
-    selectedDifficulty = difficulty;
     gameState.difficulty = difficulty;
     gameState.save();
 
     updateContinueButton();
     showNotification(`${difficultyData[difficulty].name} gewählt!`, 'success');
 
-    log(`Selected difficulty: ${difficulty}`);
+    console.log(`Selected difficulty: ${difficulty}`);
 }
 
 function updateContinueButton() {
     const btn = document.getElementById('continue-btn');
     if (!btn) return;
 
-    if (selectedDifficulty) {
+    if (gameState.difficulty) {
         btn.disabled = false;
         btn.classList.add('enabled');
+        btn.setAttribute('aria-disabled', 'false');
         btn.textContent = 'Weiter';
     } else {
         btn.disabled = true;
         btn.classList.remove('enabled');
+        btn.setAttribute('aria-disabled', 'true');
         btn.textContent = 'Schwierigkeitsgrad wählen';
     }
 }
 
 // ===== EVENT LISTENERS =====
+
 function setupEventListeners() {
     const backBtn = document.querySelector('.back-button');
     const continueBtn = document.getElementById('continue-btn');
@@ -394,12 +353,13 @@ function setupEventListeners() {
         continueBtn.addEventListener('click', proceed);
     }
 
-    log('✅ Event listeners setup');
+    console.log('✅ Event listeners setup');
 }
 
 // ===== NAVIGATION =====
+
 async function proceed() {
-    if (!selectedDifficulty) {
+    if (!gameState.difficulty) {
         showNotification('Bitte wähle einen Schwierigkeitsgrad', 'warning');
         return;
     }
@@ -407,10 +367,11 @@ async function proceed() {
     try {
         showNotification('Speichere Einstellungen...', 'info');
 
-        await firebaseService.updateGameSettings(gameState.gameId, selectedDifficulty);
-
-        gameState.difficulty = selectedDifficulty;
-        gameState.save();
+        // Update Firebase
+        if (firebaseService && gameState.gameId) {
+            const gameRef = firebase.database().ref(`games/${gameState.gameId}/settings/difficulty`);
+            await gameRef.set(gameState.difficulty);
+        }
 
         showNotification('Einstellungen gespeichert!', 'success');
 
@@ -419,26 +380,30 @@ async function proceed() {
         }, 500);
 
     } catch (error) {
-        log(`❌ Proceed error: ${error.message}`, 'error');
+        console.error('❌ Proceed error:', error);
         showNotification('Fehler beim Speichern', 'error');
     }
 }
 
 function goBack() {
-    if (firebaseService) {
-        firebaseService.cleanup();
-    }
     window.location.href = 'multiplayer-category-selection.html';
 }
 
 // ===== UTILITIES =====
+
+/**
+ * P0 FIX: Safe notification using NocapUtils
+ */
 function showNotification(message, type = 'info') {
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type);
+        return;
+    }
+
+    // Fallback
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-
-    // XSS-SAFE: Sanitize message
-    const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
-    notification.textContent = sanitizedMessage;
+    notification.textContent = sanitizeText(message);
 
     document.body.appendChild(notification);
 
@@ -449,21 +414,12 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-function log(message, type = 'info') {
-    const colors = { info: '#4488ff', warning: '#ffaa00', error: '#ff4444', success: '#00ff00' };
-    console.log(`%c[MultiDifficultySelect] ${message}`, `color: ${colors[type] || colors.info}`);
+// ===== INITIALIZATION =====
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
 }
 
-// ===== DEBUG =====
-window.debugMultiDifficultySelection = function() {
-    console.log('🔍 === MULTI DIFFICULTY SELECTION DEBUG ===');
-    console.log('GameState:', gameState?.getDebugInfo?.());
-    console.log('Selected Difficulty:', selectedDifficulty);
-    console.log('Alcohol Mode:', alcoholMode);
-    console.log('Firebase:', {
-        initialized: firebaseService?.isInitialized,
-        connected: firebaseService?.isConnected
-    });
-};
-
-log('✅ Multiplayer Difficulty Selection v2.1 - Loaded!');
+console.log('✅ Multiplayer Difficulty Selection v2.2 - Production Ready!');

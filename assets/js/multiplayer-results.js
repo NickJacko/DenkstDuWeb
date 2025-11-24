@@ -2,90 +2,110 @@
  * No-Cap Multiplayer Results
  * Displays final game results and statistics
  *
- * @version 8.0.0
+ * @version 8.1.0 - Security Hardened & Production Ready
  * @requires GameState.js
- * @requires DOMPurify
  */
+
+'use strict';
 
 // ===== GLOBAL VARIABLES =====
 let gameState = null;
 let finalResults = {};
 
+// ===== P0 FIX: INPUT SANITIZATION =====
+
+/**
+ * Sanitize text with NocapUtils or fallback
+ */
+function sanitizeText(input) {
+    if (!input) return '';
+
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+        return window.NocapUtils.sanitizeInput(String(input));
+    }
+
+    return String(input).replace(/<[^>]*>/g, '').substring(0, 500);
+}
+
+/**
+ * Sanitize player name
+ */
+function sanitizePlayerName(name) {
+    if (!name) return 'Spieler';
+
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+        return window.NocapUtils.sanitizeInput(String(name)).substring(0, 20);
+    }
+
+    return String(name).replace(/<[^>]*>/g, '').substring(0, 20);
+}
+
 // ===== GUARDS & VALIDATION =====
+
+/**
+ * P0 FIX: Validate game state with age expiration check
+ */
 function validateGameState() {
-    log('🔍 Validating game state...');
+    console.log('🔍 Validating game state...');
 
-    // Check device mode
     if (!gameState.deviceMode || gameState.deviceMode !== 'multi') {
-        log('❌ Invalid device mode - redirecting', 'error');
+        console.error('❌ Invalid device mode');
         showNotification('Kein Multiplayer-Spiel aktiv!', 'error');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
+        setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
-    // Check age verification
-    const ageVerification = localStorage.getItem('nocap_age_verification');
-    if (!ageVerification) {
-        log('⚠️ Age verification missing - redirecting to index', 'warning');
-        showNotification('Altersverifizierung erforderlich!', 'warning');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
+    // P0 FIX: Check age verification with expiration
+    const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+    const ageTimestamp = parseInt(localStorage.getItem('nocap_age_timestamp')) || 0;
+    const now = Date.now();
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+    if (now - ageTimestamp > maxAge) {
+        console.error('❌ Age verification expired');
+        showNotification('Altersverifizierung abgelaufen!', 'warning');
+        setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
-    log('✅ Game state valid');
+    console.log('✅ Game state valid');
     return true;
 }
 
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    initializeResults();
-});
 
-function initializeResults() {
-    log('🎮 Initializing multiplayer results...');
+function initialize() {
+    console.log('🎮 Initializing multiplayer results...');
     showLoading('Ergebnisse werden geladen...');
 
-    // Check if GameState is loaded
     if (typeof GameState === 'undefined') {
-        log('❌ GameState class not loaded!', 'error');
-        showNotification('Fehler beim Laden der App', 'error');
+        console.error('❌ GameState not loaded');
+        showNotification('Fehler beim Laden', 'error');
         setTimeout(() => window.location.href = 'index.html', 2000);
         return;
     }
 
-    // Initialize game state
     gameState = new GameState();
 
-    // Validate state with guards
     if (!validateGameState()) {
         hideLoading();
         return;
     }
 
-    // Setup event listeners
     setupEventListeners();
-
-    // Load final results
     loadFinalResults();
     generateFunFacts();
-
-    // Auto-save game to history
     saveGameToHistory();
 
-    // Celebrate winner
     setTimeout(celebrateWinner, 500);
 
     hideLoading();
-    log('✅ Results initialized');
+    console.log('✅ Results initialized');
 }
 
 // ===== EVENT LISTENERS =====
+
 function setupEventListeners() {
-    // Share buttons
     const shareWhatsAppBtn = document.getElementById('share-whatsapp-btn');
     if (shareWhatsAppBtn) {
         shareWhatsAppBtn.addEventListener('click', shareToWhatsApp);
@@ -106,7 +126,6 @@ function setupEventListeners() {
         saveScreenshotBtn.addEventListener('click', saveScreenshot);
     }
 
-    // Action buttons
     const playAgainBtn = document.getElementById('play-again-btn');
     if (playAgainBtn) {
         playAgainBtn.addEventListener('click', playAgain);
@@ -117,40 +136,38 @@ function setupEventListeners() {
         backToMenuBtn.addEventListener('click', backToMenu);
     }
 
-    // Prevent going back during results
     window.addEventListener('popstate', function(event) {
-        log('User tried to go back from results');
+        console.log('User tried to go back from results');
     });
 
-    log('✅ Event listeners setup complete');
+    console.log('✅ Event listeners setup');
 }
 
 // ===== DATA LOADING =====
-function loadFinalResults() {
-    log('📊 Loading final results...');
 
-    // Try to load from localStorage first
+function loadFinalResults() {
+    console.log('📊 Loading final results...');
+
     const savedResults = localStorage.getItem('nocap_final_results');
 
     if (savedResults) {
         try {
             finalResults = JSON.parse(savedResults);
-            log('✅ Loaded results from storage');
+            console.log('✅ Loaded results from storage');
         } catch (error) {
-            log('❌ Error parsing results, using demo data', 'error');
+            console.error('❌ Error parsing results:', error);
             finalResults = generateDemoResults();
         }
     } else {
-        log('⚠️ No saved results, using demo data');
+        console.warn('⚠️ No saved results, using demo');
         finalResults = generateDemoResults();
     }
 
-    // Update UI with real data
     updateGameStats();
     updatePodium();
     updatePlayersList();
 
-    log('✅ Results loaded:', finalResults);
+    console.log('✅ Results loaded');
 }
 
 function generateDemoResults() {
@@ -201,17 +218,16 @@ function generateDemoResults() {
     };
 }
 
-// ===== UI UPDATES =====
+// ===== P0 FIX: UI UPDATES WITH TEXTCONTENT =====
+
 function updateGameStats() {
     const stats = finalResults.gameStats;
 
-    // Update subtitle
     const subtitleEl = document.getElementById('completion-subtitle');
     if (subtitleEl) {
         subtitleEl.textContent = `Ihr habt alle ${stats.totalRounds} Runden gemeistert`;
     }
 
-    // Update stat values
     const totalRoundsEl = document.getElementById('total-rounds-stat');
     if (totalRoundsEl) {
         totalRoundsEl.textContent = stats.totalRounds;
@@ -232,9 +248,12 @@ function updateGameStats() {
         accuracyEl.textContent = `${stats.averageAccuracy}%`;
     }
 
-    log('✅ Game stats updated');
+    console.log('✅ Game stats updated');
 }
 
+/**
+ * P0 FIX: Build podium with textContent
+ */
 function updatePodium() {
     const podiumEl = document.getElementById('podium');
     if (!podiumEl) return;
@@ -250,23 +269,37 @@ function updatePodium() {
         const podiumPlace = document.createElement('div');
         podiumPlace.className = `podium-place ${positionClass}`;
 
-        const sanitizedName = DOMPurify.sanitize(player.name);
-        const drinkEmoji = gameState.alcoholMode ? '🍺' : '💧';
+        const podiumStand = document.createElement('div');
+        podiumStand.className = 'podium-stand';
 
-        podiumPlace.innerHTML = DOMPurify.sanitize(`
-            <div class="podium-stand">
-                <div class="podium-position">${position}</div>
-            </div>
-            <div class="podium-name">${sanitizedName}</div>
-            <div class="podium-score">${player.totalSips} ${drinkEmoji}</div>
-        `);
+        const podiumPosition = document.createElement('div');
+        podiumPosition.className = 'podium-position';
+        podiumPosition.textContent = position;
+
+        podiumStand.appendChild(podiumPosition);
+
+        const podiumName = document.createElement('div');
+        podiumName.className = 'podium-name';
+        podiumName.textContent = sanitizePlayerName(player.name);
+
+        const drinkEmoji = gameState.alcoholMode ? '🍺' : '💧';
+        const podiumScore = document.createElement('div');
+        podiumScore.className = 'podium-score';
+        podiumScore.textContent = `${player.totalSips} ${drinkEmoji}`;
+
+        podiumPlace.appendChild(podiumStand);
+        podiumPlace.appendChild(podiumName);
+        podiumPlace.appendChild(podiumScore);
 
         podiumEl.appendChild(podiumPlace);
     });
 
-    log('✅ Podium updated');
+    console.log('✅ Podium updated');
 }
 
+/**
+ * P0 FIX: Build players list with textContent
+ */
 function updatePlayersList() {
     const playersListEl = document.getElementById('players-list');
     if (!playersListEl) return;
@@ -281,37 +314,89 @@ function updatePlayersList() {
             player.rank === 2 ? 'second' :
                 player.rank === 3 ? 'third' : '';
 
-        const sanitizedName = DOMPurify.sanitize(player.name);
+        // Player info section
+        const playerInfo = document.createElement('div');
+        playerInfo.className = 'player-info';
+
+        const playerRank = document.createElement('div');
+        playerRank.className = `player-rank ${rankClass}`;
+        playerRank.textContent = player.rank;
+
+        const playerName = document.createElement('div');
+        playerName.className = 'player-name';
         const crownEmoji = player.rank === 1 ? ' 👑' : '';
+        playerName.textContent = sanitizePlayerName(player.name) + crownEmoji;
+
+        playerInfo.appendChild(playerRank);
+        playerInfo.appendChild(playerName);
+
+        // Player stats section
+        const playerStats = document.createElement('div');
+        playerStats.className = 'player-stats';
+
         const drinkEmoji = gameState.alcoholMode ? '🍺' : '💧';
 
-        playerResult.innerHTML = DOMPurify.sanitize(`
-            <div class="player-info">
-                <div class="player-rank ${rankClass}">${player.rank}</div>
-                <div class="player-name">${sanitizedName}${crownEmoji}</div>
-            </div>
-            <div class="player-stats">
-                <div class="stat-column">
-                    <div class="stat-number">${player.totalSips}</div>
-                    <div class="stat-text">${drinkEmoji}</div>
-                </div>
-                <div class="stat-column">
-                    <div class="stat-number">${player.correctGuesses}</div>
-                    <div class="stat-text">Richtig</div>
-                </div>
-                <div class="stat-column">
-                    <div class="stat-number">${player.accuracy}%</div>
-                    <div class="stat-text">Quote</div>
-                </div>
-            </div>
-        `);
+        // Stat column 1: Total sips
+        const statCol1 = document.createElement('div');
+        statCol1.className = 'stat-column';
+
+        const statNum1 = document.createElement('div');
+        statNum1.className = 'stat-number';
+        statNum1.textContent = player.totalSips;
+
+        const statText1 = document.createElement('div');
+        statText1.className = 'stat-text';
+        statText1.textContent = drinkEmoji;
+
+        statCol1.appendChild(statNum1);
+        statCol1.appendChild(statText1);
+
+        // Stat column 2: Correct guesses
+        const statCol2 = document.createElement('div');
+        statCol2.className = 'stat-column';
+
+        const statNum2 = document.createElement('div');
+        statNum2.className = 'stat-number';
+        statNum2.textContent = player.correctGuesses;
+
+        const statText2 = document.createElement('div');
+        statText2.className = 'stat-text';
+        statText2.textContent = 'Richtig';
+
+        statCol2.appendChild(statNum2);
+        statCol2.appendChild(statText2);
+
+        // Stat column 3: Accuracy
+        const statCol3 = document.createElement('div');
+        statCol3.className = 'stat-column';
+
+        const statNum3 = document.createElement('div');
+        statNum3.className = 'stat-number';
+        statNum3.textContent = `${player.accuracy}%`;
+
+        const statText3 = document.createElement('div');
+        statText3.className = 'stat-text';
+        statText3.textContent = 'Quote';
+
+        statCol3.appendChild(statNum3);
+        statCol3.appendChild(statText3);
+
+        playerStats.appendChild(statCol1);
+        playerStats.appendChild(statCol2);
+        playerStats.appendChild(statCol3);
+
+        playerResult.appendChild(playerInfo);
+        playerResult.appendChild(playerStats);
 
         playersListEl.appendChild(playerResult);
     });
 
-    log('✅ Players list updated');
+    console.log('✅ Players list updated');
 }
 
+/**
+ * P0 FIX: Build fun facts with textContent
+ */
 function generateFunFacts() {
     const factsGridEl = document.getElementById('facts-grid');
     if (!factsGridEl) return;
@@ -326,19 +411,23 @@ function generateFunFacts() {
     const facts = [
         {
             emoji: '🎯',
-            text: `<strong>${DOMPurify.sanitize(bestPlayer.name)}</strong> hatte die beste<br>Schätzgenauigkeit: ${bestPlayer.accuracy}%`
+            title: sanitizePlayerName(bestPlayer.name),
+            text: `hatte die beste Schätzgenauigkeit: ${bestPlayer.accuracy}%`
         },
         {
             emoji: '😅',
-            text: `<strong>${DOMPurify.sanitize(worstPlayer.name)}</strong> hatte es<br>am schwersten heute`
+            title: sanitizePlayerName(worstPlayer.name),
+            text: 'hatte es am schwersten heute'
         },
         {
             emoji: '🔥',
-            text: `Die <strong>schwerste Frage</strong><br>war Frage ${stats.hardestQuestion}`
+            title: 'Schwerste Frage',
+            text: `war Frage ${stats.hardestQuestion}`
         },
         {
             emoji: gameState.alcoholMode ? '🍺' : '💧',
-            text: `<strong>Insgesamt</strong> wurden<br>${stats.totalSips} Schlücke verteilt`
+            title: 'Insgesamt',
+            text: `wurden ${stats.totalSips} Schlücke verteilt`
         }
     ];
 
@@ -346,24 +435,39 @@ function generateFunFacts() {
         const factItem = document.createElement('div');
         factItem.className = 'fact-item';
 
-        factItem.innerHTML = DOMPurify.sanitize(`
-            <div class="fact-emoji">${fact.emoji}</div>
-            <div class="fact-text">${fact.text}</div>
-        `);
+        const factEmoji = document.createElement('div');
+        factEmoji.className = 'fact-emoji';
+        factEmoji.textContent = fact.emoji;
+
+        const factText = document.createElement('div');
+        factText.className = 'fact-text';
+
+        const titleSpan = document.createElement('strong');
+        titleSpan.textContent = fact.title;
+
+        const textNode = document.createTextNode(' ' + fact.text);
+
+        factText.appendChild(titleSpan);
+        factText.appendChild(document.createElement('br'));
+        factText.appendChild(textNode);
+
+        factItem.appendChild(factEmoji);
+        factItem.appendChild(factText);
 
         factsGridEl.appendChild(factItem);
     });
 
-    log('✅ Fun facts generated');
+    console.log('✅ Fun facts generated');
 }
 
 // ===== SHARE FUNCTIONS =====
+
 function shareToWhatsApp() {
     const text = generateShareText();
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
     showNotification('WhatsApp Link geöffnet', 'success');
-    log('📤 Shared to WhatsApp');
+    console.log('📤 Shared to WhatsApp');
 }
 
 function shareToTelegram() {
@@ -371,7 +475,7 @@ function shareToTelegram() {
     const url = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
     showNotification('Telegram Link geöffnet', 'success');
-    log('📤 Shared to Telegram');
+    console.log('📤 Shared to Telegram');
 }
 
 function copyResults() {
@@ -380,7 +484,7 @@ function copyResults() {
     if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
             showNotification('Ergebnis kopiert!', 'success');
-            log('📋 Results copied to clipboard');
+            console.log('📋 Results copied');
         }).catch(() => {
             fallbackCopy(text);
         });
@@ -400,19 +504,18 @@ function fallbackCopy(text) {
     try {
         document.execCommand('copy');
         showNotification('Ergebnis kopiert!', 'success');
-        log('📋 Results copied (fallback)');
+        console.log('📋 Results copied (fallback)');
     } catch (err) {
         showNotification('Kopieren fehlgeschlagen', 'error');
-        log('❌ Copy failed', 'error');
+        console.error('❌ Copy failed:', err);
     }
 
     document.body.removeChild(textArea);
 }
 
 function saveScreenshot() {
-    // In a real implementation, you would use html2canvas or similar
     showNotification('Screenshot-Feature kommt bald!', 'info');
-    log('📸 Screenshot requested (not implemented)');
+    console.log('📸 Screenshot requested (not implemented)');
 }
 
 function generateShareText() {
@@ -420,7 +523,7 @@ function generateShareText() {
     const drinkEmoji = gameState.alcoholMode ? '🍺' : '💧';
 
     return `🎉 No-Cap Multiplayer Ergebnis 🎉\n\n` +
-        `🏆 Gewinner: ${winner.name} (${winner.totalSips} ${drinkEmoji})\n` +
+        `🏆 Gewinner: ${sanitizePlayerName(winner.name)} (${winner.totalSips} ${drinkEmoji})\n` +
         `🎯 ${finalResults.gameStats.totalRounds} Runden gespielt\n` +
         `👥 ${finalResults.gameStats.totalPlayers} Spieler\n` +
         `⏱️ Dauer: ${finalResults.gameStats.gameDuration}\n\n` +
@@ -428,11 +531,11 @@ function generateShareText() {
 }
 
 // ===== GAME ACTIONS =====
+
 function playAgain() {
     showLoading('Neues Spiel wird vorbereitet...');
-    log('🔄 Starting new game...');
+    console.log('🔄 Starting new game...');
 
-    // Reset game state but keep multiplayer settings
     gameState.deviceMode = 'multi';
     gameState.gamePhase = 'setup';
     gameState.save();
@@ -444,9 +547,8 @@ function playAgain() {
 
 function backToMenu() {
     showLoading('Zurück zum Hauptmenü...');
-    log('🏠 Returning to main menu...');
+    console.log('🏠 Returning to main menu...');
 
-    // Clear game state
     localStorage.removeItem('nocap_game_state');
     localStorage.removeItem('nocap_final_results');
 
@@ -456,6 +558,7 @@ function backToMenu() {
 }
 
 // ===== HISTORY & STORAGE =====
+
 function saveGameToHistory() {
     try {
         const gameHistory = JSON.parse(localStorage.getItem('nocap_game_history') || '[]');
@@ -464,7 +567,10 @@ function saveGameToHistory() {
             id: Date.now(),
             date: new Date().toISOString(),
             mode: 'multiplayer',
-            players: finalResults.players,
+            players: finalResults.players.map(p => ({
+                ...p,
+                name: sanitizePlayerName(p.name)
+            })),
             stats: finalResults.gameStats,
             categories: gameState.selectedCategories || [],
             difficulty: gameState.difficulty || 'medium'
@@ -477,32 +583,33 @@ function saveGameToHistory() {
             gameHistory.splice(10);
         }
 
-        localStorage.setItem('nocap_game_history', JSON.stringify(gameHistory));
-        log('💾 Game saved to history:', gameRecord.id);
+        localStorage.setItem('nocap_game_history', JSON.stringify(gameRecord));
+        console.log('💾 Game saved to history');
     } catch (error) {
-        log('❌ Error saving to history:', error.message, 'error');
+        console.error('❌ Error saving to history:', error);
     }
 }
 
 // ===== CELEBRATION =====
+
 function celebrateWinner() {
     const winner = finalResults.players[0];
     const currentPlayer = gameState.playerName;
 
     if (winner.name === currentPlayer || winner.name === 'Du') {
-        // Show special celebration for user winning
         showNotification('🎉 Glückwunsch! Du hast gewonnen! 🎉', 'success');
-        log('🎊 Player won the game!');
+        console.log('🎊 Player won!');
     }
 }
 
 // ===== UTILITY FUNCTIONS =====
+
 function showLoading(text = 'Lade...') {
     const loading = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
     if (loading) {
         if (loadingText) {
-            loadingText.textContent = text;
+            loadingText.textContent = sanitizeText(text);
         }
         loading.classList.add('show');
     }
@@ -515,11 +622,19 @@ function hideLoading() {
     }
 }
 
+/**
+ * P0 FIX: Safe notification using NocapUtils
+ */
 function showNotification(message, type = 'info') {
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type);
+        return;
+    }
+
+    // Fallback
     const notification = document.getElementById('notification');
     if (notification) {
-        const sanitizedMessage = DOMPurify.sanitize(message);
-        notification.textContent = sanitizedMessage;
+        notification.textContent = sanitizeText(message);
         notification.className = `notification ${type} show`;
 
         setTimeout(() => {
@@ -528,23 +643,12 @@ function showNotification(message, type = 'info') {
     }
 }
 
-function log(message, type = 'info') {
-    const colors = {
-        info: '#4488ff',
-        warning: '#ffaa00',
-        error: '#ff4444',
-        success: '#00ff00'
-    };
-    console.log(`%c[Results] ${message}`, `color: ${colors[type] || colors.info}`);
+// ===== INITIALIZATION =====
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
 }
 
-// ===== DEBUG =====
-window.debugResults = function() {
-    console.log('🔍 === RESULTS DEBUG ===');
-    console.log('GameState:', gameState);
-    console.log('Final Results:', finalResults);
-    console.log('LocalStorage Keys:', Object.keys(localStorage).filter(k => k.startsWith('nocap_')));
-};
-
-log('✅ No-Cap Multiplayer Results v8.0 - Production Ready - vollständig geladen!');
-log('🛠️ Debug: debugResults()');
+console.log('✅ No-Cap Multiplayer Results v8.1 - Production Ready!');

@@ -1,5 +1,5 @@
 // ===== NO-CAP CATEGORY SELECTION (SINGLE DEVICE MODE) =====
-// Version: 3.1 - Security Hardened with XSS Protection & Encoding Fixed
+// Version: 3.2 - Security Hardened & Production Ready
 // Mode: Single Device - Category Selection with Age-Gate & Premium
 
 'use strict';
@@ -9,30 +9,32 @@ const categoryData = {
     fsk0: {
         name: 'Familie & Freunde',
         icon: '👨‍👩‍👧‍👦',
-        color: '#4CAF50'
+        color: '#4CAF50',
+        requiresAge: 0
     },
     fsk16: {
         name: 'Party Time',
         icon: '🎉',
-        color: '#FF9800'
+        color: '#FF9800',
+        requiresAge: 16
     },
     fsk18: {
         name: 'Heiß & Gewagt',
         icon: '🔥',
-        color: '#F44336'
+        color: '#F44336',
+        requiresAge: 18
     },
     special: {
         name: 'Special Edition',
         icon: '⭐',
-        color: '#FFD700'
+        color: '#FFD700',
+        requiresAge: 0,
+        requiresPremium: true
     }
 };
 
 // ===== GLOBAL VARIABLES =====
 let gameState = null;
-let selectedCategories = [];
-let isAdult = false;
-let hasPremium = false;
 let questionCounts = {
     fsk0: 0,
     fsk16: 0,
@@ -41,18 +43,15 @@ let questionCounts = {
 };
 
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    initCategorySelection();
-});
 
-async function initCategorySelection() {
-    log('🎯 Initializing category selection...');
+async function initialize() {
+    console.log('🎯 Initializing category selection...');
 
     showLoading();
 
-    // Load central GameState
+    // Check dependencies
     if (typeof GameState === 'undefined') {
-        log('❌ GameState not found - Load central version', 'error');
+        console.error('❌ GameState not found');
         showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
         return;
     }
@@ -64,47 +63,34 @@ async function initCategorySelection() {
         return;
     }
 
-    // Check age verification
-    checkAgeVerification();
+    // P0 FIX: Check age verification with validation
+    if (!checkAgeVerification()) {
+        return;
+    }
 
-    // Check premium status (Firebase optional)
+    // P0 FIX: Check premium status (client-side only as fallback)
     await checkPremiumStatus();
 
-    // Load question counts from Firebase
+    // Load question counts
     await loadQuestionCounts();
 
-    // Load previously selected categories if any
-    if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
-        selectedCategories = [...gameState.selectedCategories];
-        selectedCategories.forEach(category => {
-            const card = document.querySelector(`[data-category="${category}"]`);
-            if (card && !card.classList.contains('locked')) {
-                card.classList.add('selected');
-            }
-        });
-        updateSelectionSummary();
-    }
+    // P1 FIX: Load from GameState, not separate array
+    initializeSelectedCategories();
 
     // Setup event listeners
     setupEventListeners();
 
     hideLoading();
 
-    log('✅ Category selection initialized');
-    log('📋 Current state:', {
-        deviceMode: gameState.deviceMode,
-        selectedCategories: gameState.selectedCategories,
-        isAdult: isAdult,
-        hasPremium: hasPremium
-    });
+    console.log('✅ Category selection initialized');
 }
 
 // ===== VALIDATION & GUARDS =====
+
 function validateGameState() {
-    // Check device mode
     if (gameState.deviceMode !== 'single') {
-        log('❌ Wrong device mode, redirecting to index', 'error');
-        showNotification('Falscher Spielmodus. Zurück zur Startseite...', 'warning');
+        console.error('❌ Wrong device mode');
+        showNotification('Falscher Spielmodus', 'warning');
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 2000);
@@ -113,94 +99,109 @@ function validateGameState() {
     return true;
 }
 
+/**
+ * P0 FIX: Validate age verification with expiration check
+ */
 function checkAgeVerification() {
     try {
-        // Load from localStorage
-        const ageData = localStorage.getItem('nocap_age_verification');
+        const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+        const ageTimestamp = parseInt(localStorage.getItem('nocap_age_timestamp')) || 0;
 
-        if (!ageData) {
-            log('⚠️ No age verification found, redirecting', 'warning');
+        // P0 FIX: Check if age verification is expired (24 hours)
+        const now = Date.now();
+        const expirationTime = 24 * 60 * 60 * 1000; // 24 hours
+
+        if (now - ageTimestamp > expirationTime) {
+            console.warn('⚠️ Age verification expired');
+            localStorage.removeItem('nocap_age_level');
+            localStorage.removeItem('nocap_age_timestamp');
             window.location.href = 'index.html';
-            return;
+            return false;
         }
 
-        const verification = JSON.parse(ageData);
-        isAdult = verification.isAdult || false;
+        console.log(`✅ Age verification: ${ageLevel}+`);
 
-        log(`✅ Age verification loaded: ${isAdult ? '18+' : 'U18'}`);
+        // Lock categories based on age
+        updateCategoryLocks(ageLevel);
 
-        // Lock FSK18 category if not adult
-        if (!isAdult) {
-            const fsk18Card = document.querySelector('[data-category="fsk18"]');
-            if (fsk18Card) {
-                fsk18Card.classList.add('locked');
-            }
-
-            const fsk18Locked = document.getElementById('fsk18-locked');
-            if (fsk18Locked) {
-                fsk18Locked.style.display = 'flex';
-            }
-        }
+        return true;
 
     } catch (error) {
-        log(`❌ Error loading age verification: ${error.message}`, 'error');
+        console.error('❌ Error checking age verification:', error);
         window.location.href = 'index.html';
+        return false;
     }
 }
 
+/**
+ * P0 FIX: Update category locks based on age
+ */
+function updateCategoryLocks(ageLevel) {
+    Object.keys(categoryData).forEach(category => {
+        const data = categoryData[category];
+        const card = document.querySelector(`[data-category="${category}"]`);
+        if (!card) return;
+
+        // Check age requirement
+        if (data.requiresAge > ageLevel) {
+            card.classList.add('locked');
+
+            const lockedOverlay = document.getElementById(`${category}-locked`);
+            if (lockedOverlay) {
+                lockedOverlay.style.display = 'flex';
+            }
+        }
+    });
+}
+
+/**
+ * P0 FIX: Check premium status (CLIENT-SIDE ONLY - NOT SECURE)
+ * TODO: Move to server-side verification via Firebase Function
+ */
 async function checkPremiumStatus() {
     try {
-        // Check if Firebase is available
-        if (typeof firebase === 'undefined' || !firebase.database) {
-            log('⚠️ Firebase not available, premium check skipped');
-            return;
-        }
+        // P0 WARNING: This is NOT secure - can be manipulated
+        // Premium should be verified server-side via Firebase Security Rules
 
-        // Check if authService is available
-        if (typeof authService === 'undefined' || !authService.getUserId) {
-            log('⚠️ Auth service not available, premium check skipped');
-            return;
-        }
+        const isPremium = await gameState.isPremiumUser();
 
-        const userId = authService.getUserId();
-        if (!userId) {
-            log('⚠️ No user ID, premium check skipped');
-            return;
-        }
+        console.log(`ℹ️ Premium status (client-side): ${isPremium}`);
 
-        // Check for premium purchase
-        const purchaseRef = firebase.database().ref(`users/${userId}/purchases/special`);
-        const snapshot = await purchaseRef.once('value');
+        const specialCard = document.querySelector('[data-category="special"]');
+        const specialLocked = document.getElementById('special-locked');
 
-        if (snapshot.exists()) {
-            hasPremium = true;
-            log('✅ Premium status: Active');
-
-            // Unlock special category
-            const specialCard = document.querySelector('[data-category="special"]');
+        if (isPremium) {
             if (specialCard) {
                 specialCard.classList.remove('locked');
             }
-
-            const specialLocked = document.getElementById('special-locked');
             if (specialLocked) {
                 specialLocked.style.display = 'none';
             }
         } else {
-            log('ℹ️ Premium status: Not purchased');
+            if (specialCard) {
+                specialCard.classList.add('locked');
+            }
+            if (specialLocked) {
+                specialLocked.style.display = 'flex';
+            }
         }
 
     } catch (error) {
-        log(`⚠️ Premium check error: ${error.message}`, 'warning');
-        // Continue without premium
+        console.warn('⚠️ Premium check error:', error);
+        // Default to locked on error
+        const specialCard = document.querySelector('[data-category="special"]');
+        if (specialCard) {
+            specialCard.classList.add('locked');
+        }
     }
 }
 
+// ===== QUESTION COUNTS =====
+
 async function loadQuestionCounts() {
     try {
-        // Check if Firebase is available
         if (typeof firebase === 'undefined' || !firebase.database) {
-            log('⚠️ Firebase not available, using fallback counts');
+            console.warn('⚠️ Firebase not available, using fallback counts');
             useFallbackCounts();
             return;
         }
@@ -213,8 +214,14 @@ async function loadQuestionCounts() {
 
             Object.keys(categoryData).forEach(category => {
                 const categoryQuestions = questions[category];
-                if (categoryQuestions && Array.isArray(categoryQuestions)) {
-                    questionCounts[category] = categoryQuestions.length;
+                if (categoryQuestions) {
+                    if (Array.isArray(categoryQuestions)) {
+                        questionCounts[category] = categoryQuestions.length;
+                    } else if (typeof categoryQuestions === 'object') {
+                        questionCounts[category] = Object.keys(categoryQuestions).length;
+                    } else {
+                        questionCounts[category] = getFallbackCount(category);
+                    }
                 } else {
                     questionCounts[category] = getFallbackCount(category);
                 }
@@ -222,14 +229,14 @@ async function loadQuestionCounts() {
                 updateQuestionCountUI(category, questionCounts[category]);
             });
 
-            log('✅ Question counts loaded from Firebase');
+            console.log('✅ Question counts loaded');
         } else {
-            log('⚠️ No questions found in Firebase, using fallbacks');
+            console.warn('⚠️ No questions found, using fallbacks');
             useFallbackCounts();
         }
 
     } catch (error) {
-        log(`⚠️ Error loading question counts: ${error.message}`, 'warning');
+        console.warn('⚠️ Error loading question counts:', error);
         useFallbackCounts();
     }
 }
@@ -239,7 +246,7 @@ function useFallbackCounts() {
         questionCounts[category] = getFallbackCount(category);
         updateQuestionCountUI(category, questionCounts[category]);
     });
-    log('✅ Using fallback question counts');
+    console.log('✅ Using fallback counts');
 }
 
 function getFallbackCount(category) {
@@ -247,52 +254,97 @@ function getFallbackCount(category) {
     return fallbacks[category] || 0;
 }
 
+/**
+ * P0 FIX: Use textContent for XSS safety
+ */
 function updateQuestionCountUI(category, count) {
     const countElement = document.querySelector(`[data-category-count="${category}"]`);
     if (countElement) {
-        // XSS-SAFE: textContent instead of innerHTML
         countElement.textContent = `~${count} Fragen`;
     }
 }
 
-// ===== CATEGORY SELECTION =====
+// ===== P1 FIX: CATEGORY SELECTION (NO SEPARATE ARRAY) =====
+
+/**
+ * Initialize categories from GameState
+ */
+function initializeSelectedCategories() {
+    if (gameState.selectedCategories && Array.isArray(gameState.selectedCategories)) {
+        gameState.selectedCategories.forEach(category => {
+            // P0 FIX: Validate category exists
+            if (!categoryData[category]) {
+                console.warn(`⚠️ Invalid category in GameState: ${category}`);
+                return;
+            }
+
+            const card = document.querySelector(`[data-category="${category}"]`);
+            if (card && !card.classList.contains('locked')) {
+                card.classList.add('selected');
+            }
+        });
+        updateSelectionSummary();
+    }
+}
+
+/**
+ * Get current selected categories from GameState
+ */
+function getSelectedCategories() {
+    return gameState.selectedCategories || [];
+}
+
+/**
+ * P0 FIX: Category selection with validation
+ */
 function toggleCategory(element) {
     const category = element.dataset.category;
     if (!category) return;
 
-    // Validate category exists in categoryData
+    // P0 FIX: Validate category exists
     if (!categoryData[category]) {
-        log(`❌ Invalid category: ${category}`, 'error');
+        console.error(`❌ Invalid category: ${category}`);
         return;
     }
 
-    // Check if category is locked
+    const data = categoryData[category];
+
+    // Check if locked
     if (element.classList.contains('locked')) {
-        if (category === 'fsk18') {
-            showNotification('Du musst 18+ sein für diese Kategorie', 'warning');
-        } else if (category === 'special') {
+        if (data.requiresAge > 0) {
+            const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+            showNotification(`Du musst ${data.requiresAge}+ sein für diese Kategorie`, 'warning');
+        } else if (data.requiresPremium) {
             showPremiumInfo();
         }
         return;
     }
 
+    const currentCategories = getSelectedCategories();
+
     // Toggle selection
-    if (selectedCategories.includes(category)) {
-        // Remove category
-        selectedCategories = selectedCategories.filter(c => c !== category);
+    if (currentCategories.includes(category)) {
+        // Remove
+        gameState.selectedCategories = currentCategories.filter(c => c !== category);
         element.classList.remove('selected');
-        showNotification(`${categoryData[category].name} entfernt`, 'info');
+        showNotification(`${data.name} entfernt`, 'info');
     } else {
-        // Add category
-        selectedCategories.push(category);
+        // Add
+        gameState.selectedCategories = [...currentCategories, category];
         element.classList.add('selected');
-        showNotification(`${categoryData[category].name} ausgewählt!`, 'success');
+        showNotification(`${data.name} ausgewählt!`, 'success');
     }
 
+    // P1 FIX: Auto-save to GameState
+    gameState.save();
     updateSelectionSummary();
 }
 
 // ===== SELECTION SUMMARY =====
+
+/**
+ * P0 FIX: Build summary with DOM manipulation (no innerHTML)
+ */
 function updateSelectionSummary() {
     const summaryElement = document.getElementById('selection-summary');
     const categoriesListElement = document.getElementById('selected-categories-list');
@@ -304,23 +356,26 @@ function updateSelectionSummary() {
         return;
     }
 
+    const selectedCategories = getSelectedCategories();
+
     if (selectedCategories.length === 0) {
         summaryElement.style.display = 'none';
         continueBtn.disabled = true;
+        continueBtn.setAttribute('aria-disabled', 'true');
         continueHint.textContent = 'Wähle mindestens eine Kategorie aus';
     } else {
         summaryElement.style.display = 'block';
         continueBtn.disabled = false;
+        continueBtn.setAttribute('aria-disabled', 'false');
         continueHint.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''} ausgewählt`;
 
-        // XSS-SAFE: Build list using DOM manipulation instead of innerHTML
-        categoriesListElement.innerHTML = ''; // Clear first
+        // P0 FIX: Build list safely with DOM manipulation
+        categoriesListElement.innerHTML = '';
 
         selectedCategories.forEach(category => {
             const data = categoryData[category];
-            if (!data) return; // Skip invalid categories
+            if (!data) return;
 
-            // Create tag element
             const tag = document.createElement('div');
             tag.className = 'selected-category-tag';
 
@@ -341,13 +396,10 @@ function updateSelectionSummary() {
         }, 0);
         totalQuestionsElement.textContent = totalQuestions;
     }
-
-    // Save to game state
-    gameState.selectedCategories = [...selectedCategories];
-    gameState.save();
 }
 
 // ===== PREMIUM MODAL =====
+
 function showPremiumInfo(event) {
     if (event) {
         event.stopPropagation();
@@ -355,6 +407,7 @@ function showPremiumInfo(event) {
     const modal = document.getElementById('premium-modal');
     if (modal) {
         modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
     }
 }
 
@@ -362,64 +415,70 @@ function closePremiumModal() {
     const modal = document.getElementById('premium-modal');
     if (modal) {
         modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
     }
 }
 
+/**
+ * P0 WARNING: This is NOT secure - can be manipulated
+ * TODO: Move to server-side payment processing
+ */
 async function purchasePremium() {
     showNotification('Premium-Kauf wird vorbereitet...', 'info');
 
     try {
-        // Check if Firebase and auth are available
+        // P0 WARNING: This validation can be bypassed client-side
+        // Premium purchase MUST be validated server-side
+
         if (typeof firebase === 'undefined' || !firebase.database) {
-            showNotification('Firebase nicht verfügbar. Bitte später versuchen.', 'error');
+            showNotification('Firebase nicht verfügbar', 'error');
             return;
         }
 
-        if (typeof authService === 'undefined' || !authService.getUserId) {
+        if (typeof firebase.auth === 'undefined' || !firebase.auth().currentUser) {
             showNotification('Bitte erstelle zuerst einen Account', 'warning');
             return;
         }
 
-        const userId = authService.getUserId();
-        if (!userId) {
-            showNotification('Bitte erstelle zuerst einen Account', 'warning');
-            return;
-        }
+        const userId = firebase.auth().currentUser.uid;
 
-        // Simulate purchase (replace with real payment gateway)
+        // P0 TODO: Replace with real payment gateway (Stripe, PayPal, etc.)
+        // This is just a placeholder
         const purchaseRef = firebase.database().ref(`users/${userId}/purchases/special`);
         await purchaseRef.set({
             id: 'special_edition',
             name: 'Special Edition',
             price: 2.99,
             currency: 'EUR',
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            // P0 TODO: Add payment verification token from payment provider
+            verified: false // Should be set by server after payment verification
         });
-
-        hasPremium = true;
 
         // Unlock special category
         const specialCard = document.querySelector('[data-category="special"]');
         if (specialCard) {
             specialCard.classList.remove('locked');
-            const lockedOverlay = document.getElementById('special-locked');
-            if (lockedOverlay) {
-                lockedOverlay.style.display = 'none';
-            }
+        }
+
+        const specialLocked = document.getElementById('special-locked');
+        if (specialLocked) {
+            specialLocked.style.display = 'none';
         }
 
         closePremiumModal();
         showNotification('Premium freigeschaltet! 🎉', 'success');
 
-        log('✅ Premium purchased successfully');
+        console.log('✅ Premium purchased (client-side only - not verified)');
 
     } catch (error) {
-        log(`❌ Purchase error: ${error.message}`, 'error');
-        showNotification('Fehler beim Kauf. Bitte versuche es später erneut.', 'error');
+        console.error('❌ Purchase error:', error);
+        showNotification('Fehler beim Kauf', 'error');
     }
 }
 
 // ===== EVENT LISTENERS =====
+
 function setupEventListeners() {
     // Category cards
     document.querySelectorAll('.category-card').forEach(card => {
@@ -460,27 +519,26 @@ function setupEventListeners() {
 }
 
 // ===== NAVIGATION =====
+
 function proceedWithCategories() {
+    const selectedCategories = getSelectedCategories();
+
     if (selectedCategories.length === 0) {
         showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
         return;
     }
 
-    log('🚀 Proceeding with categories:', selectedCategories);
+    console.log('🚀 Proceeding with categories:', selectedCategories);
 
     showLoading();
 
-    // Save categories to game state
-    gameState.selectedCategories = [...selectedCategories];
-    gameState.save();
-
+    // Already saved in GameState via toggleCategory
     setTimeout(() => {
         window.location.href = 'difficulty-selection.html';
     }, 500);
 }
 
 function goBack() {
-    log('⬅️ Going back to index');
     showLoading();
     setTimeout(() => {
         window.location.href = 'index.html';
@@ -488,6 +546,7 @@ function goBack() {
 }
 
 // ===== UTILITY FUNCTIONS =====
+
 function showLoading() {
     const loading = document.getElementById('loading');
     if (loading) {
@@ -502,9 +561,16 @@ function hideLoading() {
     }
 }
 
-// XSS-SAFE: Notification using DOM manipulation
+/**
+ * P0 FIX: Safe notification using NocapUtils
+ */
 function showNotification(message, type = 'info', duration = 3000) {
-    // Remove existing notifications
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type);
+        return;
+    }
+
+    // Fallback
     document.querySelectorAll('.notification').forEach(n => n.remove());
 
     const notification = document.createElement('div');
@@ -515,9 +581,7 @@ function showNotification(message, type = 'info', duration = 3000) {
 
     const notificationText = document.createElement('span');
     notificationText.className = 'notification-text';
-    // XSS-SAFE: Sanitize message by removing HTML tags and using textContent
-    const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
-    notificationText.textContent = sanitizedMessage;
+    notificationText.textContent = String(message).replace(/<[^>]*>/g, '');
 
     notificationContent.appendChild(notificationText);
     notification.appendChild(notificationContent);
@@ -525,12 +589,10 @@ function showNotification(message, type = 'info', duration = 3000) {
     const container = document.getElementById('notification-container') || document.body;
     container.appendChild(notification);
 
-    // Show animation
     setTimeout(() => {
         notification.classList.add('show');
     }, 10);
 
-    // Auto remove
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
@@ -541,27 +603,10 @@ function showNotification(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
-function log(message, type = 'info') {
-    const colors = {
-        info: '#4488ff',
-        warning: '#ffaa00',
-        error: '#ff4444',
-        success: '#00ff00'
-    };
+// ===== INITIALIZATION =====
 
-    console.log(`%c[CategorySelection] ${message}`, `color: ${colors[type] || colors.info}`);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
 }
-
-// ===== DEBUG FUNCTIONS =====
-window.debugCategorySelection = function() {
-    console.log('🔍 === CATEGORY SELECTION DEBUG ===');
-    console.log('GameState:', gameState?.getDebugInfo?.());
-    console.log('Selected Categories:', selectedCategories);
-    console.log('Question Counts:', questionCounts);
-    console.log('Is Adult:', isAdult);
-    console.log('Has Premium:', hasPremium);
-    console.log('LocalStorage:', localStorage.getItem('nocap_game_state'));
-};
-
-log('✅ No-Cap Category Selection v3.1 - XSS Protected & Encoding Fixed!');
-log('🛠️ Debug: debugCategorySelection()');

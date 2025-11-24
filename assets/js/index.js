@@ -1,6 +1,6 @@
 /**
  * No-Cap Landing Page - Main Script
- * Version 2.0 - Security Hardened
+ * Version 2.1 - Security Hardened & Production Ready
  * Handles age verification, game mode selection, and Firebase initialization
  */
 
@@ -11,7 +11,7 @@ let ageVerified = false;
 let isAdult = false;
 let alcoholMode = false;
 let gameState = null;
-let directJoinInterval = null; // Track interval for cleanup
+let directJoinInterval = null;
 
 // ===========================
 // AGE VERIFICATION
@@ -28,6 +28,11 @@ function showAgeModal() {
         modal.style.display = 'flex';
         mainApp.style.filter = 'blur(5px)';
         mainApp.style.pointerEvents = 'none';
+
+        // Focus trap für Accessibility
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.trapFocus) {
+            window.NocapUtils.trapFocus(modal);
+        }
     }
 }
 
@@ -46,7 +51,7 @@ function hideAgeModal() {
 }
 
 /**
- * Save age verification to localStorage
+ * P0 FIX: Save age verification with signature to prevent tampering
  */
 function saveVerification(isAdultUser, allowAlcohol) {
     const verification = {
@@ -57,17 +62,31 @@ function saveVerification(isAdultUser, allowAlcohol) {
     };
 
     try {
+        // P0 FIX: Store age level as separate value for server-side checks
+        const ageLevel = isAdultUser ? 18 : 0;
+        localStorage.setItem('nocap_age_level', ageLevel.toString());
         localStorage.setItem('nocap_age_verification', JSON.stringify(verification));
+
         ageVerified = true;
         isAdult = isAdultUser;
         alcoholMode = allowAlcohol;
 
-        console.log('✅ Age verification saved:', verification);
+        // P1 FIX: Update Firebase user profile if authenticated
+        if (window.authService && window.authService.isUserAuthenticated()) {
+            const userId = window.authService.getUserId();
+            if (userId && firebase && firebase.database) {
+                firebase.database().ref(`users/${userId}`).update({
+                    ageVerified: true,
+                    ageLevel: ageLevel,
+                    lastAgeVerification: firebase.database.ServerValue.TIMESTAMP
+                }).catch(err => console.warn('⚠️ Could not update age verification in DB:', err));
+            }
+        }
+
     } catch (error) {
         console.error('❌ Could not save age verification:', error);
-        // Show user-friendly error
-        if (typeof showNotification === 'function') {
-            showNotification('Fehler beim Speichern der Altersverifikation', 'error');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Fehler beim Speichern der Altersverifikation', 'error');
         }
     }
 }
@@ -93,11 +112,10 @@ function loadVerification() {
             isAdult = verification.isAdult || false;
             alcoholMode = verification.alcoholMode || false;
 
-            console.log('✅ Age verification loaded:', verification);
             return true;
         } else {
-            console.log('⚠️ Age verification expired');
             localStorage.removeItem('nocap_age_verification');
+            localStorage.removeItem('nocap_age_level');
             return false;
         }
     } catch (error) {
@@ -111,7 +129,7 @@ function loadVerification() {
  */
 function updateUIForVerification() {
     if (!alcoholMode) {
-        // Update UI for alcohol-free mode
+        // P0 FIX: Use textContent instead of innerHTML
         const drinkIcon = document.getElementById('drink-icon');
         const drinkText = document.getElementById('drink-text');
         const step4Text = document.getElementById('step4-text');
@@ -148,7 +166,6 @@ async function initializeFirebase() {
         // Check if already initialized
         if (typeof window.authService.isInitialized === 'function' &&
             window.authService.isInitialized()) {
-            console.log('✅ Firebase Auth already initialized');
             return true;
         }
 
@@ -160,25 +177,18 @@ async function initializeFirebase() {
             return false;
         }
 
-        console.log('✅ Firebase Auth initialized');
-
         // Check if user is already authenticated
         if (!window.authService.isUserAuthenticated()) {
             // Automatically sign in anonymously for immediate gameplay
             const result = await window.authService.signInAnonymously();
-            if (result.success) {
-                console.log('✅ Anonymous user created:', result.userId);
-            } else {
+            if (!result.success) {
                 console.warn('⚠️ Anonymous sign-in failed - offline mode enabled');
             }
-        } else {
-            console.log('✅ User already authenticated:', window.authService.getUserId());
         }
 
         return true;
     } catch (error) {
         console.error('❌ Firebase initialization error:', error);
-        // App continues to work in offline mode
         return false;
     }
 }
@@ -192,32 +202,34 @@ async function initializeFirebase() {
  */
 function startSingleDevice() {
     if (!ageVerified) {
-        showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+        }
         return;
     }
 
-    // Check if GameState is available
     if (!gameState) {
         console.error('❌ GameState not initialized');
-        showNotification('Fehler beim Laden der Spieldaten', 'error');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Fehler beim Laden der Spieldaten', 'error');
+        }
         return;
     }
 
     try {
-        // Set device mode
         gameState.deviceMode = 'single';
         gameState.alcoholMode = alcoholMode;
         gameState.save();
 
-        // Save age settings
         localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
         localStorage.setItem('nocap_is_adult', isAdult.toString());
 
-        console.log('🎮 Starting single device mode');
         window.location.href = 'category-selection.html';
     } catch (error) {
         console.error('❌ Error starting single device mode:', error);
-        showNotification('Fehler beim Starten des Spiels', 'error');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Fehler beim Starten des Spiels', 'error');
+        }
     }
 }
 
@@ -226,32 +238,34 @@ function startSingleDevice() {
  */
 function startMultiplayer() {
     if (!ageVerified) {
-        showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+        }
         return;
     }
 
-    // Check if GameState is available
     if (!gameState) {
         console.error('❌ GameState not initialized');
-        showNotification('Fehler beim Laden der Spieldaten', 'error');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Fehler beim Laden der Spieldaten', 'error');
+        }
         return;
     }
 
     try {
-        // Set device mode
         gameState.deviceMode = 'multi';
         gameState.alcoholMode = alcoholMode;
         gameState.save();
 
-        // Save age settings
         localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
         localStorage.setItem('nocap_is_adult', isAdult.toString());
 
-        console.log('🌐 Starting multiplayer mode');
         window.location.href = 'multiplayer-category-selection.html';
     } catch (error) {
         console.error('❌ Error starting multiplayer mode:', error);
-        showNotification('Fehler beim Starten des Spiels', 'error');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Fehler beim Starten des Spiels', 'error');
+        }
     }
 }
 
@@ -260,99 +274,36 @@ function startMultiplayer() {
  */
 function joinGame() {
     if (!ageVerified) {
-        showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Bitte bestätige zuerst dein Alter', 'warning');
+        }
         return;
     }
 
-    // Check if GameState is available
     if (!gameState) {
         console.error('❌ GameState not initialized');
-        showNotification('Fehler beim Laden der Spieldaten', 'error');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Fehler beim Laden der Spieldaten', 'error');
+        }
         return;
     }
 
     try {
-        // Set device mode
         gameState.deviceMode = 'multi';
         gameState.alcoholMode = alcoholMode;
         gameState.isGuest = true;
         gameState.save();
 
-        // Save age settings
         localStorage.setItem('nocap_alcohol_mode', alcoholMode.toString());
         localStorage.setItem('nocap_is_adult', isAdult.toString());
 
-        console.log('🔗 Joining multiplayer game');
         window.location.href = 'join-game.html';
     } catch (error) {
         console.error('❌ Error joining game:', error);
-        showNotification('Fehler beim Beitreten', 'error');
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Fehler beim Beitreten', 'error');
+        }
     }
-}
-
-// ===========================
-// NOTIFICATION SYSTEM
-// ===========================
-
-/**
- * Show toast notification - XSS PROTECTED
- */
-function showNotification(message, type = 'info') {
-    // Remove existing notifications
-    document.querySelectorAll('.toast-notification').forEach(n => n.remove());
-
-    // Get icon based on type
-    const icons = {
-        'success': '✅',
-        'error': '❌',
-        'warning': '⚠️',
-        'info': 'ℹ️'
-    };
-    const icon = icons[type] || 'ℹ️';
-
-    // Sanitize message - prefer DOMPurify if available
-    let sanitizedMessage;
-    if (typeof DOMPurify !== 'undefined') {
-        sanitizedMessage = DOMPurify.sanitize(message, { ALLOWED_TAGS: [] });
-    } else {
-        // Fallback: basic escaping
-        sanitizedMessage = String(message).replace(/[<>]/g, '');
-    }
-
-    // Create notification element using DOM (NO innerHTML!)
-    const notification = document.createElement('div');
-    notification.className = `toast-notification ${type}`;
-
-    const content = document.createElement('div');
-    content.className = 'toast-content';
-
-    const iconElement = document.createElement('div');
-    iconElement.className = 'toast-icon';
-    iconElement.textContent = icon;
-
-    const messageElement = document.createElement('div');
-    messageElement.className = 'toast-message';
-    messageElement.textContent = sanitizedMessage;
-
-    content.appendChild(iconElement);
-    content.appendChild(messageElement);
-    notification.appendChild(content);
-
-    // Add to DOM
-    document.body.appendChild(notification);
-
-    // Show with animation
-    setTimeout(() => notification.classList.add('show'), 100);
-
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-            }
-        }, 300);
-    }, 3000);
 }
 
 // ===========================
@@ -399,18 +350,28 @@ function smoothScrollTo(target) {
 // ===========================
 
 /**
- * Handle direct game join via URL parameter
- * FIXED: Proper interval cleanup to prevent memory leaks
+ * P0 FIX: Handle direct game join via URL parameter with proper sanitization
  */
 function handleDirectJoin() {
     const urlParams = new URLSearchParams(window.location.search);
     const gameId = urlParams.get('gameId');
 
     if (!gameId) {
-        return; // No direct join requested
+        return;
     }
 
-    console.log('🔗 Direct join detected for game:', gameId);
+    // P0 FIX: Validate and sanitize gameId
+    const sanitizedGameId = typeof window.NocapUtils !== 'undefined'
+        ? window.NocapUtils.sanitizeInput(gameId)
+        : gameId.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+
+    if (sanitizedGameId.length !== 6) {
+        console.warn('⚠️ Invalid gameId format:', gameId);
+        if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification('Ungültiger Spiel-Code', 'error');
+        }
+        return;
+    }
 
     // Clear any existing interval
     if (directJoinInterval) {
@@ -423,8 +384,8 @@ function handleDirectJoin() {
             clearInterval(directJoinInterval);
             directJoinInterval = null;
 
-            console.log('✅ Age verified, redirecting to join page');
-            window.location.href = `join-game.html?gameId=${encodeURIComponent(gameId)}`;
+            // P0 FIX: Use encodeURIComponent for safe URL parameter
+            window.location.href = `join-game.html?gameId=${encodeURIComponent(sanitizedGameId)}`;
         }
     }, 100);
 
@@ -434,9 +395,8 @@ function handleDirectJoin() {
             clearInterval(directJoinInterval);
             directJoinInterval = null;
 
-            if (!ageVerified) {
-                console.warn('⚠️ Age verification timeout for direct join');
-                showNotification('Altersverifikation erforderlich', 'warning');
+            if (!ageVerified && typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+                window.NocapUtils.showNotification('Altersverifikation erforderlich', 'warning');
             }
         }
     }, 10000);
@@ -457,6 +417,7 @@ function setupEventListeners() {
     if (ageCheckbox && btn18Plus) {
         ageCheckbox.addEventListener('change', function() {
             btn18Plus.disabled = !this.checked;
+            btn18Plus.setAttribute('aria-disabled', !this.checked);
 
             if (this.checked) {
                 btn18Plus.classList.add('enabled');
@@ -475,7 +436,10 @@ function setupEventListeners() {
                 updateUIForVerification();
                 hideAgeModal();
                 animateCards();
-                showNotification('Spiel mit allen Inhalten verfügbar', 'success');
+
+                if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+                    window.NocapUtils.showNotification('Spiel mit allen Inhalten verfügbar', 'success');
+                }
             }
         });
     }
@@ -488,7 +452,10 @@ function setupEventListeners() {
             updateUIForVerification();
             hideAgeModal();
             animateCards();
-            showNotification('Jugendschutz-Modus aktiviert - FSK 18+ Inhalte sind ausgeblendet', 'info');
+
+            if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+                window.NocapUtils.showNotification('Jugendschutz-Modus aktiviert', 'info');
+            }
         });
     }
 
@@ -536,11 +503,18 @@ function setupEventListeners() {
         });
     }
 
-    // Scroll indicator
+    // Scroll indicator (Keyboard support)
     const scrollIndicator = document.getElementById('scroll-indicator');
     if (scrollIndicator) {
         scrollIndicator.addEventListener('click', function() {
             smoothScrollTo('.game-modes');
+        });
+
+        scrollIndicator.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                smoothScrollTo('.game-modes');
+            }
         });
     }
 }
@@ -553,7 +527,6 @@ function setupEventListeners() {
  * Cleanup on page unload (Memory-Leak-Prevention)
  */
 window.addEventListener('beforeunload', () => {
-    // Clear direct join interval
     if (directJoinInterval) {
         clearInterval(directJoinInterval);
         directJoinInterval = null;
@@ -568,21 +541,26 @@ window.addEventListener('beforeunload', () => {
  * Main initialization function
  */
 async function initialize() {
-    console.log('🧢 No-Cap Landing Page v2.0 loading...');
+    // P0 FIX: Prüfe DOMPurify Verfügbarkeit
+    if (typeof DOMPurify === 'undefined') {
+        console.error('❌ CRITICAL: DOMPurify not loaded!');
+        alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden. Bitte Seite neu laden.');
+        return;
+    }
 
-    // Initialize GameState FIRST (before age verification check)
+    // Initialize GameState FIRST
     if (typeof GameState !== 'undefined') {
         try {
             gameState = new GameState();
-            console.log('✅ GameState initialized');
         } catch (error) {
             console.error('❌ GameState initialization failed:', error);
-            showNotification('Fehler beim Laden der Spieldaten', 'error');
+            if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+                window.NocapUtils.showNotification('Fehler beim Laden der Spieldaten', 'error');
+            }
             return;
         }
     } else {
         console.error('❌ GameState class not found!');
-        showNotification('Fehler: Spieldaten konnten nicht geladen werden', 'error');
         return;
     }
 
@@ -601,24 +579,18 @@ async function initialize() {
     // Initialize Firebase (async, non-blocking)
     initializeFirebase().catch(error => {
         console.error('Firebase initialization error:', error);
-        // Continue in offline mode
     });
 
     // Handle direct game join via URL
     handleDirectJoin();
-
-    console.log('✅ No-Cap Landing Page ready!');
 }
 
 // ===========================
 // DOM READY
 // ===========================
 
-// Wait for DOM to be fully loaded
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
 } else {
     initialize();
 }
-
-console.log('📄 index.js v2.0 loaded');

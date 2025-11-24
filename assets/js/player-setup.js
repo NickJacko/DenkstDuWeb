@@ -1,12 +1,11 @@
 // ===== NO-CAP PLAYER SETUP (SINGLE DEVICE MODE) =====
-// Version: 2.1 - Security Hardened with Input Sanitization & Encoding Fixed
+// Version: 2.2 - Security Hardened & Production Ready
 // Mode: Single Device (No Firebase needed)
 
 'use strict';
 
 // ===== GLOBAL VARIABLES =====
 let gameState = null;
-let playersList = [];
 let alcoholMode = false;
 let questionCounts = {
     fsk0: 0,
@@ -21,79 +20,72 @@ const MIN_PLAYERS = 2;
 let draggedItem = null;
 
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    initPlayerSetup();
-});
 
-async function initPlayerSetup() {
-    log('👥 Initializing player setup...');
+async function initialize() {
+    console.log('👥 Initializing player setup...');
 
     showLoading();
 
-    // STEP 1: Load central GameState
+    // P0 FIX: Check for required dependencies
     if (typeof GameState === 'undefined') {
-        log('❌ GameState not found - Load central version', 'error');
+        console.error('❌ GameState not found');
         showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
         return;
     }
 
-    gameState = GameState.load();
+    // Use central GameState
+    gameState = new GameState();
 
-    // STEP 2: Check alcohol mode
+    // Check alcohol mode
     checkAlcoholMode();
 
-    // STEP 3: Validate prerequisites
+    // Validate prerequisites
     if (!validatePrerequisites()) {
-        return; // Redirects handled in function
+        return;
     }
 
-    // STEP 4: Load question counts from Firebase
+    // Load question counts
     await loadQuestionCounts();
 
-    // STEP 5: Load previous players if available
-    if (gameState.players && gameState.players.length > 0) {
-        loadPreviousPlayers();
-    }
+    // P1 FIX: Load players from GameState (not separate array)
+    initializePlayerInputs();
 
-    // STEP 6: Update UI
+    // Update UI
     updateGameSummary();
     updateUI();
 
-    // STEP 7: Setup event listeners
+    // Setup event listeners
     setupEventListeners();
 
     hideLoading();
 
-    log('✅ Player setup initialized');
-    log('📋 Current game state:', gameState.getDebugInfo());
+    console.log('✅ Player setup initialized');
 }
 
 // ===== VALIDATION & GUARDS =====
+
 function validatePrerequisites() {
-    // Check device mode
     if (gameState.deviceMode !== 'single') {
-        log('❌ Not in single device mode', 'error');
-        showNotification('Nicht im Einzelgerät-Modus. Weiterleitung...', 'error');
+        console.error('❌ Not in single device mode');
+        showNotification('Nicht im Einzelgerät-Modus', 'error');
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 2000);
         return false;
     }
 
-    // Check if categories selected
     if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
-        log('❌ No categories selected', 'error');
-        showNotification('Keine Kategorien ausgewählt! Weiterleitung...', 'error');
+        console.error('❌ No categories selected');
+        showNotification('Keine Kategorien ausgewählt!', 'error');
         setTimeout(() => {
             window.location.href = 'category-selection.html';
         }, 2000);
         return false;
     }
 
-    // Check if difficulty selected
     if (!gameState.difficulty) {
-        log('❌ No difficulty selected', 'error');
-        showNotification('Kein Schwierigkeitsgrad ausgewählt! Weiterleitung...', 'error');
+        console.error('❌ No difficulty selected');
+        showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
         setTimeout(() => {
             window.location.href = 'difficulty-selection.html';
         }, 2000);
@@ -104,9 +96,8 @@ function validatePrerequisites() {
 }
 
 // ===== EVENT LISTENERS SETUP =====
-function setupEventListeners() {
-    log('🔧 Setting up event listeners...');
 
+function setupEventListeners() {
     // Back button
     const backBtn = document.querySelector('.back-button');
     if (backBtn) {
@@ -130,9 +121,12 @@ function setupEventListeners() {
     if (inputsList) {
         inputsList.addEventListener('input', function(e) {
             if (e.target.classList.contains('player-input')) {
-                // Sanitize input on the fly
-                e.target.value = sanitizePlayerName(e.target.value);
-                updatePlayersList();
+                // P0 FIX: Sanitize with NocapUtils
+                const sanitized = sanitizePlayerName(e.target.value);
+                if (sanitized !== e.target.value) {
+                    e.target.value = sanitized;
+                }
+                updatePlayersFromInputs();
                 updateUI();
             }
         });
@@ -155,58 +149,58 @@ function setupEventListeners() {
             const nextInput = getNextEmptyInput();
             if (nextInput) {
                 nextInput.focus();
-            } else if (playersList.length >= MIN_PLAYERS) {
+            } else if (getPlayersList().length >= MIN_PLAYERS) {
                 startGame();
             }
         }
     });
-
-    log('✅ Event listeners setup complete');
 }
 
-// ===== INPUT SANITIZATION =====
+// ===== P0 FIX: INPUT SANITIZATION =====
+
+/**
+ * Sanitize player name with NocapUtils or fallback
+ */
 function sanitizePlayerName(input) {
-    // Remove any HTML tags
-    let sanitized = String(input).replace(/<[^>]*>/g, '');
+    if (!input) return '';
 
-    // Allow only: letters (including umlauts), numbers, spaces, basic punctuation
-    // German umlauts: äöüÄÖÜß
-    sanitized = sanitized.replace(/[^a-zA-Z0-9äöüÄÖÜß\s\-_.,!?]/g, '');
-
-    // Limit length
-    if (sanitized.length > 15) {
-        sanitized = sanitized.substring(0, 15);
+    // P0 FIX: Use NocapUtils if available
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+        return window.NocapUtils.sanitizeInput(input).substring(0, 15);
     }
 
-    return sanitized;
+    // Fallback sanitization
+    let sanitized = String(input).replace(/<[^>]*>/g, '');
+    sanitized = sanitized.replace(/[^a-zA-Z0-9äöüÄÖÜß\s\-_.,!?]/g, '');
+
+    return sanitized.substring(0, 15);
 }
 
 // ===== ALCOHOL MODE CHECK =====
+
 function checkAlcoholMode() {
     try {
         const alcoholModeStr = localStorage.getItem('nocap_alcohol_mode');
         alcoholMode = alcoholModeStr === 'true';
-        log(`🍺 Alcohol mode: ${alcoholMode}`);
 
-        // Update difficulty icon
         const difficultyIcon = document.getElementById('difficulty-icon');
         if (difficultyIcon) {
             difficultyIcon.textContent = alcoholMode ? '🍺' : '💧';
         }
     } catch (error) {
-        log(`❌ Error checking alcohol mode: ${error.message}`, 'error');
+        console.error('Error checking alcohol mode:', error);
         alcoholMode = false;
     }
 }
 
 // ===== QUESTION COUNTS FROM FIREBASE =====
+
 async function loadQuestionCounts() {
     try {
-        log('📊 Loading question counts from Firebase...');
+        console.log('📊 Loading question counts...');
 
-        // Check if Firebase is available
         if (typeof firebase === 'undefined' || !firebase.database) {
-            log('⚠️ Firebase not available, using fallback counts', 'warning');
+            console.warn('⚠️ Firebase not available, using fallback counts');
             useFallbackCounts();
             return;
         }
@@ -221,22 +215,20 @@ async function loadQuestionCounts() {
                 if (snapshot.exists()) {
                     const questions = snapshot.val();
                     questionCounts[category] = Object.keys(questions).length;
-                    log(`✅ ${category}: ${questionCounts[category]} questions`);
                 } else {
-                    log(`⚠️ ${category}: No data, using fallback`, 'warning');
                     questionCounts[category] = getFallbackCount(category);
                 }
             } catch (error) {
-                log(`⚠️ Error loading ${category}: ${error.message}`, 'warning');
+                console.warn(`Error loading ${category}:`, error);
                 questionCounts[category] = getFallbackCount(category);
             }
         }
 
         updateTotalQuestions();
-        log('✅ Question counts loaded');
+        console.log('✅ Question counts loaded');
 
     } catch (error) {
-        log(`❌ Error loading question counts: ${error.message}`, 'error');
+        console.error('Error loading question counts:', error);
         useFallbackCounts();
     }
 }
@@ -256,7 +248,6 @@ function getFallbackCount(category) {
     return fallbacks[category] || 0;
 }
 
-// ===== UPDATE TOTAL QUESTIONS =====
 function updateTotalQuestions() {
     const totalQuestionsEl = document.getElementById('questions-total');
     if (!totalQuestionsEl) return;
@@ -273,35 +264,65 @@ function updateTotalQuestions() {
     totalQuestionsEl.textContent = `${total} Fragen`;
 }
 
-// ===== LOAD PREVIOUS PLAYERS =====
-function loadPreviousPlayers() {
-    log('🔄 Loading previous players...');
+// ===== P1 FIX: PLAYER INPUT MANAGEMENT (NO GLOBAL ARRAY) =====
 
+/**
+ * Initialize player inputs from GameState
+ */
+function initializePlayerInputs() {
+    // P1 FIX: Check if players exist in GameState
+    if (gameState.players && Array.isArray(gameState.players) && gameState.players.length > 0) {
+        console.log('🔄 Loading previous players from GameState');
+
+        const inputs = document.querySelectorAll('.player-input');
+
+        gameState.players.forEach((playerName, index) => {
+            const sanitizedName = sanitizePlayerName(playerName);
+
+            if (index < inputs.length) {
+                inputs[index].value = sanitizedName;
+            } else {
+                // Add more inputs if needed
+                while (document.querySelectorAll('.player-input').length <= index) {
+                    addPlayerInput();
+                }
+                const newInputs = document.querySelectorAll('.player-input');
+                if (newInputs[index]) {
+                    newInputs[index].value = sanitizedName;
+                }
+            }
+        });
+    }
+}
+
+/**
+ * Get current players list from inputs (no global array)
+ */
+function getPlayersList() {
     const inputs = document.querySelectorAll('.player-input');
+    const players = [];
 
-    gameState.players.forEach((playerName, index) => {
-        // Sanitize loaded player names
-        const sanitizedName = sanitizePlayerName(playerName);
-
-        if (index < inputs.length) {
-            inputs[index].value = sanitizedName;
-        } else {
-            // Need to add more inputs
-            while (document.querySelectorAll('.player-input').length <= index) {
-                addPlayerInput();
-            }
-            const newInputs = document.querySelectorAll('.player-input');
-            if (newInputs[index]) {
-                newInputs[index].value = sanitizedName;
-            }
+    inputs.forEach(input => {
+        const name = sanitizePlayerName(input.value.trim());
+        if (name && name.length >= 2) {
+            players.push(name);
         }
     });
 
-    updatePlayersList();
-    log(`✅ Loaded ${gameState.players.length} previous players`);
+    return players;
 }
 
-// ===== PLAYER INPUT MANAGEMENT =====
+/**
+ * Update players in GameState from inputs
+ */
+function updatePlayersFromInputs() {
+    const players = getPlayersList();
+
+    // P1 FIX: Always update GameState, not separate array
+    gameState.players = players;
+    gameState.save();
+}
+
 function addPlayerInput() {
     const inputsList = document.getElementById('players-input-list');
     const currentInputs = inputsList.querySelectorAll('.player-input-row');
@@ -325,8 +346,7 @@ function addPlayerInput() {
     input.placeholder = `Spieler ${newIndex + 1}...`;
     input.maxLength = 15;
     input.dataset.index = newIndex;
-    // Add input pattern for additional security
-    input.pattern = '[a-zA-Z0-9äöüÄÖÜß\\s\\-_.,!?]{2,15}';
+    input.setAttribute('aria-label', `Spieler ${newIndex + 1} Name`);
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-player-btn';
@@ -344,7 +364,7 @@ function addPlayerInput() {
 
     input.focus();
 
-    log(`➕ Added player input #${newIndex + 1}`);
+    console.log(`➕ Added player input #${newIndex + 1}`);
 }
 
 function removePlayerInput(index) {
@@ -368,56 +388,50 @@ function removePlayerInput(index) {
         numberEl.textContent = newIndex + 1;
         inputEl.placeholder = `Spieler ${newIndex + 1}...`;
         inputEl.dataset.index = newIndex;
+        inputEl.setAttribute('aria-label', `Spieler ${newIndex + 1} Name`);
+
         removeBtn.dataset.index = newIndex;
         removeBtn.style.display = newIndex < 2 ? 'none' : 'flex';
         removeBtn.setAttribute('aria-label', `Spieler ${newIndex + 1} entfernen`);
     });
 
-    updatePlayersList();
+    updatePlayersFromInputs();
     updateUI();
     updateAddButton();
 
-    log(`➖ Removed player input #${index + 1}`);
-}
-
-// ===== UPDATE PLAYERS LIST =====
-function updatePlayersList() {
-    const inputs = document.querySelectorAll('.player-input');
-    playersList = [];
-
-    inputs.forEach(input => {
-        const name = sanitizePlayerName(input.value.trim());
-        if (name) {
-            playersList.push(name);
-        }
-    });
+    console.log(`➖ Removed player input #${index + 1}`);
 }
 
 // ===== UPDATE UI =====
+
 function updateUI() {
+    const players = getPlayersList();
+
     // Update player count badge
     const currentCount = document.getElementById('current-count');
     if (currentCount) {
-        currentCount.textContent = playersList.length;
+        currentCount.textContent = players.length;
     }
 
     // Update start button state
     const startBtn = document.getElementById('start-btn');
     const startHint = document.getElementById('start-hint');
 
-    if (playersList.length >= MIN_PLAYERS) {
+    if (players.length >= MIN_PLAYERS) {
         if (startBtn) {
             startBtn.disabled = false;
+            startBtn.setAttribute('aria-disabled', 'false');
         }
         if (startHint) {
-            startHint.textContent = `${playersList.length} Spieler bereit - Los geht's!`;
+            startHint.textContent = `${players.length} Spieler bereit - Los geht's!`;
         }
     } else {
         if (startBtn) {
             startBtn.disabled = true;
+            startBtn.setAttribute('aria-disabled', 'true');
         }
         if (startHint) {
-            const needed = MIN_PLAYERS - playersList.length;
+            const needed = MIN_PLAYERS - players.length;
             startHint.textContent = `Noch ${needed} Spieler nötig`;
         }
     }
@@ -427,36 +441,40 @@ function updateUI() {
     updateRemoveButtons();
 }
 
-// ===== PLAYERS PREVIEW WITH DRAG & DROP =====
+// ===== P0 FIX: PLAYERS PREVIEW WITH DRAG & DROP =====
+
 function updatePlayersPreview() {
     const preview = document.getElementById('players-preview');
     const playersOrder = document.getElementById('players-order');
 
     if (!preview || !playersOrder) return;
 
-    if (playersList.length > 0) {
-        preview.style.display = 'block';
+    const players = getPlayersList();
 
-        // Clear and rebuild
+    if (players.length > 0) {
+        preview.style.display = 'block';
         playersOrder.innerHTML = '';
 
-        playersList.forEach((name, index) => {
+        players.forEach((name, index) => {
             const item = document.createElement('div');
             item.className = 'player-order-item';
             item.draggable = true;
             item.dataset.index = index;
+            item.setAttribute('role', 'listitem');
+            item.setAttribute('aria-label', `Spieler ${index + 1}: ${name}`);
 
             const numberDiv = document.createElement('div');
             numberDiv.className = 'player-order-number';
             numberDiv.textContent = index + 1;
 
             const nameSpan = document.createElement('span');
-            // XSS-SAFE: Use textContent instead of innerHTML
+            // P0 FIX: Use textContent for XSS safety
             nameSpan.textContent = name;
 
             const handleSpan = document.createElement('span');
             handleSpan.className = 'drag-handle';
             handleSpan.textContent = '☰';
+            handleSpan.setAttribute('aria-label', 'Ziehen zum Verschieben');
 
             item.appendChild(numberDiv);
             item.appendChild(nameSpan);
@@ -465,7 +483,6 @@ function updatePlayersPreview() {
             playersOrder.appendChild(item);
         });
 
-        // Setup drag & drop
         setupDragAndDrop();
     } else {
         preview.style.display = 'none';
@@ -473,6 +490,7 @@ function updatePlayersPreview() {
 }
 
 // ===== DRAG & DROP FUNCTIONALITY =====
+
 function setupDragAndDrop() {
     const items = document.querySelectorAll('.player-order-item');
 
@@ -489,10 +507,10 @@ function handleDragStart(e) {
     draggedItem = this;
     this.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', this.innerHTML);
+    e.dataTransfer.setData('text/plain', this.dataset.index);
 }
 
-function handleDragEnd(e) {
+function handleDragEnd() {
     this.classList.remove('dragging');
     document.querySelectorAll('.player-order-item').forEach(item => {
         item.classList.remove('drag-over');
@@ -512,7 +530,7 @@ function handleDragOver(e) {
     return false;
 }
 
-function handleDragLeave(e) {
+function handleDragLeave() {
     this.classList.remove('drag-over');
 }
 
@@ -525,29 +543,34 @@ function handleDrop(e) {
         const fromIndex = parseInt(draggedItem.dataset.index);
         const toIndex = parseInt(this.dataset.index);
 
-        // Reorder players list
-        const [movedPlayer] = playersList.splice(fromIndex, 1);
-        playersList.splice(toIndex, 0, movedPlayer);
+        // Get current players
+        const players = getPlayersList();
+
+        // Reorder
+        const [movedPlayer] = players.splice(fromIndex, 1);
+        players.splice(toIndex, 0, movedPlayer);
 
         // Update inputs to match new order
         const inputs = document.querySelectorAll('.player-input');
-        playersList.forEach((name, index) => {
+        players.forEach((name, index) => {
             if (inputs[index]) {
                 inputs[index].value = name;
             }
         });
 
-        // Update preview
+        // Update GameState
+        updatePlayersFromInputs();
         updateUI();
-        showNotification('Reihenfolge aktualisiert!', 'success');
 
-        log(`🔄 Reordered: moved player from position ${fromIndex + 1} to ${toIndex + 1}`);
+        showNotification('Reihenfolge aktualisiert!', 'success');
+        console.log(`🔄 Reordered: ${fromIndex + 1} → ${toIndex + 1}`);
     }
 
     return false;
 }
 
 // ===== UPDATE BUTTONS =====
+
 function updateAddButton() {
     const addBtn = document.getElementById('add-player-btn');
     if (!addBtn) return;
@@ -557,11 +580,13 @@ function updateAddButton() {
 
     if (currentInputs >= MAX_PLAYERS) {
         addBtn.disabled = true;
+        addBtn.setAttribute('aria-disabled', 'true');
         if (btnText) {
             btnText.textContent = `Maximum erreicht (${MAX_PLAYERS})`;
         }
     } else {
         addBtn.disabled = false;
+        addBtn.setAttribute('aria-disabled', 'false');
         if (btnText) {
             btnText.textContent = 'Spieler hinzufügen';
         }
@@ -582,6 +607,7 @@ function updateRemoveButtons() {
 }
 
 // ===== GAME SUMMARY =====
+
 function updateGameSummary() {
     const categoryNames = {
         fsk0: 'Familie & Freunde 👨‍👩‍👧‍👦',
@@ -596,7 +622,7 @@ function updateGameSummary() {
         hard: 'Hardcore (Abweichung × 2)'
     };
 
-    // Update categories
+    // P0 FIX: Use textContent
     const categoriesSummary = document.getElementById('categories-summary');
     if (categoriesSummary) {
         if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
@@ -609,18 +635,14 @@ function updateGameSummary() {
         }
     }
 
-    // Update difficulty
     const difficultySummary = document.getElementById('difficulty-summary');
     if (difficultySummary) {
-        if (gameState.difficulty) {
-            difficultySummary.textContent = difficultyNames[gameState.difficulty] || gameState.difficulty;
-        } else {
-            difficultySummary.textContent = 'Nicht ausgewählt';
-        }
+        difficultySummary.textContent = difficultyNames[gameState.difficulty] || gameState.difficulty || 'Nicht ausgewählt';
     }
 }
 
 // ===== VALIDATION =====
+
 function getNextEmptyInput() {
     const inputs = document.querySelectorAll('.player-input');
     for (let input of inputs) {
@@ -631,8 +653,8 @@ function getNextEmptyInput() {
     return null;
 }
 
-function validatePlayerNames() {
-    const names = playersList.map(name => name.toLowerCase());
+function validatePlayerNames(players) {
+    const names = players.map(name => name.toLowerCase());
     const uniqueNames = new Set(names);
 
     if (names.length !== uniqueNames.size) {
@@ -640,7 +662,7 @@ function validatePlayerNames() {
         return false;
     }
 
-    for (let name of playersList) {
+    for (let name of players) {
         if (name.length < 2 || name.length > 15) {
             showNotification('Namen müssen zwischen 2-15 Zeichen lang sein!', 'error');
             return false;
@@ -651,46 +673,39 @@ function validatePlayerNames() {
 }
 
 // ===== START GAME =====
+
 function startGame() {
-    log('🚀 Starting game...');
+    console.log('🚀 Starting game...');
 
-    updatePlayersList();
+    const players = getPlayersList();
 
-    if (playersList.length < MIN_PLAYERS) {
+    if (players.length < MIN_PLAYERS) {
         showNotification(`Mindestens ${MIN_PLAYERS} Spieler nötig!`, 'warning');
         return;
     }
 
-    if (!validatePlayerNames()) {
+    if (!validatePlayerNames(players)) {
         return;
     }
 
     if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
         showNotification('Keine Kategorien ausgewählt!', 'error');
-        setTimeout(() => {
-            window.location.href = 'category-selection.html';
-        }, 2000);
         return;
     }
 
     if (!gameState.difficulty) {
         showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
-        setTimeout(() => {
-            window.location.href = 'difficulty-selection.html';
-        }, 2000);
         return;
     }
 
     showLoading();
 
-    // Save players to GameState (sanitized)
-    gameState.players = playersList.map(name => sanitizePlayerName(name));
+    // P1 FIX: Save directly to GameState (already done in updatePlayersFromInputs)
+    gameState.players = players;
     gameState.gamePhase = 'playing';
     gameState.save();
 
     showNotification('Spiel wird gestartet...', 'success');
-
-    log('✅ Game state saved:', gameState.getDebugInfo());
 
     setTimeout(() => {
         window.location.href = 'gameplay.html';
@@ -698,8 +713,8 @@ function startGame() {
 }
 
 // ===== NAVIGATION =====
+
 function goBack() {
-    log('⬅️ Going back to difficulty selection');
     showLoading();
     setTimeout(() => {
         window.location.href = 'difficulty-selection.html';
@@ -707,6 +722,7 @@ function goBack() {
 }
 
 // ===== UTILITY FUNCTIONS =====
+
 function showLoading() {
     const loading = document.getElementById('loading');
     if (loading) {
@@ -721,8 +737,16 @@ function hideLoading() {
     }
 }
 
+/**
+ * P0 FIX: Safe notification using NocapUtils
+ */
 function showNotification(message, type = 'info', duration = 3000) {
-    // Remove existing notifications
+    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type);
+        return;
+    }
+
+    // Fallback
     document.querySelectorAll('.notification').forEach(n => n.remove());
 
     const notification = document.createElement('div');
@@ -730,44 +754,24 @@ function showNotification(message, type = 'info', duration = 3000) {
 
     const textSpan = document.createElement('span');
     textSpan.className = 'notification-text';
-    // XSS-SAFE: Sanitize and use textContent
-    const sanitizedMessage = String(message).replace(/<[^>]*>/g, '');
-    textSpan.textContent = sanitizedMessage;
+    textSpan.textContent = sanitizePlayerName(message);
 
     notification.appendChild(textSpan);
 
-    const container = document.getElementById('notification-container');
-    if (container) {
-        container.appendChild(notification);
+    const container = document.getElementById('notification-container') || document.body;
+    container.appendChild(notification);
 
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, duration);
-    }
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, duration);
 }
 
-function log(message, type = 'info') {
-    const colors = {
-        info: '#4488ff',
-        warning: '#ffaa00',
-        error: '#ff4444',
-        success: '#00ff00'
-    };
+// ===== INITIALIZATION =====
 
-    console.log(`%c[PlayerSetup] ${message}`, `color: ${colors[type] || colors.info}`);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
 }
-
-// ===== DEBUG FUNCTIONS =====
-window.debugPlayerSetup = function() {
-    console.log('🔍 === PLAYER SETUP DEBUG ===');
-    console.log('GameState:', gameState?.getDebugInfo());
-    console.log('Players List:', playersList);
-    console.log('Alcohol Mode:', alcoholMode);
-    console.log('Question Counts:', questionCounts);
-    console.log('LocalStorage:', localStorage.getItem('nocap_game_state'));
-};
-
-log('✅ No-Cap Player Setup v2.1 - Input Sanitization & Encoding Fixed!');
-log('🛠️ Debug: debugPlayerSetup()');
