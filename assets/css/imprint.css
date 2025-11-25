@@ -1,0 +1,457 @@
+/**
+ * No-Cap Imprint (Impressum) Styles
+ * Version 1.0 - Production Ready
+ */
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+/* ============================================================================
+   IMPRINT CONTAINER
+   ============================================================================ */
+
+.imprint-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+
+.imprint-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.imprint-header h1 {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-weight: 800;
+}
+
+.header-subtitle {
+    color: #7f8c8d;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* ============================================================================
+   BACK BUTTON
+   ============================================================================ */
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.back-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.back-button:active {
+    transform: scale(0.98);
+}
+
+.back-button:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* ============================================================================
+   CONTENT
+   ============================================================================ */
+
+.imprint-content {
+    color: #555;
+}
+
+.imprint-content section {
+    margin-bottom: 40px;
+}
+
+.imprint-content h2 {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3498db;
+    font-weight: 700;
+}
+
+.imprint-content h3 {
+    color: #34495e;
+    font-size: 1.4rem;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.imprint-content h4 {
+    color: #34495e;
+    font-size: 1.2rem;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.imprint-content p {
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
+
+.imprint-content ul {
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.imprint-content li {
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 10px;
+}
+
+.imprint-content a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-weight: 500;
+}
+
+.imprint-content a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.imprint-content a:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+.imprint-content code {
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #e83e8c;
+}
+
+.imprint-content strong {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* ============================================================================
+   INFO BOXES
+   ============================================================================ */
+
+.info-box {
+    background: #e8f4fd;
+    border-left: 4px solid #3498db;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+.info-box p {
+    margin-bottom: 10px;
+}
+
+.info-box p:last-child {
+    margin-bottom: 0;
+}
+
+.info-box ul {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+.warning-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+.warning-box strong {
+    color: #856404;
+}
+
+.warning-box h3 {
+    color: #856404;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.warning-box ul {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+.success-box {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+.success-box strong {
+    color: #155724;
+}
+
+.success-box ul {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+/* ============================================================================
+   CONTACT INFO
+   ============================================================================ */
+
+.contact-info {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.contact-info p {
+    margin-bottom: 10px;
+}
+
+.contact-info p:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+
+.imprint-footer {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #e0e0e0;
+}
+
+.footer-navigation {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.footer-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.footer-nav-link:hover {
+    background: rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.footer-nav-link:active {
+    transform: scale(0.98);
+}
+
+.footer-nav-link:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* ============================================================================
+   MOBILE RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .imprint-container {
+        padding: 20px 15px;
+    }
+
+    .imprint-header h1 {
+        font-size: 2rem;
+    }
+
+    .header-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .imprint-content h2 {
+        font-size: 1.5rem;
+    }
+
+    .imprint-content h3 {
+        font-size: 1.2rem;
+    }
+
+    .imprint-content h4 {
+        font-size: 1.1rem;
+    }
+
+    .back-button {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    .info-box,
+    .warning-box,
+    .success-box,
+    .contact-info {
+        padding: 15px;
+    }
+
+    .footer-navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .footer-nav-link {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .imprint-header h1 {
+        font-size: 1.6rem;
+    }
+
+    .imprint-content h2 {
+        font-size: 1.3rem;
+    }
+
+    .imprint-content h3 {
+        font-size: 1.1rem;
+    }
+
+    .imprint-content p,
+    .imprint-content li {
+        font-size: 0.95rem;
+    }
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+
+    .imprint-container {
+        background: white;
+        box-shadow: none;
+        padding: 20px;
+    }
+
+    .back-button,
+    .footer-navigation {
+        display: none;
+    }
+
+    .imprint-content section {
+        page-break-inside: avoid;
+    }
+
+    .imprint-content h2 {
+        page-break-after: avoid;
+    }
+
+    .info-box,
+    .warning-box,
+    .success-box {
+        border: 1px solid #ccc;
+    }
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+@media (prefers-contrast: high) {
+    .back-button,
+    .footer-nav-link,
+    .imprint-content a {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Smooth scroll for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+/* Focus visible */
+:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}

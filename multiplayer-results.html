@@ -11,529 +11,8 @@
     <!-- Favicon - Kappe Emoji -->
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Background Particles */
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { top: 20%; left: 20%; animation-delay: 0s; }
-        .particle:nth-child(2) { top: 80%; left: 80%; animation-delay: 2s; }
-        .particle:nth-child(3) { top: 40%; left: 40%; animation-delay: 4s; }
-        .particle:nth-child(4) { top: 60%; left: 10%; animation-delay: 6s; }
-        .particle:nth-child(5) { top: 10%; left: 90%; animation-delay: 8s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        /* Loading Spinner */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .loading.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        .loading-text {
-            color: white;
-            font-size: 1.1rem;
-            text-align: center;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* App Container */
-        .app-container {
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* Game Complete Header */
-        .game-complete-header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
-            margin-bottom: 30px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .completion-emoji {
-            font-size: 4rem;
-            margin-bottom: 15px;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
-        }
-
-        .completion-title {
-            color: white;
-            font-size: 2.2rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-        }
-
-        .completion-subtitle {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-        }
-
-        .game-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-        }
-
-        .stat-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 15px;
-            text-align: center;
-        }
-
-        .stat-value {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-            margin-top: 5px;
-        }
-
-        /* Final Rankings */
-        .final-rankings {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .rankings-title {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .podium {
-            display: flex;
-            justify-content: center;
-            align-items: end;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .podium-place {
-            text-align: center;
-            flex: 1;
-            max-width: 120px;
-        }
-
-        .podium-place.first {
-            order: 2;
-        }
-
-        .podium-place.second {
-            order: 1;
-        }
-
-        .podium-place.third {
-            order: 3;
-        }
-
-        .podium-stand {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            border-radius: 10px 10px 0 0;
-            padding: 20px 10px;
-            margin-bottom: 15px;
-            position: relative;
-        }
-
-        .podium-place.first .podium-stand {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            height: 100px;
-        }
-
-        .podium-place.second .podium-stand {
-            background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
-            height: 80px;
-        }
-
-        .podium-place.third .podium-stand {
-            background: linear-gradient(135deg, #CD7F32, #B8860B);
-            height: 60px;
-        }
-
-        .podium-position {
-            color: white;
-            font-size: 2rem;
-            font-weight: 800;
-        }
-
-        .podium-name {
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .podium-score {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-        }
-
-        /* All Players List */
-        .all-players {
-            margin-top: 20px;
-        }
-
-        .players-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .player-result {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
-        .player-result:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .player-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .player-rank {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
-
-        .player-rank.first {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-        }
-
-        .player-rank.second {
-            background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
-        }
-
-        .player-rank.third {
-            background: linear-gradient(135deg, #CD7F32, #B8860B);
-        }
-
-        .player-name {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .player-stats {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .stat-column {
-            text-align: center;
-        }
-
-        .stat-number {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .stat-text {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-        }
-
-        /* Fun Facts Section */
-        .fun-facts {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .fun-facts-title {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .facts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .fact-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .fact-emoji {
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-        }
-
-        .fact-text {
-            color: white;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 30px;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 140px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        /* Share Results */
-        .share-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 25px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .share-title {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-
-        .share-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .share-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .share-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            z-index: 1001;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification.success { background: #4CAF50; }
-        .notification.error { background: #F44336; }
-        .notification.info { background: #2196F3; }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .app-container {
-                padding: 15px;
-            }
-
-            .completion-title {
-                font-size: 1.8rem;
-            }
-
-            .podium {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .podium-place {
-                max-width: 200px;
-                width: 100%;
-                margin-bottom: 15px;
-            }
-
-            .podium-place.first,
-            .podium-place.second,
-            .podium-place.third {
-                order: initial;
-            }
-
-            .player-stats {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-
-            .facts-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="/assets/css/multiplayer-results.css">
 </head>
 <body>
 <!-- Background Particles -->
@@ -551,91 +30,90 @@
     <div class="loading-text" id="loading-text">Ergebnisse werden geladen...</div>
 </div>
 
-<!-- Notification -->
-<div class="notification" id="notification"></div>
-
 <!-- App Container -->
 <div class="app-container">
     <!-- Game Complete Header -->
-    <div class="game-complete-header">
-        <div class="completion-emoji">🎉</div>
-        <div class="completion-title">Spiel beendet!</div>
-        <div class="completion-subtitle" id="completion-subtitle">Ihr habt alle Runden gemeistert</div>
+    <header class="game-complete-header">
+        <div class="completion-emoji" aria-hidden="true">🎉</div>
+        <h1 class="completion-title">Spiel beendet!</h1>
+        <p class="completion-subtitle" id="completion-subtitle">Ihr habt alle Runden gemeistert</p>
 
-        <div class="game-stats" id="game-stats">
-            <div class="stat-item">
+        <div class="game-stats" id="game-stats" role="list">
+            <div class="stat-item" role="listitem">
                 <div class="stat-value" id="total-rounds-stat">0</div>
                 <div class="stat-label">Runden</div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item" role="listitem">
                 <div class="stat-value" id="total-players-stat">0</div>
                 <div class="stat-label">Spieler</div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item" role="listitem">
                 <div class="stat-value" id="game-duration-stat">-</div>
                 <div class="stat-label">Spieldauer</div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item" role="listitem">
                 <div class="stat-value" id="accuracy-stat">0%</div>
                 <div class="stat-label">Trefferquote</div>
             </div>
         </div>
-    </div>
+    </header>
 
     <!-- Final Rankings -->
-    <div class="final-rankings">
-        <div class="rankings-title">🏆 Endranking</div>
+    <section class="final-rankings">
+        <h2 class="rankings-title">🏆 Endranking</h2>
 
         <!-- Podium -->
-        <div class="podium" id="podium">
+        <div class="podium" id="podium" role="list">
             <!-- Dynamically generated -->
         </div>
 
         <!-- All Players List -->
         <div class="all-players">
-            <div class="players-list" id="players-list">
+            <div class="players-list" id="players-list" role="list">
                 <!-- Dynamically generated -->
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- Fun Facts -->
-    <div class="fun-facts">
-        <div class="fun-facts-title">📊 Interessante Fakten</div>
-        <div class="facts-grid" id="facts-grid">
+    <section class="fun-facts">
+        <h2 class="fun-facts-title">📊 Interessante Fakten</h2>
+        <div class="facts-grid" id="facts-grid" role="list">
             <!-- Dynamically generated -->
         </div>
-    </div>
+    </section>
 
     <!-- Share Results -->
-    <div class="share-section">
-        <div class="share-title">📤 Ergebnis teilen</div>
+    <section class="share-section">
+        <h3 class="share-title">📤 Ergebnis teilen</h3>
         <div class="share-buttons">
-            <button class="share-btn" id="share-whatsapp-btn">💬 WhatsApp</button>
-            <button class="share-btn" id="share-telegram-btn">✈️ Telegram</button>
-            <button class="share-btn" id="copy-results-btn">📋 Kopieren</button>
-            <button class="share-btn" id="save-screenshot-btn">📸 Screenshot</button>
+            <button type="button" class="share-btn" id="share-whatsapp-btn">💬 WhatsApp</button>
+            <button type="button" class="share-btn" id="share-telegram-btn">✈️ Telegram</button>
+            <button type="button" class="share-btn" id="copy-results-btn">📋 Kopieren</button>
+            <button type="button" class="share-btn" id="save-screenshot-btn">📸 Screenshot</button>
         </div>
-    </div>
+    </section>
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-        <button class="btn btn-primary" id="play-again-btn">🔄 Nochmal spielen</button>
-        <button class="btn btn-secondary" id="back-to-menu-btn">🏠 Hauptmenü</button>
+        <button type="button" class="btn btn-primary" id="play-again-btn">🔄 Nochmal spielen</button>
+        <button type="button" class="btn btn-secondary" id="back-to-menu-btn">🏠 Hauptmenü</button>
     </div>
 </div>
 
 <!-- Privacy Policy Footer Link -->
-<div style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 100;">
-    <a href="privacy.html" style="color: rgba(255,255,255,0.6); font-size: 0.75rem; text-decoration: none;">Datenschutz</a>
-</div>
+<footer class="footer-links">
+    <a href="privacy.html">Datenschutz</a>
+</footer>
 
-<!-- DOMPurify CDN -- crossorigin="anonymous" referrerpolicy="no-referrer">
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- DOMPurify CDN -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
 
 <!-- Core Scripts in correct order -->
-<script src="/assets/js/migration.js"></script>
 <script src="/assets/js/GameState.js"></script>
+<script src="/assets/js/utils.js"></script>
 <script src="/assets/js/multiplayer-results.js"></script>
 </body>
 </html>

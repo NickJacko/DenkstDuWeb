@@ -4,21 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update Hash">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update Hash/ joingame/ mcs/ mds/ ml">
+      <change afterPath="$PROJECT_DIR$/assets/css/imprint.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/privacy.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/join-game.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/join-game.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/join-game.html" beforeDir="false" afterPath="$PROJECT_DIR$/join-game.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/multiplayer-category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/multiplayer-lobby.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-lobby.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-gameplay.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-gameplay.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-results.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-results.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-results.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-results.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/imprint.html" beforeDir="false" afterPath="$PROJECT_DIR$/imprint.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-gameplay.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-results.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-results.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/privacy.html" beforeDir="false" afterPath="$PROJECT_DIR$/privacy.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -119,15 +116,8 @@
       <workItem from="1763970102958" duration="420000" />
       <workItem from="1763972698983" duration="19030000" />
       <workItem from="1764054992803" duration="401000" />
-      <workItem from="1764055680815" duration="1678000" />
-    </task>
-    <task id="LOCAL-00019" summary="Gamestate change">
-      <option name="closed" value="true" />
-      <created>1762420623190</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1762420623190</updated>
+      <workItem from="1764055680815" duration="2380000" />
+      <workItem from="1764072926170" duration="4443000" />
     </task>
     <task id="LOCAL-00020" summary="Gameplay change">
       <option name="closed" value="true" />
@@ -513,7 +503,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763995478073</updated>
     </task>
-    <option name="localTasksCounter" value="68" />
+    <task id="LOCAL-00068" summary="Update Hash/ joingame/ mcs/ mds/ ml">
+      <option name="closed" value="true" />
+      <created>1764057531667</created>
+      <option name="number" value="00068" />
+      <option name="presentableId" value="LOCAL-00068" />
+      <option name="project" value="LOCAL" />
+      <updated>1764057531667</updated>
+    </task>
+    <option name="localTasksCounter" value="69" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -534,7 +532,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Unversioned" />
     <MESSAGE value="MDS update" />
     <MESSAGE value="MDS update connection delay" />
     <MESSAGE value="Lobby and join" />
@@ -559,6 +556,7 @@
     <MESSAGE value="new changes after audit" />
     <MESSAGE value="Audit changes/ Extract to css" />
     <MESSAGE value="Update Hash" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update Hash" />
+    <MESSAGE value="Update Hash/ joingame/ mcs/ mds/ ml" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update Hash/ joingame/ mcs/ mds/ ml" />
   </component>
 </project>

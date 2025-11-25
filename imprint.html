@@ -3,128 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DenkstDu - Impressum</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f9f9f9;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-        .legal-container {
-            max-width: 800px;
-            margin: auto;
-            padding: 24px;
-            background: white;
-            min-height: 100vh;
-        }
-        .top-bar {
-            display: flex;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .legal-back-button {
-            font-size: 16px;
-            text-decoration: none;
-            color: #555;
-            font-weight: bold;
-            padding: 6px 12px;
-            border-radius: 6px;
-            background: #e0e0e0;
-            transition: background 0.2s ease;
-        }
-        .legal-back-button:hover {
-            background: #ccc;
-        }
-        .legal-title {
-            text-align: center;
-            color: #2c3e50;
-            font-size: 26px;
-            margin-top: 0;
-        }
-        .legal-content p {
-            line-height: 1.6;
-            margin-bottom: 16px;
-        }
-        .legal-content a {
-            color: #3498db;
-            text-decoration: none;
-        }
-        .legal-content a:hover {
-            text-decoration: underline;
-        }
-        @media (max-width: 600px) {
-            .legal-container {
-                padding: 16px;
-            }
-            .legal-title {
-                font-size: 22px;
-            }
-            .legal-back-button {
-                font-size: 14px;
-                padding: 5px 10px;
-            }
-        }
-    </style>
+    <meta name="description" content="Impressum - No-Cap Party Game">
+    <meta name="robots" content="index, follow">
+    <title>Impressum | No-Cap</title>
+
+    <!-- Favicon - Kappe Emoji -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="/assets/css/imprint.css">
 </head>
-<body class="legal-page">
-    <div class="legal-container">
-        <div class="top-bar">
-            <a class="legal-back-button" href="index.html">← Zurück</a>
-        </div>
-        
-        <h1 class="legal-title">Impressum / Legal Disclosure</h1>
-        
-        <div class="legal-content">
-            <p><strong>Angaben gemäß § 5 TMG:</strong></p>
+<body>
+<div class="imprint-container">
+    <a href="index.html" class="back-button">
+        ← Zurück zur Startseite
+    </a>
+
+    <header class="imprint-header">
+        <h1>📋 Impressum</h1>
+        <p class="header-subtitle">Angaben gemäß § 5 TMG (Telemediengesetz)</p>
+    </header>
+
+    <main class="imprint-content">
+        <!-- Betreiber -->
+        <section id="betreiber">
+            <h2>Angaben gemäß § 5 TMG</h2>
+            <div class="info-box">
+                <p>
+                    <strong>[Ihr vollständiger Name / Firmenname]</strong><br>
+                    [Rechtsform, falls Unternehmen - z.B. "Einzelunternehmen" oder "GbR"]<br>
+                    [Straße und Hausnummer]<br>
+                    [PLZ] [Stadt]<br>
+                    Deutschland
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <p><strong>⚠️ WICHTIG:</strong> Dies ist ein Platzhalter-Impressum. Sie müssen hier Ihre eigenen, korrekten Daten eintragen!</p>
+                <p>
+                    Ein fehlendes oder unvollständiges Impressum kann <strong>abgemahnt werden</strong> und verstößt gegen das Telemediengesetz (TMG).
+                </p>
+            </div>
+        </section>
+
+        <!-- Kontakt -->
+        <section id="kontakt">
+            <h2>Kontakt</h2>
+            <div class="contact-info">
+                <p>
+                    <strong>📧 E-Mail:</strong> <a href="mailto:kontakt@no-cap.app">kontakt@no-cap.app</a><br>
+                    <strong>📱 Telefon:</strong> [Ihre Telefonnummer - optional, aber empfohlen]<br>
+                    <strong>🌐 Website:</strong> <a href="https://no-cap.app">https://no-cap.app</a>
+                </p>
+            </div>
+
+            <div class="info-box">
+                <p><strong>ℹ️ Hinweis:</strong> Eine Telefonnummer ist für Privatpersonen nicht verpflichtend, aber für Unternehmen empfohlen.</p>
+            </div>
+        </section>
+
+        <!-- Umsatzsteuer-ID (falls vorhanden) -->
+        <section id="umsatzsteuer">
+            <h2>Umsatzsteuer-Identifikationsnummer</h2>
             <p>
-                Nick-Mark Jacklin<br>
-                Osnabrücker Landstraße 2-8<br>
-                33335 Gütersloh<br>
-                Deutschland
+                Gemäß § 27a Umsatzsteuergesetz:
             </p>
-            
-            <p><strong>Kontakt:</strong><br>
-                E-Mail: <a href="mailto:Nickjacklin99@web.de">Nickjacklin99@web.de</a>
+            <div class="info-box">
+                <p>
+                    <strong>USt-IdNr.:</strong> [Ihre USt-IdNr., falls vorhanden - z.B. "DE123456789"]
+                </p>
+            </div>
+
+            <div class="warning-box">
+                <p><strong>⚠️ Nur für Unternehmen relevant:</strong></p>
+                <ul>
+                    <li>Falls Sie <strong>keine USt-IdNr.</strong> haben (z.B. Kleinunternehmer nach § 19 UStG oder Privatperson), können Sie diesen Abschnitt entfernen.</li>
+                    <li>Falls Sie <strong>umsatzsteuerpflichtig</strong> sind, müssen Sie Ihre USt-IdNr. angeben.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Berufsbezeichnung (falls relevant) -->
+        <section id="berufsbezeichnung">
+            <h2>Berufsbezeichnung (falls zutreffend)</h2>
+            <div class="info-box">
+                <p>
+                    Dieser Abschnitt ist nur relevant für <strong>reglementierte Berufe</strong> (z.B. Rechtsanwälte, Ärzte, Architekten).
+                </p>
+                <p>
+                    Falls Sie kein reglementierter Beruf sind, können Sie diesen Abschnitt entfernen.
+                </p>
+            </div>
+        </section>
+
+        <!-- EU-Streitschlichtung -->
+        <section id="streitschlichtung">
+            <h2>EU-Streitschlichtung</h2>
+            <p>
+                Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
             </p>
-            
-            <p><strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:</strong><br>
-                Nick-Mark Jacklin<br>
-                Anschrift wie oben
+            <div class="contact-info">
+                <p>
+                    <strong>🔗 Link:</strong> <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer">https://ec.europa.eu/consumers/odr</a>
+                </p>
+            </div>
+            <p>
+                Unsere E-Mail-Adresse finden Sie oben im Impressum.
             </p>
-            
-            <p><strong>Haftungsausschluss:</strong><br>
-                Wir übernehmen keine Haftung für externe Inhalte, auf die wir verlinken, es sei denn, 
-                wir erlangen Kenntnis von spezifischen Rechtsverletzungen. Wenn solche Rechtsverletzungen 
-                bekannt werden, entfernen wir die Links umgehend.
+        </section>
+
+        <!-- Verbraucherstreitbeilegung -->
+        <section id="verbraucherstreitbeilegung">
+            <h2>Verbraucherstreitbeilegung / Universalschlichtungsstelle</h2>
+            <p>
+                Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
             </p>
-            
-            <p><strong>EU-Streitschlichtung:</strong><br>
-                Die Europäische Online-Streitschlichtungsplattform wurde eingestellt. 
-                Wir nehmen nicht an Verbraucherstreitbeilegungsverfahren teil.
+
+            <div class="info-box">
+                <p><strong>ℹ️ Hinweis:</strong></p>
+                <p>
+                    Diese Formulierung ist für <strong>kleine Anbieter und Privatpersonen</strong> ausreichend, die nicht zur Teilnahme an Streitschlichtungsverfahren verpflichtet sind.
+                </p>
+                <p>
+                    Falls Sie ein <strong>großes Unternehmen</strong> sind (z.B. mehr als 10 Mitarbeiter), können andere Pflichten gelten.
+                </p>
+            </div>
+        </section>
+
+        <!-- Haftungsausschluss -->
+        <section id="haftung">
+            <h2>Haftungsausschluss</h2>
+
+            <h3>Haftung für Inhalte</h3>
+            <p>
+                Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.
             </p>
-            
-            <p><strong>Hinweis:</strong><br>
-                Dieses Projekt wird von einer Privatperson betrieben. Gemäß § 19 UStG wird keine 
-                Umsatzsteuer ausgewiesen. Das Angebot ist im rechtlichen Sinne nicht-kommerziell, 
-                jedoch können freiwillige Spenden zur Unterstützung des Projekts angenommen werden.
+            <p>
+                Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.
             </p>
-            
-            <p><strong>Urheberrecht:</strong><br>
-                Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen 
-                dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art 
-                der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen 
-                Zustimmung des jeweiligen Autors bzw. Erstellers.
+
+            <h3>Haftung für Links</h3>
+            <p>
+                Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.
             </p>
-            
-            <p><strong>Datenschutz:</strong><br>
-                Weitere Informationen zum Datenschutz finden Sie in unserer 
-                <a href="privacy.html">Datenschutzerklärung</a>.
+            <p>
+                Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar. Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.
             </p>
-        
+        </section>
+
+        <!-- Urheberrecht -->
+        <section id="urheberrecht">
+            <h2>Urheberrecht</h2>
+            <p>
+                Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.
+            </p>
+            <p>
+                Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet. Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.
+            </p>
+
+            <div class="info-box">
+                <h4>Verwendete Ressourcen</h4>
+                <ul>
+                    <li><strong>Schriftart:</strong> Poppins von Google Fonts (Open Font License)</li>
+                    <li><strong>Icons:</strong> Emoji-Icons (gemeinfrei)</li>
+                    <li><strong>Backend:</strong> Firebase von Google (siehe Datenschutzerklärung)</li>
+                    <li><strong>Frontend-Bibliothek:</strong> DOMPurify (Open Source, Apache 2.0 License)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Verantwortung für Spiel-Inhalte -->
+        <section id="spielinhalte">
+            <h2>Hinweise zu Spiel-Inhalten</h2>
+            <div class="warning-box">
+                <h3>⚠️ Wichtige Hinweise</h3>
+                <ul>
+                    <li><strong>Keine Aufforderung zu Straftaten:</strong> Alle Spielinhalte sind für den privaten Unterhaltungsgebrauch bestimmt und stellen keine Aufforderung zu illegalen Handlungen dar.</li>
+                    <li><strong>Verantwortungsvoller Umgang:</strong> Die Nutzung der App erfolgt auf eigene Verantwortung. Wir übernehmen keine Haftung für Folgen aus dem Gebrauch.</li>
+                    <li><strong>Jugendschutz:</strong> Inhalte mit Altersbeschränkung sind durch Altersverifikation geschützt.</li>
+                    <li><strong>Alkohol:</strong> Die App verkauft oder schenkt keinen Alkohol aus. Erwähnungen von Alkohol dienen ausschließlich Unterhaltungszwecken im Rahmen eines Gesellschaftsspiels.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Hinweis für Änderungen -->
+        <section id="aenderungen">
+            <h2>Änderungen des Impressums</h2>
+            <p>
+                Wir behalten uns vor, dieses Impressum bei Bedarf anzupassen, um es rechtlichen Anforderungen oder Änderungen unseres Angebots anzupassen.
+            </p>
+            <p>
+                <strong>Letzte Aktualisierung:</strong> 25. November 2024
+            </p>
+        </section>
+
+        <!-- Kontakt bei Rechtsverletzungen -->
+        <section id="rechtsverletzungen">
+            <h2>📧 Kontakt bei Rechtsverletzungen</h2>
+            <div class="contact-info">
+                <p>
+                    Falls Sie der Meinung sind, dass Inhalte auf dieser Website Ihre Rechte verletzen, kontaktieren Sie uns bitte umgehend:
+                </p>
+                <p>
+                    <strong>E-Mail:</strong> <a href="mailto:legal@no-cap.app">legal@no-cap.app</a><br>
+                    <strong>Betreff:</strong> "Rechtsverletzung - No-Cap"
+                </p>
+                <p>
+                    Wir werden berechtigte Beanstandungen umgehend prüfen und entsprechende Inhalte gegebenenfalls entfernen.
+                </p>
+            </div>
+        </section>
+
+        <!-- Checkliste für Betreiber -->
+        <section id="checkliste">
+            <h2>✅ Checkliste für Sie als Betreiber</h2>
+            <div class="success-box">
+                <p><strong>Bevor Sie diese Website veröffentlichen, stellen Sie sicher, dass:</strong></p>
+                <ul>
+                    <li>✅ Alle Platzhalter-Daten ([...]) durch Ihre echten Daten ersetzt wurden</li>
+                    <li>✅ Name, Adresse, E-Mail und (falls vorhanden) Telefonnummer korrekt sind</li>
+                    <li>✅ Die USt-IdNr. korrekt ist (oder der Abschnitt entfernt wurde, falls nicht zutreffend)</li>
+                    <li>✅ Sie die Datenschutzerklärung ebenfalls ausgefüllt haben (privacy.html)</li>
+                    <li>✅ Alle Links im Impressum funktionieren</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <p><strong>⚠️ Rechtliche Hinweise:</strong></p>
+                <ul>
+                    <li>Dieses Impressum ist eine <strong>Vorlage</strong> und keine Rechtsberatung</li>
+                    <li>Für besondere Situationen (z.B. reglementierte Berufe, bestimmte Geschäftsmodelle) können zusätzliche Angaben erforderlich sein</li>
+                    <li>Im Zweifelsfall konsultieren Sie einen Rechtsanwalt für Medienrecht</li>
+                    <li>Weitere Informationen: <a href="https://www.e-recht24.de/impressum-generator.html" target="_blank" rel="noopener noreferrer">e-recht24.de Impressum-Generator</a></li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer class="imprint-footer">
+        <div class="footer-navigation">
+            <a href="index.html" class="footer-nav-link">← Startseite</a>
+            <a href="privacy.html" class="footer-nav-link">Datenschutz →</a>
         </div>
-    </div>
+    </footer>
+</div>
+
+<!-- DOMPurify CDN -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+
+<!-- Scripts -->
+<script src="/assets/js/utils.js"></script>
 </body>
 </html>

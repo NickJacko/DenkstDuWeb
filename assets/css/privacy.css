@@ -1,0 +1,472 @@
+/**
+ * No-Cap Privacy Policy Styles
+ * Version 1.0 - Production Ready
+ */
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+/* ============================================================================
+   PRIVACY CONTAINER
+   ============================================================================ */
+
+.privacy-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+
+.privacy-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.privacy-header h1 {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-weight: 800;
+}
+
+.privacy-header .last-updated {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* ============================================================================
+   BACK BUTTON
+   ============================================================================ */
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.back-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.back-button:active {
+    transform: scale(0.98);
+}
+
+.back-button:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* ============================================================================
+   TABLE OF CONTENTS
+   ============================================================================ */
+
+.toc {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 30px 0;
+}
+
+.toc h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #2c3e50;
+    font-size: 1.3rem;
+}
+
+.toc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.toc li {
+    margin-bottom: 8px;
+}
+
+.toc a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-weight: 500;
+}
+
+.toc a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.toc a:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* ============================================================================
+   CONTENT
+   ============================================================================ */
+
+.privacy-content {
+    color: #555;
+}
+
+.privacy-content section {
+    margin-bottom: 40px;
+}
+
+.privacy-content h2 {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3498db;
+    font-weight: 700;
+}
+
+.privacy-content h3 {
+    color: #34495e;
+    font-size: 1.4rem;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.privacy-content p {
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
+
+.privacy-content ul {
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.privacy-content li {
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 10px;
+}
+
+.privacy-content a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.privacy-content a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.privacy-content a:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+.privacy-content code {
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #e83e8c;
+}
+
+.privacy-content strong {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* ============================================================================
+   INFO BOXES
+   ============================================================================ */
+
+.info-box {
+    background: #e8f4fd;
+    border-left: 4px solid #3498db;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+.info-box strong {
+    color: #2980b9;
+}
+
+.warning-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+.warning-box strong {
+    color: #856404;
+}
+
+.success-box {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+.success-box strong {
+    color: #155724;
+}
+
+/* ============================================================================
+   CONTACT INFO
+   ============================================================================ */
+
+.contact-info {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 10px;
+    margin: 30px 0;
+}
+
+.contact-info h3 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.contact-info p {
+    margin-bottom: 15px;
+}
+
+/* ============================================================================
+   DATA TABLE
+   ============================================================================ */
+
+.table-container {
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.data-table thead {
+    background: #f8f9fa;
+}
+
+.data-table th {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.data-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    color: #555;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.data-table tbody tr:hover {
+    background: #e9ecef;
+}
+
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+
+.privacy-footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #e0e0e0;
+}
+
+/* ============================================================================
+   MOBILE RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .privacy-container {
+        padding: 20px 15px;
+    }
+
+    .privacy-header h1 {
+        font-size: 2rem;
+    }
+
+    .privacy-content h2 {
+        font-size: 1.5rem;
+    }
+
+    .privacy-content h3 {
+        font-size: 1.2rem;
+    }
+
+    .back-button {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    .toc {
+        padding: 15px;
+    }
+
+    .info-box,
+    .warning-box,
+    .success-box,
+    .contact-info {
+        padding: 15px;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .privacy-header h1 {
+        font-size: 1.6rem;
+    }
+
+    .privacy-content h2 {
+        font-size: 1.3rem;
+    }
+
+    .privacy-content h3 {
+        font-size: 1.1rem;
+    }
+
+    .privacy-content p,
+    .privacy-content li {
+        font-size: 0.95rem;
+    }
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+
+    .privacy-container {
+        background: white;
+        box-shadow: none;
+        padding: 20px;
+    }
+
+    .back-button {
+        display: none;
+    }
+
+    .toc {
+        page-break-after: always;
+    }
+
+    .privacy-content section {
+        page-break-inside: avoid;
+    }
+
+    .privacy-content h2 {
+        page-break-after: avoid;
+    }
+
+    .info-box,
+    .warning-box,
+    .success-box {
+        border: 1px solid #ccc;
+    }
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+@media (prefers-contrast: high) {
+    .back-button,
+    .toc a,
+    .privacy-content a {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Smooth scroll for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+/* Focus visible polyfill */
+:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
