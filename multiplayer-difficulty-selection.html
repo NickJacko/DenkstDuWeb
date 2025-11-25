@@ -4,493 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Multiplayer Schwierigkeit wählen</title>
+
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
+    <!-- P1 FIX: External CSS ONLY -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/multiplayer-difficulty-selection.css">
+
+    <!-- P1 FIX: DOMPurify FIRST -->
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+            integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-    <!-- DOMPurify for XSS Protection -- crossorigin="anonymous" referrerpolicy="no-referrer">
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <!-- Central Scripts (MUST load before page script) -->
-    <script src="/assets/js/migration.js"></script>
-    <script src="/assets/js/GameState.js"></script>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 8s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 2s; }
-        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 4s; }
-        .particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 1s; }
-        .particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 3s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            50% { transform: translateY(-50px) rotate(180deg); opacity: 0.6; }
-        }
-
-        /* Connection Status */
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 10px 15px;
-            color: white;
-            font-size: 0.8rem;
-            z-index: 1000;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .connection-status.connected {
-            border: 1px solid #4CAF50;
-            background: rgba(76, 175, 80, 0.2);
-        }
-
-        .connection-status.disconnected {
-            border: 1px solid #f44336;
-            background: rgba(244, 67, 54, 0.2);
-        }
-
-        .connection-status.connecting {
-            border: 1px solid #ff9800;
-            background: rgba(255, 152, 0, 0.2);
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .app-container {
-            padding: 20px;
-            max-width: 1000px;
-            margin: 0 auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .header p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.1rem;
-            line-height: 1.5;
-        }
-
-        /* Game Info Section */
-        .game-info {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .info-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .info-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .info-value {
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .game-id {
-            font-family: 'Courier New', monospace;
-            font-size: 1.2rem;
-            letter-spacing: 2px;
-        }
-
-        .categories-list {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .category-tag {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        /* Difficulty Selection */
-        .difficulty-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        @media (min-width: 768px) {
-            .difficulty-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 25px;
-            }
-        }
-
-        .difficulty-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        .difficulty-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 255, 255, 0.4);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .difficulty-card.selected {
-            background: rgba(76, 175, 80, 0.2);
-            border-color: #4CAF50;
-            transform: translateY(-8px);
-            box-shadow: 0 15px 35px rgba(76, 175, 80, 0.3);
-        }
-
-        .difficulty-card.easy {
-            border-color: #4CAF50;
-        }
-
-        .difficulty-card.medium {
-            border-color: #FF9800;
-        }
-
-        .difficulty-card.hard {
-            border-color: #F44336;
-        }
-
-        .difficulty-card.easy.selected {
-            background: rgba(76, 175, 80, 0.2);
-            border-color: #4CAF50;
-        }
-
-        .difficulty-card.medium.selected {
-            background: rgba(255, 152, 0, 0.2);
-            border-color: #FF9800;
-        }
-
-        .difficulty-card.hard.selected {
-            background: rgba(244, 67, 54, 0.2);
-            border-color: #F44336;
-        }
-
-        .difficulty-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-
-        .difficulty-name {
-            color: white;
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .difficulty-description {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            line-height: 1.4;
-            margin-bottom: 15px;
-        }
-
-        .difficulty-stats {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .stat-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .stat-icon {
-            font-size: 1.2rem;
-        }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-            flex: 1;
-            text-align: left;
-        }
-
-        .stat-value {
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 120px;
-        }
-
-        .btn-outline {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .btn-primary.enabled {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .btn-primary.enabled:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-        }
-
-        /* Loading Spinner */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .loading.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #4CAF50;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .notification.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .notification.warning {
-            background: #ff9800;
-        }
-
-        .notification.error {
-            background: #f44336;
-        }
-
-        /* Privacy Footer */
-        .privacy-footer {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .privacy-link {
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-        }
-
-        .privacy-link:hover {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .connection-status {
-                top: 80px;
-                right: 15px;
-                font-size: 0.7rem;
-                padding: 8px 12px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .app-container {
-                padding: 15px;
-            }
-
-            .glass-card {
-                padding: 25px 20px;
-            }
-
-            .controls {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .info-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-
-            .categories-list {
-                justify-content: flex-start;
-            }
-        }
-    </style>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <!-- P1 FIX: Core Scripts in correct order -->
+    <script defer src="/assets/js/GameState.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/firebase-service.js"></script>
+    <script defer src="/assets/js/multiplayer-difficulty-selection.js"></script>
 </head>
 <body>
 <!-- Background Particles -->
-<div class="background-particles">
+<div class="background-particles" aria-hidden="true">
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
@@ -499,117 +49,60 @@
 </div>
 
 <!-- Loading Spinner -->
-<div class="loading" id="loading">
-    <div class="spinner"></div>
+<div class="loading" id="loading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-text">Verbinde mit Firebase...</p>
 </div>
 
-<!-- Notification -->
-<div class="notification" id="notification"></div>
-
-<!-- Connection Status -->
-<div class="connection-status connecting" id="connection-status">
-    🔄 Verbinde...
-</div>
+<!-- Back Button -->
+<button class="back-button" id="back-button" type="button" aria-label="Zurück">
+    ← Zurück
+</button>
 
 <!-- App Container -->
 <div class="app-container">
+    <h1 class="screen-title">🎯 Schwierigkeit wählen</h1>
+
     <div class="glass-card">
-        <!-- Header -->
-        <div class="header">
-            <h1>🎯 Schwierigkeit wählen</h1>
-            <p>Wähle den Schwierigkeitsgrad für euer Multiplayer-Spiel</p>
-        </div>
-
-        <!-- Game Info Section -->
-        <div class="game-info" id="game-info">
-            <div class="info-row">
-                <span class="info-label">Host:</span>
-                <span class="info-value" id="host-name">Unbekannt</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Spiel-ID:</span>
-                <span class="info-value game-id" id="game-id">N/A</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Kategorien:</span>
-                <div class="categories-list" id="categories-display">
-                    <span style="color: rgba(255,255,255,0.5);">Keine Kategorien</span>
+        <!-- Multiplayer Header -->
+        <header class="multiplayer-header">
+            <div class="host-info">
+                <div class="host-details">
+                    <div class="host-name" id="host-name">Host Name</div>
+                    <div class="host-indicator">👑 Du bist der Host</div>
+                </div>
+                <div class="game-id-section">
+                    <div class="game-id-label">Spiel-Code:</div>
+                    <div class="game-id-display" id="game-id-display" aria-live="polite">Wird geladen...</div>
                 </div>
             </div>
-        </div>
+        </header>
 
-        <!-- Difficulty Selection -->
-        <div class="difficulty-grid">
-            <!-- Easy -->
-            <div class="difficulty-card easy" data-difficulty="easy">
-                <div class="difficulty-icon">😌</div>
-                <h3 class="difficulty-name">Entspannt</h3>
-                <p class="difficulty-description">
-                    Niedrige Strafen für eine lockere Runde.
-                    Perfekt für gemütliche Abende.
-                </p>
-                <div class="difficulty-stats">
-                    <div class="stat-item">
-                        <div class="stat-icon">🍺</div>
-                        <div class="stat-label">Schlücke bei falscher Antwort</div>
-                        <div class="stat-value">1</div>
-                    </div>
-                </div>
-            </div>
+        <p class="selection-description" id="difficulty-subtitle">
+            Wähle den Schwierigkeitsgrad für euer Multiplayer-Spiel
+        </p>
 
-            <!-- Medium -->
-            <div class="difficulty-card medium" data-difficulty="medium">
-                <div class="difficulty-icon">🎯</div>
-                <h3 class="difficulty-name">Ausgewogen</h3>
-                <p class="difficulty-description">
-                    Die perfekte Balance zwischen Spaß und Herausforderung.
-                    Für die meisten Gruppen ideal.
-                </p>
-                <div class="difficulty-stats">
-                    <div class="stat-item">
-                        <div class="stat-icon">🍺</div>
-                        <div class="stat-label">Schlücke bei falscher Schätzung</div>
-                        <div class="stat-value">= Abweichung</div>
-                    </div>
-                </div>
-            </div>
+        <!-- Selected Categories Display -->
+        <aside class="selected-categories-section" id="selected-categories-section" role="region" aria-label="Ausgewählte Kategorien">
+            <h2 class="section-title">Ausgewählte Kategorien</h2>
+            <div class="selected-categories-display" id="selected-categories-display"></div>
+        </aside>
 
-            <!-- Hard -->
-            <div class="difficulty-card hard" data-difficulty="hard">
-                <div class="difficulty-icon">💀</div>
-                <h3 class="difficulty-name">Hardcore</h3>
-                <p class="difficulty-description">
-                    Nur für Hartgesottene!
-                    Hohe Strafen machen jeden Fehler richtig teuer.
-                </p>
-                <div class="difficulty-stats">
-                    <div class="stat-item">
-                        <div class="stat-icon">🍺</div>
-                        <div class="stat-label">Schlücke bei falscher Schätzung</div>
-                        <div class="stat-value">= 2x Abweichung</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Difficulty Grid -->
+        <div class="difficulty-grid" id="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad-Auswahl"></div>
 
         <!-- Controls -->
         <div class="controls">
-            <button class="btn btn-outline" id="back-btn">← Zurück</button>
-            <button class="btn btn-primary" id="continue-btn">
-                Schwierigkeit auswählen
+            <button class="btn-continue" id="continue-btn" type="button" disabled aria-disabled="true">
+                Schwierigkeitsgrad wählen
             </button>
-        </div>
-
-        <!-- Privacy Footer -->
-        <div class="privacy-footer">
-            <a href="privacy.html" class="privacy-link">
-                Datenschutzerklärung
-            </a>
         </div>
     </div>
 </div>
 
-<!-- External Page Script (MUST load AFTER DOM is ready) -->
-<script src="/assets/js/multiplayer-difficulty-selection.js"></script>
+<!-- Privacy Footer -->
+<div style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 100;">
+    <a href="privacy.html" style="color: rgba(255,255,255,0.6); font-size: 0.75rem; text-decoration: none;">Datenschutz</a>
+</div>
 </body>
 </html>

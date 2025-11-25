@@ -4,709 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Multiplayer Lobby</title>
+
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðŸ§¢</text></svg>">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
+    <!-- P1 FIX: External CSS ONLY -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/multiplayer-lobby.css">
+
+    <!-- P1 FIX: DOMPurify FIRST -->
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+            integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-    <!-- DOMPurify fÃ¼r XSS-Schutz -- crossorigin="anonymous" referrerpolicy="no-referrer">
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
-            crossorigin="anonymous" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <!-- Migration Script (lÃ¤uft automatisch) -->
-    <script src="assets/js/migration.js"></script>
-
-    <!-- Zentrale GameState Klasse -->
-    <script src="assets/js/GameState.js"></script>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 80px; height: 80px; left: 80%; animation-delay: 1s; }
-        .particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 2s; }
-        .particle:nth-child(4) { width: 100px; height: 100px; left: 70%; animation-delay: 3s; }
-        .particle:nth-child(5) { width: 50px; height: 50px; left: 50%; animation-delay: 4s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            50% { transform: translateY(-30px) rotate(180deg); opacity: 0.6; }
-        }
-
-        .app-container {
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .header p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.1rem;
-            line-height: 1.5;
-        }
-
-        /* Game Info Section */
-        .game-info {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        @media (max-width: 768px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-        }
-
-        .info-item {
-            text-align: center;
-        }
-
-        .info-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .game-id {
-            font-family: 'Courier New', monospace;
-            letter-spacing: 2px;
-            font-size: 1.5rem;
-        }
-
-        /* Improved Game Settings */
-        .game-settings {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 25px;
-        }
-
-        .settings-title {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .setting-row {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin-bottom: 15px;
-        }
-
-        .setting-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .setting-header {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .setting-content {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .categories-tags {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .category-tag {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .category-tag .icon {
-            font-size: 1.1rem;
-        }
-
-        /* Players Section */
-        .players-section {
-            margin-bottom: 30px;
-        }
-
-        .players-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .players-title {
-            color: white;
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-
-        .player-count {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .players-list {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            min-height: 200px;
-        }
-
-        .player-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .player-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .player-item.host {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
-        }
-
-        .player-item.me {
-            border: 2px solid #2196F3;
-        }
-
-        .player-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .player-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: white;
-        }
-
-        .player-details {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .player-name {
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .player-role {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-        }
-
-        .player-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .status-online {
-            background: #4CAF50;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        .status-offline {
-            background: #f44336;
-        }
-
-        .status-text {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.8rem;
-        }
-
-        .empty-players {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            font-style: italic;
-            padding: 40px 20px;
-        }
-
-        /* Join Info */
-        .join-info {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .join-title {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .join-description {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 150px;
-            gap: 8px;
-        }
-
-        .btn-outline {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .btn-primary.enabled {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .btn-primary.enabled:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #2196F3, #1976D2);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(33, 150, 243, 0.4);
-        }
-
-        .btn-host-only {
-            display: none;
-        }
-
-        .btn-host-only.show {
-            display: inline-flex;
-        }
-
-        /* Loading Spinner */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .loading.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #4CAF50;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .notification.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .notification.warning {
-            background: #ff9800;
-        }
-
-        .notification.error {
-            background: #f44336;
-        }
-
-        .notification.success {
-            background: #4CAF50;
-        }
-
-        /* Share Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .modal-header {
-            margin-bottom: 20px;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .modal-body {
-            margin-bottom: 25px;
-        }
-
-        .share-link-display {
-            background: #f5f5f5;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            word-break: break-all;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .share-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .share-btn {
-            padding: 15px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .share-btn-whatsapp {
-            background: #25D366;
-            color: white;
-        }
-
-        .share-btn-whatsapp:hover {
-            background: #20BA5A;
-            transform: translateY(-2px);
-        }
-
-        .share-btn-copy {
-            background: #2196F3;
-            color: white;
-        }
-
-        .share-btn-copy:hover {
-            background: #1976D2;
-            transform: translateY(-2px);
-        }
-
-        .share-btn-icon {
-            font-size: 2rem;
-        }
-
-        .share-btn-text {
-            font-size: 0.9rem;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-        }
-
-        .btn-close {
-            background: #f5f5f5;
-            color: #666;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-close:hover {
-            background: #e0e0e0;
-        }
-
-        /* Footer Links */
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .footer-link {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-        }
-
-        .footer-link:hover {
-            color: white;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .app-container {
-                padding: 15px;
-            }
-
-            .glass-card {
-                padding: 25px 20px;
-            }
-
-            .controls {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .btn {
-                min-width: 100%;
-            }
-
-            .categories-tags {
-                justify-content: flex-start;
-            }
-
-            .share-options {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <!-- QRCode.js for QR Code Generation -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+            integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+
+    <!-- P1 FIX: Core Scripts in correct order -->
+    <script defer src="/assets/js/GameState.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/firebase-service.js"></script>
+    <script defer src="/assets/js/multiplayer-lobby.js"></script>
 </head>
 <body>
 <!-- Background Particles -->
-<div class="background-particles">
+<div class="background-particles" aria-hidden="true">
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
@@ -715,123 +55,91 @@
 </div>
 
 <!-- Loading Spinner -->
-<div class="loading" id="loading">
-    <div class="spinner"></div>
-</div>
-
-<!-- Notification -->
-<div class="notification" id="notification"></div>
-
-<!-- Share Modal -->
-<div class="modal-overlay" id="share-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title">ðŸ”— Spiel teilen</h3>
-        </div>
-        <div class="modal-body">
-            <p style="color: #666; margin-bottom: 15px;">Teile diesen Link mit deinen Freunden:</p>
-            <div class="share-link-display" id="share-link-display">
-                Lade...
-            </div>
-            <div class="share-options">
-                <button class="share-btn share-btn-whatsapp" id="whatsapp-btn">
-                    <div class="share-btn-icon">ðŸ’¬</div>
-                    <div class="share-btn-text">WhatsApp</div>
-                </button>
-                <button class="share-btn share-btn-copy" id="copy-btn">
-                    <div class="share-btn-icon">ðŸ“‹</div>
-                    <div class="share-btn-text">Link kopieren</div>
-                </button>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-close" id="close-modal-btn">SchlieÃŸen</button>
-        </div>
-    </div>
+<div class="loading" id="loading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-text">Verbinde mit Firebase...</p>
 </div>
 
 <!-- App Container -->
 <div class="app-container">
-    <div class="glass-card">
-        <!-- Header -->
-        <div class="header">
-            <h1>Multiplayer Lobby</h1>
-            <p>Warte auf andere Spieler oder starte das Spiel</p>
-        </div>
+    <h1 class="screen-title">🎮 Multiplayer Lobby</h1>
 
+    <div class="glass-card">
         <!-- Game Info Section -->
-        <div class="game-info">
+        <section class="game-info">
             <div class="info-grid">
                 <div class="info-item">
-                    <div class="info-label">Spiel-ID</div>
-                    <div class="info-value game-id" id="game-id">Loading...</div>
+                    <div class="info-label">Spiel-Code</div>
+                    <div class="info-value game-code" id="game-code-display" aria-live="polite">Lädt...</div>
+                    <button class="copy-code-btn" id="copy-code-btn" type="button" aria-label="Code kopieren">
+                        📋 Kopieren
+                    </button>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">Host</div>
-                    <div class="info-value" id="host-name">Loading...</div>
+                    <div class="info-label">QR-Code scannen</div>
+                    <div class="qr-code-container" id="qr-code" aria-label="QR-Code zum Beitreten"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Game Settings -->
+        <aside class="game-settings" role="region" aria-label="Spieleinstellungen">
+            <h2 class="settings-title">⚙️ Einstellungen</h2>
+
+            <div class="setting-row">
+                <div class="setting-header">Schwierigkeit</div>
+                <div class="setting-content" id="difficulty-display">Lädt...</div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-header">Kategorien</div>
+                <div class="categories-tags" id="selected-categories-display">
+                    <span style="color: rgba(255,255,255,0.5);">Lädt...</span>
                 </div>
             </div>
 
-            <div class="game-settings">
-                <div class="settings-title">Spieleinstellungen</div>
-
-                <div class="setting-row">
-                    <div class="setting-header">Schwierigkeit</div>
-                    <div class="setting-content" id="difficulty-display">Loading...</div>
-                </div>
-
-                <div class="setting-row">
-                    <div class="setting-header">Kategorien</div>
-                    <div class="categories-tags" id="categories-display">
-                        Loading...
-                    </div>
-                </div>
-            </div>
-        </div>
+            <button class="edit-settings-btn host-only" id="edit-settings-btn" type="button">
+                ✏️ Einstellungen ändern
+            </button>
+        </aside>
 
         <!-- Players Section -->
-        <div class="players-section">
+        <section class="players-section">
             <div class="players-header">
-                <h3 class="players-title">Spieler</h3>
-                <div class="player-count" id="player-count">0/8 Spieler</div>
+                <h2 class="players-title">👥 Spieler</h2>
+                <div class="player-count" id="player-count" aria-live="polite">0/8 Spieler</div>
             </div>
-            <div class="players-list" id="players-list">
-                <div class="empty-players">
-                    Lade Spieler...
-                </div>
+            <div class="players-list" id="players-list" role="list">
+                <div class="empty-players">Lade Spieler...</div>
             </div>
-        </div>
+        </section>
 
         <!-- Join Info -->
-        <div class="join-info">
-            <div class="join-title">Andere einladen</div>
+        <aside class="join-info host-only">
+            <div class="join-title">📲 Andere einladen</div>
             <div class="join-description">
-                Teile den Einladungslink mit deinen Freunden, damit sie direkt beitreten können.
+                Teile den Spielcode oder QR-Code mit deinen Freunden, damit sie direkt beitreten können.
             </div>
-        </div>
+        </aside>
 
         <!-- Controls -->
         <div class="controls">
-            <button class="btn btn-outline btn-host-only" id="settings-btn">
-                Einstellungen Ändern
+            <button class="btn-ready guest-only" id="ready-btn" type="button">
+                ✅ Bereit
             </button>
-            <button class="btn btn-secondary" id="share-btn">
-                Einladung teilen
+            <button class="btn-start host-only" id="start-btn" type="button" disabled aria-disabled="true">
+                🎮 Spiel starten
             </button>
-            <button class="btn btn-primary" id="start-btn">
-                Spiel starten
+            <button class="btn-leave" id="leave-btn" type="button">
+                ❌ Lobby verlassen
             </button>
-        </div>
-
-        <!-- Footer Links -->
-        <div class="footer-links">
-            <a href="imprint.html" class="footer-link">Impressum</a>
-            <a href="privacy.html" class="footer-link">Datenschutz</a>
         </div>
     </div>
 </div>
 
-<!-- External JavaScript (NO INLINE SCRIPTS!) -->
-<script src="assets/js/multiplayer-lobby.js"></script>
+<!-- Privacy Footer -->
+<div style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 100;">
+    <a href="privacy.html" style="color: rgba(255,255,255,0.6); font-size: 0.75rem; text-decoration: none;">Datenschutz</a>
+</div>
 </body>
 </html>

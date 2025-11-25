@@ -4,559 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Spiel beitreten</title>
+
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðŸ§¢</text></svg>">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
+    <!-- P1 FIX: External CSS ONLY -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/join-game.css">
+
+    <!-- P1 FIX: DOMPurify FIRST -->
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
+            integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        .background-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 8s ease-in-out infinite;
-        }
-
-        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 2s; }
-        .particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 4s; }
-        .particle:nth-child(4) { width: 100px; height: 100px; left: 50%; animation-delay: 5s; }
-        .particle:nth-child(5) { width: 90px; height: 90px; left: 80%; animation-delay: 6s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            50% { transform: translateY(-50px) rotate(180deg); opacity: 0.6; }
-        }
-
-        /* Age Gate Overlay */
-        .age-gate-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .age-gate-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .age-gate-content {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-            animation: slideUp 0.4s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(30px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .age-gate-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-
-        .age-gate-title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        .age-gate-text {
-            font-size: 1rem;
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-
-        .age-gate-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .age-gate-btn {
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            border: none;
-            transition: all 0.3s ease;
-            min-width: 120px;
-        }
-
-        .age-gate-btn-yes {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-        }
-
-        .age-gate-btn-yes:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-        }
-
-        .age-gate-btn-no {
-            background: #f5f5f5;
-            color: #666;
-        }
-
-        .age-gate-btn-no:hover {
-            background: #e0e0e0;
-        }
-
-        .app-container {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .header p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.1rem;
-            line-height: 1.5;
-        }
-
-        /* Form Section */
-        .form-section {
-            margin-bottom: 30px;
-        }
-
-        .input-group {
-            margin-bottom: 25px;
-        }
-
-        .input-label {
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 15px 20px;
-            border-radius: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1.1rem;
-            font-family: 'Poppins', sans-serif;
-            transition: all 0.3s ease;
-        }
-
-        .input-field.game-code {
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            font-weight: 700;
-            text-align: center;
-            font-family: 'Courier New', monospace;
-            font-size: 1.4rem;
-        }
-
-        .input-field::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: #4CAF50;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
-        }
-
-        .input-field.error {
-            border-color: #f44336;
-            animation: shake 0.3s ease;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        .input-field.valid {
-            border-color: #4CAF50;
-            background: rgba(76, 175, 80, 0.1);
-        }
-
-        .input-hint {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.85rem;
-            margin-top: 8px;
-            display: block;
-        }
-
-        /* Game Info Preview */
-        .game-info-preview {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 25px;
-            opacity: 0;
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.4s ease;
-        }
-
-        .game-info-preview.show {
-            opacity: 1;
-            max-height: 400px;
-        }
-
-        .info-title {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .host-info {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .host-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.85rem;
-            margin-bottom: 5px;
-        }
-
-        .host-name {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .info-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 12px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .info-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
-            color: white;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 120px;
-        }
-
-        .btn-outline {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Loading Spinner */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .loading.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #4CAF50;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .notification.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .notification.warning {
-            background: #ff9800;
-        }
-
-        .notification.error {
-            background: #f44336;
-        }
-
-        .notification.success {
-            background: #4CAF50;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .app-container {
-                padding: 15px;
-            }
-
-            .glass-card {
-                padding: 25px 20px;
-            }
-
-            .controls {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .btn {
-                min-width: 100%;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .age-gate-content {
-                padding: 30px 25px;
-            }
-
-            .age-gate-buttons {
-                flex-direction: column;
-            }
-
-            .age-gate-btn {
-                min-width: 100%;
-            }
-        }
-    </style>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <!-- P1 FIX: Core Scripts in correct order -->
+    <script defer src="/assets/js/GameState.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/firebase-service.js"></script>
+    <script defer src="/assets/js/join-game.js"></script>
 </head>
 <body>
-<div class="background-particles">
+<!-- Background Particles -->
+<div class="background-particles" aria-hidden="true">
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
-</div>
-
-<!-- Age Gate Overlay -->
-<div class="age-gate-overlay" id="age-gate">
-    <div class="age-gate-content">
-        <div class="age-gate-icon">👨‍👩‍👧‍👦</div>
-        <h2 class="age-gate-title">Altersbestätigung</h2>
-        <p class="age-gate-text">
-            Diese App enthält Inhalte, die für Erwachsene bestimmt sind.<br>
-            Bist du mindestens 18 Jahre alt?
-        </p>
-        <div class="age-gate-buttons">
-            <button class="age-gate-btn age-gate-btn-yes" onclick="confirmAge(true)">
-                Ja, ich bin 18+
-            </button>
-            <button class="age-gate-btn age-gate-btn-no" onclick="confirmAge(false)">
-                Nein, ich bin unter 18
-            </button>
-        </div>
-    </div>
 </div>
 
 <!-- Loading -->
-<div class="loading" id="loading">
-    <div class="spinner"></div>
-    <div class="loading-text">Trete Spiel bei...</div>
+<div class="loading" id="loading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-text">Trete Spiel bei...</p>
 </div>
-
-<!-- Notification -->
-<div class="notification" id="notification"></div>
 
 <!-- App Container -->
 <div class="app-container">
     <div class="glass-card">
         <!-- Header -->
-        <div class="header">
-            <h1>Spiel beitreten</h1>
+        <header class="header">
+            <h1>🔗 Spiel beitreten</h1>
             <p>Gib den Spiel-Code und deinen Namen ein</p>
-        </div>
+        </header>
 
         <!-- Form Section -->
-        <div class="form-section">
+        <form class="form-section" id="join-form">
             <!-- Game Code Input -->
             <div class="input-group">
-                <label class="input-label">Spiel-Code (6 Zeichen)</label>
+                <label class="input-label" for="game-code">Spiel-Code (6 Zeichen)</label>
                 <input
                         type="text"
                         id="game-code"
@@ -564,14 +75,15 @@
                         placeholder="ABC123"
                         maxlength="6"
                         autocomplete="off"
-                        oninput="handleGameCodeInput()"
+                        aria-describedby="code-hint"
+                        aria-required="true"
                 >
-                <span class="input-hint">Vom Host mitgeteilt</span>
+                <span class="input-hint" id="code-hint">Vom Host mitgeteilt</span>
             </div>
 
             <!-- Game Info Preview -->
-            <div class="game-info-preview" id="game-info">
-                <div class="info-title">Spiel gefunden!</div>
+            <aside class="game-info-preview" id="game-info" role="region" aria-label="Spiel-Informationen">
+                <h2 class="info-title">✅ Spiel gefunden!</h2>
 
                 <div class="host-info">
                     <div class="host-label">Host</div>
@@ -596,11 +108,11 @@
                         <div class="info-value" id="info-status">-</div>
                     </div>
                 </div>
-            </div>
+            </aside>
 
             <!-- Player Name Input -->
             <div class="input-group">
-                <label class="input-label">Dein Spielername</label>
+                <label class="input-label" for="player-name">Dein Spielername</label>
                 <input
                         type="text"
                         id="player-name"
@@ -608,36 +120,23 @@
                         placeholder="Max Mustermann"
                         maxlength="20"
                         autocomplete="name"
-                        oninput="validateForm()"
+                        aria-describedby="name-hint"
+                        aria-required="true"
                 >
-                <span class="input-hint">Mindestens 2 Zeichen</span>
+                <span class="input-hint" id="name-hint">Mindestens 2 Zeichen</span>
             </div>
-        </div>
+        </form>
 
         <!-- Controls -->
         <div class="controls">
-            <button class="btn btn-outline" onclick="goBack()">
-                Zurück
+            <button class="btn btn-outline" id="back-btn" type="button">
+                ← Zurück
             </button>
-            <button class="btn btn-primary" id="join-btn" onclick="joinGame()" disabled>
-                Beitreten
+            <button class="btn btn-primary" id="join-btn" type="button" disabled aria-disabled="true">
+                🚀 Beitreten
             </button>
         </div>
     </div>
 </div>
-
-
-<!-- DOMPurify for XSS Protection -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-<!-- Central Scripts (MUST load before page script) -->
-<script src="/assets/js/migration.js"></script>
-<script src="/assets/js/GameState.js"></script>
-
-<!-- Firebase Service -->
-<script src="/assets/js/firebase-service.js"></script>
-
-<!-- External Page Script (MUST load AFTER DOM is ready) -->
-<script src="/assets/js/join-game.js"></script>
 </body>
 </html>
