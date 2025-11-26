@@ -562,7 +562,7 @@
 
             const parsed = JSON.parse(item);
 
-            // P0 FIX: Validate that stored data doesn't contain XSS attempts
+            // Validate that stored data doesn't contain XSS attempts
             if (typeof parsed === 'string') {
                 return sanitizeInput(parsed);
             }
@@ -1101,7 +1101,8 @@
         _eventListeners.push({ element: document, event: 'keydown', handler: escapeHandler });
 
         const isDev = window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1';
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.includes('192.168.');
 
         if (isDev) {
             console.log('%c✅ No-Cap Utils v3.0 initialized (Audit-Fixed)',
@@ -1199,8 +1200,10 @@
         window.NocapUtils.DOMPurify = DOMPurify;
     }
 
+// ✅ FIX: isDevelopment mit lokalem Netzwerk
     const isDev = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1';
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.includes('192.168.');
 
     if (isDev) {
         console.log('%c✅ NocapUtils v3.0 exported to window.NocapUtils',

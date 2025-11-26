@@ -75,7 +75,8 @@
     };
 
     const isDevelopment = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1';
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.includes('192.168.');
 
     // ===========================
     // P0 FIX: INPUT SANITIZATION
@@ -141,8 +142,8 @@
         }
 
         // P0 FIX: Use global firebaseGameService
-        if (typeof window.firebaseGameService !== 'undefined') {
-            firebaseService = window.firebaseGameService;
+        if (typeof window.FirebaseService !== 'undefined') {
+            firebaseService = window.FirebaseService;
         } else {
             console.error('❌ Firebase service not available');
             showNotification('Firebase nicht verfügbar', 'error');
@@ -199,7 +200,7 @@
 
         if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
             ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
-            ageTimestamp = parseInt(window.NocapUtils.getLocalStorage('age_timestamp')) || 0;
+            ageTimestamp = parseInt(window.NocapUtils.getLocalStorage('nocap_age_timestamp')) || 0;
         }
 
         const now = Date.now();
