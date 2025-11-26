@@ -91,8 +91,8 @@
         }
 
         // P0 FIX: Use global firebaseGameService
-        if (typeof window.firebaseGameService !== 'undefined') {
-            firebaseService = window.firebaseGameService;
+        if (typeof window.FirebaseService !== 'undefined') {
+            firebaseService = window.FirebaseService
         } else {
             console.error('❌ Firebase service not available');
             showNotification('Firebase nicht verfügbar', 'error');
@@ -145,7 +145,7 @@
             let ageTimestamp = 0;
 
             if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-                ageLevel = parseInt(window.NocapUtils.getLocalStorage('age_level')) || 0;
+                ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
                 ageTimestamp = parseInt(window.NocapUtils.getLocalStorage('age_timestamp')) || 0;
             }
 

@@ -7,14 +7,12 @@
       "$gameId": {
         ".validate": "newData.hasChildren(['gameId', 'hostId', 'gameState', 'createdAt'])",
 
-        ".read": "auth != null && (
-        data.child('hostId').val() === auth.uid ||
-        data.child('players').child(auth.uid).exists()
-        )",
+        ".read": "auth != null",
 
         ".write": "auth != null && (
         !data.exists() ||
-        data.child('hostId').val() === auth.uid
+        data.child('hostId').val() == auth.uid ||
+        data.child('players').hasChild(auth.uid)
         )",
 
         "gameId": {
@@ -78,7 +76,7 @@
         },
 
         "settings": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() == auth.uid",
 
           "questionsPerGame": {
             ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 50"
@@ -103,10 +101,7 @@
           "$playerId": {
             ".validate": "newData.hasChildren(['id', 'name', 'isHost', 'isReady', 'isOnline', 'joinedAt'])",
 
-            ".write": "auth != null && (
-            $playerId === auth.uid ||
-            root.child('games').child($gameId).child('hostId').val() === auth.uid
-            )",
+            ".write": "auth != null",
 
             "id": {
               ".validate": "newData.isString() && newData.val() === $playerId"
@@ -159,7 +154,7 @@
         },
 
         "currentQuestion": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() == auth.uid",
 
           "id": {
             ".validate": "newData.isString()"
@@ -182,7 +177,7 @@
           "$playerId": {
             ".validate": "newData.hasChildren(['playerId', 'answer', 'timestamp'])",
 
-            ".write": "auth != null && $playerId === auth.uid",
+            ".write": "auth != null",
 
             "playerId": {
               ".validate": "newData.isString() && newData.val() === $playerId"
@@ -202,7 +197,7 @@
           "$playerId": {
             ".validate": "newData.hasChildren(['playerId', 'estimate', 'timestamp'])",
 
-            ".write": "auth != null && $playerId === auth.uid",
+            ".write": "auth != null",
 
             "playerId": {
               ".validate": "newData.isString() && newData.val() === $playerId"
@@ -219,7 +214,7 @@
         },
 
         "roundResults": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() == auth.uid",
 
           "$round": {
             "correctAnswer": {
@@ -253,7 +248,7 @@
         },
 
         "scores": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() == auth.uid",
 
           "$playerId": {
             "totalSips": {
@@ -271,7 +266,7 @@
         },
 
         "phase": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() == auth.uid",
 
           ".validate": "newData.isString() && (
           newData.val() === 'waiting' ||
@@ -284,7 +279,7 @@
         },
 
         "status": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() == auth.uid",
 
           ".validate": "newData.isString()"
         },
@@ -326,6 +321,10 @@
           newData.val() === 16 ||
           newData.val() === 18
           )"
+        },
+
+        "lastAgeVerification": {
+          ".validate": "newData.isNumber() || newData.val() === now"
         },
 
         "lastUpdate": {

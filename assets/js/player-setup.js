@@ -1,7 +1,12 @@
 /**
  * No-Cap Player Setup (Single Device Mode)
- * Version 3.0 - Audit-Fixed & Production Ready
- * Handles player name input and game initialization
+ * Version 4.0 - Production Ready (Full Audit Fix)
+ *
+ * ✅ P1 FIX: Device mode validation
+ * ✅ P0 FIX: Input sanitization with DOMPurify
+ * ✅ P1 FIX: Players stored in GameState
+ * ✅ P1 FIX: Keyboard navigation improved
+ * ✅ P2 FIX: Drag & drop with accessibility
  */
 
 (function(window) {
@@ -29,7 +34,8 @@
     let draggedItem = null;
 
     const isDevelopment = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1';
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.includes('192.168.');
 
     // ===========================
     // INITIALIZATION
@@ -42,53 +48,66 @@
 
         showLoading();
 
-        // P0 FIX: Check DOMPurify
-        if (typeof DOMPurify === 'undefined') {
-            console.error('❌ CRITICAL: DOMPurify not loaded!');
-            alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
-            return;
-        }
+        try {
+            // Check DOMPurify
+            if (typeof DOMPurify === 'undefined') {
+                console.error('❌ CRITICAL: DOMPurify not loaded!');
+                alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
+                return;
+            }
 
-        // P0 FIX: Check for required dependencies
-        if (typeof GameState === 'undefined') {
-            console.error('❌ GameState not found');
-            showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
-            return;
-        }
+            // Check for required dependencies
+            if (typeof GameState === 'undefined') {
+                console.error('❌ GameState not found');
+                showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
+                return;
+            }
 
-        // P1 FIX: Wait for dependencies
-        if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            await window.NocapUtils.waitForDependencies(['GameState']);
-        }
+            // Wait for dependencies
+            if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
+                await window.NocapUtils.waitForDependencies(['GameState']);
+            }
 
-        // Use central GameState
-        gameState = new GameState();
+            // Use central GameState
+            gameState = new GameState();
 
-        // Check alcohol mode
-        checkAlcoholMode();
+            // ✅ P1 FIX: Validate device mode
+            if (!validateDeviceMode()) {
+                return;
+            }
 
-        // Validate prerequisites
-        if (!validatePrerequisites()) {
-            return;
-        }
+            // Check alcohol mode
+            checkAlcoholMode();
 
-        // Load question counts
-        await loadQuestionCounts();
+            // Validate prerequisites
+            if (!validatePrerequisites()) {
+                return;
+            }
 
-        // P1 FIX: Load players from GameState
-        initializePlayerInputs();
+            // Load question counts
+            await loadQuestionCounts();
 
-        // Update UI
-        updateGameSummary();
-        updateUI();
+            // Load players from GameState
+            initializePlayerInputs();
 
-        // Setup event listeners
-        setupEventListeners();
+            // Update UI
+            updateGameSummary();
+            updateUI();
 
-        hideLoading();
+            // Setup event listeners
+            setupEventListeners();
 
-        if (isDevelopment) {
-            console.log('✅ Player setup initialized');
+            hideLoading();
+
+            if (isDevelopment) {
+                console.log('✅ Player setup initialized');
+                console.log('Game State:', gameState.getDebugInfo());
+            }
+
+        } catch (error) {
+            console.error('❌ Initialization error:', error);
+            showNotification('Fehler beim Laden', 'error');
+            hideLoading();
         }
     }
 
@@ -96,16 +115,36 @@
     // VALIDATION & GUARDS
     // ===========================
 
-    function validatePrerequisites() {
-        if (!gameState.checkValidity()) {
-            showNotification('Ungültiger Spielzustand', 'error');
+    /**
+     * ✅ P1 FIX: Validate device mode
+     */
+    function validateDeviceMode() {
+        const deviceMode = gameState.deviceMode;
+
+        if (!deviceMode) {
+            console.error('❌ No device mode set');
+            showNotification('Spielmodus nicht gesetzt', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
-        if (gameState.deviceMode !== 'single') {
-            console.error('❌ Not in single device mode');
+        if (deviceMode !== 'single') {
+            console.error(`❌ Wrong device mode: ${deviceMode} (expected "single")`);
             showNotification('Nicht im Einzelgerät-Modus', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return false;
+        }
+
+        if (isDevelopment) {
+            console.log('✅ Device mode validated: single');
+        }
+
+        return true;
+    }
+
+    function validatePrerequisites() {
+        if (!gameState.checkValidity()) {
+            showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
@@ -165,9 +204,9 @@
                 return;
             }
 
-            // P1 FIX: Wait for Firebase if available
-            if (window.FirebaseConfig) {
-                await window.FirebaseConfig.waitForFirebase();
+            // Wait for Firebase if available
+            if (window.FirebaseService && window.FirebaseService.waitForFirebase) {
+                await window.FirebaseService.waitForFirebase();
             }
 
             const categories = ['fsk0', 'fsk16', 'fsk18', 'special'];
@@ -233,7 +272,7 @@
     }
 
     // ===========================
-    // P0 FIX: INPUT SANITIZATION
+    // INPUT SANITIZATION
     // ===========================
 
     /**
@@ -242,7 +281,7 @@
     function sanitizePlayerName(input) {
         if (!input) return '';
 
-        // P0 FIX: Use NocapUtils if available
+        // Use NocapUtils if available
         if (window.NocapUtils && window.NocapUtils.sanitizeInput) {
             return window.NocapUtils.sanitizeInput(input).substring(0, 15);
         }
@@ -262,15 +301,17 @@
      * Initialize player inputs from GameState
      */
     function initializePlayerInputs() {
-        // P1 FIX: Check if players exist in GameState
-        if (gameState.players && Array.isArray(gameState.players) && gameState.players.length > 0) {
+        // Check if players exist in GameState
+        const savedPlayers = gameState.get('players');
+
+        if (savedPlayers && Array.isArray(savedPlayers) && savedPlayers.length > 0) {
             if (isDevelopment) {
-                console.log('🔄 Loading previous players from GameState');
+                console.log('🔄 Loading previous players from GameState:', savedPlayers);
             }
 
             const inputs = document.querySelectorAll('.player-input');
 
-            gameState.players.forEach((playerName, index) => {
+            savedPlayers.forEach((playerName, index) => {
                 const sanitizedName = sanitizePlayerName(playerName);
 
                 if (index < inputs.length) {
@@ -286,11 +327,15 @@
                     }
                 }
             });
+
+            // Update UI after loading
+            updatePlayersFromInputs();
+            updateUI();
         }
     }
 
     /**
-     * Get current players list from inputs (no global array)
+     * Get current players list from inputs
      */
     function getPlayersList() {
         const inputs = document.querySelectorAll('.player-input');
@@ -307,13 +352,23 @@
     }
 
     /**
-     * Update players in GameState from inputs
+     * ✅ P1 FIX: Update players in GameState from inputs
      */
     function updatePlayersFromInputs() {
         const players = getPlayersList();
 
-        // P1 FIX: Always update GameState
-        gameState.players = players;
+        // Store in GameState (not a direct property assignment - use setter if available)
+        if (gameState.setPlayers) {
+            gameState.setPlayers(players);
+        } else {
+            // Fallback: direct assignment
+            gameState.players = players;
+            gameState.save();
+        }
+
+        if (isDevelopment) {
+            console.log('📝 Players updated in GameState:', players);
+        }
     }
 
     function addPlayerInput() {
@@ -445,7 +500,7 @@
     }
 
     // ===========================
-    // P0 FIX: PLAYERS PREVIEW WITH DRAG & DROP
+    // PLAYERS PREVIEW WITH DRAG & DROP
     // ===========================
 
     function updatePlayersPreview() {
@@ -473,7 +528,7 @@
                 numberDiv.textContent = index + 1;
 
                 const nameSpan = document.createElement('span');
-                // P0 FIX: Use textContent for XSS safety
+                // Use textContent for XSS safety
                 nameSpan.textContent = name;
 
                 const handleSpan = document.createElement('span');
@@ -636,7 +691,7 @@
             hard: 'Hardcore (Abweichung × 2)'
         };
 
-        // P0 FIX: Use textContent
+        // Use textContent
         const categoriesSummary = document.getElementById('categories-summary');
         if (categoriesSummary) {
             if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
@@ -716,7 +771,7 @@
         if (inputsList) {
             inputsList.addEventListener('input', function(e) {
                 if (e.target.classList.contains('player-input')) {
-                    // P0 FIX: Sanitize with NocapUtils
+                    // Sanitize with NocapUtils
                     const sanitized = sanitizePlayerName(e.target.value);
                     if (sanitized !== e.target.value) {
                         e.target.value = sanitized;
@@ -783,11 +838,20 @@
 
         showLoading();
 
-        // P1 FIX: Save directly to GameState
-        gameState.players = players;
+        // ✅ P1 FIX: Save to GameState and set game phase
+        if (gameState.setPlayers) {
+            gameState.setPlayers(players);
+        } else {
+            gameState.players = players;
+        }
         gameState.gamePhase = 'playing';
+        gameState.save(true); // Immediate save
 
         showNotification('Spiel wird gestartet...', 'success', 1500);
+
+        if (isDevelopment) {
+            console.log('Game starting with state:', gameState.getDebugInfo());
+        }
 
         setTimeout(() => {
             window.location.href = 'gameplay.html';
@@ -824,7 +888,7 @@
     }
 
     /**
-     * P0 FIX: Safe notification using NocapUtils
+     * Safe notification using NocapUtils
      */
     function showNotification(message, type = 'info', duration = 3000) {
         if (window.NocapUtils && window.NocapUtils.showNotification) {
@@ -845,7 +909,7 @@
 
         const textSpan = document.createElement('span');
         textSpan.className = 'notification-text';
-        textSpan.textContent = sanitizePlayerName(String(message));
+        textSpan.textContent = String(message);
 
         notification.appendChild(textSpan);
         container.appendChild(notification);

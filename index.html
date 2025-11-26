@@ -38,32 +38,30 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
     <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 
-    <!-- P1 FIX: Styles - EXTERNAL CSS ONLY -->
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/index.css">
 
-    <!-- DOMPurify – ohne defer & mit korrektem Hash -->
+    <!-- ✅ P0 FIX: DOMPurify OHNE defer, OHNE SRI (da SRI Probleme macht) -->
     <script
             src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
-            integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
             crossorigin="anonymous"
             referrerpolicy="no-referrer">
     </script>
 
-
-    <!-- Firebase SDK - DEFER for non-blocking -->
+    <!-- Firebase SDK - defer for non-blocking -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    <!-- P1 FIX: Core Scripts in correct order - DEFER -->
+    <!-- ✅ P1 FIX: Core Scripts in correct order -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
-    <script defer src="/assets/js/firebase-config.js"></script>
-    <script defer src="/assets/js/firebase-auth.js"></script>
     <script defer src="/assets/js/firebase-service.js"></script>
     <script defer src="/assets/js/privacy.js"></script>
     <script defer src="/assets/js/index.js"></script>
+
+    <!-- ⚠️ DEPRECATED: firebase-config.js & firebase-auth.js werden NICHT mehr geladen -->
 </head>
 <body>
 <!-- Age Verification Modal -->

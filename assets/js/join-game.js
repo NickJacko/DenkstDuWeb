@@ -70,7 +70,7 @@
             return;
         }
 
-        if (typeof window.firebaseGameService === 'undefined') {
+        if (typeof window.FirebaseService === 'undefined') {
             console.error('❌ FirebaseGameService not loaded!');
             showNotification('Fehler: Firebase-Service nicht geladen', 'error');
             return;
@@ -83,7 +83,7 @@
 
         // Use global services
         gameState = new GameState();
-        firebaseService = window.firebaseGameService;
+        firebaseService = window.FirebaseService;
 
         // ===========================
         // CRITICAL: DEVICE MODE ENFORCEMENT
@@ -165,8 +165,8 @@
             let ageVerified = null;
 
             if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-                ageLevel = parseInt(window.NocapUtils.getLocalStorage('age_level')) || 0;
-                const verifiedStr = window.NocapUtils.getLocalStorage('age_verification');
+                ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
+                const verifiedStr = window.NocapUtils.getLocalStorage('nocap_age_verification')
                 if (verifiedStr) {
                     ageVerified = JSON.parse(verifiedStr);
                 }
@@ -379,7 +379,7 @@
 
             let ageLevel = 0;
             if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-                ageLevel = parseInt(window.NocapUtils.getLocalStorage('age_level')) || 0;
+                ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
             }
 
             if (hasFSK18 && ageLevel < 18) {

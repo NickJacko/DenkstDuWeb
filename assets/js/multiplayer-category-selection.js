@@ -113,8 +113,8 @@
         }
 
         // P0 FIX: Use global firebaseGameService
-        if (typeof window.firebaseGameService !== 'undefined') {
-            firebaseService = window.firebaseGameService;
+        if (typeof window.FirebaseService !== 'undefined') {
+            firebaseService = window.FirebaseService;
         } else {
             console.error('❌ Firebase service not available');
             showNotification('Firebase nicht verfügbar', 'error');
@@ -210,7 +210,7 @@
             let ageTimestamp = 0;
 
             if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-                ageLevel = parseInt(window.NocapUtils.getLocalStorage('age_level')) || 0;
+                ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
                 ageTimestamp = parseInt(window.NocapUtils.getLocalStorage('age_timestamp')) || 0;
             }
 
@@ -366,7 +366,7 @@
     /**
      * Render category cards with safe DOM manipulation
      */
-    function renderCategoryCards() {
+    async function renderCategoryCards() {
         const grid = document.getElementById('categories-grid');
         if (!grid) return;
 
@@ -375,10 +375,10 @@
         // Get age level for FSK checks
         let ageLevel = 0;
         if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-            ageLevel = parseInt(window.NocapUtils.getLocalStorage('age_level')) || 0;
+            ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
         }
 
-        const hasPremium = false; // TODO: Check from gameState
+        const hasPremium = await gameState.isPremiumUser();
 
         Object.entries(categoryData).forEach(([key, cat]) => {
             const card = document.createElement('div');

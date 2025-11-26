@@ -113,7 +113,7 @@
         let ageTimestamp = 0;
 
         if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-            ageLevel = parseInt(window.NocapUtils.getLocalStorage('age_level')) || 0;
+            ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
             ageTimestamp = parseInt(window.NocapUtils.getLocalStorage('age_timestamp')) || 0;
         }
 

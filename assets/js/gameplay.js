@@ -1,10 +1,20 @@
-// ===== NO-CAP GAMEPLAY (SINGLE DEVICE MODE) =====
-// Version: 2.2 - Security Hardened & Production Ready
-// Mode: Single Device - Endless Gameplay
+/**
+ * No-Cap Gameplay (Single Device Mode)
+ * Version 3.0 - Production Ready (Full Audit Fix)
+ *
+ * ✅ P1 FIX: Device mode validation
+ * ✅ P0 FIX: Input sanitization with DOMPurify
+ * ✅ P1 FIX: GameState integration (players from state)
+ * ✅ P1 FIX: Rejoin mechanism with 5-minute timeout
+ * ✅ P0 FIX: Question caching (24h)
+ * ✅ P0 FIX: All DOM manipulation uses textContent
+ */
 
 'use strict';
 
-// ===== GLOBAL VARIABLES =====
+// ===========================
+// GLOBAL STATE
+// ===========================
 let gameState = null;
 let firebaseService = null;
 let alcoholMode = false;
@@ -24,7 +34,13 @@ let currentGame = {
 let currentAnswer = null;
 let currentEstimation = null;
 
-// ===== FALLBACK QUESTIONS DATABASE =====
+const isDevelopment = window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.includes('192.168.');
+
+// ===========================
+// FALLBACK QUESTIONS DATABASE
+// ===========================
 const fallbackQuestionsDatabase = {
     fsk0: [
         "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
@@ -46,78 +62,155 @@ const fallbackQuestionsDatabase = {
     ]
 };
 
-// ===== INITIALIZATION =====
+// ===========================
+// INITIALIZATION
+// ===========================
 
 async function initialize() {
-    console.log('🎮 Initializing single device gameplay...');
-
-    // Setup page leave protection
-    setupPageLeaveProtection();
-
-    // Check alcohol mode
-    checkAlcoholMode();
-
-    // P0 FIX: Check dependencies
-    if (typeof GameState === 'undefined') {
-        console.error('❌ GameState not found');
-        showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
-        return;
+    if (isDevelopment) {
+        console.log('🎮 Initializing single device gameplay...');
     }
 
-    gameState = new GameState();
+    try {
+        // Setup page leave protection
+        setupPageLeaveProtection();
 
-    // P0 FIX: Use global FirebaseService instead of local class
-    if (typeof window.firebaseGameService !== 'undefined') {
-        firebaseService = window.firebaseGameService;
-    } else {
-        console.warn('⚠️ Firebase service not available');
+        // Check dependencies
+        if (typeof DOMPurify === 'undefined') {
+            console.error('❌ CRITICAL: DOMPurify not loaded!');
+            alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
+            return;
+        }
+
+        if (typeof GameState === 'undefined') {
+            console.error('❌ GameState not found');
+            showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
+            return;
+        }
+
+        // Wait for dependencies
+        if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
+            await window.NocapUtils.waitForDependencies(['GameState']);
+        }
+
+        gameState = new GameState();
+
+        // Check Firebase availability
+        if (window.FirebaseService) {
+            firebaseService = window.FirebaseService;
+            if (isDevelopment) {
+                console.log('✅ Firebase service available');
+            }
+        } else {
+            console.warn('⚠️ Firebase service not available, using fallback');
+        }
+
+        // ✅ P1 FIX: Validate device mode
+        if (!validateDeviceMode()) {
+            return;
+        }
+
+        // Check alcohol mode
+        checkAlcoholMode();
+
+        // Validate game state
+        if (!validateGameState()) {
+            return;
+        }
+
+        // ✅ P1 FIX: Check for rejoin data
+        if (await attemptRejoin()) {
+            if (isDevelopment) {
+                console.log('✅ Rejoined previous game');
+            }
+            return;
+        }
+
+        // ✅ P1 FIX: Load players from GameState
+        const savedPlayers = gameState.get('players');
+        if (!savedPlayers || savedPlayers.length < 2) {
+            console.error('❌ No players in GameState');
+            showNotification('Keine Spieler gefunden!', 'error');
+            setTimeout(() => window.location.href = 'player-setup.html', 2000);
+            return;
+        }
+
+        // Setup new game with players from GameState
+        currentGame.players = [...savedPlayers];
+
+        if (isDevelopment) {
+            console.log('👥 Players loaded:', currentGame.players);
+        }
+
+        // Load questions
+        await loadQuestions();
+
+        // Save rejoin data
+        saveGameProgress();
+
+        // Initialize UI
+        updateGameDisplay();
+        createNumberGrid();
+
+        // Setup event listeners
+        setupEventListeners();
+
+        // Start first question
+        startNewQuestion();
+
+        if (isDevelopment) {
+            console.log('✅ Game initialized successfully');
+        }
+
+    } catch (error) {
+        console.error('❌ Initialization error:', error);
+        showNotification('Fehler beim Laden', 'error');
     }
-
-    // Validate game state
-    if (!validateGameState()) {
-        return;
-    }
-
-    // P1 FIX: Check for rejoin data
-    if (await attemptRejoin()) {
-        console.log('✅ Rejoined previous game');
-        return;
-    }
-
-    // Setup new game
-    currentGame.players = [...gameState.players];
-    await loadQuestions();
-
-    // Save rejoin data
-    saveGameProgress();
-
-    // Initialize UI
-    updateGameDisplay();
-    createNumberGrid();
-
-    // Setup event listeners
-    setupEventListeners();
-
-    // Start first question
-    startNewQuestion();
-
-    console.log('✅ Game initialized');
 }
 
-// ===== VALIDATION & GUARDS =====
+// ===========================
+// VALIDATION & GUARDS
+// ===========================
 
 /**
- * P0 FIX: Comprehensive validation with FSK checks
+ * ✅ P1 FIX: Validate device mode
  */
-function validateGameState() {
-    if (gameState.deviceMode !== 'single') {
-        console.error('❌ Wrong device mode');
+function validateDeviceMode() {
+    const deviceMode = gameState.deviceMode;
+
+    if (!deviceMode) {
+        console.error('❌ No device mode set');
+        showNotification('Spielmodus nicht gesetzt', 'error');
+        setTimeout(() => window.location.href = 'index.html', 2000);
+        return false;
+    }
+
+    if (deviceMode !== 'single') {
+        console.error(`❌ Wrong device mode: ${deviceMode} (expected "single")`);
         showNotification('Nicht im Einzelgerät-Modus', 'error');
         setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
-    if (!gameState.players || gameState.players.length < 2) {
+    if (isDevelopment) {
+        console.log('✅ Device mode validated: single');
+    }
+
+    return true;
+}
+
+/**
+ * Comprehensive validation with FSK checks
+ */
+function validateGameState() {
+    if (!gameState.checkValidity()) {
+        showNotification('Ungültiger Spielzustand', 'error');
+        setTimeout(() => window.location.href = 'index.html', 2000);
+        return false;
+    }
+
+    const savedPlayers = gameState.get('players');
+    if (!savedPlayers || savedPlayers.length < 2) {
         console.error('❌ Not enough players');
         showNotification('Keine Spieler gefunden!', 'error');
         setTimeout(() => window.location.href = 'player-setup.html', 2000);
@@ -138,8 +231,8 @@ function validateGameState() {
         return false;
     }
 
-    // P0 FIX: Validate FSK access
-    const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+    // Validate FSK access
+    const ageLevel = parseInt(window.NocapUtils?.getLocalStorage('nocap_age_level')) || 0;
     const hasInvalidCategory = gameState.selectedCategories.some(category => {
         if (category === 'fsk18' && ageLevel < 18) return true;
         if (category === 'fsk16' && ageLevel < 16) return true;
@@ -156,10 +249,12 @@ function validateGameState() {
     return true;
 }
 
-// ===== P1 FIX: REJOIN MECHANISM =====
+// ===========================
+// REJOIN MECHANISM
+// ===========================
 
 /**
- * Save game progress for rejoin
+ * ✅ P1 FIX: Save game progress for rejoin
  */
 function saveGameProgress() {
     try {
@@ -173,8 +268,17 @@ function saveGameProgress() {
             timestamp: Date.now()
         };
 
-        localStorage.setItem('nocap_game_progress', JSON.stringify(progressData));
-        localStorage.setItem('nocap_last_active', Date.now().toString());
+        if (window.NocapUtils) {
+            window.NocapUtils.setLocalStorage('nocap_game_progress', JSON.stringify(progressData));
+            window.NocapUtils.setLocalStorage('nocap_last_active', Date.now().toString());
+        } else {
+            localStorage.setItem('nocap_game_progress', JSON.stringify(progressData));
+            localStorage.setItem('nocap_last_active', Date.now().toString());
+        }
+
+        if (isDevelopment) {
+            console.log('💾 Game progress saved');
+        }
     } catch (error) {
         console.warn('⚠️ Could not save progress:', error);
     }
@@ -185,17 +289,25 @@ function saveGameProgress() {
  */
 async function attemptRejoin() {
     try {
-        const progressStr = localStorage.getItem('nocap_game_progress');
+        const progressStr = window.NocapUtils ?
+            window.NocapUtils.getLocalStorage('nocap_game_progress') :
+            localStorage.getItem('nocap_game_progress');
+
         if (!progressStr) return false;
 
         const progress = JSON.parse(progressStr);
-        const lastActive = parseInt(localStorage.getItem('nocap_last_active')) || 0;
+
+        const lastActiveStr = window.NocapUtils ?
+            window.NocapUtils.getLocalStorage('nocap_last_active') :
+            localStorage.getItem('nocap_last_active');
+
+        const lastActive = parseInt(lastActiveStr) || 0;
         const now = Date.now();
 
-        // P0 FIX: Only rejoin if less than 5 minutes ago
+        // ✅ P0 FIX: Only rejoin if less than 5 minutes ago
         const maxInactiveTime = 5 * 60 * 1000; // 5 minutes
         if (now - lastActive > maxInactiveTime) {
-            localStorage.removeItem('nocap_game_progress');
+            clearGameProgress();
             return false;
         }
 
@@ -231,7 +343,7 @@ async function attemptRejoin() {
 
     } catch (error) {
         console.error('❌ Rejoin error:', error);
-        localStorage.removeItem('nocap_game_progress');
+        clearGameProgress();
         return false;
     }
 }
@@ -241,159 +353,80 @@ async function attemptRejoin() {
  */
 function clearGameProgress() {
     try {
-        localStorage.removeItem('nocap_game_progress');
-        localStorage.removeItem('nocap_last_active');
+        if (window.NocapUtils) {
+            window.NocapUtils.removeLocalStorage('nocap_game_progress');
+            window.NocapUtils.removeLocalStorage('nocap_last_active');
+        } else {
+            localStorage.removeItem('nocap_game_progress');
+            localStorage.removeItem('nocap_last_active');
+        }
+
+        if (isDevelopment) {
+            console.log('🗑️ Game progress cleared');
+        }
     } catch (error) {
         console.warn('⚠️ Could not clear progress:', error);
     }
 }
 
-// ===== EVENT LISTENERS SETUP =====
-
-function setupEventListeners() {
-    // Answer buttons
-    const yesBtn = document.getElementById('yes-btn');
-    const noBtn = document.getElementById('no-btn');
-
-    if (yesBtn) {
-        yesBtn.addEventListener('click', () => selectAnswer(true));
-    }
-    if (noBtn) {
-        noBtn.addEventListener('click', () => selectAnswer(false));
-    }
-
-    // Submit button
-    const submitBtn = document.getElementById('submit-btn');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitAnswer);
-    }
-
-    // Exit confirmation buttons
-    const exitCancel = document.querySelector('.exit-btn.cancel');
-    const exitConfirm = document.querySelector('.exit-btn.confirm');
-
-    if (exitCancel) {
-        exitCancel.addEventListener('click', cancelExit);
-    }
-    if (exitConfirm) {
-        exitConfirm.addEventListener('click', confirmExit);
-    }
-
-    // Results navigation - delegation
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.nav-btn.primary')) {
-            const btn = e.target.closest('.nav-btn.primary');
-            if (btn.textContent.includes('Nächste Frage')) {
-                nextQuestion();
-            } else if (btn.textContent.includes('Spiel beenden')) {
-                goHome();
-            }
-        } else if (e.target.closest('.nav-btn.secondary')) {
-            endGame();
-        }
-    });
-
-    // P1 FIX: Auto-save on visibility change
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-            saveGameProgress();
-        }
-    });
-}
-
-// ===== PAGE LEAVE PROTECTION =====
-
-function setupPageLeaveProtection() {
-    window.addEventListener('beforeunload', function(e) {
-        if (!isExitDialogShown) {
-            saveGameProgress();
-            e.preventDefault();
-            e.returnValue = 'Möchtest du das Spiel wirklich verlassen?';
-            return e.returnValue;
-        }
-    });
-
-    window.addEventListener('popstate', function(e) {
-        e.preventDefault();
-        showExitConfirmation();
-        history.pushState(null, null, window.location.pathname);
-    });
-
-    history.pushState(null, null, window.location.pathname);
-}
-
-function showExitConfirmation() {
-    const exitDialog = document.getElementById('exit-confirmation');
-    if (exitDialog) {
-        exitDialog.classList.add('show');
-        exitDialog.setAttribute('aria-hidden', 'false');
-    }
-}
-
-function cancelExit() {
-    const exitDialog = document.getElementById('exit-confirmation');
-    if (exitDialog) {
-        exitDialog.classList.remove('show');
-        exitDialog.setAttribute('aria-hidden', 'true');
-    }
-}
-
-function confirmExit() {
-    clearGameProgress();
-    gameState.reset();
-    isExitDialogShown = true;
-    window.location.replace('index.html');
-}
-
-function goHome() {
-    clearGameProgress();
-    gameState.reset();
-    isExitDialogShown = true;
-    window.location.replace('index.html');
-}
-
-// ===== ALCOHOL MODE CHECK =====
+// ===========================
+// ALCOHOL MODE CHECK
+// ===========================
 
 function checkAlcoholMode() {
     try {
-        const alcoholModeStr = localStorage.getItem('nocap_alcohol_mode');
-        alcoholMode = alcoholModeStr === 'true';
-        console.log(`🍺 Alcohol mode: ${alcoholMode}`);
+        alcoholMode = gameState.alcoholMode === true;
+
+        if (isDevelopment) {
+            console.log(`🍺 Alcohol mode: ${alcoholMode}`);
+        }
     } catch (error) {
         console.error('❌ Error checking alcohol mode:', error);
         alcoholMode = false;
     }
 }
 
-// ===== P0 FIX: QUESTION LOADING WITH CACHING =====
+// ===========================
+// QUESTION LOADING WITH CACHING
+// ===========================
 
 /**
- * Load questions from Firebase with caching
+ * ✅ P0 FIX: Load questions from Firebase with caching
  */
 async function loadQuestions() {
     currentGame.allQuestions = [];
 
-    // P0 FIX: Try to load from cache first
+    if (isDevelopment) {
+        console.log('📚 Loading questions...');
+    }
+
+    // Try to load from cache first
     const cachedQuestions = loadQuestionsFromCache();
     if (cachedQuestions && cachedQuestions.length > 0) {
-        console.log('✅ Loaded questions from cache');
+        if (isDevelopment) {
+            console.log('✅ Loaded questions from cache');
+        }
         currentGame.allQuestions = cachedQuestions;
         return;
     }
 
     // Load from Firebase
-    if (firebaseService && typeof firebaseService.isInitialized !== 'undefined') {
+    if (firebaseService && typeof firebase !== 'undefined' && firebase.database) {
         for (const category of gameState.selectedCategories) {
             try {
                 const questions = await loadCategoryQuestions(category);
                 if (questions && questions.length > 0) {
-                    console.log(`✅ Loaded ${questions.length} questions for ${category}`);
+                    if (isDevelopment) {
+                        console.log(`✅ Loaded ${questions.length} questions for ${category}`);
+                    }
                     questions.forEach(q => {
                         currentGame.allQuestions.push({
                             text: sanitizeQuestionText(q),
                             category: category
                         });
                     });
+                } else {
+                    loadFallbackQuestions(category);
                 }
             } catch (error) {
                 console.warn(`⚠️ Error loading ${category}:`, error);
@@ -411,20 +444,22 @@ async function loadQuestions() {
     // Shuffle
     currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
 
-    // P0 FIX: Cache questions
+    // Cache questions
     cacheQuestions(currentGame.allQuestions);
 
-    console.log(`📚 Total questions: ${currentGame.allQuestions.length}`);
+    if (isDevelopment) {
+        console.log(`📚 Total questions loaded: ${currentGame.allQuestions.length}`);
+    }
 }
 
 /**
- * P0 FIX: Sanitize question text
+ * ✅ P0 FIX: Sanitize question text
  */
 function sanitizeQuestionText(text) {
     if (!text) return '';
 
     // Use NocapUtils if available
-    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
+    if (window.NocapUtils && window.NocapUtils.sanitizeInput) {
         return window.NocapUtils.sanitizeInput(String(text));
     }
 
@@ -439,7 +474,6 @@ async function loadCategoryQuestions(category) {
     if (!firebaseService) return null;
 
     try {
-        // Check if we have the new firebase-service.js API
         if (typeof firebase !== 'undefined' && firebase.database) {
             const questionsRef = firebase.database().ref(`questions/${category}`);
             const snapshot = await questionsRef.once('value');
@@ -477,7 +511,7 @@ function loadFallbackQuestions(category) {
 }
 
 /**
- * P0 FIX: Cache questions in localStorage
+ * ✅ P0 FIX: Cache questions in localStorage (24h)
  */
 function cacheQuestions(questions) {
     try {
@@ -486,7 +520,12 @@ function cacheQuestions(questions) {
             categories: gameState.selectedCategories,
             timestamp: Date.now()
         };
-        localStorage.setItem('nocap_cached_questions', JSON.stringify(cacheData));
+
+        if (window.NocapUtils) {
+            window.NocapUtils.setLocalStorage('nocap_cached_questions', JSON.stringify(cacheData));
+        } else {
+            localStorage.setItem('nocap_cached_questions', JSON.stringify(cacheData));
+        }
     } catch (error) {
         console.warn('⚠️ Could not cache questions:', error);
     }
@@ -497,7 +536,10 @@ function cacheQuestions(questions) {
  */
 function loadQuestionsFromCache() {
     try {
-        const cacheStr = localStorage.getItem('nocap_cached_questions');
+        const cacheStr = window.NocapUtils ?
+            window.NocapUtils.getLocalStorage('nocap_cached_questions') :
+            localStorage.getItem('nocap_cached_questions');
+
         if (!cacheStr) return null;
 
         const cache = JSON.parse(cacheStr);
@@ -506,7 +548,11 @@ function loadQuestionsFromCache() {
 
         // Check if cache is valid
         if (now - cache.timestamp > maxAge) {
-            localStorage.removeItem('nocap_cached_questions');
+            if (window.NocapUtils) {
+                window.NocapUtils.removeLocalStorage('nocap_cached_questions');
+            } else {
+                localStorage.removeItem('nocap_cached_questions');
+            }
             return null;
         }
 
@@ -517,7 +563,11 @@ function loadQuestionsFromCache() {
             cache.categories.every(c => gameState.selectedCategories.includes(c));
 
         if (!categoriesMatch) {
-            localStorage.removeItem('nocap_cached_questions');
+            if (window.NocapUtils) {
+                window.NocapUtils.removeLocalStorage('nocap_cached_questions');
+            } else {
+                localStorage.removeItem('nocap_cached_questions');
+            }
             return null;
         }
 
@@ -560,10 +610,14 @@ function shuffleArray(array) {
     return shuffled;
 }
 
-// ===== GAME FLOW =====
+// ===========================
+// GAME FLOW
+// ===========================
 
 function startNewQuestion() {
-    console.log(`🎲 Starting question ${currentGame.currentQuestionNumber}`);
+    if (isDevelopment) {
+        console.log(`🎲 Starting question ${currentGame.currentQuestionNumber}`);
+    }
 
     currentGame.currentPlayerIndex = 0;
     currentGame.currentAnswers = {};
@@ -591,7 +645,7 @@ function endGame() {
 }
 
 /**
- * P0 FIX: Load question with textContent
+ * ✅ P0 FIX: Load question with textContent
  */
 function loadQuestion(question) {
     const categoryNames = {
@@ -605,7 +659,7 @@ function loadQuestion(question) {
     const questionCategory = document.getElementById('question-category');
 
     if (questionText) {
-        // P0 FIX: Use textContent for safety
+        // Use textContent for safety
         questionText.textContent = question.text;
     }
     if (questionCategory) {
@@ -626,7 +680,7 @@ function updateGameDisplay() {
     const progressEl = document.getElementById('player-progress');
 
     if (playerNameEl) {
-        // P0 FIX: Use textContent
+        // Use textContent
         playerNameEl.textContent = currentPlayerName;
     }
     if (avatarEl) {
@@ -649,7 +703,9 @@ function resetPlayerUI() {
     updateSubmitButton();
 }
 
-// ===== UI CONTROLS =====
+// ===========================
+// UI CONTROLS
+// ===========================
 
 function createNumberGrid() {
     const numberGrid = document.getElementById('number-grid');
@@ -766,7 +822,9 @@ function updateSubmitButton() {
     }
 }
 
-// ===== GAME ACTIONS =====
+// ===========================
+// GAME ACTIONS
+// ===========================
 
 function submitAnswer() {
     if (currentAnswer === null || currentEstimation === null) {
@@ -779,10 +837,12 @@ function submitAnswer() {
     currentGame.currentAnswers[currentPlayerName] = currentAnswer;
     currentGame.currentEstimates[currentPlayerName] = currentEstimation;
 
-    console.log(`📤 ${currentPlayerName} answered:`, {
-        answer: currentAnswer,
-        estimation: currentEstimation
-    });
+    if (isDevelopment) {
+        console.log(`📤 ${currentPlayerName} answered:`, {
+            answer: currentAnswer,
+            estimation: currentEstimation
+        });
+    }
 
     // Save progress
     saveGameProgress();
@@ -799,7 +859,9 @@ function submitAnswer() {
     }
 }
 
-// ===== PLAYER CHANGE POPUP =====
+// ===========================
+// PLAYER CHANGE POPUP
+// ===========================
 
 function showPlayerChangePopup() {
     const currentPlayerName = currentGame.players[currentGame.currentPlayerIndex];
@@ -830,10 +892,14 @@ function showPlayerChangePopup() {
     }, 2000);
 }
 
-// ===== RESULTS =====
+// ===========================
+// RESULTS
+// ===========================
 
 function showResults() {
-    console.log('📊 Calculating results...');
+    if (isDevelopment) {
+        console.log('📊 Calculating results...');
+    }
 
     const actualYesCount = Object.values(currentGame.currentAnswers).filter(answer => answer === true).length;
 
@@ -881,7 +947,7 @@ function getDifficultyMultiplier() {
 }
 
 /**
- * P0 FIX: Display results with textContent only
+ * ✅ P0 FIX: Display results with textContent only
  */
 function displayResults(results, actualYesCount) {
     const resultsSummary = document.getElementById('results-summary');
@@ -926,7 +992,7 @@ function displayResults(results, actualYesCount) {
 
         const playerResultName = document.createElement('div');
         playerResultName.className = 'player-result-name';
-        // P0 FIX: Use textContent
+        // Use textContent
         playerResultName.textContent = result.playerName;
 
         const playerAnswer = document.createElement('div');
@@ -980,10 +1046,14 @@ function showGameView() {
     if (resultsSection) resultsSection.style.display = 'none';
 }
 
-// ===== FINAL RESULTS =====
+// ===========================
+// FINAL RESULTS
+// ===========================
 
 function showFinalResults() {
-    console.log('🏆 Calculating final results...');
+    if (isDevelopment) {
+        console.log('🏆 Calculating final results...');
+    }
 
     const playerStats = calculatePlayerStatistics();
     const finalRankings = playerStats.sort((a, b) => a.totalSips - b.totalSips);
@@ -1024,7 +1094,7 @@ function calculatePlayerStatistics() {
 }
 
 /**
- * P0 FIX: Display final results with textContent
+ * ✅ P0 FIX: Display final results with textContent
  */
 function displayFinalResults(finalRankings) {
     const leaderboardList = document.getElementById('leaderboard-list');
@@ -1061,13 +1131,13 @@ function displayFinalResults(finalRankings) {
 
         const playerFinalName = document.createElement('div');
         playerFinalName.className = 'player-final-name';
-        // P0 FIX: Use textContent
+        // Use textContent
         playerFinalName.textContent = player.playerName;
 
         const playerFinalDetails = document.createElement('div');
         playerFinalDetails.className = 'player-final-details';
 
-        // P0 FIX: Build with textContent instead of innerHTML
+        // Build with textContent instead of innerHTML
         const detailItem1 = document.createElement('div');
         detailItem1.className = 'detail-item';
 
@@ -1132,14 +1202,124 @@ function showFinalResultsView() {
     if (finalResultsSection) finalResultsSection.style.display = 'flex';
 }
 
-// ===== UTILITY FUNCTIONS =====
+// ===========================
+// EVENT LISTENERS
+// ===========================
+
+function setupEventListeners() {
+    // Answer buttons
+    const yesBtn = document.getElementById('yes-btn');
+    const noBtn = document.getElementById('no-btn');
+
+    if (yesBtn) {
+        yesBtn.addEventListener('click', () => selectAnswer(true));
+    }
+    if (noBtn) {
+        noBtn.addEventListener('click', () => selectAnswer(false));
+    }
+
+    // Submit button
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitAnswer);
+    }
+
+    // Exit confirmation buttons
+    const exitCancel = document.querySelector('.exit-btn.cancel');
+    const exitConfirm = document.querySelector('.exit-btn.confirm');
+
+    if (exitCancel) {
+        exitCancel.addEventListener('click', cancelExit);
+    }
+    if (exitConfirm) {
+        exitConfirm.addEventListener('click', confirmExit);
+    }
+
+    // Results navigation - delegation
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.nav-btn.primary')) {
+            const btn = e.target.closest('.nav-btn.primary');
+            if (btn.textContent.includes('Nächste Frage')) {
+                nextQuestion();
+            } else if (btn.textContent.includes('Spiel beenden')) {
+                goHome();
+            }
+        } else if (e.target.closest('.nav-btn.secondary')) {
+            endGame();
+        }
+    });
+
+    // Auto-save on visibility change
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            saveGameProgress();
+        }
+    });
+}
+
+// ===========================
+// PAGE LEAVE PROTECTION
+// ===========================
+
+function setupPageLeaveProtection() {
+    window.addEventListener('beforeunload', function(e) {
+        if (!isExitDialogShown) {
+            saveGameProgress();
+            e.preventDefault();
+            e.returnValue = 'Möchtest du das Spiel wirklich verlassen?';
+            return e.returnValue;
+        }
+    });
+
+    window.addEventListener('popstate', function(e) {
+        e.preventDefault();
+        showExitConfirmation();
+        history.pushState(null, null, window.location.pathname);
+    });
+
+    history.pushState(null, null, window.location.pathname);
+}
+
+function showExitConfirmation() {
+    const exitDialog = document.getElementById('exit-confirmation');
+    if (exitDialog) {
+        exitDialog.classList.add('show');
+        exitDialog.setAttribute('aria-hidden', 'false');
+    }
+}
+
+function cancelExit() {
+    const exitDialog = document.getElementById('exit-confirmation');
+    if (exitDialog) {
+        exitDialog.classList.remove('show');
+        exitDialog.setAttribute('aria-hidden', 'true');
+    }
+}
+
+function confirmExit() {
+    clearGameProgress();
+    gameState.reset();
+    isExitDialogShown = true;
+    window.location.replace('index.html');
+}
+
+function goHome() {
+    clearGameProgress();
+    gameState.reset();
+    isExitDialogShown = true;
+    window.location.replace('index.html');
+}
+
+// ===========================
+// UTILITY FUNCTIONS
+// ===========================
 
 /**
- * P0 FIX: Safe notification using NocapUtils
+ * ✅ P0 FIX: Safe notification using NocapUtils
  */
 function showNotification(message, type = 'info', duration = 3000) {
-    if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.showNotification) {
-        window.NocapUtils.showNotification(message, type);
+    if (window.NocapUtils && window.NocapUtils.showNotification) {
+        window.NocapUtils.showNotification(message, type, duration);
         return;
     }
 
@@ -1185,7 +1365,9 @@ function showNotification(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
-// ===== INITIALIZATION =====
+// ===========================
+// INITIALIZATION
+// ===========================
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);

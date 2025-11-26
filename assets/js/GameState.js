@@ -1,50 +1,100 @@
-// ===== NO-CAP GAMESTATE - ZENTRALE KLASSE =====
-// Version: 5.0 - Security Hardened & Audit-Fixed
-// Alle localStorage-Zugriffe MÜSSEN über diese Klasse laufen
+/**
+ * No-Cap GameState - Central State Management
+ * Version 6.0 - Production Ready (Deep Copy Fix)
+ *
+ * ✅ P0 FIX: getState() returns deep copy (no mutation possible)
+ * ✅ P1 FIX: Debounced saves with lock mechanism
+ * ✅ P1 FIX: Proper cleanup on page unload
+ * ✅ P0 FIX: All string values sanitized on load/save
+ */
 
 (function(window) {
     'use strict';
 
     class GameState {
         constructor() {
-            // EINHEITLICHE KEY-KONVENTION (nocap_*)
+            // Storage configuration
             this.STORAGE_KEY = 'nocap_game_state';
-            this.VERSION = 5.0;
+            this.VERSION = 6.0;
             this.MAX_AGE_HOURS = 24;
 
-            // P1 FIX: Debounce-Timer für Save-Operationen
+            // Debounce & locking
             this._saveTimer = null;
             this._saveDelay = 300; // 300ms debounce
-
-            // P1 FIX: Lock-Mechanismus gegen Race-Conditions
             this._isLoading = false;
             this._isSaving = false;
+            this._isDirty = false;
+            this._lastModified = Date.now();
 
-            // State Properties
+            // State properties
             this.deviceMode = null;           // 'single' | 'multi'
             this.selectedCategories = [];     // ['fsk0', 'fsk16', 'fsk18', 'special']
             this.difficulty = null;           // 'easy' | 'medium' | 'hard'
             this.alcoholMode = true;          // true | false
-            this.questionCount = 10;          // Anzahl Fragen
-            this.playerName = '';             // Name des aktuellen Spielers
-            this.gameId = null;               // 6-stelliger Game-Code
-            this.playerId = null;             // Eindeutige Player-ID
-            this.isHost = false;              // Ist dieser User der Host?
-            this.isGuest = false;             // Ist dieser User ein Gast?
+            this.questionCount = 10;          // Number of questions
+            this.playerName = '';             // Current player name
+            this.gameId = null;               // 6-digit game code
+            this.playerId = null;             // Unique player ID
+            this.isHost = false;              // Is this user the host?
+            this.isGuest = false;             // Is this user a guest?
             this.gamePhase = 'lobby';         // 'lobby' | 'playing' | 'results'
-            this.timestamp = Date.now();      // Wann wurde State erstellt
+            this.timestamp = Date.now();      // When state was created
 
-            // P1 FIX: Track letzte Änderung für Debounce-Optimierung
-            this._lastModified = Date.now();
-            this._isDirty = false;
-
-            // Auto-Load beim Instanziieren
+            // Auto-load on instantiation
             this.load();
         }
 
-        // ===== P0 FIX: LOAD STATE WITH VALIDATION & LOCK =====
+        // ===========================
+        // P0 FIX: DEEP COPY GETTER
+        // ===========================
+
+        /**
+         * ✅ P0 FIX: Return deep copy of state to prevent external mutation
+         */
+        getState() {
+            // Return a DEEP COPY, not a reference
+            return {
+                deviceMode: this.deviceMode,
+                selectedCategories: [...this.selectedCategories], // Array copy
+                difficulty: this.difficulty,
+                alcoholMode: this.alcoholMode,
+                questionCount: this.questionCount,
+                playerName: this.playerName,
+                gameId: this.gameId,
+                playerId: this.playerId,
+                isHost: this.isHost,
+                isGuest: this.isGuest,
+                gamePhase: this.gamePhase,
+                timestamp: this.timestamp,
+                version: this.VERSION
+            };
+        }
+
+        /**
+         * Get specific state property safely
+         */
+        get(key) {
+            if (this.hasOwnProperty(key)) {
+                // Return copy for arrays
+                if (Array.isArray(this[key])) {
+                    return [...this[key]];
+                }
+                // Return copy for objects
+                if (this[key] && typeof this[key] === 'object') {
+                    return { ...this[key] };
+                }
+                // Return primitive value
+                return this[key];
+            }
+            return undefined;
+        }
+
+        // ===========================
+        // LOAD STATE
+        // ===========================
+
         load() {
-            // P1 FIX: Prevent concurrent loads
+            // Prevent concurrent loads
             if (this._isLoading) {
                 this.log('⚠️ Load already in progress', 'warning');
                 return false;
@@ -53,7 +103,7 @@
             this._isLoading = true;
 
             try {
-                // WICHTIG: Migration von alten Keys ZUERST
+                // Migrate old keys first
                 this.migrateOldKeys();
 
                 const saved = localStorage.getItem(this.STORAGE_KEY);
@@ -65,7 +115,7 @@
 
                 const state = JSON.parse(saved);
 
-                // P0 FIX: Validiere State-Struktur
+                // Validate state structure
                 if (!this.validateStateStructure(state)) {
                     this.log('⚠️ Invalid state structure, cleared', 'warning');
                     this.clearStorage();
@@ -73,7 +123,7 @@
                     return false;
                 }
 
-                // Prüfe Alter des State (max 24h)
+                // Check if state is expired (max 24h)
                 if (this.isStateExpired(state)) {
                     this.log('⚠️ Saved state too old, cleared', 'warning');
                     this.clearStorage();
@@ -81,7 +131,7 @@
                     return false;
                 }
 
-                // P0 FIX: Sanitize alle String-Werte beim Laden
+                // Sanitize all values on load
                 this.deviceMode = this.sanitizeValue(state.deviceMode, ['single', 'multi']);
                 this.selectedCategories = this.sanitizeCategories(state.selectedCategories);
                 this.difficulty = this.sanitizeValue(state.difficulty, ['easy', 'medium', 'hard']);
@@ -108,7 +158,10 @@
             }
         }
 
-        // ===== P0 FIX: VALIDATE STATE STRUCTURE =====
+        // ===========================
+        // VALIDATION
+        // ===========================
+
         validateStateStructure(state) {
             if (!state || typeof state !== 'object') {
                 return false;
@@ -123,17 +176,43 @@
             return true;
         }
 
-        // ===== P0 FIX: SANITIZATION HELPERS =====
+        isStateExpired(state) {
+            if (!state.timestamp || typeof state.timestamp !== 'number') {
+                return true;
+            }
 
-        /**
-         * Sanitize string values (prevent XSS in stored data)
-         */
+            const ageHours = (Date.now() - state.timestamp) / (1000 * 60 * 60);
+            return ageHours > this.MAX_AGE_HOURS;
+        }
+
+        checkValidity() {
+            const info = this.getDebugInfo();
+
+            // Check if state is too old
+            if (info.ageMinutes > (this.MAX_AGE_HOURS * 60)) {
+                this.log('⚠️ State expired', 'warning');
+                return false;
+            }
+
+            // Check if basic structure is valid
+            if (!this.deviceMode) {
+                this.log('⚠️ No device mode set', 'warning');
+                return false;
+            }
+
+            return true;
+        }
+
+        // ===========================
+        // SANITIZATION HELPERS
+        // ===========================
+
         sanitizeString(value) {
             if (!value || typeof value !== 'string') {
                 return '';
             }
 
-            // Use NocapUtils if available, otherwise basic sanitization
+            // Use NocapUtils if available
             if (typeof window.NocapUtils !== 'undefined' && window.NocapUtils.sanitizeInput) {
                 return window.NocapUtils.sanitizeInput(value);
             }
@@ -144,12 +223,9 @@
                 .replace(/javascript:/gi, '')
                 .replace(/on\w+=/gi, '')
                 .trim()
-                .substring(0, 200); // P0 FIX: Max length
+                .substring(0, 200); // Max length
         }
 
-        /**
-         * Sanitize enum values (only allow specific values)
-         */
         sanitizeValue(value, allowedValues, defaultValue = null) {
             if (!value || typeof value !== 'string') {
                 return defaultValue;
@@ -159,9 +235,6 @@
             return allowedValues.includes(sanitized) ? sanitized : defaultValue;
         }
 
-        /**
-         * Sanitize number values
-         */
         sanitizeNumber(value, min, max, defaultValue) {
             const num = parseInt(value, 10);
             if (isNaN(num) || num < min || num > max) {
@@ -170,9 +243,6 @@
             return num;
         }
 
-        /**
-         * Sanitize categories array
-         */
         sanitizeCategories(categories) {
             if (!Array.isArray(categories)) {
                 return [];
@@ -183,12 +253,9 @@
                 .filter(cat => typeof cat === 'string')
                 .map(cat => cat.toLowerCase().trim())
                 .filter(cat => allowedCategories.includes(cat))
-                .slice(0, 4); // P0 FIX: Max 4 categories
+                .slice(0, 4); // Max 4 categories
         }
 
-        /**
-         * Sanitize Game ID (6 uppercase alphanumeric)
-         */
         sanitizeGameId(gameId) {
             if (!gameId || typeof gameId !== 'string') {
                 return null;
@@ -198,15 +265,18 @@
             return cleaned.length === 6 ? cleaned : null;
         }
 
-        // ===== P1 FIX: SAVE WITH DEBOUNCE =====
+        // ===========================
+        // SAVE STATE
+        // ===========================
+
         save(immediate = false) {
-            // P1 FIX: Prevent concurrent saves
+            // Prevent concurrent saves
             if (this._isSaving && !immediate) {
                 this._isDirty = true;
                 return false;
             }
 
-            // P1 FIX: Debounce saves (außer wenn immediate=true)
+            // Debounce saves (unless immediate)
             if (!immediate) {
                 this._isDirty = true;
                 clearTimeout(this._saveTimer);
@@ -221,7 +291,6 @@
             return this._performSave();
         }
 
-        // ===== INTERNAL: PERFORM ACTUAL SAVE =====
         _performSave() {
             // Skip if nothing changed
             if (!this._isDirty) {
@@ -231,7 +300,7 @@
             this._isSaving = true;
 
             try {
-                // P0 FIX: Validate before saving
+                // Validate before saving
                 const state = {
                     deviceMode: this.deviceMode,
                     selectedCategories: this.selectedCategories,
@@ -248,7 +317,7 @@
                     version: this.VERSION
                 };
 
-                // P0 FIX: Additional security - check state size
+                // Check state size
                 const stateString = JSON.stringify(state);
                 if (stateString.length > 10000) {
                     this.log('⚠️ State too large, not saving', 'warning');
@@ -266,12 +335,12 @@
             } catch (error) {
                 this.log(`❌ Save failed: ${error.message}`, 'error');
 
-                // P1 FIX: Handle QuotaExceededError
+                // Handle QuotaExceededError
                 if (error.name === 'QuotaExceededError') {
                     this.log('⚠️ Storage quota exceeded, clearing old data', 'warning');
                     this.clearOldData();
 
-                    // Retry save after clearing
+                    // Retry save
                     try {
                         const stateString = JSON.stringify({
                             deviceMode: this.deviceMode,
@@ -303,10 +372,12 @@
             }
         }
 
-        // ===== P1 FIX: CLEAR OLD DATA =====
+        // ===========================
+        // STORAGE MANAGEMENT
+        // ===========================
+
         clearOldData() {
             try {
-                // Clear only nocap_* keys that are not critical
                 const keysToCheck = [
                     'nocap_game_history',
                     'nocap_cached_questions',
@@ -330,12 +401,9 @@
             }
         }
 
-        // ===== CLEAR STATE =====
         clearStorage() {
             try {
-                // Cancel pending saves
                 clearTimeout(this._saveTimer);
-
                 localStorage.removeItem(this.STORAGE_KEY);
                 this._isDirty = false;
                 this.log('🗑️ Storage cleared');
@@ -346,36 +414,10 @@
             }
         }
 
-        // ===== P1 FIX: CHECK VALIDITY (muss auf jeder Seite aufgerufen werden) =====
-        checkValidity() {
-            const info = this.getDebugInfo();
+        // ===========================
+        // MIGRATION
+        // ===========================
 
-            // Check if state is too old
-            if (info.ageMinutes > (this.MAX_AGE_HOURS * 60)) {
-                this.log('⚠️ State expired', 'warning');
-                return false;
-            }
-
-            // Check if basic structure is valid
-            if (!this.deviceMode) {
-                this.log('⚠️ No device mode set', 'warning');
-                return false;
-            }
-
-            return true;
-        }
-
-        // ===== CHECK IF STATE IS EXPIRED =====
-        isStateExpired(state) {
-            if (!state.timestamp || typeof state.timestamp !== 'number') {
-                return true;
-            }
-
-            const ageHours = (Date.now() - state.timestamp) / (1000 * 60 * 60);
-            return ageHours > this.MAX_AGE_HOURS;
-        }
-
-        // ===== MIGRATION FROM OLD KEYS =====
         migrateOldKeys() {
             const migrations = [
                 { old: 'denkstdu_game_state', new: 'nocap_game_state' },
@@ -391,8 +433,7 @@
                 const oldData = localStorage.getItem(old);
                 if (oldData) {
                     try {
-                        // P0 FIX: Validate data before migrating
-                        JSON.parse(oldData); // Check if valid JSON
+                        JSON.parse(oldData); // Validate JSON
 
                         // Only migrate if new key doesn't exist
                         if (!localStorage.getItem(newKey)) {
@@ -414,7 +455,10 @@
             }
         }
 
-        // ===== VALIDATION FOR MULTIPLAYER =====
+        // ===========================
+        // VALIDATION HELPERS
+        // ===========================
+
         isValidForMultiplayer() {
             return (
                 this.deviceMode === 'multi' &&
@@ -426,7 +470,6 @@
             );
         }
 
-        // ===== VALIDATION FOR SINGLE DEVICE =====
         isValidForSingleDevice() {
             return (
                 this.deviceMode === 'single' &&
@@ -436,13 +479,15 @@
             );
         }
 
-        // ===== P0 FIX: GENERATE PLAYER ID (SECURE) =====
+        // ===========================
+        // PLAYER & GAME MANAGEMENT
+        // ===========================
+
         generatePlayerId(isHost = false) {
             const timestamp = Date.now();
             const random = Math.random().toString(36).substring(2, 8);
             const extraRandom = Math.random().toString(36).substring(2, 6);
 
-            // P0 FIX: Sanitize player name
             const safeName = this.sanitizeString(this.playerName || 'player')
                 .replace(/[^a-zA-Z0-9]/g, '')
                 .toLowerCase()
@@ -457,23 +502,11 @@
             return this.playerId;
         }
 
-        // ===== P1 FIX: CHECK PREMIUM STATUS =====
         isPremiumUser() {
-            // P0 FIX: Premium status MUST be validated server-side
-            // This is only a client-side indicator, NOT authoritative
+            // ⚠️ CLIENT-SIDE ONLY - must be validated server-side
             try {
-                // Check if authService has premium status
-                if (window.authService && typeof window.authService.isPremiumUser === 'function') {
-                    return window.authService.isPremiumUser();
-                }
-
-                // Fallback: Check Firebase directly (still not secure!)
-                if (window.firebase && window.firebase.auth && window.firebase.auth()) {
-                    const user = window.firebase.auth().currentUser;
-                    if (user && user.getIdTokenResult) {
-                        // TODO: Check custom claims for premiumStatus
-                        // This requires server-side implementation
-                    }
+                if (window.FirebaseService && typeof window.FirebaseService.isPremiumUser === 'function') {
+                    return window.FirebaseService.isPremiumUser();
                 }
 
                 return false;
@@ -483,10 +516,9 @@
             }
         }
 
-        // ===== P1 FIX: CHECK FSK ACCESS =====
         canAccessFSK(level) {
+            // ⚠️ CLIENT-SIDE ONLY - must be validated server-side
             try {
-                // P0 FIX: This should be validated server-side
                 const ageLevel = parseInt(localStorage.getItem('nocap_age_level'), 10) || 0;
 
                 const levelMap = {
@@ -509,7 +541,10 @@
             }
         }
 
-        // ===== P1 FIX: SETTERS WITH AUTO-SAVE =====
+        // ===========================
+        // SETTERS WITH AUTO-SAVE
+        // ===========================
+
         setDeviceMode(mode) {
             const sanitized = this.sanitizeValue(mode, ['single', 'multi']);
             if (sanitized && sanitized !== this.deviceMode) {
@@ -581,7 +616,10 @@
             }
         }
 
-        // ===== DEBUG INFORMATION =====
+        // ===========================
+        // DEBUG & LOGGING
+        // ===========================
+
         getDebugInfo() {
             return {
                 deviceMode: this.deviceMode,
@@ -606,16 +644,13 @@
             };
         }
 
-        // ===== LOGGING =====
         log(message, type = 'info') {
-            // P2 FIX: Logging nur im Development-Mode
             const isDev = window.location.hostname === 'localhost' ||
                 window.location.hostname === '127.0.0.1' ||
                 window.location.hostname.includes('192.168.');
 
-            if (!isDev) {
-                // In production: nur Errors loggen
-                if (type !== 'error') return;
+            if (!isDev && type !== 'error') {
+                return; // Only errors in production
             }
 
             const prefix = '[GameState]';
@@ -633,7 +668,10 @@
             );
         }
 
-        // ===== P1 FIX: CLEANUP ON PAGE UNLOAD =====
+        // ===========================
+        // CLEANUP
+        // ===========================
+
         cleanup() {
             clearTimeout(this._saveTimer);
 
@@ -646,23 +684,26 @@
         }
     }
 
-    // ===== EXPORT AS GLOBAL CLASS =====
+    // ===========================
+    // EXPORT & SETUP
+    // ===========================
+
     window.GameState = GameState;
 
-    // ===== P1 FIX: INSTALL CLEANUP HANDLER =====
+    // Install cleanup handler
     window.addEventListener('beforeunload', () => {
         if (window.gameState && typeof window.gameState.cleanup === 'function') {
             window.gameState.cleanup();
         }
     });
 
-    // Auto-log on load (only in development)
+    // Development mode logging
     const isDev = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
         window.location.hostname.includes('192.168.');
 
     if (isDev) {
-        console.log('%c✅ GameState v5.0 loaded (Audit-Fixed)', 'color: #4CAF50; font-weight: bold; font-size: 14px');
+        console.log('%c✅ GameState v6.0 loaded (Deep Copy Fix)', 'color: #4CAF50; font-weight: bold; font-size: 14px');
     }
 
 })(window);
