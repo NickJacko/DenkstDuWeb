@@ -1,9 +1,20 @@
-// No-Cap - Utility Functions
-// Version 3.0 - Audit-Fixed & Production Ready
-// Gemeinsame Hilfsfunktionen für die gesamte App
+/**
+ * NO-CAP - Utility Functions
+ * Version 4.0 - Full Audit Compliance & Production Ready
+ *
+ * Gemeinsame Hilfsfunktionen für die gesamte App
+ *
+ * AUDIT FIXES APPLIED:
+ * ✅ P0: DOMPurify validation and XSS prevention
+ * ✅ P0: Safe DOM manipulation (no innerHTML)
+ * ✅ P1: Memory leak prevention (event listener tracking)
+ * ✅ P1: Error handling improvements
+ * ✅ P2: Accessibility enhancements
+ * ✅ P2: Performance optimizations
+ */
 
 // ============================================================================
-// SECURITY CHECK: DOMPurify REQUIRED
+// 🛡️ SECURITY CHECK: DOMPURIFY REQUIRED
 // ============================================================================
 
 (function checkDOMPurify() {
@@ -18,25 +29,32 @@
 })();
 
 // ============================================================================
-// NAMESPACE & SINGLETON PATTERN
+// 📦 NAMESPACE & SINGLETON PATTERN
 // ============================================================================
 
 (function(window) {
     'use strict';
 
-    // P1 FIX: Singleton für Loading-Spinner und Notifications
+    // Environment detection
+    const isDevelopment = window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.includes('192.168.');
+
+    // Singleton instances
     let loadingSpinner = null;
     let notificationContainer = null;
 
-    // P1 FIX: Tracking für Event-Listener (Memory-Leak-Prevention)
+    // Event listener tracking (Memory-Leak-Prevention)
     const _eventListeners = [];
+    const _activeNotifications = new Set();
 
     // ============================================================================
-    // LOADING & UI FUNCTIONS
+    // 🎨 LOADING & UI FUNCTIONS
     // ============================================================================
 
     /**
-     * P1 FIX: Singleton Loading Spinner
+     * Ensure loading spinner exists (Singleton)
+     * @returns {HTMLElement} Loading spinner element
      */
     function ensureLoadingSpinner() {
         if (!loadingSpinner) {
@@ -47,11 +65,20 @@
                 loadingSpinner = document.createElement('div');
                 loadingSpinner.id = 'loading';
                 loadingSpinner.className = 'loading-overlay';
+                loadingSpinner.setAttribute('role', 'status');
+                loadingSpinner.setAttribute('aria-live', 'polite');
+                loadingSpinner.setAttribute('aria-hidden', 'true');
 
                 const spinner = document.createElement('div');
                 spinner.className = 'spinner';
-                loadingSpinner.appendChild(spinner);
+                spinner.setAttribute('aria-hidden', 'true');
 
+                const srText = document.createElement('span');
+                srText.className = 'sr-only';
+                srText.textContent = 'Lädt...';
+
+                loadingSpinner.appendChild(spinner);
+                loadingSpinner.appendChild(srText);
                 document.body.appendChild(loadingSpinner);
             }
         }
@@ -65,6 +92,7 @@
         const loading = ensureLoadingSpinner();
         if (loading) {
             loading.classList.add('show');
+            loading.removeAttribute('aria-hidden');
         }
     }
 
@@ -74,38 +102,44 @@
     function hideLoading() {
         if (loadingSpinner) {
             loadingSpinner.classList.remove('show');
+            loadingSpinner.setAttribute('aria-hidden', 'true');
         }
     }
 
     /**
-     * P0 FIX: Notification mit sicherer DOM-Erzeugung (KEIN innerHTML)
+     * ✅ AUDIT FIX: Notification mit sicherer DOM-Erzeugung (KEIN innerHTML)
+     * @param {string} message - Message to display
+     * @param {string} type - Notification type (success, error, warning, info)
+     * @param {number} duration - Duration in milliseconds
+     * @returns {HTMLElement} Notification element
      */
     function showNotification(message, type = 'info', duration = 3000) {
-        // P1 FIX: Ensure notification container exists
+        // Ensure notification container exists
         if (!notificationContainer) {
             notificationContainer = document.createElement('div');
             notificationContainer.id = 'notification-container';
             notificationContainer.className = 'notification-container';
+            notificationContainer.setAttribute('aria-live', 'polite');
+            notificationContainer.setAttribute('aria-atomic', 'true');
             document.body.appendChild(notificationContainer);
         }
 
-        // Remove old notifications of same type
+        // Remove old notifications of same type (prevent spam)
         const existingNotifications = notificationContainer.querySelectorAll(`.notification.${type}`);
         existingNotifications.forEach(n => {
             if (n._hideTimeout) {
                 clearTimeout(n._hideTimeout);
             }
-            n.remove();
+            hideNotification(n);
         });
 
-        // P0 FIX: Sanitize message - plain text only, no HTML allowed
+        // ✅ P0 FIX: Sanitize message - plain text only, no HTML allowed
         const sanitizedMessage = sanitizeInput(message);
 
-        // P0 FIX: Create elements safely without innerHTML
+        // ✅ P0 FIX: Create elements safely without innerHTML
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
 
         const content = document.createElement('div');
         content.className = 'notification-content';
@@ -117,18 +151,19 @@
 
         const text = document.createElement('span');
         text.className = 'notification-text';
-        text.textContent = sanitizedMessage; // P0 FIX: textContent prevents XSS
+        text.textContent = sanitizedMessage; // ✅ P0 FIX: textContent prevents XSS
 
         const closeBtn = document.createElement('button');
         closeBtn.className = 'notification-close';
+        closeBtn.type = 'button';
         closeBtn.setAttribute('aria-label', 'Benachrichtigung schließen');
         closeBtn.textContent = '×';
-        closeBtn.onclick = () => {
+        closeBtn.addEventListener('click', () => {
             if (notification._hideTimeout) {
                 clearTimeout(notification._hideTimeout);
             }
             hideNotification(notification);
-        };
+        });
 
         content.appendChild(icon);
         content.appendChild(text);
@@ -136,9 +171,10 @@
         notification.appendChild(content);
 
         notificationContainer.appendChild(notification);
+        _activeNotifications.add(notification);
 
         // Show notification with animation
-        requestAnimationFrame(() => {
+        requestFrame(() => {
             notification.classList.add('show');
         });
 
@@ -153,12 +189,14 @@
     }
 
     /**
-     * P1 FIX: Separate hide function
+     * Hide notification with animation
+     * @param {HTMLElement} notification - Notification element to hide
      */
     function hideNotification(notification) {
         if (!notification || !notification.parentNode) return;
 
         notification.classList.remove('show');
+        _activeNotifications.delete(notification);
 
         setTimeout(() => {
             if (notification.parentNode) {
@@ -168,7 +206,9 @@
     }
 
     /**
-     * Get notification icon
+     * Get notification icon based on type
+     * @param {string} type - Notification type
+     * @returns {string} Icon emoji
      */
     function getNotificationIcon(type) {
         const icons = {
@@ -181,59 +221,70 @@
     }
 
     // ============================================================================
-    // SANITIZATION HELPERS - P0 SECURITY FIXES
+    // 🛡️ SANITIZATION HELPERS - P0 SECURITY FIXES
     // ============================================================================
 
     /**
-     * P0 FIX: Sanitize user input - STRICT TEXT ONLY
+     * ✅ P0 FIX: Sanitize user input - STRICT TEXT ONLY
      * Use this for player names, game IDs, and any user-generated text
      * NO HTML ALLOWED - strips all tags
+     *
+     * @param {*} input - Input to sanitize
+     * @returns {string} Sanitized text
      */
     function sanitizeInput(input) {
-        if (!input) return '';
+        if (input === null || input === undefined) return '';
 
         if (typeof input !== 'string') {
             input = String(input);
         }
 
-        // P0 FIX: DOMPurify with ALLOWED_TAGS: [] strips ALL HTML
+        // ✅ P0 FIX: DOMPurify with ALLOWED_TAGS: [] strips ALL HTML
         const sanitized = DOMPurify.sanitize(input, {
             ALLOWED_TAGS: [],
             ALLOWED_ATTR: [],
             KEEP_CONTENT: true
         });
 
-        // P0 FIX: Additional safety - remove potential XSS patterns
+        // ✅ P0 FIX: Additional safety - remove potential XSS patterns
         return sanitized
             .replace(/javascript:/gi, '')
             .replace(/on\w+\s*=/gi, '')
             .replace(/data:text\/html/gi, '')
+            .replace(/<script/gi, '')
+            .replace(/<\/script>/gi, '')
             .trim()
-            .substring(0, 500); // P0 FIX: Max length to prevent DOS
+            .substring(0, 500); // ✅ P0 FIX: Max length to prevent DOS
     }
 
     /**
-     * P0 FIX: Sanitize HTML for safe innerHTML usage
+     * ✅ P0 FIX: Sanitize HTML for safe innerHTML usage
      * Use ONLY when you explicitly need HTML content
      * For most cases, prefer textContent instead!
+     *
+     * @param {string} html - HTML to sanitize
+     * @returns {string} Sanitized HTML
      */
     function sanitizeHTML(html) {
         if (!html) return '';
 
-        // P0 FIX: Strict whitelist of allowed tags
+        // ✅ P0 FIX: Strict whitelist of allowed tags
         return DOMPurify.sanitize(html, {
             ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'span', 'p', 'br', 'div'],
             ALLOWED_ATTR: ['class'],
             KEEP_CONTENT: true,
             RETURN_TRUSTED_TYPE: false,
-            FORBID_ATTR: ['style', 'onerror', 'onload'],
-            FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link']
+            FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover'],
+            FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link', 'style', 'form']
         });
     }
 
     /**
-     * P0 FIX: Create text node safely - USE THIS INSTEAD OF innerHTML
+     * ✅ P0 FIX: Set text content safely - USE THIS INSTEAD OF innerHTML
      * This is the safest way to add user content to DOM
+     *
+     * @param {HTMLElement} element - Target element
+     * @param {string} text - Text to set
      */
     function setTextContent(element, text) {
         if (!element) return;
@@ -241,7 +292,11 @@
     }
 
     /**
-     * P0 FIX: Create HTML element with text content safely
+     * ✅ P0 FIX: Create HTML element with text content safely
+     * @param {string} tag - HTML tag name
+     * @param {string} text - Text content
+     * @param {string} className - CSS class name
+     * @returns {HTMLElement} Created element
      */
     function createElementWithText(tag, text, className = '') {
         const element = document.createElement(tag);
@@ -251,7 +306,11 @@
     }
 
     /**
-     * P1 FIX: Create button safely
+     * ✅ P1 FIX: Create button safely
+     * @param {string} text - Button text
+     * @param {Function} onClick - Click handler
+     * @param {string} className - CSS class name
+     * @returns {HTMLButtonElement} Created button
      */
     function createButton(text, onClick, className = '') {
         const button = document.createElement('button');
@@ -267,65 +326,70 @@
     }
 
     // ============================================================================
-    // MOBILE OPTIMIZATIONS
+    // 📱 MOBILE OPTIMIZATIONS
     // ============================================================================
 
     /**
      * Initialize mobile optimizations
      */
     function initMobileOptimizations() {
+        if (!isMobile()) return;
+
         // Prevent zoom on input focus (iOS)
-        if (isMobile()) {
-            const touchHandler = () => {};
-            document.addEventListener('touchstart', touchHandler, { passive: true });
-            _eventListeners.push({
-                element: document,
-                event: 'touchstart',
-                handler: touchHandler,
-                options: { passive: true }
-            });
+        const touchHandler = () => {};
+        document.addEventListener('touchstart', touchHandler, { passive: true });
+        _eventListeners.push({
+            element: document,
+            event: 'touchstart',
+            handler: touchHandler,
+            options: { passive: true }
+        });
 
-            // Add viewport meta tag if not present
-            if (!document.querySelector('meta[name="viewport"]')) {
-                const meta = document.createElement('meta');
-                meta.name = 'viewport';
-                meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-                document.head.appendChild(meta);
-            }
-
-            // Handle safe area insets
-            handleSafeAreaInsets();
-
-            // Handle orientation changes
-            const orientationHandler = handleOrientationChange;
-            window.addEventListener('orientationchange', orientationHandler);
-            _eventListeners.push({
-                element: window,
-                event: 'orientationchange',
-                handler: orientationHandler
-            });
-
-            // Prevent bounce scrolling on iOS
-            const touchMoveHandler = function(e) {
-                if (e.target === document.body) {
-                    e.preventDefault();
-                }
-            };
-            document.body.addEventListener('touchmove', touchMoveHandler, { passive: false });
-            _eventListeners.push({
-                element: document.body,
-                event: 'touchmove',
-                handler: touchMoveHandler,
-                options: { passive: false }
-            });
+        // Add viewport meta tag if not present
+        if (!document.querySelector('meta[name="viewport"]')) {
+            const meta = document.createElement('meta');
+            meta.name = 'viewport';
+            meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+            document.head.appendChild(meta);
         }
+
+        // Handle safe area insets
+        handleSafeAreaInsets();
+
+        // Handle orientation changes
+        const orientationHandler = handleOrientationChange;
+        window.addEventListener('orientationchange', orientationHandler);
+        _eventListeners.push({
+            element: window,
+            event: 'orientationchange',
+            handler: orientationHandler
+        });
+
+        // Prevent bounce scrolling on iOS
+        const touchMoveHandler = function(e) {
+            if (e.target === document.body) {
+                e.preventDefault();
+            }
+        };
+        document.body.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        _eventListeners.push({
+            element: document.body,
+            event: 'touchmove',
+            handler: touchMoveHandler,
+            options: { passive: false }
+        });
 
         // Handle keyboard visibility
         handleVirtualKeyboard();
+
+        if (isDevelopment) {
+            console.log('✅ Mobile optimizations initialized');
+        }
     }
 
     /**
      * Check if device is mobile
+     * @returns {boolean} True if mobile device
      */
     function isMobile() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -338,10 +402,10 @@
         const root = document.documentElement;
 
         // Add CSS custom properties for safe areas
-        root.style.setProperty('--safe-area-inset-top', 'env(safe-area-inset-top)');
-        root.style.setProperty('--safe-area-inset-right', 'env(safe-area-inset-right)');
-        root.style.setProperty('--safe-area-inset-bottom', 'env(safe-area-inset-bottom)');
-        root.style.setProperty('--safe-area-inset-left', 'env(safe-area-inset-left)');
+        root.style.setProperty('--safe-area-inset-top', 'env(safe-area-inset-top, 0px)');
+        root.style.setProperty('--safe-area-inset-right', 'env(safe-area-inset-right, 0px)');
+        root.style.setProperty('--safe-area-inset-bottom', 'env(safe-area-inset-bottom, 0px)');
+        root.style.setProperty('--safe-area-inset-left', 'env(safe-area-inset-left, 0px)');
     }
 
     /**
@@ -370,8 +434,10 @@
             // If height decreased significantly, keyboard is probably open
             if (heightDifference > 150) {
                 document.body.classList.add('keyboard-open');
+                window.dispatchEvent(new CustomEvent('nocap:keyboard-open'));
             } else {
                 document.body.classList.remove('keyboard-open');
+                window.dispatchEvent(new CustomEvent('nocap:keyboard-close'));
             }
         };
 
@@ -384,7 +450,7 @@
     }
 
     /**
-     * P1 FIX: Cleanup event listeners (call on page unload)
+     * ✅ P1 FIX: Cleanup event listeners (call on page unload)
      */
     function cleanupEventListeners() {
         _eventListeners.forEach(({ element, event, handler, options }) => {
@@ -397,24 +463,33 @@
         _eventListeners.length = 0;
 
         // Clear notification timeouts
-        if (notificationContainer) {
-            notificationContainer.querySelectorAll('.notification').forEach(n => {
-                if (n._hideTimeout) {
-                    clearTimeout(n._hideTimeout);
-                }
-            });
+        _activeNotifications.forEach(notification => {
+            if (notification._hideTimeout) {
+                clearTimeout(notification._hideTimeout);
+            }
+        });
+        _activeNotifications.clear();
+
+        if (isDevelopment) {
+            console.log('✅ Event listeners cleaned up');
         }
     }
 
     // ============================================================================
-    // ANIMATION HELPERS
+    // 🎬 ANIMATION HELPERS
     // ============================================================================
 
     /**
      * Add entrance animation to elements
+     * @param {Array|NodeList} elements - Elements to animate
+     * @param {number} delay - Delay between animations in ms
      */
     function addEntranceAnimation(elements, delay = 100) {
         if (!elements) return;
+
+        // Check for reduced motion preference
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReducedMotion) return;
 
         // Convert to array if NodeList
         const elementsArray = Array.isArray(elements) ? elements : Array.from(elements);
@@ -435,9 +510,21 @@
 
     /**
      * Animate element removal
+     * @param {HTMLElement} element - Element to remove
+     * @param {Function} callback - Callback after animation
      */
     function animateRemoval(element, callback) {
         if (!element) return;
+
+        // Check for reduced motion preference
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (prefersReducedMotion) {
+            if (callback && typeof callback === 'function') {
+                callback();
+            }
+            return;
+        }
 
         element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
         element.style.opacity = '0';
@@ -452,9 +539,14 @@
 
     /**
      * Bounce animation
+     * @param {HTMLElement} element - Element to bounce
      */
     function bounceElement(element) {
         if (!element) return;
+
+        // Check for reduced motion preference
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReducedMotion) return;
 
         element.style.transition = 'transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
         element.style.transform = 'scale(1.1)';
@@ -465,13 +557,20 @@
     }
 
     /**
-     * P1 FIX: Fade transition between elements
+     * ✅ P1 FIX: Fade transition between elements
+     * @param {HTMLElement} hideElement - Element to hide
+     * @param {HTMLElement} showElement - Element to show
+     * @param {number} duration - Transition duration in ms
      */
     function fadeTransition(hideElement, showElement, duration = 300) {
         if (!hideElement || !showElement) return;
 
+        // Check for reduced motion preference
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const actualDuration = prefersReducedMotion ? 0 : duration;
+
         // Fade out
-        hideElement.style.transition = `opacity ${duration}ms ease`;
+        hideElement.style.transition = `opacity ${actualDuration}ms ease`;
         hideElement.style.opacity = '0';
 
         setTimeout(() => {
@@ -481,19 +580,21 @@
             showElement.style.display = 'block';
             showElement.style.opacity = '0';
 
-            requestAnimationFrame(() => {
-                showElement.style.transition = `opacity ${duration}ms ease`;
+            requestFrame(() => {
+                showElement.style.transition = `opacity ${actualDuration}ms ease`;
                 showElement.style.opacity = '1';
             });
-        }, duration);
+        }, actualDuration);
     }
 
     // ============================================================================
-    // FORM UTILITIES
+    // ✅ FORM UTILITIES
     // ============================================================================
 
     /**
-     * P0 FIX: Validate player name with strict rules
+     * ✅ P0 FIX: Validate player name with strict rules
+     * @param {string} name - Player name to validate
+     * @returns {{valid: boolean, message: string, name?: string}} Validation result
      */
     function validatePlayerName(name) {
         if (!name || typeof name !== 'string') {
@@ -510,14 +611,19 @@
             return { valid: false, message: 'Name darf maximal 20 Zeichen haben' };
         }
 
-        // P0 FIX: Check for dangerous characters
+        // ✅ P0 FIX: Check for dangerous characters
         if (/[<>&"'\/\\=`]/.test(trimmedName)) {
             return { valid: false, message: 'Name enthält ungültige Zeichen' };
         }
 
-        // P0 FIX: Check for script injection attempts
-        if (/script|javascript|onerror|onload/gi.test(trimmedName)) {
+        // ✅ P0 FIX: Check for script injection attempts
+        if (/script|javascript|onerror|onload|onclick|eval|expression/gi.test(trimmedName)) {
             return { valid: false, message: 'Name enthält nicht erlaubte Wörter' };
+        }
+
+        // ✅ P0 FIX: Check for data URIs
+        if (/data:|javascript:|vbscript:/gi.test(trimmedName)) {
+            return { valid: false, message: 'Name enthält ungültiges Format' };
         }
 
         return { valid: true, name: sanitizeInput(trimmedName) };
@@ -525,6 +631,8 @@
 
     /**
      * Validate game ID
+     * @param {string} gameId - Game ID to validate
+     * @returns {{valid: boolean, message?: string, gameId?: string}} Validation result
      */
     function validateGameId(gameId) {
         if (!gameId || typeof gameId !== 'string') {
@@ -541,7 +649,9 @@
     }
 
     /**
-     * Format game ID for display
+     * Format game ID for display (ABC DEF)
+     * @param {string} gameId - Game ID
+     * @returns {string} Formatted game ID
      */
     function formatGameIdDisplay(gameId) {
         if (!gameId || gameId.length !== 6) return gameId;
@@ -549,11 +659,14 @@
     }
 
     // ============================================================================
-    // LOCAL STORAGE UTILITIES
+    // 💾 LOCAL STORAGE UTILITIES
     // ============================================================================
 
     /**
-     * P0 FIX: Safe localStorage get with validation
+     * ✅ P0 FIX: Safe localStorage get with validation
+     * @param {string} key - Storage key
+     * @param {*} defaultValue - Default value if not found
+     * @returns {*} Stored value or default
      */
     function getLocalStorage(key, defaultValue = null) {
         try {
@@ -562,7 +675,7 @@
 
             const parsed = JSON.parse(item);
 
-            // Validate that stored data doesn't contain XSS attempts
+            // ✅ P0 FIX: Validate that stored data doesn't contain XSS attempts
             if (typeof parsed === 'string') {
                 return sanitizeInput(parsed);
             }
@@ -575,14 +688,17 @@
     }
 
     /**
-     * P0 FIX: Safe localStorage set with sanitization
+     * ✅ P0 FIX: Safe localStorage set with sanitization
+     * @param {string} key - Storage key
+     * @param {*} value - Value to store
+     * @returns {boolean} Success status
      */
     function setLocalStorage(key, value) {
         try {
-            // P0 FIX: Sanitize string values before storing
+            // ✅ P0 FIX: Sanitize string values before storing
             const toStore = typeof value === 'string' ? sanitizeInput(value) : value;
 
-            // P1 FIX: Check size before storing
+            // ✅ P1 FIX: Check size before storing
             const stringified = JSON.stringify(toStore);
             if (stringified.length > 100000) {
                 console.warn(`Value too large for key "${key}"`);
@@ -594,14 +710,14 @@
         } catch (error) {
             console.warn(`Error writing localStorage key "${key}":`, error);
 
-            // P1 FIX: Handle quota exceeded
+            // ✅ P1 FIX: Handle quota exceeded
             if (error.name === 'QuotaExceededError') {
                 console.warn('Storage quota exceeded, attempting cleanup...');
                 clearOldAppData();
 
                 // Retry once
                 try {
-                    localStorage.setItem(key, JSON.stringify(toStore));
+                    localStorage.setItem(key, JSON.stringify(value));
                     return true;
                 } catch (retryError) {
                     console.error('Retry failed:', retryError);
@@ -614,6 +730,8 @@
 
     /**
      * Remove localStorage item
+     * @param {string} key - Storage key
+     * @returns {boolean} Success status
      */
     function removeLocalStorage(key) {
         try {
@@ -627,6 +745,7 @@
 
     /**
      * Clear all app-related storage
+     * @returns {boolean} Success status
      */
     function clearAppStorage() {
         try {
@@ -641,7 +760,9 @@
 
             keysToRemove.forEach(key => localStorage.removeItem(key));
 
-            console.log(`✅ Cleared ${keysToRemove.length} storage items`);
+            if (isDevelopment) {
+                console.log(`✅ Cleared ${keysToRemove.length} storage items`);
+            }
             return true;
         } catch (error) {
             console.error('Error clearing app storage:', error);
@@ -650,7 +771,8 @@
     }
 
     /**
-     * P1 FIX: Clear old/temporary data
+     * ✅ P1 FIX: Clear old/temporary data
+     * @returns {number} Number of items cleared
      */
     function clearOldAppData() {
         const tempKeys = [
@@ -668,16 +790,21 @@
             }
         }
 
-        console.log(`✅ Cleared ${clearedCount} old data items`);
+        if (isDevelopment && clearedCount > 0) {
+            console.log(`✅ Cleared ${clearedCount} old data items`);
+        }
         return clearedCount;
     }
 
     // ============================================================================
-    // GAME UTILITIES
+    // 🎮 GAME UTILITIES
     // ============================================================================
 
     /**
      * Calculate sips based on difference and difficulty
+     * @param {number} difference - Estimation difference
+     * @param {string} difficulty - Difficulty level
+     * @returns {number} Number of sips
      */
     function calculateSips(difference, difficulty = 'medium') {
         const baseValues = {
@@ -691,10 +818,11 @@
     }
 
     /**
-     * P1 FIX: Generate random game ID (crypto-safe if available)
+     * ✅ P1 FIX: Generate random game ID (crypto-safe if available)
+     * @returns {string} 6-character game ID
      */
     function generateGameId() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing chars
         let id = '';
 
         // Use crypto.getRandomValues if available (more secure)
@@ -716,7 +844,9 @@
     }
 
     /**
-     * Shuffle array (Fisher-Yates)
+     * Shuffle array (Fisher-Yates algorithm)
+     * @param {Array} array - Array to shuffle
+     * @returns {Array} Shuffled array
      */
     function shuffleArray(array) {
         const shuffled = [...array];
@@ -728,11 +858,13 @@
     }
 
     // ============================================================================
-    // CATEGORY & DIFFICULTY INFO
+    // 📋 CATEGORY & DIFFICULTY INFO
     // ============================================================================
 
     /**
      * Get category information
+     * @param {string} categoryId - Category ID
+     * @returns {Object} Category info
      */
     function getCategoryInfo(categoryId) {
         const categories = {
@@ -783,6 +915,8 @@
 
     /**
      * Get difficulty information
+     * @param {string} difficultyId - Difficulty ID
+     * @returns {Object} Difficulty info
      */
     function getDifficultyInfo(difficultyId) {
         const difficulties = {
@@ -823,11 +957,12 @@
     }
 
     // ============================================================================
-    // NETWORK UTILITIES
+    // 🌐 NETWORK UTILITIES
     // ============================================================================
 
     /**
      * Check if user is online
+     * @returns {boolean} Online status
      */
     function isOnline() {
         return navigator.onLine;
@@ -840,11 +975,13 @@
         const onlineHandler = () => {
             showNotification('Verbindung wiederhergestellt', 'success', 2000);
             document.body.classList.remove('offline');
+            document.body.classList.add('online');
             window.dispatchEvent(new CustomEvent('nocap:online'));
         };
 
         const offlineHandler = () => {
             showNotification('Keine Internetverbindung', 'warning', 5000);
+            document.body.classList.remove('online');
             document.body.classList.add('offline');
             window.dispatchEvent(new CustomEvent('nocap:offline'));
         };
@@ -856,17 +993,21 @@
         _eventListeners.push({ element: window, event: 'offline', handler: offlineHandler });
 
         // Initial check
-        if (!isOnline()) {
+        if (isOnline()) {
+            document.body.classList.add('online');
+        } else {
             document.body.classList.add('offline');
         }
     }
 
     // ============================================================================
-    // TIME UTILITIES
+    // ⏰ TIME UTILITIES
     // ============================================================================
 
     /**
      * Format timestamp for display
+     * @param {number} timestamp - Timestamp in milliseconds
+     * @returns {string} Formatted time string
      */
     function formatTimestamp(timestamp) {
         const date = new Date(timestamp);
@@ -894,11 +1035,11 @@
     }
 
     // ============================================================================
-    // ERROR HANDLING
+    // 🚨 ERROR HANDLING
     // ============================================================================
 
     /**
-     * P1 FIX: Global error handler with better error messages
+     * ✅ P1 FIX: Global error handler with better error messages
      */
     function setupErrorHandling() {
         const errorHandler = (event) => {
@@ -910,8 +1051,7 @@
             }
 
             // Don't show notification in development
-            if (window.location.hostname !== 'localhost' &&
-                window.location.hostname !== '127.0.0.1') {
+            if (!isDevelopment) {
                 showNotification('Ein unerwarteter Fehler ist aufgetreten', 'error');
             }
         };
@@ -938,6 +1078,8 @@
 
     /**
      * Get user-friendly Firebase error messages
+     * @param {string} errorCode - Firebase error code
+     * @returns {string} User-friendly error message
      */
     function getFirebaseErrorMessage(errorCode) {
         const messages = {
@@ -950,18 +1092,24 @@
             'not-found': 'Nicht gefunden',
             'failed-precondition': 'Voraussetzungen nicht erfüllt',
             'unauthenticated': 'Nicht angemeldet',
-            'resource-exhausted': 'Zu viele Anfragen, bitte warte kurz'
+            'resource-exhausted': 'Zu viele Anfragen, bitte warte kurz',
+            'invalid-argument': 'Ungültige Eingabe',
+            'deadline-exceeded': 'Zeitüberschreitung',
+            'aborted': 'Vorgang abgebrochen'
         };
 
         return messages[errorCode] || 'Ein Fehler ist aufgetreten';
     }
 
     // ============================================================================
-    // PERFORMANCE UTILITIES
+    // ⚡ PERFORMANCE UTILITIES
     // ============================================================================
 
     /**
      * Debounce function
+     * @param {Function} func - Function to debounce
+     * @param {number} wait - Wait time in ms
+     * @returns {Function} Debounced function
      */
     function debounce(func, wait) {
         let timeout;
@@ -977,6 +1125,9 @@
 
     /**
      * Throttle function
+     * @param {Function} func - Function to throttle
+     * @param {number} limit - Time limit in ms
+     * @returns {Function} Throttled function
      */
     function throttle(func, limit) {
         let inThrottle;
@@ -991,7 +1142,9 @@
     }
 
     /**
-     * P1 FIX: Request animation frame wrapper
+     * ✅ P1 FIX: Request animation frame wrapper
+     * @param {Function} callback - Callback function
+     * @returns {number} Frame ID
      */
     function requestFrame(callback) {
         if (typeof requestAnimationFrame !== 'undefined') {
@@ -1002,11 +1155,13 @@
     }
 
     // ============================================================================
-    // ACCESSIBILITY UTILITIES
+    // ♿ ACCESSIBILITY UTILITIES
     // ============================================================================
 
     /**
      * Focus management - trap focus within element
+     * @param {HTMLElement} element - Element to trap focus in
+     * @returns {Function|null} Cleanup function
      */
     function trapFocus(element) {
         if (!element) return null;
@@ -1014,6 +1169,8 @@
         const focusableElements = element.querySelectorAll(
             'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
         );
+
+        if (focusableElements.length === 0) return null;
 
         const firstFocusable = focusableElements[0];
         const lastFocusable = focusableElements[focusableElements.length - 1];
@@ -1052,7 +1209,9 @@
     }
 
     /**
-     * P0 FIX: Announce to screen readers (XSS-safe)
+     * ✅ P0 FIX: Announce to screen readers (XSS-safe)
+     * @param {string} message - Message to announce
+     * @param {string} priority - Priority level (polite, assertive)
      */
     function announceToScreenReader(message, priority = 'polite') {
         const announcement = document.createElement('div');
@@ -1063,7 +1222,7 @@
 
         document.body.appendChild(announcement);
 
-        // P0 FIX: Use textContent to prevent XSS
+        // ✅ P0 FIX: Use textContent to prevent XSS
         announcement.textContent = sanitizeInput(message);
 
         setTimeout(() => {
@@ -1074,7 +1233,7 @@
     }
 
     // ============================================================================
-    // INITIALIZATION
+    // 🚀 INITIALIZATION
     // ============================================================================
 
     /**
@@ -1088,7 +1247,7 @@
         const escapeHandler = (e) => {
             if (e.key === 'Escape') {
                 // Close any open modals
-                document.querySelectorAll('.modal.show').forEach(modal => {
+                document.querySelectorAll('.modal.show, .modal[style*="display: flex"]').forEach(modal => {
                     modal.dispatchEvent(new CustomEvent('modal-close'));
                 });
 
@@ -1100,13 +1259,9 @@
         document.addEventListener('keydown', escapeHandler);
         _eventListeners.push({ element: document, event: 'keydown', handler: escapeHandler });
 
-        const isDev = window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1' ||
-            window.location.hostname.includes('192.168.');
-
-        if (isDev) {
-            console.log('%c✅ No-Cap Utils v3.0 initialized (Audit-Fixed)',
-                'color: #4CAF50; font-weight: bold');
+        if (isDevelopment) {
+            console.log('%c✅ No-Cap Utils v4.0 initialized (Full Audit Compliance)',
+                'color: #4CAF50; font-weight: bold; font-size: 12px');
         }
     }
 
@@ -1118,7 +1273,7 @@
     }
 
     // ============================================================================
-    // CLEANUP ON PAGE UNLOAD
+    // 🧹 CLEANUP ON PAGE UNLOAD
     // ============================================================================
 
     window.addEventListener('beforeunload', () => {
@@ -1126,19 +1281,19 @@
     });
 
     // ============================================================================
-    // EXPORT FUNCTIONS TO GLOBAL SCOPE
+    // 📤 EXPORT FUNCTIONS TO GLOBAL SCOPE
     // ============================================================================
 
-    window.NocapUtils = {
+    window.NocapUtils = Object.freeze({
         // Version
-        version: '3.0',
+        version: '4.0',
 
         // UI
         showLoading,
         hideLoading,
         showNotification,
 
-        // P0 FIX: Security - Safe DOM manipulation
+        // ✅ P0 FIX: Security - Safe DOM manipulation
         sanitizeInput,
         sanitizeHTML,
         setTextContent,
@@ -1159,6 +1314,7 @@
         setLocalStorage,
         removeLocalStorage,
         clearAppStorage,
+        clearOldAppData,
 
         // Game
         calculateSips,
@@ -1192,22 +1348,16 @@
         getFirebaseErrorMessage,
 
         // Cleanup
-        cleanupEventListeners
-    };
+        cleanupEventListeners,
 
-    // P1 FIX: Make DOMPurify accessible via utils
-    if (typeof DOMPurify !== 'undefined') {
-        window.NocapUtils.DOMPurify = DOMPurify;
-    }
+        // Expose DOMPurify
+        DOMPurify: typeof DOMPurify !== 'undefined' ? DOMPurify : null
+    });
 
-// ✅ FIX: isDevelopment mit lokalem Netzwerk
-    const isDev = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.includes('192.168.');
-
-    if (isDev) {
-        console.log('%c✅ NocapUtils v3.0 exported to window.NocapUtils',
-            'color: #2196F3; font-weight: bold');
+    if (isDevelopment) {
+        console.log('%c✅ NocapUtils v4.0 exported to window.NocapUtils',
+            'color: #2196F3; font-weight: bold; font-size: 12px');
+        console.log('   Available functions:', Object.keys(window.NocapUtils).length);
     }
 
 })(window);

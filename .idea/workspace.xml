@@ -6,10 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update Device Mode">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-results.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-results.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/styles.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-auth.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-auth.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-config.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/utils.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -113,15 +115,7 @@
       <workItem from="1764055680815" duration="2380000" />
       <workItem from="1764072926170" duration="4635000" />
       <workItem from="1764142601112" duration="256000" />
-      <workItem from="1764145120856" duration="4621000" />
-    </task>
-    <task id="LOCAL-00022" summary="Gameplay change">
-      <option name="closed" value="true" />
-      <created>1762438907817</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1762438907817</updated>
+      <workItem from="1764145120856" duration="8684000" />
     </task>
     <task id="LOCAL-00023" summary="Gameplay change">
       <option name="closed" value="true" />
@@ -507,7 +501,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764148414786</updated>
     </task>
-    <option name="localTasksCounter" value="71" />
+    <task id="LOCAL-00071" summary="Update Device Mode">
+      <option name="closed" value="true" />
+      <created>1764159994757</created>
+      <option name="number" value="00071" />
+      <option name="presentableId" value="LOCAL-00071" />
+      <option name="project" value="LOCAL" />
+      <updated>1764159994757</updated>
+    </task>
+    <option name="localTasksCounter" value="72" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

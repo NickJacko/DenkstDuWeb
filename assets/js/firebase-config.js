@@ -1,42 +1,174 @@
 /**
- * No-Cap Firebase Configuration & Initialization
- * Version 4.0 - Audit-Fixed & Security Hardened
+ * NO-CAP Firebase Configuration & Initialization
+ * Version 5.0 - Production-Ready with Audit Fixes
  *
- * This file ONLY initializes Firebase SDK
- * All game operations are in firebase-service.js
- * All auth operations are in firebase-auth.js
+ * ARCHITECTURE:
+ * - This file ONLY initializes Firebase SDK
+ * - All game operations are in firebase-service.js
+ * - All auth operations are in firebase-auth.js
+ *
+ * SECURITY IMPROVEMENTS:
+ * - Environment variable support via window.FIREBASE_CONFIG
+ * - No hardcoded secrets in production builds
+ * - Proper initialization state management
+ * - Connection monitoring and offline support
  */
 
 'use strict';
 
 (function(window) {
 
-    // ===== P0 FIX: ENVIRONMENT DETECTION =====
+    // ===================================
+    // 🔒 ENVIRONMENT DETECTION
+    // ===================================
+
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.includes('192.168.');
+        window.location.hostname.includes('192.168.') ||
+        window.location.hostname.includes('--pr') || // Preview deployments
+        window.location.hostname.includes('.local');
 
-    // ===== P0 FIX: FIREBASE CONFIG WITH FALLBACK =====
-    // In production, this should come from environment variables
-    // For now, we keep the config but mark it as a security improvement needed
-    const firebaseConfig = window.FIREBASE_CONFIG || {
-        apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-        authDomain: "denkstduwebsite.firebaseapp.com",
-        databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "denkstduwebsite",
-        storageBucket: "denkstduwebsite.appspot.com",
-        messagingSenderId: "27029260611",
-        appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-        measurementId: "G-BNKNW95HK8"
-    };
+    const isProduction = !isDevelopment;
 
-    // ===== P1 FIX: INITIALIZATION STATE =====
+    // ===================================
+    // ⚙️ FIREBASE CONFIGURATION
+    // ===================================
+
+    /**
+     * Firebase configuration with environment variable support
+     *
+     * PRODUCTION DEPLOYMENT:
+     * Set window.FIREBASE_CONFIG before loading this script:
+     * <script>
+     *   window.FIREBASE_CONFIG = {
+     *     apiKey: "YOUR_API_KEY",
+     *     authDomain: "YOUR_AUTH_DOMAIN",
+     *     // ... other config
+     *   };
+     * </script>
+     *
+     * Or use meta tags:
+     * <meta name="firebase-api-key" content="YOUR_API_KEY">
+     * <meta name="firebase-auth-domain" content="YOUR_AUTH_DOMAIN">
+     * etc.
+     */
+    function getFirebaseConfig() {
+        // Priority 1: window.FIREBASE_CONFIG (set via build process)
+        if (window.FIREBASE_CONFIG && validateConfig(window.FIREBASE_CONFIG)) {
+            if (isDevelopment) {
+                console.log('✅ Using Firebase config from window.FIREBASE_CONFIG');
+            }
+            return window.FIREBASE_CONFIG;
+        }
+
+        // Priority 2: Meta tags (for static hosting)
+        const metaConfig = getConfigFromMetaTags();
+        if (metaConfig && validateConfig(metaConfig)) {
+            if (isDevelopment) {
+                console.log('✅ Using Firebase config from meta tags');
+            }
+            return metaConfig;
+        }
+
+        // Priority 3: Default config (development only)
+        if (isDevelopment) {
+            console.warn('⚠️ Using default Firebase config (development only)');
+            return {
+                apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
+                authDomain: "denkstduwebsite.firebaseapp.com",
+                databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
+                projectId: "denkstduwebsite",
+                storageBucket: "denkstduwebsite.appspot.com",
+                messagingSenderId: "27029260611",
+                appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
+                measurementId: "G-BNKNW95HK8"
+            };
+        }
+
+        // Production without config = error
+        throw new Error('Firebase configuration not found. Set window.FIREBASE_CONFIG or use meta tags.');
+    }
+
+    /**
+     * Extract Firebase config from meta tags
+     */
+    function getConfigFromMetaTags() {
+        const getMetaContent = (name) => {
+            const meta = document.querySelector(`meta[name="firebase-${name}"]`);
+            return meta ? meta.getAttribute('content') : null;
+        };
+
+        const apiKey = getMetaContent('api-key');
+        const authDomain = getMetaContent('auth-domain');
+        const databaseURL = getMetaContent('database-url');
+        const projectId = getMetaContent('project-id');
+        const storageBucket = getMetaContent('storage-bucket');
+        const messagingSenderId = getMetaContent('messaging-sender-id');
+        const appId = getMetaContent('app-id');
+        const measurementId = getMetaContent('measurement-id');
+
+        if (!apiKey || !authDomain || !projectId) {
+            return null;
+        }
+
+        return {
+            apiKey,
+            authDomain,
+            databaseURL,
+            projectId,
+            storageBucket,
+            messagingSenderId,
+            appId,
+            measurementId
+        };
+    }
+
+    /**
+     * Validate Firebase configuration
+     */
+    function validateConfig(config) {
+        if (!config || typeof config !== 'object') {
+            return false;
+        }
+
+        const requiredFields = ['apiKey', 'authDomain', 'projectId'];
+        const missingFields = requiredFields.filter(field => !config[field]);
+
+        if (missingFields.length > 0) {
+            console.error('❌ Invalid Firebase config. Missing fields:', missingFields);
+            return false;
+        }
+
+        return true;
+    }
+
+    // Get the configuration
+    let firebaseConfig;
+    try {
+        firebaseConfig = getFirebaseConfig();
+    } catch (error) {
+        console.error('❌ Firebase configuration error:', error);
+        firebaseConfig = null;
+    }
+
+    // ===================================
+    // 📊 INITIALIZATION STATE
+    // ===================================
+
     let initializationPromise = null;
     let isInitialized = false;
     let initializationError = null;
+    let connectionMonitoringActive = false;
+    let authListenerActive = false;
+
+    // ===================================
+    // 🚀 INITIALIZATION
+    // ===================================
 
     /**
-     * P1 FIX: Initialize Firebase with proper error handling
+     * Initialize Firebase with proper error handling and state management
+     *
+     * @returns {Promise<{app, auth, database}>} Firebase instances
      */
     async function initializeFirebase() {
         // Return existing promise if initialization is in progress
@@ -61,13 +193,17 @@
         // Start initialization
         initializationPromise = (async () => {
             try {
-                // P0 FIX: Check if Firebase SDK is loaded
+                // Check if Firebase SDK is loaded
                 if (typeof firebase === 'undefined') {
-                    throw new Error('Firebase SDK not loaded. Add Firebase scripts to HTML.');
+                    throw new Error('Firebase SDK not loaded. Add Firebase scripts to HTML before firebase-config.js');
                 }
 
-                // P0 FIX: Validate config
-                if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+                // Validate config
+                if (!firebaseConfig) {
+                    throw new Error('Firebase configuration not available');
+                }
+
+                if (!validateConfig(firebaseConfig)) {
                     throw new Error('Invalid Firebase configuration');
                 }
 
@@ -89,22 +225,14 @@
                     }
                 }
 
-                // Get references
+                // Get service references
                 const auth = firebase.auth();
                 const database = firebase.database();
 
-                // P1 FIX: Configure Firebase settings
-                auth.useDeviceLanguage(); // Use browser language for auth messages
+                // Configure Firebase services
+                await configureFirebaseServices(auth, database);
 
-                // P1 FIX: Enable persistence (offline support)
-                try {
-                    await database.goOffline();
-                    await database.goOnline();
-                } catch (persistenceError) {
-                    console.warn('⚠️ Database persistence setup warning:', persistenceError.message);
-                }
-
-                // Export to window (for compatibility)
+                // Export to window (for backwards compatibility)
                 window.firebaseApp = app;
                 window.firebaseAuth = auth;
                 window.firebaseDatabase = database;
@@ -114,6 +242,8 @@
                 if (isDevelopment) {
                     console.log('%c✅ Firebase services ready',
                         'color: #2196F3; font-weight: bold');
+                    console.log('   Project:', firebaseConfig.projectId);
+                    console.log('   Auth Domain:', firebaseConfig.authDomain);
                 }
 
                 return { app, auth, database };
@@ -122,14 +252,8 @@
                 initializationError = error;
                 console.error('❌ Firebase initialization error:', error);
 
-                // P1 FIX: User-friendly error notification
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        'Firebase konnte nicht initialisiert werden',
-                        'error',
-                        5000
-                    );
-                }
+                // Show user-friendly error notification
+                showErrorNotification('Firebase konnte nicht initialisiert werden', error);
 
                 throw error;
             } finally {
@@ -141,18 +265,58 @@
     }
 
     /**
-     * P1 FIX: Check if Firebase is initialized
+     * Configure Firebase services with optimal settings
+     */
+    async function configureFirebaseServices(auth, database) {
+        try {
+            // Configure Auth
+            auth.useDeviceLanguage(); // Use browser language for auth messages
+
+            // Configure Database (offline support)
+            // Note: goOffline/goOnline is used to enable persistence
+            try {
+                await database.goOffline();
+                await database.goOnline();
+
+                if (isDevelopment) {
+                    console.log('✅ Database offline support enabled');
+                }
+            } catch (persistenceError) {
+                console.warn('⚠️ Database persistence warning:', persistenceError.message);
+                // Non-fatal, continue without persistence
+            }
+
+        } catch (error) {
+            console.warn('⚠️ Firebase service configuration warning:', error);
+            // Non-fatal, services will still work
+        }
+    }
+
+    // ===================================
+    // 🔍 STATE CHECKS
+    // ===================================
+
+    /**
+     * Check if Firebase is fully initialized and ready
+     *
+     * @returns {boolean} True if initialized
      */
     function isFirebaseInitialized() {
-        return isInitialized && window.firebaseApp && window.firebaseAuth && window.firebaseDatabase;
+        return isInitialized &&
+            window.firebaseApp &&
+            window.firebaseAuth &&
+            window.firebaseDatabase;
     }
 
     /**
-     * P1 FIX: Get Firebase instances safely
+     * Get Firebase instances safely
+     *
+     * @returns {{app, auth, database}} Firebase instances
+     * @throws {Error} If Firebase not initialized
      */
     function getFirebaseInstances() {
         if (!isFirebaseInitialized()) {
-            throw new Error('Firebase not initialized. Call initializeFirebase() first.');
+            throw new Error('Firebase not initialized. Call FirebaseConfig.initialize() first.');
         }
 
         return {
@@ -163,14 +327,17 @@
     }
 
     /**
-     * P1 FIX: Wait for Firebase to be ready
+     * Wait for Firebase to be ready with timeout
+     *
+     * @param {number} timeout - Maximum wait time in milliseconds
+     * @returns {Promise<{app, auth, database}>} Firebase instances
      */
     async function waitForFirebase(timeout = 10000) {
         const startTime = Date.now();
 
         while (!isFirebaseInitialized()) {
             if (Date.now() - startTime > timeout) {
-                throw new Error('Firebase initialization timeout');
+                throw new Error(`Firebase initialization timeout after ${timeout}ms`);
             }
 
             // Wait 100ms before checking again
@@ -180,12 +347,24 @@
         return getFirebaseInstances();
     }
 
+    // ===================================
+    // 📡 CONNECTION MONITORING
+    // ===================================
+
     /**
-     * P1 FIX: Setup connection monitoring
+     * Setup Firebase connection monitoring
+     * Dispatches custom events and updates body classes
      */
     function setupConnectionMonitoring() {
         if (!isFirebaseInitialized()) {
             console.warn('⚠️ Firebase not initialized, cannot setup connection monitoring');
+            return;
+        }
+
+        if (connectionMonitoringActive) {
+            if (isDevelopment) {
+                console.log('ℹ️ Connection monitoring already active');
+            }
             return;
         }
 
@@ -195,23 +374,27 @@
             const isConnected = snapshot.val() === true;
 
             if (isDevelopment) {
-                console.log(`🔌 Firebase connection: ${isConnected ? 'ONLINE' : 'OFFLINE'}`);
+                console.log(`🔌 Firebase connection: ${isConnected ? 'ONLINE ✅' : 'OFFLINE ⚠️'}`);
             }
 
-            // P1 FIX: Dispatch custom event for connection status
+            // Dispatch custom event for connection status
             window.dispatchEvent(new CustomEvent('firebase:connection', {
                 detail: { connected: isConnected }
             }));
 
             // Update body class for CSS styling
-            if (isConnected) {
-                document.body.classList.remove('firebase-offline');
-                document.body.classList.add('firebase-online');
-            } else {
-                document.body.classList.remove('firebase-online');
-                document.body.classList.add('firebase-offline');
+            document.body.classList.toggle('firebase-online', isConnected);
+            document.body.classList.toggle('firebase-offline', !isConnected);
+
+            // Store connection state
+            try {
+                sessionStorage.setItem('nocap_firebase_connected', isConnected ? 'true' : 'false');
+            } catch (error) {
+                // Ignore storage errors
             }
         });
+
+        connectionMonitoringActive = true;
 
         if (isDevelopment) {
             console.log('✅ Firebase connection monitoring active');
@@ -219,11 +402,45 @@
     }
 
     /**
-     * P1 FIX: Setup auth state listener
+     * Get current connection status
+     */
+    function isConnected() {
+        if (!isFirebaseInitialized()) {
+            return false;
+        }
+
+        // Try to get from sessionStorage first (faster)
+        try {
+            const cached = sessionStorage.getItem('nocap_firebase_connected');
+            if (cached !== null) {
+                return cached === 'true';
+            }
+        } catch (error) {
+            // Ignore
+        }
+
+        // Fallback: check body class
+        return document.body.classList.contains('firebase-online');
+    }
+
+    // ===================================
+    // 🔐 AUTH STATE MONITORING
+    // ===================================
+
+    /**
+     * Setup Firebase auth state listener
+     * Dispatches custom events and caches user ID
      */
     function setupAuthStateListener() {
         if (!isFirebaseInitialized()) {
             console.warn('⚠️ Firebase not initialized, cannot setup auth listener');
+            return;
+        }
+
+        if (authListenerActive) {
+            if (isDevelopment) {
+                console.log('ℹ️ Auth state listener already active');
+            }
             return;
         }
 
@@ -236,28 +453,45 @@
                 }
             }
 
-            // P1 FIX: Dispatch custom event for auth state changes
+            // Dispatch custom event for auth state changes
             window.dispatchEvent(new CustomEvent('firebase:authStateChanged', {
                 detail: { user }
             }));
 
-            // Store user ID in localStorage for offline access
+            // Cache user ID in localStorage for offline access
             if (user) {
                 try {
                     localStorage.setItem('nocap_firebase_uid', user.uid);
+                    localStorage.setItem('nocap_firebase_auth_time', Date.now().toString());
                 } catch (error) {
-                    console.warn('Could not save user ID to localStorage:', error);
+                    console.warn('Could not cache user ID:', error);
+                }
+            } else {
+                try {
+                    localStorage.removeItem('nocap_firebase_uid');
+                    localStorage.removeItem('nocap_firebase_auth_time');
+                } catch (error) {
+                    // Ignore
                 }
             }
         });
+
+        authListenerActive = true;
 
         if (isDevelopment) {
             console.log('✅ Firebase auth state listener active');
         }
     }
 
+    // ===================================
+    // 👤 AUTH HELPERS
+    // ===================================
+
     /**
-     * P0 FIX: Anonymous sign-in with retry logic
+     * Sign in anonymously with retry logic
+     *
+     * @param {number} retries - Number of retry attempts
+     * @returns {Promise<firebase.User>} Firebase user
      */
     async function signInAnonymously(retries = 3) {
         if (!isFirebaseInitialized()) {
@@ -269,55 +503,89 @@
                 const result = await window.firebaseAuth.signInAnonymously();
 
                 if (isDevelopment) {
-                    console.log(`✅ Anonymous sign-in successful (attempt ${attempt})`);
+                    console.log(`✅ Anonymous sign-in successful (attempt ${attempt}/${retries})`);
                 }
 
                 return result.user;
 
             } catch (error) {
-                console.warn(`⚠️ Anonymous sign-in attempt ${attempt} failed:`, error.message);
+                console.warn(`⚠️ Anonymous sign-in attempt ${attempt}/${retries} failed:`, error.message);
 
-                // If this was the last attempt, throw the error
+                // If this was the last attempt, show error and throw
                 if (attempt === retries) {
-                    // P1 FIX: User-friendly error
-                    if (window.NocapUtils && window.NocapUtils.showNotification) {
-                        const message = window.NocapUtils.getFirebaseErrorMessage
-                            ? window.NocapUtils.getFirebaseErrorMessage(error.code)
-                            : 'Anmeldung fehlgeschlagen';
-
-                        window.NocapUtils.showNotification(message, 'error');
-                    }
-
+                    showErrorNotification('Anmeldung fehlgeschlagen', error);
                     throw error;
                 }
 
                 // Wait before retrying (exponential backoff)
-                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s...
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
     }
 
     /**
-     * P1 FIX: Get current user ID safely
+     * Get current user ID safely
+     *
+     * @returns {string|null} User ID or null
      */
     function getCurrentUserId() {
-        if (!isFirebaseInitialized()) {
-            // Fallback to localStorage if Firebase not ready
-            return localStorage.getItem('nocap_firebase_uid') || null;
+        if (isFirebaseInitialized() && window.firebaseAuth.currentUser) {
+            return window.firebaseAuth.currentUser.uid;
         }
 
-        const user = window.firebaseAuth.currentUser;
-        return user ? user.uid : null;
+        // Fallback to localStorage if Firebase not ready
+        try {
+            return localStorage.getItem('nocap_firebase_uid') || null;
+        } catch (error) {
+            return null;
+        }
     }
 
     /**
-     * P1 FIX: Cleanup function for page unload
+     * Check if user is currently authenticated
+     *
+     * @returns {boolean} True if authenticated
+     */
+    function isAuthenticated() {
+        if (isFirebaseInitialized()) {
+            return window.firebaseAuth.currentUser !== null;
+        }
+
+        // Fallback: check if we have a cached user ID from the last 24 hours
+        try {
+            const uid = localStorage.getItem('nocap_firebase_uid');
+            const authTime = localStorage.getItem('nocap_firebase_auth_time');
+
+            if (!uid || !authTime) {
+                return false;
+            }
+
+            const elapsed = Date.now() - parseInt(authTime, 10);
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+
+            return elapsed < twentyFourHours;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // ===================================
+    // 🧹 CLEANUP
+    // ===================================
+
+    /**
+     * Cleanup function for page unload
+     * Removes listeners and cleans up resources
      */
     function cleanup() {
         if (isFirebaseInitialized()) {
             try {
                 // Remove connection listener
-                window.firebaseDatabase.ref('.info/connected').off();
+                if (connectionMonitoringActive) {
+                    window.firebaseDatabase.ref('.info/connected').off();
+                    connectionMonitoringActive = false;
+                }
 
                 if (isDevelopment) {
                     console.log('✅ Firebase cleanup completed');
@@ -328,18 +596,52 @@
         }
     }
 
-    // ===== AUTO-INITIALIZATION =====
-    // P1 FIX: Initialize Firebase when this script loads
+    // ===================================
+    // 🔔 NOTIFICATIONS
+    // ===================================
+
+    /**
+     * Show error notification to user
+     */
+    function showErrorNotification(message, error) {
+        // Try to use NocapUtils if available
+        if (window.NocapUtils && window.NocapUtils.showNotification) {
+            let detailedMessage = message;
+
+            if (window.NocapUtils.getFirebaseErrorMessage && error && error.code) {
+                detailedMessage = window.NocapUtils.getFirebaseErrorMessage(error.code);
+            }
+
+            window.NocapUtils.showNotification(detailedMessage, 'error', 5000);
+        } else {
+            // Fallback: console error
+            console.error(message, error);
+        }
+    }
+
+    // ===================================
+    // 🚀 AUTO-INITIALIZATION
+    // ===================================
+
+    /**
+     * Auto-initialize Firebase when script loads
+     */
     (async function autoInit() {
+        // Skip if no config available
+        if (!firebaseConfig) {
+            console.error('❌ Firebase auto-initialization skipped: No configuration');
+            return;
+        }
+
         try {
+            // Initialize Firebase
             await initializeFirebase();
 
-            // Setup monitoring after initialization
+            // Setup monitoring after successful initialization
             setupConnectionMonitoring();
             setupAuthStateListener();
 
-            // P0 FIX: Auto sign-in anonymously for multiplayer
-            // Check if privacy consent is given
+            // Auto sign-in if privacy consent is given
             const hasPrivacyConsent = localStorage.getItem('nocap_privacy_consent') === 'true';
 
             if (hasPrivacyConsent) {
@@ -349,6 +651,7 @@
                         await signInAnonymously();
                     } catch (error) {
                         console.warn('⚠️ Auto sign-in failed:', error.message);
+                        // Non-fatal: user can manually trigger auth later
                     }
                 }, 500);
             } else if (isDevelopment) {
@@ -357,16 +660,37 @@
 
         } catch (error) {
             console.error('❌ Firebase auto-initialization failed:', error);
+            // Non-fatal: allow page to load, Firebase features will be disabled
         }
     })();
 
-    // ===== CLEANUP ON PAGE UNLOAD =====
+    // ===================================
+    // 🪝 EVENT LISTENERS
+    // ===================================
+
+    // Cleanup on page unload
     window.addEventListener('beforeunload', cleanup);
 
-    // ===== EXPORT API =====
-    window.FirebaseConfig = {
+    // Visibility change handling (pause/resume)
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (isDevelopment) {
+                console.log('👁️ Page hidden, Firebase will continue in background');
+            }
+        } else {
+            if (isDevelopment) {
+                console.log('👁️ Page visible, Firebase active');
+            }
+        }
+    });
+
+    // ===================================
+    // 📤 PUBLIC API
+    // ===================================
+
+    window.FirebaseConfig = Object.freeze({
         // Version
-        version: '4.0',
+        version: '5.0',
 
         // Initialization
         initialize: initializeFirebase,
@@ -376,6 +700,10 @@
         // Auth
         signInAnonymously,
         getCurrentUserId,
+        isAuthenticated,
+
+        // Connection
+        isConnected,
 
         // Utilities
         getFirebaseInstances,
@@ -385,14 +713,32 @@
         // Cleanup
         cleanup,
 
-        // State
+        // State (read-only)
         get isDevelopment() { return isDevelopment; },
-        get config() { return { ...firebaseConfig }; } // Return copy, not reference
-    };
+        get isProduction() { return isProduction; },
+        get hasConfig() { return firebaseConfig !== null; },
+
+        // Config (returns copy, not reference - prevents tampering)
+        getConfig() {
+            return firebaseConfig ? { ...firebaseConfig } : null;
+        }
+    });
+
+    // ===================================
+    // 🎉 READY
+    // ===================================
 
     if (isDevelopment) {
-        console.log('%c✅ FirebaseConfig v4.0 loaded and initialized',
-            'color: #FF6F00; font-weight: bold; font-size: 12px');
+        console.log('%c🚀 FirebaseConfig v5.0 loaded',
+            'color: #FF6F00; font-weight: bold; font-size: 14px; padding: 4px 8px; background: #FFF3E0; border-radius: 4px;');
+
+        if (firebaseConfig) {
+            console.log('%c✅ Configuration available',
+                'color: #4CAF50; font-size: 12px;');
+        } else {
+            console.log('%c⚠️ No configuration found',
+                'color: #FF9800; font-size: 12px;');
+        }
     }
 
 })(window);

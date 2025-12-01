@@ -24,6 +24,36 @@
     <meta name="twitter:description" content="Spiele das ultimative Schätzspiel mit deinen Freunden!">
     <meta name="twitter:image" content="/assets/img/og-image.png">
 
+    <!-- ===================================
+         🔒 AUDIT FIX: FIREBASE CONFIG SUPPORT
+         ===================================
+         P0: Firebase config über Environment Variables
+
+         PRODUCTION DEPLOYMENT - Option 1 (empfohlen):
+         <script>
+             window.FIREBASE_CONFIG = {
+                 apiKey: "YOUR_API_KEY",
+                 authDomain: "YOUR_AUTH_DOMAIN",
+                 databaseURL: "YOUR_DATABASE_URL",
+                 projectId: "YOUR_PROJECT_ID",
+                 storageBucket: "YOUR_STORAGE_BUCKET",
+                 messagingSenderId: "YOUR_SENDER_ID",
+                 appId: "YOUR_APP_ID",
+                 measurementId: "YOUR_MEASUREMENT_ID"
+             };
+         </script>
+
+         PRODUCTION DEPLOYMENT - Option 2 (Meta Tags):
+         <meta name="firebase-api-key" content="YOUR_API_KEY">
+         <meta name="firebase-auth-domain" content="YOUR_AUTH_DOMAIN">
+         <meta name="firebase-database-url" content="YOUR_DATABASE_URL">
+         <meta name="firebase-project-id" content="YOUR_PROJECT_ID">
+         <meta name="firebase-storage-bucket" content="YOUR_STORAGE_BUCKET">
+         <meta name="firebase-messaging-sender-id" content="YOUR_SENDER_ID">
+         <meta name="firebase-app-id" content="YOUR_APP_ID">
+         <meta name="firebase-measurement-id" content="YOUR_MEASUREMENT_ID">
+    -->
+
     <!-- Preconnect für Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,11 +68,14 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
     <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
 
+    <!-- ✅ AUDIT FIX: Manifest für PWA -->
+    <link rel="manifest" href="/manifest.json">
+
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/index.css">
 
-    <!-- ✅ P0 FIX: DOMPurify OHNE defer, OHNE SRI (da SRI Probleme macht) -->
+    <!-- ✅ P0 FIX: DOMPurify OHNE defer (muss sofort verfügbar sein) -->
     <script
             src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
             crossorigin="anonymous"
@@ -54,16 +87,20 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    <!-- ✅ P1 FIX: Core Scripts in correct order -->
+    <!-- ✅ AUDIT FIX: Korrekte Script-Reihenfolge mit firebase-config.js & firebase-auth.js -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/firebase-auth.js"></script>
     <script defer src="/assets/js/firebase-service.js"></script>
     <script defer src="/assets/js/privacy.js"></script>
     <script defer src="/assets/js/index.js"></script>
-
-    <!-- ⚠️ DEPRECATED: firebase-config.js & firebase-auth.js werden NICHT mehr geladen -->
 </head>
 <body>
+
+<!-- ✅ AUDIT FIX: Skip-to-content Link für Accessibility -->
+<a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+
 <!-- Age Verification Modal -->
 <div class="age-modal" id="age-modal" role="dialog" aria-labelledby="age-modal-title" aria-modal="true">
     <div class="age-modal-content">
@@ -88,19 +125,26 @@
 
         <div class="age-verification">
             <h4>Altersbestätigung (Pflicht)</h4>
+            <!-- ✅ AUDIT FIX: name-Attribut hinzugefügt für bessere Formular-Semantik -->
             <div class="checkbox-container">
-                <input type="checkbox" id="age-checkbox" aria-describedby="age-checkbox-label">
+                <input
+                        type="checkbox"
+                        id="age-checkbox"
+                        name="age-verification"
+                        aria-describedby="age-checkbox-label"
+                        aria-required="true">
                 <label for="age-checkbox" id="age-checkbox-label">
                     <strong>Ich bestätige, dass ich mindestens 18 Jahre alt bin.</strong>
                 </label>
             </div>
 
             <div class="age-buttons">
-                <button class="btn-age primary" id="btn-18plus" disabled aria-disabled="true">
+                <!-- ✅ AUDIT FIX: type="button" hinzugefügt -->
+                <button class="btn-age primary" id="btn-18plus" type="button" disabled aria-disabled="true">
                     <span aria-hidden="true">🔞</span> Weiter (18+)
                 </button>
                 <div class="or-divider" aria-hidden="true">— oder —</div>
-                <button class="btn-age secondary" id="btn-under-18">
+                <button class="btn-age secondary" id="btn-under-18" type="button">
                     <span aria-hidden="true">👶</span> Ich bin unter 18
                 </button>
             </div>
@@ -122,9 +166,9 @@
         <div class="help-section">
             <h4><span aria-hidden="true">🆘</span> Hilfe & Beratung</h4>
             <p>
-                Brauchst du Hilfe oder Beratung?
-                <strong>Sucht & Drogen Hotline: 01806 313031</strong>
-                (täglich 24/7, anonym)
+                Brauchst du Hilfe oder Beratung?<br>
+                <strong>Sucht & Drogen Hotline: 01806 313031</strong><br>
+                <small>(täglich 24/7, anonym)</small>
             </p>
         </div>
 
@@ -148,8 +192,8 @@
 
 <!-- App Container -->
 <div class="app-container" id="main-app">
-    <!-- Header -->
-    <header class="site-header">
+    <!-- ✅ AUDIT FIX: role="banner" für Accessibility -->
+    <header class="site-header" role="banner">
         <div class="site-logo">
             <div class="logo-icon" aria-hidden="true">🧢</div>
             <h1 class="logo">No-Cap</h1>
@@ -157,11 +201,12 @@
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="main-content">
+    <!-- ✅ AUDIT FIX: id und role="main" für Skip-Link und Accessibility -->
+    <main id="main-content" class="main-content" role="main">
         <!-- Hero Section -->
-        <section class="hero-section">
-            <h2 class="hero-title">Das ultimative Schätzspiel</h2>
+        <!-- ✅ AUDIT FIX: aria-labelledby hinzugefügt -->
+        <section class="hero-section" aria-labelledby="hero-title">
+            <h2 id="hero-title" class="hero-title">Das ultimative Schätzspiel</h2>
             <p class="hero-subtitle">Für unvergessliche Abende mit Freunden</p>
 
             <div class="game-features">
@@ -179,20 +224,26 @@
                 </div>
             </div>
 
-            <!-- Scroll Indicator -->
-            <div class="scroll-indicator" id="scroll-indicator" role="button" tabindex="0" aria-label="Mehr erfahren">
+            <!-- ✅ AUDIT FIX: role="button" zu echtem <button> geändert -->
+            <button
+                    class="scroll-indicator"
+                    id="scroll-indicator"
+                    type="button"
+                    aria-label="Mehr erfahren - Scrolle nach unten">
                 <div class="scroll-text">Mehr erfahren</div>
                 <div class="scroll-arrow" aria-hidden="true">⬇️</div>
-            </div>
+            </button>
         </section>
 
         <!-- Game Modes -->
-        <section class="game-modes">
-            <h3 class="section-title">Wähle deinen Spielmodus</h3>
+        <!-- ✅ AUDIT FIX: aria-labelledby hinzugefügt -->
+        <section class="game-modes" aria-labelledby="modes-title">
+            <h3 id="modes-title" class="section-title">Wähle deinen Spielmodus</h3>
 
             <div class="mode-cards">
                 <!-- Single Device Mode -->
-                <article class="mode-card" id="mode-single" tabindex="0">
+                <!-- ✅ AUDIT FIX: tabindex entfernt (button hat bereits Focus) -->
+                <article class="mode-card" id="mode-single">
                     <div class="mode-header">
                         <span class="mode-icon" aria-hidden="true">📱</span>
                         <h4 class="mode-title">Ein Gerät</h4>
@@ -211,7 +262,8 @@
                 </article>
 
                 <!-- Multiplayer Mode -->
-                <article class="mode-card featured" id="mode-multi" tabindex="0">
+                <!-- ✅ AUDIT FIX: tabindex entfernt -->
+                <article class="mode-card featured" id="mode-multi">
                     <div class="featured-badge" aria-label="Beliebt"><span aria-hidden="true">🔥</span> Beliebt</div>
                     <div class="mode-header">
                         <span class="mode-icon" aria-hidden="true">🌐</span>
@@ -231,7 +283,8 @@
                 </article>
 
                 <!-- Join Game -->
-                <article class="mode-card" id="mode-join" tabindex="0">
+                <!-- ✅ AUDIT FIX: tabindex entfernt -->
+                <article class="mode-card" id="mode-join">
                     <div class="mode-header">
                         <span class="mode-icon" aria-hidden="true">🔗</span>
                         <h4 class="mode-title">Spiel beitreten</h4>
@@ -252,44 +305,46 @@
         </section>
 
         <!-- How It Works -->
-        <section class="how-it-works">
-            <h3 class="section-title">So funktioniert's</h3>
+        <!-- ✅ AUDIT FIX: aria-labelledby hinzugefügt -->
+        <section class="how-it-works" aria-labelledby="how-title">
+            <h3 id="how-title" class="section-title">So funktioniert's</h3>
 
             <div class="steps">
                 <div class="step">
                     <div class="step-number" aria-label="Schritt 1">1</div>
                     <div class="step-content">
-                        <h5>Frage wird gestellt</h5>
-                        <p>"Ich habe noch nie...?"</p>
+                        <!-- ✅ AUDIT FIX: semantische Überschriften -->
+                        <h5 class="step-title">Frage wird gestellt</h5>
+                        <p class="step-description">"Ich habe noch nie...?"</p>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-number" aria-label="Schritt 2">2</div>
                     <div class="step-content">
-                        <h5>Alle antworten geheim</h5>
-                        <p>Ja oder Nein - keiner sieht es</p>
+                        <h5 class="step-title">Alle antworten geheim</h5>
+                        <p class="step-description">Ja oder Nein - keiner sieht es</p>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-number" aria-label="Schritt 3">3</div>
                     <div class="step-content">
-                        <h5>Jeder schätzt</h5>
-                        <p>Wie viele haben "Ja" gesagt?</p>
+                        <h5 class="step-title">Jeder schätzt</h5>
+                        <p class="step-description">Wie viele haben "Ja" gesagt?</p>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-number" aria-label="Schritt 4">4</div>
                     <div class="step-content">
-                        <h5>Auflösung & Konsequenz</h5>
-                        <p id="step4-text">Wer falsch lag, muss trinken!</p>
+                        <h5 class="step-title">Auflösung & Konsequenz</h5>
+                        <p class="step-description" id="step4-text">Wer falsch lag, muss trinken!</p>
                     </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="site-footer">
+    <!-- ✅ AUDIT FIX: role="contentinfo" hinzugefügt -->
+    <footer class="site-footer" role="contentinfo">
         <div class="footer-content">
             <div class="footer-links">
                 <a href="privacy.html" class="footer-link"><span aria-hidden="true">🔒</span> Datenschutz</a>
@@ -303,18 +358,33 @@
     </footer>
 </div>
 
-<!-- Loading Indicator -->
-<div id="loading" class="loading" role="status" aria-live="polite" aria-label="Lädt...">
+<!-- ✅ AUDIT FIX: aria-hidden="true" hinzugefügt da visuell ausgeblendet -->
+<div id="loading" class="loading" role="status" aria-live="polite" aria-label="Lädt..." aria-hidden="true">
     <div class="loading-spinner" aria-hidden="true"></div>
     <span class="sr-only">Lädt...</span>
 </div>
 
+<!-- ✅ AUDIT FIX: Notification Container hinzugefügt -->
+<div id="notification-container" aria-live="polite" aria-atomic="true"></div>
+
 <!-- No Script Fallback -->
 <noscript>
-    <div class="noscript-warning" role="alert">
-        <h2>JavaScript erforderlich</h2>
-        <p>Diese Anwendung benötigt JavaScript. Bitte aktiviere JavaScript in deinem Browser.</p>
+    <!-- ✅ AUDIT FIX: Besseres Styling und Hilfe-Link -->
+    <div class="noscript-warning" role="alert" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 500px; padding: 40px; text-align: center; z-index: 10000; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+        <h2 style="color: #333; margin-bottom: 20px;">⚠️ JavaScript erforderlich</h2>
+        <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+            Diese Anwendung benötigt JavaScript, um zu funktionieren.
+            Bitte aktiviere JavaScript in deinen Browser-Einstellungen und lade die Seite neu.
+        </p>
+        <a href="https://www.enable-javascript.com/de/"
+           target="_blank"
+           rel="noopener noreferrer"
+           style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+            Wie aktiviere ich JavaScript?
+        </a>
+        </p>
     </div>
 </noscript>
+
 </body>
 </html>
