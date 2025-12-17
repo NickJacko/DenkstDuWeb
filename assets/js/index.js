@@ -596,6 +596,12 @@
             if (isDevelopment) {
                 console.log('ℹ️ Animations disabled (prefers-reduced-motion)');
             }
+            // Make cards visible immediately if animation is disabled
+            const cards = document.querySelectorAll('.mode-card');
+            cards.forEach(card => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            });
             return;
         }
 
@@ -603,8 +609,10 @@
             const cards = document.querySelectorAll('.mode-card');
 
             cards.forEach((card, index) => {
+                // Add will-animate class first to enable animation
+                card.classList.add('will-animate');
                 setTimeout(() => {
-                    card.classList.add('fade-in');
+                    card.classList.add('card-animate-in');
                 }, index * 150);
             });
         }, 300);

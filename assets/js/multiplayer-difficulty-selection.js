@@ -1,11 +1,12 @@
 /**
  * No-Cap Multiplayer Difficulty Selection
- * Version 3.0 - Audit-Fixed & Production Ready with Device Mode Enforcement
+ * Version 4.0 - Production Ready (Full Audit Fix)
  *
- * CRITICAL: This page validates Multiplayer Host Mode
- * - Validates deviceMode = 'multi'
- * - Validates isHost = true
- * - Syncs difficulty to Firebase
+ * ✅ P1 FIX: Device mode validation
+ * ✅ P0 FIX: FirebaseService reference
+ * ✅ P0 FIX: localStorage with nocap_ prefix
+ * ✅ P0 FIX: All DOM manipulation with textContent
+ * ✅ P0 FIX: FSK validation
  */
 
 (function(window) {
@@ -69,7 +70,8 @@
     let alcoholMode = false;
 
     const isDevelopment = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1';
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.includes('192.168.');
 
     // ===========================
     // INITIALIZATION
@@ -80,72 +82,78 @@
             console.log('🎮 Initializing multiplayer difficulty selection...');
         }
 
-        // P0 FIX: Check DOMPurify
-        if (typeof DOMPurify === 'undefined') {
-            console.error('❌ CRITICAL: DOMPurify not loaded!');
-            alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
-            return;
-        }
-
-        // P0 FIX: Check dependencies
-        if (typeof GameState === 'undefined') {
-            showNotification('Fehler: GameState nicht gefunden', 'error');
-            return;
-        }
-
-        // P1 FIX: Wait for dependencies
-        if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            await window.NocapUtils.waitForDependencies(['GameState', 'firebaseGameService']);
-        }
-
-        gameState = new GameState();
-
-        // ===========================
-        // CRITICAL: VALIDATE DEVICE MODE
-        // This page requires multiplayer host mode
-        // ===========================
-        if (!validateGameState()) {
-            return;
-        }
-
-        // P0 FIX: Use global firebaseGameService
-        if (typeof window.FirebaseService !== 'undefined') {
-            firebaseService = window.FirebaseService;
-        } else {
-            console.error('❌ Firebase service not available');
-            showNotification('Firebase nicht verfügbar', 'error');
-            setTimeout(() => window.location.href = 'multiplayer-lobby.html', 3000);
-            return;
-        }
-
-        // Check alcohol mode
-        checkAlcoholMode();
-        updateAlcoholModeUI();
-
-        // Update header info
-        updateHeaderInfo();
-
-        // Display selected categories
-        displaySelectedCategories();
-
-        // Render difficulty cards
-        renderDifficultyCards();
-
-        // Setup event listeners
-        setupEventListeners();
-
-        // P1 FIX: Load from GameState
-        if (gameState.difficulty) {
-            const card = document.querySelector(`[data-difficulty="${gameState.difficulty}"]`);
-            if (card) {
-                card.classList.add('selected');
-                card.setAttribute('aria-checked', 'true');
-                updateContinueButton();
+        try {
+            // Check DOMPurify
+            if (typeof DOMPurify === 'undefined') {
+                console.error('❌ CRITICAL: DOMPurify not loaded!');
+                alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
+                return;
             }
-        }
 
-        if (isDevelopment) {
-            console.log('✅ Multiplayer difficulty selection initialized');
+            // Check dependencies
+            if (typeof GameState === 'undefined') {
+                showNotification('Fehler: GameState nicht gefunden', 'error');
+                return;
+            }
+
+            // Wait for dependencies
+            if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
+                await window.NocapUtils.waitForDependencies(['GameState', 'FirebaseService']);
+            }
+
+            gameState = new GameState();
+
+            // ===========================
+            // CRITICAL: VALIDATE DEVICE MODE
+            // This page requires multiplayer host mode
+            // ===========================
+            if (!validateGameState()) {
+                return;
+            }
+
+            // ✅ FIX: Use window.FirebaseService (not firebaseGameService)
+            if (typeof window.FirebaseService !== 'undefined') {
+                firebaseService = window.FirebaseService;
+            } else {
+                console.error('❌ Firebase service not available');
+                showNotification('Firebase nicht verfügbar', 'error');
+                setTimeout(() => window.location.href = 'multiplayer-lobby.html', 3000);
+                return;
+            }
+
+            // Check alcohol mode
+            checkAlcoholMode();
+            updateAlcoholModeUI();
+
+            // Update header info
+            updateHeaderInfo();
+
+            // Display selected categories
+            displaySelectedCategories();
+
+            // Render difficulty cards
+            renderDifficultyCards();
+
+            // Setup event listeners
+            setupEventListeners();
+
+            // Load from GameState
+            if (gameState.difficulty) {
+                const card = document.querySelector(`[data-difficulty="${gameState.difficulty}"]`);
+                if (card) {
+                    card.classList.add('selected');
+                    card.setAttribute('aria-checked', 'true');
+                    updateContinueButton();
+                }
+            }
+
+            if (isDevelopment) {
+                console.log('✅ Multiplayer difficulty selection initialized');
+            }
+
+        } catch (error) {
+            console.error('❌ Initialization error:', error);
+            showNotification('Fehler beim Laden', 'error');
         }
     }
 
@@ -154,14 +162,14 @@
     // ===========================
 
     /**
-     * P0 FIX: Validate game state with strict checks
+     * Validate game state with strict checks
      */
     function validateGameState() {
         if (isDevelopment) {
             console.log('🔍 Validating game state...');
         }
 
-        // P0 FIX: Strict device mode check
+        // Strict device mode check
         if (!gameState || gameState.deviceMode !== 'multi') {
             console.error('❌ Wrong device mode:', gameState?.deviceMode);
             showNotification('Falscher Spielmodus', 'error');
@@ -169,7 +177,7 @@
             return false;
         }
 
-        // P0 FIX: Verify host status
+        // Verify host status
         if (!gameState.isHost) {
             console.error('❌ Not host');
             showNotification('Du bist nicht der Host', 'error');
@@ -197,7 +205,7 @@
             return false;
         }
 
-        // P0 FIX: Validate FSK access
+        // Validate FSK access
         let ageLevel = 0;
         if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
             ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
@@ -229,7 +237,8 @@
     function checkAlcoholMode() {
         try {
             if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-                const alcoholModeStr = window.NocapUtils.getLocalStorage('nocap_alcohol_mode')
+                // ✅ FIX: Use nocap_alcohol_mode (with prefix)
+                const alcoholModeStr = window.NocapUtils.getLocalStorage('nocap_alcohol_mode');
                 alcoholMode = alcoholModeStr === 'true';
             }
             if (isDevelopment) {
@@ -282,7 +291,7 @@
     }
 
     // ===========================
-    // P0 FIX: DISPLAY CATEGORIES WITH TEXTCONTENT
+    // DISPLAY CATEGORIES WITH TEXTCONTENT
     // ===========================
 
     /**
@@ -330,7 +339,7 @@
     }
 
     // ===========================
-    // P0 FIX: RENDER CARDS WITH TEXTCONTENT
+    // RENDER CARDS WITH TEXTCONTENT
     // ===========================
 
     /**
@@ -412,10 +421,10 @@
     // ===========================
 
     /**
-     * P0 FIX: Select difficulty with validation
+     * Select difficulty with validation
      */
     function selectDifficulty(difficulty) {
-        // P0 FIX: Validate difficulty
+        // Validate difficulty
         if (!difficultyData[difficulty]) {
             console.error(`❌ Invalid difficulty: ${difficulty}`);
             return;
@@ -524,7 +533,7 @@
     }
 
     // ===========================
-    // P0 FIX: INPUT SANITIZATION
+    // INPUT SANITIZATION
     // ===========================
 
     /**
@@ -545,7 +554,7 @@
     // ===========================
 
     /**
-     * P0 FIX: Safe notification using NocapUtils
+     * Safe notification using NocapUtils
      */
     function showNotification(message, type = 'info', duration = 3000) {
         if (window.NocapUtils && window.NocapUtils.showNotification) {

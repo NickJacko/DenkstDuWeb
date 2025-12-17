@@ -208,6 +208,21 @@ body {
     background: rgba(76, 175, 80, 0.1);
 }
 
+
+/* ✅ P1 FIX: Enhanced focus states for accessibility */
+.input-field:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 2px;
+}
+
+.input-field.valid:focus-visible {
+    outline-color: rgba(76, 175, 80, 0.8);
+}
+
+.input-field.error:focus-visible {
+    outline-color: rgba(244, 67, 54, 0.8);
+}
+
 .input-hint {
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.85rem;

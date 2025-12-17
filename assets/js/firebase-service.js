@@ -1,11 +1,14 @@
 /**
  * No-Cap Firebase Game Service
- * Version 5.0 - Production Ready (Audit-Fixed)
+ * Version 6.0 - Premium & Age Meta Integration (Spark Plan Compatible)
  *
  * ✅ P0 FIX: ID collision checks implemented
  * ✅ P0 FIX: No dependency on firebase-config.js
  * ✅ P1 FIX: Comprehensive error handling with try/catch
  * ✅ P1 FIX: Proper listener cleanup with Map tracking
+ * ✅ P1 NEW: Premium & Age verification meta caching
+ * ✅ P1 NEW: Complete DB access encapsulation
+ * ✅ P1 NEW: Strict adherence to database.rules.json
  *
  * IMPORTANT: Requires database.rules.json to be deployed!
  */
@@ -39,6 +42,15 @@
             // ✅ P0 FIX: Collision tracking
             this._generationAttempts = new Map();
             this.MAX_GENERATION_ATTEMPTS = 5;
+
+            // ✅ P1 NEW: User meta caching (Premium & Age)
+            this._userMeta = {
+                isPremium: false,
+                ageLevel: 0, // 0, 16, 18
+                lastRefresh: null,
+                uid: null
+            };
+            this._metaRefreshInterval = 5 * 60 * 1000; // 5 minutes
         }
 
         // ===========================
@@ -48,7 +60,7 @@
         async initialize(gameId = null, callbacks = {}) {
             try {
                 if (this.isDevelopment) {
-                    console.log('🔥 FirebaseGameService v5.0 - Starting initialization...');
+                    console.log('🔥 FirebaseGameService v6.0 - Starting initialization...');
                 }
 
                 // ✅ P1 FIX: Wait for Firebase SDK only (no firebase-config.js)
@@ -69,6 +81,9 @@
 
                 // Wait for authentication
                 await this._waitForAuth();
+
+                // ✅ P1 NEW: Load user meta after auth
+                await this.refreshUserMeta();
 
                 // Test connection with retry
                 this.isConnected = await this._testConnectionWithRetry();
@@ -110,6 +125,7 @@
 
                 if (this.isDevelopment) {
                     console.log(`🎉 FirebaseGameService ready! ${gameId ? `(Game: ${gameId})` : ''}`);
+                    console.log(`👤 User Meta: Premium=${this._userMeta.isPremium}, Age=${this._userMeta.ageLevel}`);
                 }
 
                 return this.isInitialized;
@@ -179,6 +195,111 @@
         }
 
         // ===========================
+        // USER META (PREMIUM & AGE)
+        // ===========================
+
+        /**
+         * ✅ P1 NEW: Refresh user meta from database
+         * Reads premiumUsers/$uid and users/$uid/ageVerificationLevel
+         */
+        async refreshUserMeta() {
+            try {
+                const uid = this.getCurrentUserId();
+
+                if (!uid) {
+                    if (this.isDevelopment) {
+                        console.log('⚠️ No user ID - skipping meta refresh');
+                    }
+                    return false;
+                }
+
+                // Check if refresh is needed
+                const now = Date.now();
+                if (this._userMeta.uid === uid &&
+                    this._userMeta.lastRefresh &&
+                    (now - this._userMeta.lastRefresh) < this._metaRefreshInterval) {
+                    if (this.isDevelopment) {
+                        console.log('✅ User meta still fresh, skipping refresh');
+                    }
+                    return true;
+                }
+
+                if (this.isDevelopment) {
+                    console.log('🔄 Refreshing user meta...');
+                }
+
+                // Read premium status (read-only for client)
+                let isPremium = false;
+                try {
+                    const premiumSnap = await this.database
+                        .ref(`premiumUsers/${uid}`)
+                        .once('value');
+                    isPremium = premiumSnap.val() === true;
+                } catch (error) {
+                    console.warn('⚠️ Could not read premium status:', error.message);
+                }
+
+                // Read age level (read-only for client)
+                let ageLevel = 0;
+                try {
+                    const ageSnap = await this.database
+                        .ref(`users/${uid}/ageVerificationLevel`)
+                        .once('value');
+                    const rawAge = ageSnap.val();
+                    ageLevel = [0, 16, 18].includes(rawAge) ? rawAge : 0;
+                } catch (error) {
+                    console.warn('⚠️ Could not read age level:', error.message);
+                }
+
+                // Update cache
+                this._userMeta = {
+                    isPremium,
+                    ageLevel,
+                    lastRefresh: now,
+                    uid
+                };
+
+                if (this.isDevelopment) {
+                    console.log(`✅ User meta refreshed: Premium=${isPremium}, Age=${ageLevel}`);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error refreshing user meta:', error);
+                return false;
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Check if current user has premium
+         * Returns cached value (call refreshUserMeta() to update)
+         */
+        isPremiumUser() {
+            return this._userMeta.isPremium;
+        }
+
+        /**
+         * ✅ P1 NEW: Get cached age verification level
+         * Returns 0, 16, or 18 (call refreshUserMeta() to update)
+         */
+        getCachedAgeLevel() {
+            return this._userMeta.ageLevel;
+        }
+
+        /**
+         * ✅ P1 NEW: Check if user can access FSK level
+         * @param {number} requiredLevel - 0, 16, or 18
+         */
+        canAccessFSK(requiredLevel) {
+            if (![0, 16, 18].includes(requiredLevel)) {
+                console.warn('⚠️ Invalid FSK level:', requiredLevel);
+                return false;
+            }
+            return this._userMeta.ageLevel >= requiredLevel;
+        }
+
+        // ===========================
         // CONNECTION MANAGEMENT
         // ===========================
 
@@ -234,40 +355,32 @@
         }
 
         _setupConnectionMonitoring() {
-            if (!this.database) return;
-
             try {
                 const connectedRef = this.database.ref('.info/connected');
 
-                const connectionListener = connectedRef.on('value', (snapshot) => {
-                    const wasConnected = this.isConnected;
-                    this.isConnected = snapshot.val() === true;
+                const listener = (snapshot) => {
+                    const connected = snapshot.val() === true;
+                    this.isConnected = connected;
 
-                    if (wasConnected !== this.isConnected) {
-                        if (this.isDevelopment) {
-                            console.log(`🔄 Connection: ${this.isConnected ? '✅ Online' : '⚠️ Offline'}`);
-                        }
-
-                        this._notifyConnectionChange(this.isConnected);
-
-                        window.dispatchEvent(new CustomEvent('nocap:firebaseConnection', {
-                            detail: { connected: this.isConnected }
-                        }));
-
-                        // Auto-rejoin on reconnection
-                        if (this.isConnected && this.currentGameId && this.currentPlayerId) {
-                            this.updatePlayerStatus(this.currentGameId, this.currentPlayerId, {
-                                isOnline: true,
-                                reconnectedAt: firebase.database.ServerValue.TIMESTAMP
-                            });
-                        }
+                    if (this.isDevelopment) {
+                        console.log(connected ? '✅ Firebase connected' : '⚠️ Firebase disconnected');
                     }
-                });
 
-                this.listeners.set('connection', { ref: connectedRef, listener: connectionListener });
+                    // Notify all registered connection listeners
+                    this.connectionListeners.forEach(callback => {
+                        try {
+                            callback(connected);
+                        } catch (error) {
+                            console.error('❌ Connection listener error:', error);
+                        }
+                    });
+                };
+
+                connectedRef.on('value', listener);
+                this.listeners.set('connection', { ref: connectedRef, listener });
 
             } catch (error) {
-                console.error('❌ Error setting up connection monitoring:', error);
+                console.error('❌ Failed to setup connection monitoring:', error);
             }
         }
 
@@ -277,361 +390,102 @@
             }
         }
 
-        _notifyConnectionChange(connected) {
-            this.connectionListeners.forEach(callback => {
-                try {
-                    callback(connected);
-                } catch (error) {
-                    console.error('❌ Error notifying connection change:', error);
-                }
-            });
-        }
-
         // ===========================
-        // REJOIN MECHANISM
-        // ===========================
-
-        async attemptRejoin() {
-            if (this.rejoinAttempted) return false;
-            this.rejoinAttempted = true;
-
-            try {
-                const gameId = window.NocapUtils
-                    ? window.NocapUtils.getLocalStorage('nocap_currentGameId')
-                    : localStorage.getItem('nocap_currentGameId');
-
-                const playerId = window.NocapUtils
-                    ? window.NocapUtils.getLocalStorage('nocap_currentPlayerId')
-                    : localStorage.getItem('nocap_currentPlayerId');
-
-                if (!gameId || !playerId) {
-                    if (this.isDevelopment) {
-                        console.log('ℹ️ No rejoin data found');
-                    }
-                    return false;
-                }
-
-                if (this.isDevelopment) {
-                    console.log(`🔄 Attempting rejoin: ${gameId}`);
-                }
-
-                // Check if game still exists
-                const gameRef = this.database.ref(`games/${gameId}`);
-                const snapshot = await gameRef.once('value');
-
-                if (!snapshot.exists()) {
-                    console.warn('⚠️ Game no longer exists');
-                    this.clearRejoinData();
-                    return false;
-                }
-
-                const gameData = snapshot.val();
-
-                // Check if player still in game
-                if (!gameData.players || !gameData.players[playerId]) {
-                    console.warn('⚠️ Player no longer in game');
-                    this.clearRejoinData();
-                    return false;
-                }
-
-                // Set player as online
-                await this.updatePlayerStatus(gameId, playerId, {
-                    isOnline: true,
-                    rejoined: true,
-                    rejoinedAt: firebase.database.ServerValue.TIMESTAMP
-                });
-
-                // Restore connection
-                this.currentGameId = gameId;
-                this.currentPlayerId = playerId;
-                this.gameRef = gameRef;
-
-                if (this.isDevelopment) {
-                    console.log('✅ Rejoin successful');
-                }
-
-                if (window.NocapUtils) {
-                    window.NocapUtils.showNotification(
-                        'Spiel wiederhergestellt',
-                        'success',
-                        2000
-                    );
-                }
-
-                return true;
-
-            } catch (error) {
-                console.error('❌ Rejoin failed:', error);
-                this.clearRejoinData();
-                return false;
-            }
-        }
-
-        saveRejoinData(gameId, playerId, playerName) {
-            try {
-                if (window.NocapUtils) {
-                    window.NocapUtils.setLocalStorage('nocap_currentGameId', gameId);
-                    window.NocapUtils.setLocalStorage('nocap_currentPlayerId', playerId);
-                    window.NocapUtils.setLocalStorage('nocap_playerName', playerName);
-                    window.NocapUtils.setLocalStorage('nocap_lastActive', Date.now());
-                } else {
-                    localStorage.setItem('nocap_currentGameId', gameId);
-                    localStorage.setItem('nocap_currentPlayerId', playerId);
-                    localStorage.setItem('nocap_playerName', playerName);
-                    localStorage.setItem('nocap_lastActive', Date.now().toString());
-                }
-            } catch (error) {
-                console.warn('⚠️ Could not save rejoin data:', error);
-            }
-        }
-
-        clearRejoinData() {
-            try {
-                if (window.NocapUtils) {
-                    window.NocapUtils.removeLocalStorage('nocap_currentGameId');
-                    window.NocapUtils.removeLocalStorage('nocap_currentPlayerId');
-                    window.NocapUtils.removeLocalStorage('nocap_playerName');
-                    window.NocapUtils.removeLocalStorage('nocap_lastActive');
-                } else {
-                    localStorage.removeItem('nocap_currentGameId');
-                    localStorage.removeItem('nocap_currentPlayerId');
-                    localStorage.removeItem('nocap_playerName');
-                    localStorage.removeItem('nocap_lastActive');
-                }
-            } catch (error) {
-                console.warn('⚠️ Could not clear rejoin data:', error);
-            }
-        }
-
-        // ===========================
-        // ✅ P0 FIX: ID GENERATION WITH COLLISION CHECK
+        // GAME CREATION
         // ===========================
 
         /**
-         * Generate game code with collision check
+         * ✅ P1 NEW: Create new game with encapsulated DB access
+         * Strictly follows database.rules.json permissions
          */
-        async generateGameCode() {
-            const key = 'gameCode';
-            let attempts = 0;
-
-            while (attempts < this.MAX_GENERATION_ATTEMPTS) {
-                const code = this._generateRandomCode();
-
-                // ✅ P0 FIX: Check if code already exists
-                const exists = await this._checkGameIdExists(code);
-
-                if (!exists) {
-                    this._generationAttempts.delete(key);
-                    return code;
-                }
-
-                attempts++;
-                if (this.isDevelopment) {
-                    console.warn(`⚠️ Game code collision (attempt ${attempts}/${this.MAX_GENERATION_ATTEMPTS})`);
-                }
-            }
-
-            throw new Error('Failed to generate unique game code after multiple attempts');
-        }
-
-        /**
-         * ✅ P0 FIX: Check if game ID exists in database
-         */
-        async _checkGameIdExists(gameId) {
-            try {
-                const gameRef = this.database.ref(`games/${gameId}`);
-                const snapshot = await gameRef.once('value');
-                return snapshot.exists();
-            } catch (error) {
-                console.error('❌ Error checking game ID:', error);
-                // On error, assume it might exist (safer)
-                return true;
-            }
-        }
-
-        /**
-         * Generate random 6-character code (crypto-safe)
-         */
-        _generateRandomCode() {
-            if (window.NocapUtils && window.NocapUtils.generateGameId) {
-                return window.NocapUtils.generateGameId();
-            }
-
-            // Fallback with crypto
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = '';
-
-            if (window.crypto && window.crypto.getRandomValues) {
-                const array = new Uint8Array(6);
-                window.crypto.getRandomValues(array);
-                for (let i = 0; i < 6; i++) {
-                    code += chars[array[i] % chars.length];
-                }
-            } else {
-                for (let i = 0; i < 6; i++) {
-                    code += chars[Math.floor(Math.random() * chars.length)];
-                }
-            }
-
-            return code;
-        }
-
-        /**
-         * ✅ P0 FIX: Generate player ID with collision check
-         */
-        async generatePlayerId(playerName, isHost = false, gameId = null) {
-            const key = `player_${playerName}_${isHost}`;
-            let attempts = 0;
-
-            while (attempts < this.MAX_GENERATION_ATTEMPTS) {
-                const playerId = this._generatePlayerIdString(playerName, isHost);
-
-                // ✅ P0 FIX: Check if player ID exists in game
-                if (gameId) {
-                    const exists = await this._checkPlayerIdExists(gameId, playerId);
-
-                    if (!exists) {
-                        this._generationAttempts.delete(key);
-                        return playerId;
-                    }
-
-                    attempts++;
-                    if (this.isDevelopment) {
-                        console.warn(`⚠️ Player ID collision (attempt ${attempts}/${this.MAX_GENERATION_ATTEMPTS})`);
-                    }
-                } else {
-                    // No game ID to check against, return generated ID
-                    return playerId;
-                }
-            }
-
-            throw new Error('Failed to generate unique player ID after multiple attempts');
-        }
-
-        /**
-         * ✅ P0 FIX: Check if player ID exists in game
-         */
-        async _checkPlayerIdExists(gameId, playerId) {
-            try {
-                const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
-                const snapshot = await playerRef.once('value');
-                return snapshot.exists();
-            } catch (error) {
-                console.error('❌ Error checking player ID:', error);
-                return true; // Safer to assume it exists
-            }
-        }
-
-        /**
-         * Generate player ID string (without collision check)
-         */
-        _generatePlayerIdString(playerName, isHost = false) {
-            const sanitized = window.NocapUtils
-                ? window.NocapUtils.sanitizeInput(playerName || 'player')
-                : (playerName || 'player');
-
-            const safeName = sanitized
-                .replace(/[^a-zA-Z0-9]/g, '')
-                .toLowerCase()
-                .substring(0, 10);
-
-            const prefix = isHost ? 'host' : 'guest';
-            const timestamp = Date.now();
-            const random = Math.random().toString(36).substring(2, 8);
-            const extraRandom = Math.random().toString(36).substring(2, 6);
-
-            return `${prefix}_${safeName}_${timestamp}_${random}${extraRandom}`;
-        }
-
-        // ===========================
-        // CREATE GAME
-        // ===========================
-
-        async createGame(gameData) {
+        async createGame(settings = {}) {
             if (!this.isConnected) {
-                throw new Error('Keine Firebase-Verbindung. Bitte prüfe deine Internetverbindung.');
+                throw new Error('Keine Firebase-Verbindung');
             }
 
             try {
-                // Validate input
-                const validation = this._validateGameData(gameData);
-                if (!validation.valid) {
-                    throw new Error(validation.error);
+                // Generate unique game ID
+                const gameId = await this._generateUniqueId('games');
+
+                // Get current user
+                const user = this.auth.currentUser;
+                if (!user) {
+                    throw new Error('Nicht authentifiziert');
                 }
 
-                // ✅ P0 FIX: Generate unique game ID with collision check
-                const gameId = await this.generateGameCode();
+                const hostId = this._generatePlayerId();
+                const timestamp = firebase.database.ServerValue.TIMESTAMP;
 
-                // Sanitize host name
-                const sanitizedHostName = window.NocapUtils
-                    ? window.NocapUtils.sanitizeInput(gameData.hostName)
-                    : gameData.hostName;
+                // ✅ Sanitize all input data
+                const sanitizedSettings = this._sanitizeGameSettings(settings);
 
-                // ✅ P0 FIX: Generate unique player ID with collision check
-                const hostPlayerId = await this.generatePlayerId(sanitizedHostName, true, gameId);
-
-                if (this.isDevelopment) {
-                    console.log(`🎮 Creating game: ${gameId}`);
+                // ✅ P1 NEW: Validate FSK/Premium access before creating
+                if (sanitizedSettings.ageLevel && !this.canAccessFSK(sanitizedSettings.ageLevel)) {
+                    throw new Error('Keine Berechtigung für diese Altersstufe');
                 }
 
-                const gameObject = {
+                // Create game structure (only fields allowed by rules)
+                const gameData = {
                     gameId: gameId,
+                    hostId: hostId,
+                    hostUid: user.uid,
+                    createdAt: timestamp,
+                    lastUpdate: timestamp,
                     gameState: 'lobby',
-                    createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    lastUpdate: firebase.database.ServerValue.TIMESTAMP,
-                    categories: gameData.categories || [],
-                    difficulty: gameData.difficulty || 'medium',
-                    alcoholMode: gameData.alcoholMode === true,
-                    maxPlayers: 8,
-                    currentRound: 0,
-                    hostId: hostPlayerId,
+                    phase: 'waiting',
 
+                    // Settings
+                    settings: {
+                        categories: sanitizedSettings.categories || [],
+                        difficulty: sanitizedSettings.difficulty || 'medium',
+                        isAlcoholMode: sanitizedSettings.isAlcoholMode || false,
+                        maxPlayers: sanitizedSettings.maxPlayers || 8,
+                        questionsPerRound: sanitizedSettings.questionsPerRound || 10
+                    },
+
+                    // Players
                     players: {
-                        [hostPlayerId]: {
-                            id: hostPlayerId,
-                            name: sanitizedHostName,
+                        [hostId]: {
+                            id: hostId,
+                            uid: user.uid,
+                            name: sanitizedSettings.hostName || 'Host',
                             isHost: true,
-                            isReady: true,
+                            isReady: false,
                             isOnline: true,
-                            joinedAt: firebase.database.ServerValue.TIMESTAMP,
-                            lastSeen: firebase.database.ServerValue.TIMESTAMP
+                            joinedAt: timestamp,
+                            score: 0
                         }
                     },
 
-                    settings: {
-                        questionsPerGame: gameData.questionCount || 10,
-                        timePerQuestion: 30,
-                        showResults: true,
-                        allowSpectators: false
-                    }
+                    // Empty structures for later
+                    currentQuestion: null,
+                    responses: {},
+                    estimates: {},
+                    roundResults: [],
+                    scores: {}
                 };
 
+                // Write to database
                 const gameRef = this.database.ref(`games/${gameId}`);
-                await gameRef.set(gameObject);
+                await gameRef.set(gameData);
 
-                if (this.isDevelopment) {
-                    console.log(`✅ Game created: ${gameId}`);
-                }
-
+                // Store locally
                 this.currentGameId = gameId;
-                this.currentPlayerId = hostPlayerId;
+                this.currentPlayerId = hostId;
                 this.gameRef = gameRef;
 
-                // Save for rejoin
-                this.saveRejoinData(gameId, hostPlayerId, sanitizedHostName);
+                // Save rejoin data
+                this._saveRejoinData(gameId, hostId, true);
 
-                if (window.NocapUtils) {
-                    window.NocapUtils.showNotification(
-                        'Spiel erstellt!',
-                        'success',
-                        2000
-                    );
+                if (this.isDevelopment) {
+                    console.log('✅ Game created:', gameId);
                 }
 
                 return {
+                    success: true,
                     gameId: gameId,
-                    playerId: hostPlayerId,
-                    gameRef: gameRef
+                    playerId: hostId,
+                    isHost: true
                 };
 
             } catch (error) {
@@ -639,7 +493,7 @@
 
                 if (window.NocapUtils) {
                     window.NocapUtils.showNotification(
-                        error.message || 'Spiel konnte nicht erstellt werden',
+                        'Spiel konnte nicht erstellt werden',
                         'error'
                     );
                 }
@@ -648,134 +502,142 @@
             }
         }
 
-        _validateGameData(gameData) {
-            if (!gameData) {
-                return { valid: false, error: 'Spieledaten fehlen' };
+        /**
+         * ✅ P1 NEW: Sanitize game settings
+         */
+        _sanitizeGameSettings(settings) {
+            const sanitized = {};
+
+            // Categories: array of strings
+            if (Array.isArray(settings.categories)) {
+                sanitized.categories = settings.categories
+                    .filter(c => typeof c === 'string' && c.length > 0)
+                    .slice(0, 10); // Max 10 categories
             }
 
-            if (!gameData.hostName || typeof gameData.hostName !== 'string') {
-                return { valid: false, error: 'Host-Name erforderlich' };
-            }
-
-            const validation = window.NocapUtils
-                ? window.NocapUtils.validatePlayerName(gameData.hostName)
-                : { valid: true };
-
-            if (!validation.valid) {
-                return { valid: false, error: validation.message };
-            }
-
-            if (!Array.isArray(gameData.categories) || gameData.categories.length === 0) {
-                return { valid: false, error: 'Mindestens eine Kategorie erforderlich' };
-            }
-
+            // Difficulty: enum
             const validDifficulties = ['easy', 'medium', 'hard'];
-            if (gameData.difficulty && !validDifficulties.includes(gameData.difficulty)) {
-                return { valid: false, error: 'Ungültige Schwierigkeit' };
+            if (validDifficulties.includes(settings.difficulty)) {
+                sanitized.difficulty = settings.difficulty;
             }
 
-            return { valid: true };
+            // Alcohol mode: boolean
+            sanitized.isAlcoholMode = settings.isAlcoholMode === true;
+
+            // Max players: number 2-8
+            const maxP = parseInt(settings.maxPlayers, 10);
+            sanitized.maxPlayers = (maxP >= 2 && maxP <= 8) ? maxP : 8;
+
+            // Questions per round: number 5-30
+            const qpr = parseInt(settings.questionsPerRound, 10);
+            sanitized.questionsPerRound = (qpr >= 5 && qpr <= 30) ? qpr : 10;
+
+            // Host name: string 2-20 chars
+            if (typeof settings.hostName === 'string') {
+                const name = settings.hostName.trim();
+                if (name.length >= 2 && name.length <= 20) {
+                    sanitized.hostName = name;
+                }
+            }
+
+            // Age level: 0, 16, or 18
+            if ([0, 16, 18].includes(settings.ageLevel)) {
+                sanitized.ageLevel = settings.ageLevel;
+            }
+
+            return sanitized;
         }
 
         // ===========================
-        // JOIN GAME
+        // GAME JOINING
         // ===========================
 
-        async joinGame(gameId, playerName) {
+        /**
+         * ✅ P1 NEW: Join existing game with full validation
+         */
+        async joinGame(gameId, playerMeta = {}) {
             if (!this.isConnected) {
-                throw new Error('Keine Firebase-Verbindung. Bitte prüfe deine Internetverbindung.');
+                throw new Error('Keine Firebase-Verbindung');
             }
 
             try {
-                if (this.isDevelopment) {
-                    console.log(`🔄 Joining game: ${gameId}`);
+                // Validate game ID format
+                if (!this._isValidGameId(gameId)) {
+                    throw new Error('Ungültiger Spielcode');
                 }
 
-                // Validate game ID
-                const gameIdValidation = window.NocapUtils
-                    ? window.NocapUtils.validateGameId(gameId)
-                    : { valid: gameId && gameId.length === 6, gameId: gameId };
-
-                if (!gameIdValidation.valid) {
-                    throw new Error('Ungültiger Game-Code. Code muss 6 Zeichen haben.');
+                // Get current user
+                const user = this.auth.currentUser;
+                if (!user) {
+                    throw new Error('Nicht authentifiziert');
                 }
 
-                // Validate player name
-                const nameValidation = window.NocapUtils
-                    ? window.NocapUtils.validatePlayerName(playerName)
-                    : { valid: true, name: playerName };
+                // Check if game exists
+                const gameRef = this.database.ref(`games/${gameId}`);
+                const gameSnap = await gameRef.once('value');
 
-                if (!nameValidation.valid) {
-                    throw new Error(nameValidation.message);
+                if (!gameSnap.exists()) {
+                    throw new Error('Spiel nicht gefunden');
                 }
 
-                const cleanGameId = gameIdValidation.gameId.toUpperCase();
-                const sanitizedName = nameValidation.name;
+                const gameData = gameSnap.val();
 
-                const gameRef = this.database.ref(`games/${cleanGameId}`);
-                const gameSnapshot = await gameRef.once('value');
-
-                if (!gameSnapshot.exists()) {
-                    throw new Error('Spiel nicht gefunden. Bitte prüfe den Code.');
-                }
-
-                const gameData = gameSnapshot.val();
-
+                // Check game state
                 if (gameData.gameState !== 'lobby') {
-                    throw new Error('Spiel bereits gestartet. Beitreten nicht möglich.');
+                    throw new Error('Spiel hat bereits begonnen');
                 }
 
-                const currentPlayerCount = gameData.players ? Object.keys(gameData.players).length : 0;
-                if (currentPlayerCount >= gameData.maxPlayers) {
-                    throw new Error(`Spiel ist voll. Maximum ${gameData.maxPlayers} Spieler.`);
+                // Check player count
+                const playerCount = gameData.players ? Object.keys(gameData.players).length : 0;
+                const maxPlayers = gameData.settings?.maxPlayers || 8;
+
+                if (playerCount >= maxPlayers) {
+                    throw new Error('Spiel ist voll');
                 }
 
-                // Check if name is already taken
-                const existingPlayers = gameData.players || {};
-                const nameTaken = Object.values(existingPlayers).some(
-                    p => p.name.toLowerCase() === sanitizedName.toLowerCase()
-                );
-                if (nameTaken) {
-                    throw new Error('Name bereits vergeben. Bitte wähle einen anderen Namen.');
-                }
+                // Generate player ID
+                const playerId = this._generatePlayerId();
+                const timestamp = firebase.database.ServerValue.TIMESTAMP;
 
-                // ✅ P0 FIX: Generate unique player ID with collision check
-                const playerId = await this.generatePlayerId(sanitizedName, false, cleanGameId);
+                // Sanitize player name
+                const playerName = this._sanitizePlayerName(playerMeta.name || 'Spieler');
 
-                const playerRef = gameRef.child(`players/${playerId}`);
-                await playerRef.set({
+                // Create player data (only allowed fields)
+                const playerData = {
                     id: playerId,
-                    name: sanitizedName,
+                    uid: user.uid,
+                    name: playerName,
                     isHost: false,
                     isReady: false,
                     isOnline: true,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP,
-                    lastSeen: firebase.database.ServerValue.TIMESTAMP
-                });
+                    joinedAt: timestamp,
+                    score: 0
+                };
 
-                if (this.isDevelopment) {
-                    console.log(`✅ Successfully joined: ${cleanGameId}`);
-                }
+                // Write player to game
+                const playerRef = gameRef.child(`players/${playerId}`);
+                await playerRef.set(playerData);
 
-                this.currentGameId = cleanGameId;
+                // Update last update
+                await gameRef.child('lastUpdate').set(timestamp);
+
+                // Store locally
+                this.currentGameId = gameId;
                 this.currentPlayerId = playerId;
                 this.gameRef = gameRef;
 
-                // Save for rejoin
-                this.saveRejoinData(cleanGameId, playerId, sanitizedName);
+                // Save rejoin data
+                this._saveRejoinData(gameId, playerId, false);
 
-                if (window.NocapUtils) {
-                    window.NocapUtils.showNotification(
-                        'Spiel beigetreten!',
-                        'success',
-                        2000
-                    );
+                if (this.isDevelopment) {
+                    console.log(`✅ Joined game: ${gameId} as ${playerId}`);
                 }
 
                 return {
-                    gameId: cleanGameId,
+                    success: true,
+                    gameId: gameId,
                     playerId: playerId,
-                    gameRef: gameRef,
+                    isHost: false,
                     gameData: gameData
                 };
 
@@ -784,7 +646,7 @@
 
                 if (window.NocapUtils) {
                     window.NocapUtils.showNotification(
-                        error.message,
+                        error.message || 'Spiel konnte nicht beigetreten werden',
                         'error'
                     );
                 }
@@ -793,114 +655,306 @@
             }
         }
 
-        // ===========================
-        // GAME CONNECTION
-        // ===========================
-
-        async connectToGame(gameId, callbacks = {}) {
-            if (!this.isConnected || !gameId) {
-                return false;
+        /**
+         * ✅ P1 NEW: Sanitize player name
+         */
+        _sanitizePlayerName(name) {
+            if (typeof name !== 'string') {
+                return 'Spieler';
             }
 
-            try {
-                if (this.isDevelopment) {
-                    console.log(`🔗 Connecting to game: ${gameId}`);
-                }
+            // Trim and limit length
+            let sanitized = name.trim().slice(0, 20);
 
-                this.currentGameId = gameId;
-                this.gameRef = this.database.ref(`games/${gameId}`);
+            // Remove dangerous characters
+            sanitized = sanitized.replace(/[<>\"'&]/g, '');
 
-                const snapshot = await this.gameRef.once('value');
-                if (!snapshot.exists()) {
-                    console.warn(`⚠️ Game ${gameId} does not exist`);
-                    return false;
-                }
-
-                // Setup listeners with tracking
-                if (callbacks.onGameUpdate && typeof callbacks.onGameUpdate === 'function') {
-                    const gameListener = this.gameRef.on('value', callbacks.onGameUpdate);
-                    this.listeners.set(`game_${gameId}`, {
-                        ref: this.gameRef,
-                        listener: gameListener
-                    });
-                }
-
-                if (callbacks.onPlayersUpdate && typeof callbacks.onPlayersUpdate === 'function') {
-                    const playersRef = this.gameRef.child('players');
-                    const playersListener = playersRef.on('value', callbacks.onPlayersUpdate);
-                    this.listeners.set(`players_${gameId}`, {
-                        ref: playersRef,
-                        listener: playersListener
-                    });
-                }
-
-                if (this.isDevelopment) {
-                    console.log(`✅ Connected to game: ${gameId}`);
-                }
-
-                return true;
-
-            } catch (error) {
-                console.error(`❌ Error connecting to game ${gameId}:`, error);
-                return false;
+            // Ensure minimum length
+            if (sanitized.length < 2) {
+                sanitized = 'Spieler';
             }
+
+            return sanitized;
+        }
+
+        /**
+         * ✅ P1 NEW: Validate game ID format
+         */
+        _isValidGameId(gameId) {
+            if (typeof gameId !== 'string') return false;
+            return /^[A-Z0-9]{6}$/.test(gameId);
         }
 
         // ===========================
-        // PLAYER MANAGEMENT
+        // PLAYER STATUS UPDATES
         // ===========================
 
-        async updatePlayerStatus(gameId, playerId, updates) {
-            if (!this.isConnected) {
-                console.warn('⚠️ Offline - Status wird bei Reconnect synchronisiert');
-                return false;
-            }
+        /**
+         * ✅ P1 NEW: Update player status (only own player)
+         */
+        async updatePlayerStatus(gameId, playerId, status = {}) {
+            if (!this.isConnected) return false;
 
             try {
+                // Validate ownership
+                if (playerId !== this.currentPlayerId) {
+                    throw new Error('Can only update own player status');
+                }
+
                 const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
+                const updates = {};
 
-                const updatesWithTimestamp = {
-                    ...updates,
-                    lastSeen: firebase.database.ServerValue.TIMESTAMP
-                };
+                // Only allow specific fields
+                if (typeof status.isReady === 'boolean') {
+                    updates.isReady = status.isReady;
+                }
+                if (typeof status.isOnline === 'boolean') {
+                    updates.isOnline = status.isOnline;
+                }
 
-                await playerRef.update(updatesWithTimestamp);
+                if (Object.keys(updates).length === 0) {
+                    return true; // Nothing to update
+                }
+
+                await playerRef.update(updates);
+
+                if (this.isDevelopment) {
+                    console.log(`✅ Player status updated:`, updates);
+                }
+
                 return true;
+
             } catch (error) {
                 console.error('❌ Error updating player status:', error);
                 return false;
             }
         }
 
-        async setPlayerOnline(gameId, playerId, online = true) {
-            return this.updatePlayerStatus(gameId, playerId, { isOnline: online });
+        /**
+         * ✅ P1 NEW: Set player ready state
+         */
+        async setPlayerReady(gameId, playerId, isReady = true) {
+            return this.updatePlayerStatus(gameId, playerId, { isReady });
         }
 
-        async setPlayerReady(gameId, playerId, ready = true) {
-            return this.updatePlayerStatus(gameId, playerId, { isReady: ready });
+        /**
+         * ✅ P1 NEW: Set player online state
+         */
+        async setPlayerOnline(gameId, playerId, isOnline = true) {
+            return this.updatePlayerStatus(gameId, playerId, { isOnline });
         }
 
-        async removePlayer(gameId, playerId) {
-            if (!this.isConnected) return false;
+        // ===========================
+        // GAME RESPONSES & ESTIMATES
+        // ===========================
+
+        /**
+         * ✅ P1 NEW: Submit player response (only own)
+         */
+        async submitResponse(gameId, playerId, response) {
+            if (!this.isConnected) {
+                throw new Error('Keine Firebase-Verbindung');
+            }
 
             try {
-                const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
-                await playerRef.remove();
+                // Validate ownership
+                if (playerId !== this.currentPlayerId) {
+                    throw new Error('Can only submit own response');
+                }
+
+                // Validate response (boolean)
+                if (typeof response !== 'boolean') {
+                    throw new Error('Invalid response type');
+                }
+
+                const responseRef = this.database.ref(`games/${gameId}/responses/${playerId}`);
+                await responseRef.set({
+                    value: response,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
 
                 if (this.isDevelopment) {
-                    console.log(`🗑️ Player removed: ${playerId}`);
+                    console.log(`✅ Response submitted: ${response}`);
                 }
+
                 return true;
+
             } catch (error) {
-                console.error('❌ Error removing player:', error);
-                return false;
+                console.error('❌ Error submitting response:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Submit player estimate (only own)
+         */
+        async submitEstimate(gameId, playerId, estimate) {
+            if (!this.isConnected) {
+                throw new Error('Keine Firebase-Verbindung');
+            }
+
+            try {
+                // Validate ownership
+                if (playerId !== this.currentPlayerId) {
+                    throw new Error('Can only submit own estimate');
+                }
+
+                // Validate estimate (number >= 0)
+                const num = parseInt(estimate, 10);
+                if (isNaN(num) || num < 0) {
+                    throw new Error('Invalid estimate');
+                }
+
+                const estimateRef = this.database.ref(`games/${gameId}/estimates/${playerId}`);
+                await estimateRef.set({
+                    value: num,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                if (this.isDevelopment) {
+                    console.log(`✅ Estimate submitted: ${num}`);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error submitting estimate:', error);
+                throw error;
             }
         }
 
         // ===========================
-        // GAME CONTROL
+        // HOST-ONLY OPERATIONS
         // ===========================
 
+        /**
+         * ✅ P1 NEW: Update game phase (HOST ONLY)
+         * DB rules enforce host-only write access
+         */
+        async updateGamePhase(gameId, phase) {
+            if (!this.isConnected) {
+                throw new Error('Keine Firebase-Verbindung');
+            }
+
+            try {
+                const validPhases = ['waiting', 'question', 'answering', 'estimating', 'results', 'finished'];
+                if (!validPhases.includes(phase)) {
+                    throw new Error('Invalid phase');
+                }
+
+                const gameRef = this.database.ref(`games/${gameId}`);
+                await gameRef.update({
+                    phase: phase,
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                if (this.isDevelopment) {
+                    console.log(`✅ Game phase updated: ${phase}`);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error updating game phase:', error);
+
+                // Check for permission denied
+                if (error.code === 'PERMISSION_DENIED') {
+                    if (window.NocapUtils) {
+                        window.NocapUtils.showNotification(
+                            'Nur der Host kann das Spiel steuern',
+                            'error'
+                        );
+                    }
+                }
+
+                throw error;
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Set current question (HOST ONLY)
+         */
+        async setCurrentQuestion(gameId, question) {
+            if (!this.isConnected) {
+                throw new Error('Keine Firebase-Verbindung');
+            }
+
+            try {
+                const gameRef = this.database.ref(`games/${gameId}`);
+                await gameRef.update({
+                    currentQuestion: question,
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                if (this.isDevelopment) {
+                    console.log(`✅ Current question set`);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error setting current question:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Write round results (HOST ONLY)
+         */
+        async writeRoundResult(gameId, roundResult) {
+            if (!this.isConnected) {
+                throw new Error('Keine Firebase-Verbindung');
+            }
+
+            try {
+                const roundResultsRef = this.database.ref(`games/${gameId}/roundResults`);
+                await roundResultsRef.push({
+                    ...roundResult,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                if (this.isDevelopment) {
+                    console.log(`✅ Round result written`);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error writing round result:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Update scores (HOST ONLY)
+         */
+        async updateScores(gameId, scores) {
+            if (!this.isConnected) {
+                throw new Error('Keine Firebase-Verbindung');
+            }
+
+            try {
+                const scoresRef = this.database.ref(`games/${gameId}/scores`);
+                await scoresRef.set(scores);
+
+                const gameRef = this.database.ref(`games/${gameId}/lastUpdate`);
+                await gameRef.set(firebase.database.ServerValue.TIMESTAMP);
+
+                if (this.isDevelopment) {
+                    console.log(`✅ Scores updated`);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error updating scores:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Start game (HOST ONLY)
+         */
         async startGame(gameId) {
             if (!this.isConnected) {
                 throw new Error('Keine Firebase-Verbindung');
@@ -942,12 +996,16 @@
             }
         }
 
+        /**
+         * ✅ P1 NEW: Update game settings (HOST ONLY)
+         */
         async updateGameSettings(gameId, settings) {
             if (!this.isConnected) return false;
 
             try {
+                const sanitized = this._sanitizeGameSettings(settings);
                 const settingsRef = this.database.ref(`games/${gameId}/settings`);
-                await settingsRef.update(settings);
+                await settingsRef.update(sanitized);
 
                 const gameRef = this.database.ref(`games/${gameId}/lastUpdate`);
                 await gameRef.set(firebase.database.ServerValue.TIMESTAMP);
@@ -959,6 +1017,9 @@
             }
         }
 
+        /**
+         * ✅ P1 NEW: Delete game (HOST ONLY)
+         */
         async deleteGame(gameId) {
             if (!this.isConnected) return false;
 
@@ -974,6 +1035,308 @@
                 return true;
             } catch (error) {
                 console.error('❌ Error deleting game:', error);
+                return false;
+            }
+        }
+
+        // ===========================
+        // LISTENERS (READ-ONLY)
+        // ===========================
+
+        /**
+         * ✅ P1 NEW: Listen to game updates
+         */
+        listenToGame(gameId, callback) {
+            if (!this.isConnected) return;
+
+            try {
+                const gameRef = this.database.ref(`games/${gameId}`);
+
+                const listener = (snapshot) => {
+                    const data = snapshot.val();
+                    if (data && typeof callback === 'function') {
+                        callback(data);
+                    }
+                };
+
+                gameRef.on('value', listener);
+                this.listeners.set(`game_${gameId}`, { ref: gameRef, listener });
+
+                if (this.isDevelopment) {
+                    console.log(`👂 Listening to game: ${gameId}`);
+                }
+
+            } catch (error) {
+                console.error('❌ Error setting up game listener:', error);
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Listen to players
+         */
+        listenToPlayers(gameId, callback) {
+            if (!this.isConnected) return;
+
+            try {
+                const playersRef = this.database.ref(`games/${gameId}/players`);
+
+                const listener = (snapshot) => {
+                    const data = snapshot.val();
+                    if (data && typeof callback === 'function') {
+                        callback(data);
+                    }
+                };
+
+                playersRef.on('value', listener);
+                this.listeners.set(`players_${gameId}`, { ref: playersRef, listener });
+
+                if (this.isDevelopment) {
+                    console.log(`👂 Listening to players: ${gameId}`);
+                }
+
+            } catch (error) {
+                console.error('❌ Error setting up players listener:', error);
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Listen to game phase
+         */
+        listenToPhase(gameId, callback) {
+            if (!this.isConnected) return;
+
+            try {
+                const phaseRef = this.database.ref(`games/${gameId}/phase`);
+
+                const listener = (snapshot) => {
+                    const phase = snapshot.val();
+                    if (phase && typeof callback === 'function') {
+                        callback(phase);
+                    }
+                };
+
+                phaseRef.on('value', listener);
+                this.listeners.set(`phase_${gameId}`, { ref: phaseRef, listener });
+
+            } catch (error) {
+                console.error('❌ Error setting up phase listener:', error);
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Listen to responses
+         */
+        listenToResponses(gameId, callback) {
+            if (!this.isConnected) return;
+
+            try {
+                const responsesRef = this.database.ref(`games/${gameId}/responses`);
+
+                const listener = (snapshot) => {
+                    const data = snapshot.val();
+                    if (typeof callback === 'function') {
+                        callback(data || {});
+                    }
+                };
+
+                responsesRef.on('value', listener);
+                this.listeners.set(`responses_${gameId}`, { ref: responsesRef, listener });
+
+            } catch (error) {
+                console.error('❌ Error setting up responses listener:', error);
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Listen to estimates
+         */
+        listenToEstimates(gameId, callback) {
+            if (!this.isConnected) return;
+
+            try {
+                const estimatesRef = this.database.ref(`games/${gameId}/estimates`);
+
+                const listener = (snapshot) => {
+                    const data = snapshot.val();
+                    if (typeof callback === 'function') {
+                        callback(data || {});
+                    }
+                };
+
+                estimatesRef.on('value', listener);
+                this.listeners.set(`estimates_${gameId}`, { ref: estimatesRef, listener });
+
+            } catch (error) {
+                console.error('❌ Error setting up estimates listener:', error);
+            }
+        }
+
+        /**
+         * ✅ P1 NEW: Connect to game with callbacks
+         */
+        async connectToGame(gameId, callbacks = {}) {
+            try {
+                this.gameRef = this.database.ref(`games/${gameId}`);
+                this.currentGameId = gameId;
+
+                // Setup listeners if callbacks provided
+                if (callbacks.onGameUpdate) {
+                    this.listenToGame(gameId, callbacks.onGameUpdate);
+                }
+                if (callbacks.onPlayersUpdate) {
+                    this.listenToPlayers(gameId, callbacks.onPlayersUpdate);
+                }
+                if (callbacks.onPhaseChange) {
+                    this.listenToPhase(gameId, callbacks.onPhaseChange);
+                }
+                if (callbacks.onResponsesUpdate) {
+                    this.listenToResponses(gameId, callbacks.onResponsesUpdate);
+                }
+                if (callbacks.onEstimatesUpdate) {
+                    this.listenToEstimates(gameId, callbacks.onEstimatesUpdate);
+                }
+
+                if (this.isDevelopment) {
+                    console.log(`✅ Connected to game: ${gameId}`);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error connecting to game:', error);
+                throw error;
+            }
+        }
+
+        // ===========================
+        // ID GENERATION
+        // ===========================
+
+        _generateGameId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let id = '';
+            for (let i = 0; i < 6; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+
+        _generatePlayerId() {
+            return 'p_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        }
+
+        async _generateUniqueId(path, maxAttempts = 5) {
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const id = this._generateGameId();
+
+                try {
+                    const snapshot = await this.database.ref(`${path}/${id}`).once('value');
+
+                    if (!snapshot.exists()) {
+                        if (this.isDevelopment) {
+                            console.log(`✅ Unique ID generated: ${id} (attempt ${attempt})`);
+                        }
+                        return id;
+                    }
+
+                    if (this.isDevelopment) {
+                        console.warn(`⚠️ ID collision: ${id} (attempt ${attempt})`);
+                    }
+
+                } catch (error) {
+                    console.error(`❌ Error checking ID: ${id}`, error);
+                }
+
+                if (attempt < maxAttempts) {
+                    await this._delay(100 * attempt);
+                }
+            }
+
+            throw new Error('Could not generate unique ID after ' + maxAttempts + ' attempts');
+        }
+
+        // ===========================
+        // REJOIN LOGIC
+        // ===========================
+
+        _saveRejoinData(gameId, playerId, isHost) {
+            try {
+                const rejoinData = {
+                    gameId: gameId,
+                    playerId: playerId,
+                    isHost: isHost,
+                    savedAt: Date.now()
+                };
+
+                localStorage.setItem('nocap_rejoin', JSON.stringify(rejoinData));
+
+                if (this.isDevelopment) {
+                    console.log('💾 Rejoin data saved');
+                }
+            } catch (error) {
+                console.error('❌ Error saving rejoin data:', error);
+            }
+        }
+
+        clearRejoinData() {
+            try {
+                localStorage.removeItem('nocap_rejoin');
+                this.rejoinAttempted = false;
+
+                if (this.isDevelopment) {
+                    console.log('🗑️ Rejoin data cleared');
+                }
+            } catch (error) {
+                console.error('❌ Error clearing rejoin data:', error);
+            }
+        }
+
+        async attemptRejoin() {
+            if (this.rejoinAttempted) {
+                return false;
+            }
+
+            this.rejoinAttempted = true;
+
+            try {
+                const rejoinData = localStorage.getItem('nocap_rejoin');
+                if (!rejoinData) {
+                    return false;
+                }
+
+                const data = JSON.parse(rejoinData);
+                const age = Date.now() - data.savedAt;
+
+                // Only rejoin if data is less than 24 hours old
+                if (age > 24 * 60 * 60 * 1000) {
+                    this.clearRejoinData();
+                    return false;
+                }
+
+                // Check if game still exists
+                const gameSnap = await this.database.ref(`games/${data.gameId}`).once('value');
+                if (!gameSnap.exists()) {
+                    this.clearRejoinData();
+                    return false;
+                }
+
+                // Restore connection
+                this.currentGameId = data.gameId;
+                this.currentPlayerId = data.playerId;
+                this.gameRef = this.database.ref(`games/${data.gameId}`);
+
+                // Set player online
+                await this.setPlayerOnline(data.gameId, data.playerId, true);
+
+                if (this.isDevelopment) {
+                    console.log(`✅ Rejoined game: ${data.gameId}`);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ Error attempting rejoin:', error);
+                this.clearRejoinData();
                 return false;
             }
         }
@@ -1047,7 +1410,9 @@
                 hasGameRef: !!this.gameRef,
                 listenersCount: this.listeners.size,
                 connectionListenersCount: this.connectionListeners.length,
-                canRejoin: !!(this.currentGameId && this.currentPlayerId)
+                canRejoin: !!(this.currentGameId && this.currentPlayerId),
+                isPremium: this._userMeta.isPremium,
+                ageLevel: this._userMeta.ageLevel
             };
         }
 
@@ -1076,6 +1441,10 @@
                 }
 
                 const result = await this.auth.signInAnonymously();
+
+                // Refresh user meta after sign-in
+                await this.refreshUserMeta();
+
                 return { success: true, user: result.user };
             } catch (error) {
                 console.error('❌ Anonymous sign-in failed:', error);
@@ -1111,7 +1480,7 @@
             window.location.hostname === '127.0.0.1';
 
         if (isDev) {
-            console.log('%c✅ FirebaseGameService v5.0 loaded (Collision Check Fix)',
+            console.log('%c✅ FirebaseGameService v6.0 loaded (Premium & Age Meta)',
                 'color: #FF6F00; font-weight: bold; font-size: 12px');
         }
     }
