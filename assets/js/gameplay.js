@@ -204,15 +204,27 @@ function validateDeviceMode() {
  */
 function validateGameState() {
     if (!gameState.checkValidity()) {
+        console.error('❌ GameState invalid');
         showNotification('Ungültiger Spielzustand', 'error');
         setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
     }
 
     const savedPlayers = gameState.get('players');
+
+    if (isDevelopment) {
+        console.log('🔍 GameState validation:', {
+            players: savedPlayers,
+            playersLength: savedPlayers ? savedPlayers.length : 0,
+            categories: gameState.selectedCategories,
+            difficulty: gameState.difficulty,
+            deviceMode: gameState.deviceMode
+        });
+    }
+
     if (!savedPlayers || savedPlayers.length < 2) {
-        console.error('❌ Not enough players');
-        showNotification('Keine Spieler gefunden!', 'error');
+        console.error('❌ Not enough players:', savedPlayers);
+        showNotification('Keine Spieler gefunden! Zurück zum Setup...', 'error');
         setTimeout(() => window.location.href = 'player-setup.html', 2000);
         return false;
     }
@@ -679,11 +691,12 @@ function updateGameDisplay() {
     const avatarEl = document.getElementById('current-avatar');
     const progressEl = document.getElementById('player-progress');
 
-    if (playerNameEl) {
+    if (playerNameEl && currentPlayerName) {
         // Use textContent
         playerNameEl.textContent = currentPlayerName;
     }
-    if (avatarEl) {
+    if (avatarEl && currentPlayerName) {
+        // ✅ FIX: Prüfe ob currentPlayerName existiert
         avatarEl.textContent = currentPlayerName.charAt(0).toUpperCase();
     }
     if (progressEl) {

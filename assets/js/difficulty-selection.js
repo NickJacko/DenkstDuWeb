@@ -202,6 +202,24 @@
         try {
             alcoholMode = gameState.alcoholMode === true;
 
+            // ✅ AUDIT FIX: Serverseitige FSK18-Validierung für Alkohol-Mode
+            if (alcoholMode) {
+                // Prüfe ob User 18+ ist (aus Custom Claims oder LocalStorage)
+                const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+
+                if (ageLevel < 18) {
+                    console.warn('⚠️ Alcohol mode disabled: User under 18');
+                    alcoholMode = false;
+                    gameState.setAlcoholMode(false);
+
+                    showNotification(
+                        'Alkohol-Modus nur für 18+',
+                        'warning',
+                        3000
+                    );
+                }
+            }
+
             if (isDevelopment) {
                 console.log(`🍺 Alcohol mode: ${alcoholMode}`);
             }
@@ -412,9 +430,9 @@
     // ===========================
 
     /**
-     * ✅ P1 FIX: Route based on device mode
+     * ✅ AUDIT FIX: Route based on device mode & save to database
      */
-    function proceedToNextStep() {
+    async function proceedToNextStep() {
         const difficulty = gameState.difficulty;
 
         if (!difficulty) {
@@ -428,8 +446,38 @@
 
         showLoading();
 
+        // ✅ AUDIT FIX: Save difficulty to database for multiplayer sync
+        const deviceMode = gameState.deviceMode;
+
+        if (deviceMode === 'multi') {
+            try {
+                // Prüfe ob Firebase verfügbar
+                if (typeof firebase !== 'undefined' && firebase.database) {
+                    const gameId = gameState.gameId;
+
+                    if (gameId) {
+                        await firebase.database()
+                            .ref(`games/${gameId}/settings`)
+                            .update({
+                                difficulty: difficulty,
+                                alcoholMode: alcoholMode,
+                                updatedAt: firebase.database.ServerValue.TIMESTAMP
+                            });
+
+                        if (isDevelopment) {
+                            console.log('✅ Difficulty saved to database');
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ Firebase not available, difficulty not synced');
+                }
+            } catch (error) {
+                console.error('❌ Error saving difficulty to database:', error);
+                // Continue anyway - nicht blockierend
+            }
+        }
+
         setTimeout(() => {
-            const deviceMode = gameState.deviceMode;
 
             if (deviceMode === 'single') {
                 window.location.href = 'player-setup.html';

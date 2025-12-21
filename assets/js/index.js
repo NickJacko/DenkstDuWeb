@@ -245,6 +245,7 @@
 
     /**
      * Update Firebase with age verification (async, non-blocking)
+     * ✅ AUDIT FIX: Jetzt mit serverseitiger Cloud Function Validierung
      * @param {number} ageLevel - Age verification level (0 or 18)
      */
     async function updateFirebaseAgeVerification(ageLevel) {
@@ -265,21 +266,53 @@
                 return;
             }
 
-            const { database } = window.FirebaseConfig.getFirebaseInstances();
+            // ✅ AUDIT FIX: Rufe Cloud Function für serverseitige Validierung auf
+            try {
+                const { functions } = window.FirebaseConfig.getFirebaseInstances();
+                const verifyAge = functions.httpsCallable('verifyAge');
 
-            await database.ref(`users/${userId}`).update({
-                ageVerified: true,
-                ageVerificationLevel: ageLevel,
-                lastAgeVerification: firebase.database.ServerValue.TIMESTAMP
-            });
+                const result = await verifyAge({
+                    ageLevel: ageLevel,
+                    consent: true
+                });
 
-            if (isDevelopment) {
-                console.log('✅ Firebase age verification updated');
+                if (result.data && result.data.success) {
+                    if (isDevelopment) {
+                        console.log('✅ Server-side age verification successful:', result.data);
+                    }
+
+                    // Zeige Success-Nachricht
+                    if (window.NocapUtils && window.NocapUtils.showNotification) {
+                        window.NocapUtils.showNotification(
+                            '✓ Altersverifikation gespeichert',
+                            'success',
+                            2000
+                        );
+                    }
+                } else {
+                    throw new Error('Server verification failed');
+                }
+
+            } catch (cloudFunctionError) {
+                console.warn('⚠️ Cloud Function not available, using fallback:', cloudFunctionError);
+
+                // Fallback: Lokale Database-Update (weniger sicher, aber besser als nichts)
+                const { database } = window.FirebaseConfig.getFirebaseInstances();
+                await database.ref(`users/${userId}`).update({
+                    ageVerified: true,
+                    ageVerificationLevel: ageLevel,
+                    lastAgeVerification: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                if (isDevelopment) {
+                    console.log('✅ Firebase age verification updated (fallback mode)');
+                }
             }
 
         } catch (error) {
             console.warn('⚠️ Could not update age verification in DB:', error);
             // Non-fatal - continue without DB update
+            // LocalStorage bleibt als UX-Feature bestehen
         }
     }
 
@@ -495,13 +528,8 @@
             return;
         }
 
-        // Check privacy consent
-        if (window.NocapPrivacy && !window.NocapPrivacy.hasPrivacyConsent()) {
-            if (window.NocapPrivacy.showPrivacyConsent) {
-                window.NocapPrivacy.showPrivacyConsent();
-            }
-            return;
-        }
+        // ✅ FIX: Privacy-Check entfernt - Cookie-Banner setzt Consent automatisch
+        // Alte Privacy-Check-Logik ist deaktiviert, Cookie-Banner übernimmt
 
         try {
             // ONLY flag as host - device mode is set on multiplayer-category-selection.html
@@ -542,13 +570,7 @@
             return;
         }
 
-        // Check privacy consent
-        if (window.NocapPrivacy && !window.NocapPrivacy.hasPrivacyConsent()) {
-            if (window.NocapPrivacy.showPrivacyConsent) {
-                window.NocapPrivacy.showPrivacyConsent();
-            }
-            return;
-        }
+        // ✅ FIX: Privacy-Check entfernt - Cookie-Banner setzt Consent automatisch
 
         try {
             // ONLY flag as guest - device mode is set on join-game.html
@@ -581,381 +603,391 @@
         }
     }
 
-    // ===================================
-    // 🎬 ANIMATION HELPERS
-    // ===================================
+        // ===================================
+        // 🎬 ANIMATION HELPERS
+        // ===================================
 
-    /**
-     * ✅ AUDIT FIX: Animate mode cards via CSS classes (respects prefers-reduced-motion)
-     */
-    function animateCards() {
-        // Check for reduced motion preference
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        /**
+         * ✅ AUDIT FIX: Animate mode cards via CSS classes (respects prefers-reduced-motion)
+         */
+        function animateCards() {
+            // Check for reduced motion preference
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        if (prefersReducedMotion) {
-            if (isDevelopment) {
-                console.log('ℹ️ Animations disabled (prefers-reduced-motion)');
-            }
-            // Make cards visible immediately if animation is disabled
-            const cards = document.querySelectorAll('.mode-card');
-            cards.forEach(card => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            });
-            return;
-        }
-
-        setTimeout(() => {
-            const cards = document.querySelectorAll('.mode-card');
-
-            cards.forEach((card, index) => {
-                // Add will-animate class first to enable animation
-                card.classList.add('will-animate');
-                setTimeout(() => {
-                    card.classList.add('card-animate-in');
-                }, index * 150);
-            });
-        }, 300);
-    }
-
-    /**
-     * Smooth scroll to section with accessibility support
-     * @param {string} target - CSS selector for target element
-     */
-    function smoothScrollTo(target) {
-        const element = document.querySelector(target);
-        if (!element) {
-            return;
-        }
-
-        // Check for reduced motion preference
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        element.scrollIntoView({
-            behavior: prefersReducedMotion ? 'auto' : 'smooth',
-            block: 'start'
-        });
-
-        // Focus target for keyboard users
-        if (element.hasAttribute('tabindex') || element.tagName === 'A' || element.tagName === 'BUTTON') {
-            element.focus();
-        }
-    }
-
-    // ===================================
-    // 🔗 URL PARAMETER HANDLING
-    // ===================================
-
-    /**
-     * Handle direct game join via URL parameter with proper sanitization
-     */
-    function handleDirectJoin() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const gameId = urlParams.get('gameId');
-
-        if (!gameId) {
-            return;
-        }
-
-        // Validate and sanitize gameId
-        const validation = window.NocapUtils
-            ? window.NocapUtils.validateGameId(gameId)
-            : { valid: /^[A-Z0-9]{6}$/i.test(gameId), gameId: gameId.toUpperCase().substring(0, 6) };
-
-        if (!validation.valid) {
-            console.warn('⚠️ Invalid gameId format:', gameId);
-
-            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                window.NocapUtils.showNotification('Ungültiger Spiel-Code', 'error');
-            }
-            return;
-        }
-
-        const sanitizedGameId = DOMPurify.sanitize(validation.gameId);
-
-        // Clear any existing interval
-        if (directJoinInterval) {
-            clearInterval(directJoinInterval);
-        }
-
-        // Wait for age verification
-        let attempts = 0;
-        const maxAttempts = 100; // 10 seconds
-
-        directJoinInterval = setInterval(() => {
-            attempts++;
-
-            if (ageVerified) {
-                clearInterval(directJoinInterval);
-                directJoinInterval = null;
-
-                // Use encodeURIComponent for safe URL parameter
-                window.location.href = `join-game.html?gameId=${encodeURIComponent(sanitizedGameId)}`;
-            }
-
-            // Timeout after 10 seconds
-            if (attempts >= maxAttempts) {
-                clearInterval(directJoinInterval);
-                directJoinInterval = null;
-
-                if (!ageVerified && window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        'Altersverifikation erforderlich zum Beitreten',
-                        'warning'
-                    );
+            if (prefersReducedMotion) {
+                if (isDevelopment) {
+                    console.log('ℹ️ Animations disabled (prefers-reduced-motion)');
                 }
+                // Make cards visible immediately if animation is disabled
+                const cards = document.querySelectorAll('.mode-card');
+                cards.forEach(card => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                });
+                return;
             }
-        }, 100);
-    }
 
-    // ===================================
-    // 🎯 EVENT LISTENERS
-    // ===================================
+            setTimeout(() => {
+                const cards = document.querySelectorAll('.mode-card');
 
-    /**
-     * Register event listener with cleanup tracking
-     * @param {Element} element - DOM element
-     * @param {string} event - Event type
-     * @param {Function} handler - Event handler
-     * @param {Object} options - Event options
-     */
-    function addTrackedEventListener(element, event, handler, options = {}) {
-        if (!element) return;
-
-        element.addEventListener(event, handler, options);
-        eventListenerCleanup.push({ element, event, handler, options });
-    }
-
-    /**
-     * Setup all event listeners with proper cleanup tracking
-     */
-    function setupEventListeners() {
-        // Age checkbox
-        const ageCheckbox = document.getElementById('age-checkbox');
-        const btn18Plus = document.getElementById('btn-18plus');
-
-        if (ageCheckbox && btn18Plus) {
-            addTrackedEventListener(ageCheckbox, 'change', function() {
-                const isChecked = this.checked;
-                btn18Plus.disabled = !isChecked;
-                btn18Plus.setAttribute('aria-disabled', !isChecked);
-
-                if (isChecked) {
-                    btn18Plus.classList.add('enabled');
-                } else {
-                    btn18Plus.classList.remove('enabled');
-                }
-            });
+                cards.forEach((card, index) => {
+                    // Add will-animate class first to enable animation
+                    card.classList.add('will-animate');
+                    setTimeout(() => {
+                        card.classList.add('card-animate-in');
+                    }, index * 150);
+                });
+            }, 300);
         }
 
-        // 18+ button
-        if (btn18Plus) {
-            addTrackedEventListener(btn18Plus, 'click', function() {
-                const checkbox = document.getElementById('age-checkbox');
-                if (checkbox && checkbox.checked) {
-                    saveVerification(true, true);
+        /**
+         * Smooth scroll to section with accessibility support
+         * @param {string} target - CSS selector for target element
+         */
+        function smoothScrollTo(target) {
+            const element = document.querySelector(target);
+            if (!element) {
+                return;
+            }
+
+            // Check for reduced motion preference
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            element.scrollIntoView({
+                behavior: prefersReducedMotion ? 'auto' : 'smooth',
+                block: 'start'
+            });
+
+            // Focus target for keyboard users
+            if (element.hasAttribute('tabindex') || element.tagName === 'A' || element.tagName === 'BUTTON') {
+                element.focus();
+            }
+        }
+
+        // ===================================
+        // 🔗 URL PARAMETER HANDLING
+        // ===================================
+
+        /**
+         * Handle direct game join via URL parameter with proper sanitization
+         */
+        function handleDirectJoin() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('gameId');
+
+            if (!gameId) {
+                return;
+            }
+
+            // Validate and sanitize gameId
+            const validation = window.NocapUtils
+                ? window.NocapUtils.validateGameId(gameId)
+                : {valid: /^[A-Z0-9]{6}$/i.test(gameId), gameId: gameId.toUpperCase().substring(0, 6)};
+
+            if (!validation.valid) {
+                console.warn('⚠️ Invalid gameId format:', gameId);
+
+                if (window.NocapUtils && window.NocapUtils.showNotification) {
+                    window.NocapUtils.showNotification('Ungültiger Spiel-Code', 'error');
+                }
+                return;
+            }
+
+            const sanitizedGameId = DOMPurify.sanitize(validation.gameId);
+
+            // Clear any existing interval
+            if (directJoinInterval) {
+                clearInterval(directJoinInterval);
+            }
+
+            // Wait for age verification
+            let attempts = 0;
+            const maxAttempts = 100; // 10 seconds
+
+            directJoinInterval = setInterval(() => {
+                attempts++;
+
+                if (ageVerified) {
+                    clearInterval(directJoinInterval);
+                    directJoinInterval = null;
+
+                    // Use encodeURIComponent for safe URL parameter
+                    window.location.href = `join-game.html?gameId=${encodeURIComponent(sanitizedGameId)}`;
+                }
+
+                // Timeout after 10 seconds
+                if (attempts >= maxAttempts) {
+                    clearInterval(directJoinInterval);
+                    directJoinInterval = null;
+
+                    if (!ageVerified && window.NocapUtils && window.NocapUtils.showNotification) {
+                        window.NocapUtils.showNotification(
+                            'Altersverifikation erforderlich zum Beitreten',
+                            'warning'
+                        );
+                    }
+                }
+            }, 100);
+        }
+
+        // ===================================
+        // 🎯 EVENT LISTENERS
+        // ===================================
+
+        /**
+         * Register event listener with cleanup tracking
+         * @param {Element} element - DOM element
+         * @param {string} event - Event type
+         * @param {Function} handler - Event handler
+         * @param {Object} options - Event options
+         */
+        function addTrackedEventListener(element, event, handler, options = {}) {
+            if (!element) return;
+
+            element.addEventListener(event, handler, options);
+            eventListenerCleanup.push({element, event, handler, options});
+        }
+
+        /**
+         * Setup all event listeners with proper cleanup tracking
+         */
+        function setupEventListeners() {
+            // ✅ AUDIT FIX: ESC-Taste schließt Age-Modal (falls bereits verifiziert)
+            const ageModal = document.getElementById('age-modal');
+            if (ageModal) {
+                addTrackedEventListener(ageModal, 'modal-close', function () {
+                    // Nur schließen, wenn bereits verifiziert
+                    if (ageVerified) {
+                        hideAgeModal();
+                    }
+                });
+            }
+
+            // Age checkbox
+            const ageCheckbox = document.getElementById('age-checkbox');
+            const btn18Plus = document.getElementById('btn-18plus');
+
+            if (ageCheckbox && btn18Plus) {
+                addTrackedEventListener(ageCheckbox, 'change', function () {
+                    const isChecked = this.checked;
+                    btn18Plus.disabled = !isChecked;
+                    btn18Plus.setAttribute('aria-disabled', !isChecked);
+
+                    if (isChecked) {
+                        btn18Plus.classList.add('enabled');
+                    } else {
+                        btn18Plus.classList.remove('enabled');
+                    }
+                });
+            }
+
+            // 18+ button
+            if (btn18Plus) {
+                addTrackedEventListener(btn18Plus, 'click', function () {
+                    const checkbox = document.getElementById('age-checkbox');
+                    if (checkbox && checkbox.checked) {
+                        saveVerification(true, true);
+                        updateUIForVerification();
+                        hideAgeModal();
+                        animateCards();
+
+                        if (window.NocapUtils && window.NocapUtils.showNotification) {
+                            window.NocapUtils.showNotification(
+                                'Spiel mit allen Inhalten verfügbar',
+                                'success',
+                                2000
+                            );
+                        }
+                    }
+                });
+            }
+
+            // Under 18 button
+            const btnUnder18 = document.getElementById('btn-under-18');
+            if (btnUnder18) {
+                addTrackedEventListener(btnUnder18, 'click', function () {
+                    saveVerification(false, false);
                     updateUIForVerification();
                     hideAgeModal();
                     animateCards();
 
                     if (window.NocapUtils && window.NocapUtils.showNotification) {
                         window.NocapUtils.showNotification(
-                            'Spiel mit allen Inhalten verfügbar',
-                            'success',
+                            'Jugendschutz-Modus aktiviert',
+                            'info',
                             2000
                         );
                     }
-                }
-            });
-        }
-
-        // Under 18 button
-        const btnUnder18 = document.getElementById('btn-under-18');
-        if (btnUnder18) {
-            addTrackedEventListener(btnUnder18, 'click', function() {
-                saveVerification(false, false);
-                updateUIForVerification();
-                hideAgeModal();
-                animateCards();
-
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        'Jugendschutz-Modus aktiviert',
-                        'info',
-                        2000
-                    );
-                }
-            });
-        }
-
-        // Game mode buttons
-        const btnSingle = document.getElementById('btn-single');
-        if (btnSingle) {
-            addTrackedEventListener(btnSingle, 'click', startSingleDevice);
-        }
-
-        const btnMulti = document.getElementById('btn-multi');
-        if (btnMulti) {
-            addTrackedEventListener(btnMulti, 'click', startMultiplayer);
-        }
-
-        const btnJoin = document.getElementById('btn-join');
-        if (btnJoin) {
-            addTrackedEventListener(btnJoin, 'click', joinGame);
-        }
-
-        // Scroll indicator (Button - no need for click handler on div)
-        const scrollIndicator = document.getElementById('scroll-indicator');
-        if (scrollIndicator) {
-            addTrackedEventListener(scrollIndicator, 'click', function() {
-                smoothScrollTo('.game-modes');
-            });
-        }
-
-        if (isDevelopment) {
-            console.log(`✅ ${eventListenerCleanup.length} event listeners registered`);
-        }
-    }
-
-    // ===================================
-    // 🧹 CLEANUP
-    // ===================================
-
-    /**
-     * Cleanup all resources on page unload
-     */
-    function cleanup() {
-        // Clear intervals
-        if (directJoinInterval) {
-            clearInterval(directJoinInterval);
-            directJoinInterval = null;
-        }
-
-        // Remove all tracked event listeners
-        eventListenerCleanup.forEach(({ element, event, handler, options }) => {
-            try {
-                element.removeEventListener(event, handler, options);
-            } catch (error) {
-                // Element may have been removed from DOM
-            }
-        });
-        eventListenerCleanup = [];
-
-        // Cleanup utils
-        if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
-            window.NocapUtils.cleanupEventListeners();
-        }
-
-        // Cleanup modal focus trap
-        const modal = document.getElementById('age-modal');
-        if (modal && modal._focusTrapCleanup) {
-            modal._focusTrapCleanup();
-            modal._focusTrapCleanup = null;
-        }
-
-        if (isDevelopment) {
-            console.log('✅ Index page cleanup completed');
-        }
-    }
-
-    addTrackedEventListener(window, 'beforeunload', cleanup);
-
-    // ===================================
-    // 🚀 INITIALIZATION
-    // ===================================
-
-    /**
-     * Main initialization function with dependency checks
-     */
-    async function initialize() {
-        try {
-            // ✅ P0 FIX: Check DOMPurify with friendly error
-            if (!checkDOMPurify()) {
-                return; // Stop execution, error modal shown
+                });
             }
 
-            // Wait for GameState
-            if (typeof GameState === 'undefined') {
-                console.error('❌ GameState class not found!');
-
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        'Fehler beim Laden der Spieldaten',
-                        'error'
-                    );
-                }
-                return;
+            // Game mode buttons
+            const btnSingle = document.getElementById('btn-single');
+            if (btnSingle) {
+                addTrackedEventListener(btnSingle, 'click', startSingleDevice);
             }
 
-            // Initialize GameState FIRST
-            try {
-                gameState = new GameState();
-
-                if (isDevelopment) {
-                    console.log('✅ GameState initialized');
-                }
-            } catch (error) {
-                console.error('❌ GameState initialization failed:', error);
-
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        'Fehler beim Laden der Spieldaten',
-                        'error'
-                    );
-                }
-                return;
+            const btnMulti = document.getElementById('btn-multi');
+            if (btnMulti) {
+                addTrackedEventListener(btnMulti, 'click', startMultiplayer);
             }
 
-            // Check for existing age verification
-            if (loadVerification()) {
-                updateUIForVerification();
-                hideAgeModal();
-                animateCards();
-
-                if (isDevelopment) {
-                    console.log('✅ Age verification restored from storage');
-                }
-            } else {
-                showAgeModal();
+            const btnJoin = document.getElementById('btn-join');
+            if (btnJoin) {
+                addTrackedEventListener(btnJoin, 'click', joinGame);
             }
 
-            // Setup event listeners
-            setupEventListeners();
-
-            // Initialize Firebase (async, non-blocking)
-            initializeFirebase().catch(error => {
-                console.warn('⚠️ Firebase initialization error:', error);
-                // Non-fatal - single-device mode still works
-            });
-
-            // Handle direct game join via URL
-            handleDirectJoin();
+            // Scroll indicator (Button - no need for click handler on div)
+            const scrollIndicator = document.getElementById('scroll-indicator');
+            if (scrollIndicator) {
+                addTrackedEventListener(scrollIndicator, 'click', function () {
+                    smoothScrollTo('.game-modes');
+                });
+            }
 
             if (isDevelopment) {
-                console.log('%c✅ Index page initialized',
-                    'color: #4CAF50; font-weight: bold; font-size: 12px');
-            }
-
-        } catch (error) {
-            console.error('❌ Initialization error:', error);
-
-            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                window.NocapUtils.showNotification(
-                    'Fehler beim Laden der Seite',
-                    'error'
-                );
+                console.log(`✅ ${eventListenerCleanup.length} event listeners registered`);
             }
         }
-    }
 
-    // ===================================
-    // 🎬 DOM READY
-    // ===================================
+        // ===================================
+        // 🧹 CLEANUP
+        // ===================================
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
-    } else {
-        initialize();
-    }
+        /**
+         * Cleanup all resources on page unload
+         */
+        function cleanup() {
+            // Clear intervals
+            if (directJoinInterval) {
+                clearInterval(directJoinInterval);
+                directJoinInterval = null;
+            }
 
+            // Remove all tracked event listeners
+            eventListenerCleanup.forEach(({element, event, handler, options}) => {
+                try {
+                    element.removeEventListener(event, handler, options);
+                } catch (error) {
+                    // Element may have been removed from DOM
+                }
+            });
+            eventListenerCleanup = [];
+
+            // Cleanup utils
+            if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
+                window.NocapUtils.cleanupEventListeners();
+            }
+
+            // Cleanup modal focus trap
+            const modal = document.getElementById('age-modal');
+            if (modal && modal._focusTrapCleanup) {
+                modal._focusTrapCleanup();
+                modal._focusTrapCleanup = null;
+            }
+
+            if (isDevelopment) {
+                console.log('✅ Index page cleanup completed');
+            }
+        }
+
+        addTrackedEventListener(window, 'beforeunload', cleanup);
+
+        // ===================================
+        // 🚀 INITIALIZATION
+        // ===================================
+
+        /**
+         * Main initialization function with dependency checks
+         */
+        async function initialize() {
+            try {
+                // ✅ P0 FIX: Check DOMPurify with friendly error
+                if (!checkDOMPurify()) {
+                    return; // Stop execution, error modal shown
+                }
+
+                // Wait for GameState
+                if (typeof GameState === 'undefined') {
+                    console.error('❌ GameState class not found!');
+
+                    if (window.NocapUtils && window.NocapUtils.showNotification) {
+                        window.NocapUtils.showNotification(
+                            'Fehler beim Laden der Spieldaten',
+                            'error'
+                        );
+                    }
+                    return;
+                }
+
+                // Initialize GameState FIRST
+                try {
+                    gameState = new GameState();
+
+                    if (isDevelopment) {
+                        console.log('✅ GameState initialized');
+                    }
+                } catch (error) {
+                    console.error('❌ GameState initialization failed:', error);
+
+                    if (window.NocapUtils && window.NocapUtils.showNotification) {
+                        window.NocapUtils.showNotification(
+                            'Fehler beim Laden der Spieldaten',
+                            'error'
+                        );
+                    }
+                    return;
+                }
+
+                // Check for existing age verification
+                if (loadVerification()) {
+                    updateUIForVerification();
+                    hideAgeModal();
+                    animateCards();
+
+                    if (isDevelopment) {
+                        console.log('✅ Age verification restored from storage');
+                    }
+                } else {
+                    showAgeModal();
+                }
+
+                // Setup event listeners
+                setupEventListeners();
+
+                // Initialize Firebase (async, non-blocking)
+                initializeFirebase().catch(error => {
+                    console.warn('⚠️ Firebase initialization error:', error);
+                    // Non-fatal - single-device mode still works
+                });
+
+                // Handle direct game join via URL
+                handleDirectJoin();
+
+                if (isDevelopment) {
+                    console.log('%c✅ Index page initialized',
+                        'color: #4CAF50; font-weight: bold; font-size: 12px');
+                }
+
+            } catch (error) {
+                console.error('❌ Initialization error:', error);
+
+                if (window.NocapUtils && window.NocapUtils.showNotification) {
+                    window.NocapUtils.showNotification(
+                        'Fehler beim Laden der Seite',
+                        'error'
+                    );
+                }
+            }
+        }
+
+        // ===================================
+        // 🎬 DOM READY
+        // ===================================
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            initialize();
+        }
 })(window);

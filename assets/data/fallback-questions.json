@@ -1,0 +1,60 @@
+{
+  "fsk0": [
+    {
+      "id": "fallback_fsk0_1",
+      "question": "Wie viele Fenster hat das Wohnzimmer?",
+      "category": "Familie & Freunde",
+      "difficulty": "easy",
+      "type": "estimation"
+    },
+    {
+      "id": "fallback_fsk0_2",
+      "question": "Wie viele Stühle stehen am Esstisch?",
+      "category": "Familie & Freunde",
+      "difficulty": "easy",
+      "type": "estimation"
+    },
+    {
+      "id": "fallback_fsk0_3",
+      "question": "Wie viele Bücher stehen im Regal?",
+      "category": "Familie & Freunde",
+      "difficulty": "medium",
+      "type": "estimation"
+    }
+  ],
+  "fsk16": [
+    {
+      "id": "fallback_fsk16_1",
+      "question": "Wie viele Biere sind noch im Kühlschrank?",
+      "category": "Party Time",
+      "difficulty": "easy",
+      "type": "estimation"
+    },
+    {
+      "id": "fallback_fsk16_2",
+      "question": "Wie viele Leute sind auf der Party?",
+      "category": "Party Time",
+      "difficulty": "medium",
+      "type": "estimation"
+    }
+  ],
+  "fsk18": [
+    {
+      "id": "fallback_fsk18_1",
+      "question": "Wie viele Dates hattest du dieses Jahr?",
+      "category": "Heiß & Gewagt",
+      "difficulty": "medium",
+      "type": "estimation"
+    }
+  ],
+  "special": [
+    {
+      "id": "fallback_special_1",
+      "question": "Wie viele Premium-Features nutzt du?",
+      "category": "Special Edition",
+      "difficulty": "easy",
+      "type": "estimation"
+    }
+  ]
+}
+

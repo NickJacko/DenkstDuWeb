@@ -1432,6 +1432,149 @@ body {
 }
 
 /* ===================================
+   🎴 CARD SYSTEM - Einheitliche Karten-Komponente
+   ✅ AUDIT FIX: Globale Card-Klasse für konsistentes Design
+   =================================== */
+
+.card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur-lg));
+    border-radius: var(--radius-lg);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    padding: var(--spacing-lg);
+    transition: transform var(--transition-base),
+                box-shadow var(--transition-base),
+                border-color var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.card:active {
+    transform: translateY(-2px);
+}
+
+/* Card Variants */
+.card.premium {
+    border: 2px solid var(--color-premium, #FFD700);
+    background: linear-gradient(135deg,
+        rgba(255, 215, 0, 0.1) 0%,
+        rgba(255, 215, 0, 0.05) 100%
+    );
+}
+
+.card.premium::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+}
+
+.card.locked {
+    opacity: 0.6;
+    pointer-events: none;
+    filter: grayscale(50%);
+    cursor: not-allowed;
+}
+
+.card.selected {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg,
+        rgba(102, 126, 234, 0.2) 0%,
+        rgba(118, 75, 162, 0.15) 100%
+    );
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Card Components */
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.card-title {
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-bold);
+    margin: 0;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.card-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 5px;
+}
+
+.card-body {
+    margin-bottom: var(--spacing-md);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Card Badges */
+.card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: var(--font-weight-medium);
+    margin-top: 10px;
+}
+
+.card-badge.premium {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: #000;
+    font-weight: var(--font-weight-bold);
+}
+
+.card-badge.locked {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff6b6b;
+}
+
+.card-badge.fsk16 {
+    background: var(--color-warning);
+    color: #000;
+}
+
+.card-badge.fsk18 {
+    background: var(--color-danger);
+    color: #fff;
+}
+
+/* Accessibility */
+.card:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ===================================
    📱 RESPONSIVE DESIGN
    =================================== */
 

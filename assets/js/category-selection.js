@@ -331,6 +331,20 @@
                 await window.FirebaseService.waitForFirebase();
             }
 
+            // ✅ FIX: Ensure user is authenticated (anonymous auth if needed)
+            if (firebase.auth && !firebase.auth().currentUser) {
+                try {
+                    await firebase.auth().signInAnonymously();
+                    if (isDevelopment) {
+                        console.log('✅ Signed in anonymously for question counts');
+                    }
+                } catch (authError) {
+                    console.warn('⚠️ Anonymous auth failed, using fallback counts:', authError);
+                    useFallbackCounts();
+                    return;
+                }
+            }
+
             const questionsRef = firebase.database().ref('questions');
             const snapshot = await questionsRef.once('value');
 
@@ -676,7 +690,10 @@
         // Premium unlock button
         const unlockSpecialBtn = document.getElementById('unlock-special-btn');
         if (unlockSpecialBtn) {
-            unlockSpecialBtn.addEventListener('click', showPremiumInfo);
+            unlockSpecialBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // Verhindert, dass Click an Card weitergegeben wird
+                showPremiumInfo();
+            });
         }
 
         // Premium modal
@@ -707,7 +724,7 @@
     // NAVIGATION
     // ===========================
 
-    function proceedWithCategories() {
+    async function proceedWithCategories() {
         const selectedCategories = gameState.selectedCategories || [];
 
         if (selectedCategories.length === 0) {
@@ -721,9 +738,101 @@
 
         showLoading();
 
-        setTimeout(() => {
-            window.location.href = 'difficulty-selection.html';
-        }, 500);
+        // ✅ AUDIT FIX: Serverseitige Validierung aller ausgewählten Kategorien
+        try {
+            // Prüfe Firebase & Auth
+            if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
+                if (isDevelopment) {
+                    console.log('⚠️ Firebase not initialized, skipping server validation');
+                }
+                // Fallback: Weiter ohne Validierung (nur für Development)
+                setTimeout(() => {
+                    window.location.href = 'difficulty-selection.html';
+                }, 500);
+                return;
+            }
+
+            const instances = window.FirebaseConfig.getFirebaseInstances();
+
+            // Prüfe ob Functions verfügbar (benötigt Blaze-Plan)
+            if (!instances || !instances.functions) {
+                if (isDevelopment) {
+                    console.log('⚠️ Firebase Functions not available (Blaze plan required), skipping server validation');
+                }
+                // Fallback: Weiter ohne serverseitige Validierung
+                setTimeout(() => {
+                    window.location.href = 'difficulty-selection.html';
+                }, 500);
+                return;
+            }
+
+            const { functions } = instances;
+            const checkAccess = functions.httpsCallable('checkCategoryAccess');
+
+            // Validiere jede Kategorie serverseitig
+            for (const categoryId of selectedCategories) {
+                try {
+                    const result = await checkAccess({ categoryId });
+
+                    if (!result.data || !result.data.allowed) {
+                        hideLoading();
+                        showNotification(`Zugriff auf ${categoryData[categoryId]?.name || categoryId} verweigert`, 'error');
+                        // Entferne die Kategorie
+                        gameState.removeCategory(categoryId);
+                        const card = document.querySelector(`[data-category="${categoryId}"]`);
+                        if (card) {
+                            card.classList.remove('selected');
+                            card.setAttribute('aria-pressed', 'false');
+                        }
+                        return;
+                    }
+
+                    if (isDevelopment) {
+                        console.log(`✅ Server validated access to ${categoryId}`);
+                    }
+
+                } catch (error) {
+                    hideLoading();
+
+                    if (error.code === 'permission-denied') {
+                        const data = categoryData[categoryId];
+                        if (data?.requiresPremium) {
+                            showPremiumInfo();
+                        } else {
+                            showNotification(
+                                `Keine Berechtigung für ${data?.name || categoryId}. Bitte Altersverifikation prüfen.`,
+                                'error'
+                            );
+                        }
+                        gameState.removeCategory(categoryId);
+                        return;
+                    }
+
+                    if (error.code === 'unauthenticated') {
+                        showNotification('Bitte melde dich an, um fortzufahren', 'error');
+                        return;
+                    }
+
+                    console.error(`❌ Server validation failed for ${categoryId}:`, error);
+                    showNotification('Fehler bei der Validierung. Bitte versuche es erneut.', 'error');
+                    return;
+                }
+            }
+
+            // Alle Kategorien erfolgreich validiert
+            if (isDevelopment) {
+                console.log('✅ All categories validated successfully');
+            }
+
+            setTimeout(() => {
+                window.location.href = 'difficulty-selection.html';
+            }, 500);
+
+        } catch (error) {
+            hideLoading();
+            console.error('❌ Category validation error:', error);
+            showNotification('Fehler beim Fortfahren. Bitte versuche es erneut.', 'error');
+        }
     }
 
     function goBack() {

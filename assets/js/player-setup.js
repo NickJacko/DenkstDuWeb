@@ -523,6 +523,10 @@
                 item.setAttribute('role', 'listitem');
                 item.setAttribute('aria-label', `Spieler ${index + 1}: ${name}`);
 
+                // ✅ AUDIT FIX: Keyboard accessibility
+                item.setAttribute('tabindex', '0');
+                item.setAttribute('aria-grabbed', 'false');
+
                 const numberDiv = document.createElement('div');
                 numberDiv.className = 'player-order-number';
                 numberDiv.textContent = index + 1;
@@ -557,12 +561,74 @@
         const items = document.querySelectorAll('.player-order-item');
 
         items.forEach(item => {
+            // Drag & Drop
             item.addEventListener('dragstart', handleDragStart);
             item.addEventListener('dragend', handleDragEnd);
             item.addEventListener('dragover', handleDragOver);
             item.addEventListener('drop', handleDrop);
             item.addEventListener('dragleave', handleDragLeave);
+
+            // ✅ AUDIT FIX: Keyboard navigation for reordering
+            item.addEventListener('keydown', handleKeyboardReorder);
         });
+    }
+
+    /**
+     * ✅ AUDIT FIX: Keyboard navigation for player order
+     * Arrow Up/Down to move players in the list
+     */
+    function handleKeyboardReorder(e) {
+        const index = parseInt(this.dataset.index);
+        const players = getPlayersList();
+
+        let moved = false;
+
+        if (e.key === 'ArrowUp' && index > 0) {
+            // Move player up
+            e.preventDefault();
+            const [movedPlayer] = players.splice(index, 1);
+            players.splice(index - 1, 0, movedPlayer);
+            moved = true;
+
+            if (isDevelopment) {
+                console.log(`⬆️ Moved player ${index + 1} up`);
+            }
+        } else if (e.key === 'ArrowDown' && index < players.length - 1) {
+            // Move player down
+            e.preventDefault();
+            const [movedPlayer] = players.splice(index, 1);
+            players.splice(index + 1, 0, movedPlayer);
+            moved = true;
+
+            if (isDevelopment) {
+                console.log(`⬇️ Moved player ${index + 1} down`);
+            }
+        }
+
+        if (moved) {
+            // Update inputs to match new order
+            const inputs = document.querySelectorAll('.player-input');
+            players.forEach((name, idx) => {
+                if (inputs[idx]) {
+                    inputs[idx].value = name;
+                }
+            });
+
+            // Update GameState and UI
+            updatePlayersFromInputs();
+            updateUI();
+
+            // Restore focus to the moved item
+            setTimeout(() => {
+                const items = document.querySelectorAll('.player-order-item');
+                const newIndex = e.key === 'ArrowUp' ? index - 1 : index + 1;
+                if (items[newIndex]) {
+                    items[newIndex].focus();
+                }
+            }, 100);
+
+            showNotification('Reihenfolge geändert', 'success', 1500);
+        }
     }
 
     function handleDragStart(e) {
@@ -570,12 +636,24 @@
         this.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', this.dataset.index);
+
+        // ✅ AUDIT FIX: Accessibility attributes
+        this.setAttribute('aria-grabbed', 'true');
+
+        if (isDevelopment) {
+            console.log(`🎯 Started dragging player ${parseInt(this.dataset.index) + 1}`);
+        }
     }
 
     function handleDragEnd() {
         this.classList.remove('dragging');
+
+        // ✅ AUDIT FIX: Reset aria-grabbed
+        this.setAttribute('aria-grabbed', 'false');
+
         document.querySelectorAll('.player-order-item').forEach(item => {
             item.classList.remove('drag-over');
+            item.removeAttribute('aria-dropeffect'); // Clean up
         });
     }
 
@@ -587,6 +665,9 @@
 
         if (this !== draggedItem) {
             this.classList.add('drag-over');
+
+            // ✅ AUDIT FIX: Accessibility dropeffect
+            this.setAttribute('aria-dropeffect', 'move');
         }
 
         return false;
@@ -594,6 +675,9 @@
 
     function handleDragLeave() {
         this.classList.remove('drag-over');
+
+        // ✅ AUDIT FIX: Clean up aria-dropeffect
+        this.removeAttribute('aria-dropeffect');
     }
 
     function handleDrop(e) {
@@ -713,6 +797,33 @@
     // ===========================
     // VALIDATION
     // ===========================
+
+    /**
+     * ✅ AUDIT FIX: Sanitize player names with DOMPurify
+     * Removes HTML tags, limits length, and strips dangerous characters
+     */
+    function sanitizePlayerName(name) {
+        if (!name) return '';
+
+        // Use DOMPurify to strip HTML tags
+        let sanitized = DOMPurify.sanitize(name, {
+            ALLOWED_TAGS: [], // No HTML tags allowed
+            KEEP_CONTENT: true // Keep text content
+        });
+
+        // Remove any remaining special characters that could cause issues
+        sanitized = sanitized
+            .replace(/<[^>]*>/g, '') // Extra protection: strip any remaining tags
+            .replace(/[<>'"]/g, '') // Remove quotes and angle brackets
+            .trim();
+
+        // Limit length (max 20 characters as per audit recommendation)
+        if (sanitized.length > 20) {
+            sanitized = sanitized.substring(0, 20);
+        }
+
+        return sanitized;
+    }
 
     function getNextEmptyInput() {
         const inputs = document.querySelectorAll('.player-input');

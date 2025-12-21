@@ -11,6 +11,10 @@
     <meta name="author" content="No-Cap Team">
     <meta name="theme-color" content="#667eea">
 
+    <!-- ✅ AUDIT FIX: Security Headers werden via firebase.json HTTP Headers gesetzt -->
+    <!-- CSP, X-Frame-Options, X-Content-Type-Options sind in firebase.json konfiguriert -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="No-Cap - Das ultimative Schätzspiel">
     <meta property="og:description" content="Spiele das ultimative Schätzspiel mit deinen Freunden!">
@@ -24,44 +28,18 @@
     <meta name="twitter:description" content="Spiele das ultimative Schätzspiel mit deinen Freunden!">
     <meta name="twitter:image" content="/assets/img/og-image.png">
 
-    <!-- ===================================
-         🔒 AUDIT FIX: FIREBASE CONFIG SUPPORT
-         ===================================
-         P0: Firebase config über Environment Variables
+    <!-- ✅ FIREBASE CONFIG für Production -->
+    <!-- Config wird in firebase-init.js geladen (CSP-konform) -->
 
-         PRODUCTION DEPLOYMENT - Option 1 (empfohlen):
-         <script>
-             window.FIREBASE_CONFIG = {
-                 apiKey: "YOUR_API_KEY",
-                 authDomain: "YOUR_AUTH_DOMAIN",
-                 databaseURL: "YOUR_DATABASE_URL",
-                 projectId: "YOUR_PROJECT_ID",
-                 storageBucket: "YOUR_STORAGE_BUCKET",
-                 messagingSenderId: "YOUR_SENDER_ID",
-                 appId: "YOUR_APP_ID",
-                 measurementId: "YOUR_MEASUREMENT_ID"
-             };
-         </script>
-
-         PRODUCTION DEPLOYMENT - Option 2 (Meta Tags):
-         <meta name="firebase-api-key" content="YOUR_API_KEY">
-         <meta name="firebase-auth-domain" content="YOUR_AUTH_DOMAIN">
-         <meta name="firebase-database-url" content="YOUR_DATABASE_URL">
-         <meta name="firebase-project-id" content="YOUR_PROJECT_ID">
-         <meta name="firebase-storage-bucket" content="YOUR_STORAGE_BUCKET">
-         <meta name="firebase-messaging-sender-id" content="YOUR_SENDER_ID">
-         <meta name="firebase-app-id" content="YOUR_APP_ID">
-         <meta name="firebase-measurement-id" content="YOUR_MEASUREMENT_ID">
-    -->
-
-    <!-- Preconnect für Performance -->
+    <!-- ✅ AUDIT FIX: Preconnect für Performance -->
+    <!-- ✅ AUDIT FIX: Preconnect für Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="dns-prefetch" href="https://firebasedatabase.app">
 
-    <!-- Fonts -->
+    <!-- ✅ AUDIT FIX: Fonts mit display=swap für bessere Performance -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
@@ -74,26 +52,29 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/index.css">
+    <!-- ✅ AUDIT FIX: Cookie-Banner Styles -->
+    <link rel="stylesheet" href="/assets/css/cookie-banner.css">
 
     <!-- ✅ P0 FIX: DOMPurify OHNE defer (muss sofort verfügbar sein) -->
-    <script
-            src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer">
-    </script>
+    <!-- Lokal gehostet statt CDN - vermeidet Tracking Prevention Blocks -->
+    <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- Firebase SDK - defer for non-blocking -->
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- ✅ AUDIT FIX: Firebase SDK mit defer für non-blocking load -->
+    <!-- Hinweis: Firebase SDK 9.23.0 ist sehr stabil, SRI für CDN optional -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
 
     <!-- ✅ AUDIT FIX: Korrekte Script-Reihenfolge mit firebase-config.js & firebase-auth.js -->
+    <script src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
     <script defer src="/assets/js/firebase-auth.js"></script>
     <script defer src="/assets/js/firebase-service.js"></script>
     <script defer src="/assets/js/privacy.js"></script>
+    <!-- ✅ AUDIT FIX: Cookie-Banner Script -->
+    <script defer src="/assets/js/cookie-banner.js"></script>
     <script defer src="/assets/js/index.js"></script>
 </head>
 <body>
@@ -102,6 +83,30 @@
 <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
 
 <!-- Age Verification Modal -->
+<!-- ===================================
+     ⚠️ AUDIT HINWEIS: SERVERSEITIGE VALIDIERUNG ERFORDERLICH
+     ===================================
+     P1: Age-Verification wird derzeit nur clientseitig (LocalStorage) gespeichert.
+
+     TODO für Production:
+     1. Serverseitige Validierung via Firebase Auth Custom Claims
+     2. Firebase Database Security Rules für Altersprüfung
+     3. Premium-Features durch Backend-Token validieren
+
+     Beispiel Firebase Rules:
+     {
+       "rules": {
+         "games": {
+           "$gameId": {
+             ".read": "auth != null && auth.token.ageVerified === true",
+             ".write": "auth != null && auth.token.ageVerified === true"
+           }
+         }
+       }
+     }
+
+     LocalStorage dient nur als UX-Hinweis, nicht als Sicherheitsfeature!
+-->
 <div class="age-modal" id="age-modal" role="dialog" aria-labelledby="age-modal-title" aria-modal="true">
     <div class="age-modal-content">
         <div class="age-header">
@@ -277,7 +282,7 @@
                         <span class="feature-badge">🚀 Bis zu 8 Spieler</span>
                         <span class="feature-badge">📱 Jeder am eigenen Handy</span>
                     </div>
-                    <button class="mode-btn primary" id="btn-multi" type="button" data-requires-privacy>
+                    <button class="mode-btn primary" id="btn-multi" type="button">
                         <span aria-hidden="true">🌐</span> Multiplayer-Spiel erstellen
                     </button>
                 </article>
@@ -297,7 +302,7 @@
                         <span class="feature-badge">⚡ Schneller Einstieg</span>
                         <span class="feature-badge">🎯 Mit Code beitreten</span>
                     </div>
-                    <button class="mode-btn" id="btn-join" type="button" data-requires-privacy>
+                    <button class="mode-btn" id="btn-join" type="button">
                         <span aria-hidden="true">🔗</span> Spiel beitreten
                     </button>
                 </article>
@@ -369,22 +374,46 @@
 
 <!-- No Script Fallback -->
 <noscript>
-    <!-- ✅ AUDIT FIX: Besseres Styling und Hilfe-Link -->
-    <div class="noscript-warning" role="alert" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 500px; padding: 40px; text-align: center; z-index: 10000; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
-        <h2 style="color: #333; margin-bottom: 20px;">⚠️ JavaScript erforderlich</h2>
-        <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+    <!-- ✅ AUDIT FIX: CSS-Klasse statt Inline-Styles -->
+    <div class="noscript-warning" role="alert">
+        <h2>⚠️ JavaScript erforderlich</h2>
+        <p>
             Diese Anwendung benötigt JavaScript, um zu funktionieren.
             Bitte aktiviere JavaScript in deinen Browser-Einstellungen und lade die Seite neu.
         </p>
         <a href="https://www.enable-javascript.com/de/"
            target="_blank"
            rel="noopener noreferrer"
-           style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+           class="btn-enable-js">
             Wie aktiviere ich JavaScript?
         </a>
-        </p>
     </div>
 </noscript>
+
+<!-- ✅ AUDIT FIX: DSGVO Cookie-Banner -->
+<div class="cookie-banner" id="cookie-banner" role="region" aria-label="Cookie-Einstellungen">
+    <div class="cookie-content">
+        <div class="cookie-text">
+            <strong id="cookie-banner-title">🍪 Cookie-Hinweis</strong>
+            <p>
+                Wir nutzen Firebase für Multiplayer-Funktionen und optionale Analyse-Tools zur Verbesserung des Spielerlebnisses.
+                Durch Nutzung des Spiels stimmst du der Verwendung notwendiger Cookies zu.
+                Weitere Informationen findest du in unserer <a href="privacy.html">Datenschutzerklärung</a>.
+            </p>
+        </div>
+        <div class="cookie-buttons">
+            <button class="cookie-btn cookie-btn-accept" id="cookie-accept" type="button">
+                Alle akzeptieren
+            </button>
+            <button class="cookie-btn cookie-btn-decline" id="cookie-decline" type="button">
+                Nur notwendige
+            </button>
+            <button class="cookie-btn cookie-btn-settings" id="cookie-settings" type="button">
+                Einstellungen
+            </button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

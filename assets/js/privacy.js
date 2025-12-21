@@ -494,30 +494,28 @@
 
     /**
      * P1 FIX: Initialize privacy management
+     * ✅ DEAKTIVIERT: Cookie-Banner übernimmt jetzt das Consent-Management
      */
     function initPrivacyManagement() {
         try {
-            // Check if privacy consent is given
+            // ✅ FIX: Nur noch prüfen, NICHT mehr anzeigen
+            // Das Cookie-Banner übernimmt das Consent-Management
             if (hasPrivacyConsent()) {
                 enableMultiplayerFeatures();
+                if (isDevelopment) {
+                    console.log('✅ Privacy consent found - Multiplayer enabled');
+                }
             } else {
-                disableMultiplayerFeatures();
+                // NICHT mehr disablen - Cookie-Banner kümmert sich darum
+                // disableMultiplayerFeatures();
 
-                // Show consent modal after delay (unless recently declined)
-                const declined = localStorage.getItem('nocap_privacy_declined');
-                const declineDate = localStorage.getItem('nocap_privacy_decline_date');
-
-                const shouldShow = !declined ||
-                    (declineDate && Date.now() - new Date(declineDate).getTime() > 7 * 24 * 60 * 60 * 1000);
-
-                if (shouldShow) {
-                    setTimeout(showPrivacyConsent, 2000);
+                if (isDevelopment) {
+                    console.log('ℹ️ No privacy consent yet - waiting for Cookie Banner');
                 }
             }
 
-            if (isDevelopment) {
-                console.log('✅ Privacy management initialized');
-            }
+            // ✅ ENTFERNT: Zeige NICHT mehr das alte Privacy-Modal
+            // Das Cookie-Banner übernimmt diese Aufgabe
 
         } catch (error) {
             console.error('❌ Error initializing privacy management:', error);

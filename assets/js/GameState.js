@@ -32,6 +32,7 @@
             this.difficulty = null;           // 'easy' | 'medium' | 'hard'
             this.alcoholMode = true;          // true | false
             this.questionCount = 10;          // Number of questions
+            this.players = [];                // ✅ Array of player names
             this.playerName = '';             // Current player name
             this.gameId = null;               // 6-digit game code
             this.playerId = null;             // Unique player ID
@@ -59,6 +60,7 @@
                 difficulty: this.difficulty,
                 alcoholMode: this.alcoholMode,
                 questionCount: this.questionCount,
+                players: this.players ? [...this.players] : [], // ✅ Players array copy
                 playerName: this.playerName,
                 gameId: this.gameId,
                 playerId: this.playerId,
@@ -137,6 +139,16 @@
                 this.difficulty = this.sanitizeValue(state.difficulty, ['easy', 'medium', 'hard']);
                 this.alcoholMode = state.alcoholMode === true;
                 this.questionCount = this.sanitizeNumber(state.questionCount, 1, 50, 10);
+
+                // ✅ CRITICAL FIX: Load players array
+                if (Array.isArray(state.players)) {
+                    this.players = state.players
+                        .filter(name => typeof name === 'string' && name.trim().length > 0)
+                        .map(name => this.sanitizeString(name));
+                } else {
+                    this.players = [];
+                }
+
                 this.playerName = this.sanitizeString(state.playerName);
                 this.gameId = this.sanitizeGameId(state.gameId);
                 this.playerId = this.sanitizeString(state.playerId);
@@ -307,6 +319,7 @@
                     difficulty: this.difficulty,
                     alcoholMode: this.alcoholMode === true,
                     questionCount: this.questionCount,
+                    players: this.players || [], // ✅ CRITICAL FIX: Include players!
                     playerName: this.sanitizeString(this.playerName),
                     gameId: this.sanitizeGameId(this.gameId),
                     playerId: this.sanitizeString(this.playerId),
@@ -348,6 +361,7 @@
                             difficulty: this.difficulty,
                             alcoholMode: this.alcoholMode,
                             questionCount: this.questionCount,
+                            players: this.players || [], // ✅ CRITICAL FIX: Include players!
                             playerName: this.sanitizeString(this.playerName),
                             gameId: this.sanitizeGameId(this.gameId),
                             playerId: this.sanitizeString(this.playerId),
@@ -569,6 +583,31 @@
                 this.alcoholMode = value;
                 this._isDirty = true;
                 this.save();
+            }
+        }
+
+        /**
+         * ✅ AUDIT FIX: Set players array
+         * @param {Array<string>} players - Array of player names
+         */
+        setPlayers(players) {
+            if (!Array.isArray(players)) {
+                this.log('⚠️ setPlayers: Invalid input, must be array', 'warning');
+                return;
+            }
+
+            // Sanitize each player name
+            const sanitized = players
+                .filter(name => typeof name === 'string' && name.trim().length > 0)
+                .map(name => this.sanitizeString(name));
+
+            if (sanitized.length > 0) {
+                this.players = sanitized;
+                this._isDirty = true;
+                this.save(true); // Immediate save for players
+                this.log(`✅ Players set: ${sanitized.length} players`);
+            } else {
+                this.log('⚠️ setPlayers: No valid players provided', 'warning');
             }
         }
 

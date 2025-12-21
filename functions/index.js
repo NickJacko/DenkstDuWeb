@@ -9,7 +9,11 @@ const admin = require('firebase-admin');
 const crypto = require('crypto');
 
 // ===== NEW: Load from .env instead of functions.config() =====
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Stripe ist optional - nur initialisieren wenn API Key vorhanden
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+    : null;
+
 const express = require('express');
 const cors = require('cors');
 
@@ -19,6 +23,133 @@ admin.initializeApp();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const MAX_ANSWERS_PER_MINUTE = 10;
 const ANSWER_TOKEN_EXPIRY = 30 * 1000; // 30 seconds
+
+// ===== AGE VERIFICATION CLOUD FUNCTION =====
+
+/**
+ * ✅ AUDIT FIX: Serverseitige Age-Verification
+ * Setzt Custom Claims für authentifizierte User
+ */
+exports.verifyAge = functions.https.onCall(async (data, context) => {
+    // Authentifizierung prüfen
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'User must be authenticated'
+        );
+    }
+
+    const { ageLevel, consent } = data;
+
+    // Validierung
+    if (ageLevel !== 0 && ageLevel !== 18) {
+        throw new functions.https.HttpsError(
+            'invalid-argument',
+            'Age level must be 0 or 18'
+        );
+    }
+
+    if (!consent) {
+        throw new functions.https.HttpsError(
+            'invalid-argument',
+            'User consent required'
+        );
+    }
+
+    try {
+        // Custom Claims setzen (persistent, server-side)
+        await admin.auth().setCustomUserClaims(context.auth.uid, {
+            ageVerified: true,
+            ageLevel: ageLevel,
+            verifiedAt: admin.database.ServerValue.TIMESTAMP
+        });
+
+        // Optional: Audit-Log in Database speichern
+        await admin.database().ref(`audit_logs/${context.auth.uid}`).push({
+            action: 'age_verification',
+            ageLevel: ageLevel,
+            timestamp: admin.database.ServerValue.TIMESTAMP,
+            ip: context.rawRequest ? context.rawRequest.ip : 'unknown'
+        });
+
+        console.log(`✅ Age verified for user ${context.auth.uid}: ${ageLevel}`);
+
+        return {
+            success: true,
+            ageLevel,
+            message: 'Age verification successful'
+        };
+    } catch (error) {
+        console.error('❌ Age verification failed:', error);
+        throw new functions.https.HttpsError(
+            'internal',
+            'Failed to verify age'
+        );
+    }
+});
+
+// ===== CATEGORY ACCESS VALIDATION =====
+
+/**
+ * ✅ AUDIT FIX: Serverseitige Kategorie-Zugriffsprüfung
+ * Prüft Premium-Status und FSK-Level
+ */
+exports.checkCategoryAccess = functions.https.onCall(async (data, context) => {
+    // Authentifizierung prüfen
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'User must be authenticated'
+        );
+    }
+
+    const { categoryId } = data;
+
+    // Kategorie-Daten (sollte mit client-side übereinstimmen)
+    const categoryData = {
+        fsk0: { requiresAge: 0, requiresPremium: false },
+        fsk16: { requiresAge: 16, requiresPremium: false },
+        fsk18: { requiresAge: 18, requiresPremium: false },
+        special: { requiresAge: 0, requiresPremium: true }
+    };
+
+    const category = categoryData[categoryId];
+    if (!category) {
+        throw new functions.https.HttpsError(
+            'invalid-argument',
+            'Invalid category ID'
+        );
+    }
+
+    // Custom Claims holen
+    const userToken = context.auth.token;
+    const userAgeLevel = userToken.ageLevel || 0;
+    const isPremium = userToken.isPremium === true;
+
+    // FSK-Prüfung
+    if (category.requiresAge > userAgeLevel) {
+        throw new functions.https.HttpsError(
+            'permission-denied',
+            `Age verification required. Minimum age: ${category.requiresAge}`
+        );
+    }
+
+    // Premium-Prüfung
+    if (category.requiresPremium && !isPremium) {
+        throw new functions.https.HttpsError(
+            'permission-denied',
+            'Premium subscription required'
+        );
+    }
+
+    console.log(`✅ Access granted for user ${context.auth.uid} to category ${categoryId}`);
+
+    return {
+        allowed: true,
+        categoryId,
+        message: 'Access granted'
+    };
+});
 
 // ===== HELPER FUNCTIONS =====
 

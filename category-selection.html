@@ -21,11 +21,8 @@
     <link rel="stylesheet" href="/assets/css/category-selection.css">
 
     <!-- P1 FIX: DOMPurify FIRST -->
-    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"
-            integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer">
-    </script>
+    <!-- Lokal gehostet - vermeidet CDN & Tracking Prevention Blocks -->
+    <script src="/assets/lib/purify.min.js"></script>
 
     <!-- Firebase SDK -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -33,6 +30,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <!-- P1 FIX: Core Scripts in correct order -->
+    <script src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
@@ -189,7 +187,7 @@
                         <div class="locked-overlay" id="special-locked" aria-hidden="false">
                             <div class="lock-icon">🔒</div>
                             <p class="lock-message">Premium Inhalt</p>
-                            <button class="unlock-btn" id="unlock-special-btn" type="button" onclick="event.stopPropagation();">
+                            <button class="unlock-btn" id="unlock-special-btn" type="button">
                                 💎 Freischalten
                             </button>
                         </div>
