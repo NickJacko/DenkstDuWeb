@@ -4,14 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update index.html">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update credentials">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-init.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-init.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/join-game.html" beforeDir="false" afterPath="$PROJECT_DIR$/join-game.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-gameplay.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/multiplayer-lobby.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-lobby.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-results.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-results.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/player-setup.html" beforeDir="false" afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -131,15 +137,7 @@
       <workItem from="1764921174854" duration="1841000" />
       <workItem from="1765964163592" duration="30703000" />
       <workItem from="1767609144829" duration="68000" />
-      <workItem from="1767771199341" duration="23466000" />
-    </task>
-    <task id="LOCAL-00029" summary="Join-Game edit">
-      <option name="closed" value="true" />
-      <created>1762553321353</created>
-      <option name="number" value="00029" />
-      <option name="presentableId" value="LOCAL-00029" />
-      <option name="project" value="LOCAL" />
-      <updated>1762553321353</updated>
+      <workItem from="1767771199341" duration="24366000" />
     </task>
     <task id="LOCAL-00030" summary="Join-Game edit">
       <option name="closed" value="true" />
@@ -525,7 +523,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767795112058</updated>
     </task>
-    <option name="localTasksCounter" value="78" />
+    <task id="LOCAL-00078" summary="Update credentials">
+      <option name="closed" value="true" />
+      <created>1767796910588</created>
+      <option name="number" value="00078" />
+      <option name="presentableId" value="LOCAL-00078" />
+      <option name="project" value="LOCAL" />
+      <updated>1767796910588</updated>
+    </task>
+    <option name="localTasksCounter" value="79" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -546,7 +552,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="MG function" />
     <MESSAGE value="Update MGP" />
     <MESSAGE value="GesErgebnisse MGP" />
     <MESSAGE value="Index anpassungen" />
@@ -571,7 +576,8 @@
     <MESSAGE value="Update all atleast but not the 4 failed" />
     <MESSAGE value="Update Device Mode" />
     <MESSAGE value="Update index.html" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update index.html" />
+    <MESSAGE value="Update credentials" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update credentials" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
