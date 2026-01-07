@@ -528,66 +528,28 @@
     }
 
     // ===========================
-    // UTILITY FUNCTIONS
+    // UTILITY FUNCTIONS (use NocapUtils)
     // ===========================
 
-    function showLoading() {
+    const showLoading = window.NocapUtils?.showLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.add('show');
-        }
-    }
+        if (loading) loading.classList.add('show');
+    };
 
-    function hideLoading() {
+    const hideLoading = window.NocapUtils?.hideLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.remove('show');
-        }
-    }
+        if (loading) loading.classList.remove('show');
+    };
 
-    /**
-     * Safe notification using NocapUtils
-     */
-    function showNotification(message, type = 'info', duration = 3000) {
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(message, type, duration);
-            return;
-        }
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(message); // Fallback
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(message); // Fallback
+    };
 
-        // Fallback: Create notification element
-        const container = document.body;
-
-        // Remove existing notifications
-        document.querySelectorAll('.notification').forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
-
-        const notificationText = document.createElement('span');
-        notificationText.textContent = String(message);
-
-        notification.appendChild(notificationText);
-        container.appendChild(notification);
-
-        // ✅ CSP-FIX: Use CSS classes instead of inline styles
-        notification.className = `notification notification-${type} notification-slide-in`;
-
-        requestAnimationFrame(() => {
-            notification.classList.add('notification-visible');
-        });
-
-        setTimeout(() => {
-            notification.classList.remove('notification-visible');
-            notification.classList.add('notification-slide-out');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 300);
-        }, duration);
-    }
+    // ===========================
+    // CLEANUP
+    // ===========================
 
     // ===========================
     // CLEANUP

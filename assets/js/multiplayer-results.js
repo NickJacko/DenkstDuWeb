@@ -703,82 +703,27 @@
     }
 
     // ===========================
-    // UTILITIES
+    // UTILITIES (use NocapUtils)
     // ===========================
 
-    function showLoading(text = 'Lade...') {
+    const showLoading = window.NocapUtils?.showLoading || function(text = 'Lade...') {
         const loading = document.getElementById('loading');
         const loadingText = document.getElementById('loading-text');
         if (loading) {
-            if (loadingText) {
-                loadingText.textContent = sanitizeText(text);
-            }
+            if (loadingText) loadingText.textContent = sanitizeText(text);
             loading.classList.add('show');
         }
-    }
+    };
 
-    function hideLoading() {
+    const hideLoading = window.NocapUtils?.hideLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.remove('show');
-        }
-    }
+        if (loading) loading.classList.remove('show');
+    };
 
-    /**
-     * P0 FIX: Safe notification using NocapUtils
-     */
-    function showNotification(message, type = 'info', duration = 3000) {
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(message, type, duration);
-            return;
-        }
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(message); // Fallback
+    };
 
-        // Fallback: Toast notification implementation
-        const existingToasts = document.querySelectorAll('.toast-notification');
-        existingToasts.forEach(toast => toast.remove());
-
-        const toast = document.createElement('div');
-        toast.className = 'toast-notification';
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            z-index: 10000;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-        `;
-
-        const bgColors = {
-            success: '#4CAF50',
-            error: '#F44336',
-            warning: '#FF9800',
-            info: '#2196F3'
-        };
-
-        toast.style.background = bgColors[type] || bgColors.info;
-        toast.textContent = sanitizeText(message);
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'polite');
-
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.transform = 'translateX(0)';
-        }, 100);
-
-        setTimeout(() => {
-            toast.style.transform = 'translateX(400px)';
-            setTimeout(() => {
-                if (document.body.contains(toast)) {
-                    document.body.removeChild(toast);
-                }
-            }, 300);
-        }, duration);
-    }
 
     // ===========================
     // CLEANUP

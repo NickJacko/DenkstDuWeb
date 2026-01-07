@@ -1,17 +1,32 @@
 /**
  * No-Cap Firebase Cloud Functions
  * Server-Side Security & Payment Processing
- * Version 2.1 - Core Security Functions (Stripe disabled temporarily)
+ * Version 3.0 - DSGVO-Compliant + Stripe Ready
+ *
+ * OPTIMIZATIONS:
+ * ✅ Secrets via process.env (APP_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET)
+ * ✅ IP-Speicherung nur mit Consent (DSGVO)
+ * ✅ Sichere Audit-Logs
+ * ✅ Stripe Webhooks vorbereitet
+ * ✅ Premium Payment Flow
  */
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 
-// Stripe & Express temporarily disabled - uncomment when needed
-// const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
-// const express = require('express');
-// const cors = require('cors');
+// ✅ OPTIMIZATION: Stripe & Express (aktivierbar via Environment Variables)
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+    : null;
+
+const express = process.env.STRIPE_SECRET_KEY
+    ? require('express')
+    : null;
+
+const cors = process.env.STRIPE_SECRET_KEY
+    ? require('cors')
+    : null;
 
 admin.initializeApp();
 
@@ -20,11 +35,21 @@ const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const MAX_ANSWERS_PER_MINUTE = 10;
 const ANSWER_TOKEN_EXPIRY = 30 * 1000; // 30 seconds
 
+// ✅ OPTIMIZATION: Helper function to get APP_SECRET (loaded at runtime, not build time)
+function getAppSecret() {
+    const secret = process.env.APP_SECRET;
+    if (!secret) {
+        throw new Error('APP_SECRET not configured. Set via: firebase functions:secrets:set APP_SECRET');
+    }
+    return secret;
+}
+
 // ===== AGE VERIFICATION CLOUD FUNCTION =====
 
 /**
- * ✅ AUDIT FIX: Serverseitige Age-Verification
+ * ✅ OPTIMIZATION: Serverseitige Age-Verification mit DSGVO-Compliance
  * Setzt Custom Claims für authentifizierte User
+ * Speichert IP nur mit explizitem Consent
  */
 exports.verifyAge = functions.https.onCall(async (data, context) => {
     // Authentifizierung prüfen
@@ -35,20 +60,20 @@ exports.verifyAge = functions.https.onCall(async (data, context) => {
         );
     }
 
-    const { ageLevel, consent } = data;
+    const { ageLevel, consent, ipConsent } = data;
 
     // Validierung
-    if (ageLevel !== 0 && ageLevel !== 18) {
+    if (ageLevel !== 0 && ageLevel !== 16 && ageLevel !== 18) {
         throw new functions.https.HttpsError(
             'invalid-argument',
-            'Age level must be 0 or 18'
+            'Age level must be 0, 16 or 18'
         );
     }
 
     if (!consent) {
         throw new functions.https.HttpsError(
             'invalid-argument',
-            'User consent required'
+            'User consent required for age verification'
         );
     }
 
@@ -57,18 +82,29 @@ exports.verifyAge = functions.https.onCall(async (data, context) => {
         await admin.auth().setCustomUserClaims(context.auth.uid, {
             ageVerified: true,
             ageLevel: ageLevel,
-            verifiedAt: admin.database.ServerValue.TIMESTAMP
+            verifiedAt: Date.now()
         });
 
-        // Optional: Audit-Log in Database speichern
-        await admin.database().ref(`audit_logs/${context.auth.uid}`).push({
+        // ✅ DSGVO: Audit-Log mit optionaler IP-Speicherung
+        const auditData = {
             action: 'age_verification',
             ageLevel: ageLevel,
             timestamp: admin.database.ServerValue.TIMESTAMP,
-            ip: context.rawRequest ? context.rawRequest.ip : 'unknown'
-        });
+            consentGiven: true
+        };
 
-        console.log(`✅ Age verified for user ${context.auth.uid}: ${ageLevel}`);
+        // ✅ DSGVO: IP nur speichern wenn explizite Einwilligung
+        if (ipConsent === true && context.rawRequest) {
+            auditData.ip = context.rawRequest.ip || 'unknown';
+            auditData.ipConsent = true;
+        } else {
+            auditData.ip = null;
+            auditData.ipConsent = false;
+        }
+
+        await admin.database().ref(`audit_logs/${context.auth.uid}`).push(auditData);
+
+        console.log(`✅ Age verified for user ${context.auth.uid}: ${ageLevel} (IP consent: ${ipConsent || false})`);
 
         return {
             success: true,
@@ -153,8 +189,7 @@ exports.checkCategoryAccess = functions.https.onCall(async (data, context) => {
  * Generate secure token for answer validation
  */
 function generateAnswerToken(playerId, gameId, roundNumber) {
-    // ===== NEW: Use process.env instead of functions.config() =====
-    const secret = process.env.APP_SECRET;
+    const secret = getAppSecret();  // Runtime check, nicht Build-Time
     const timestamp = Date.now();
     const data = `${playerId}:${gameId}:${roundNumber}:${timestamp}`;
 
@@ -173,8 +208,7 @@ function generateAnswerToken(playerId, gameId, roundNumber) {
  * Verify answer token
  */
 function verifyAnswerToken(token, playerId, gameId, roundNumber, tokenTimestamp) {
-    // ===== NEW: Use process.env instead of functions.config() =====
-    const secret = process.env.APP_SECRET;
+    const secret = getAppSecret();  // Runtime check, nicht Build-Time
     const data = `${playerId}:${gameId}:${roundNumber}:${tokenTimestamp}`;
 
     const expectedHash = crypto

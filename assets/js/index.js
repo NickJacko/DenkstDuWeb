@@ -1,6 +1,6 @@
 /**
  * NO-CAP Landing Page - Main Script
- * Version 5.0 - Production Ready (Full Audit Compliance)
+ * Version 6.0 - Production Hardening
  *
  * AUDIT FIXES APPLIED:
  * ✅ P0: DOMPurify validation with user-friendly fallback
@@ -10,10 +10,19 @@
  * ✅ P1: Input sanitization via DOMPurify
  * ✅ P2: Accessibility improvements (keyboard navigation, ARIA)
  * ✅ P2: Animations respect prefers-reduced-motion
+ * ✅ PRODUCTION: Logger statt console (no spam in production)
  */
 
 (function(window) {
     'use strict';
+
+    // Get Logger from utils
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
 
     // ===================================
     // 📊 GLOBAL STATE
@@ -41,15 +50,12 @@
      */
     function checkDOMPurify() {
         if (typeof DOMPurify === 'undefined') {
-            console.error('❌ CRITICAL: DOMPurify not loaded!');
+            Logger.error('❌ CRITICAL: DOMPurify not loaded!');
             showDOMPurifyError();
             return false;
         }
 
-        if (isDevelopment) {
-            console.log('✅ DOMPurify available');
-        }
-
+        Logger.debug('✅ DOMPurify available');
         return true;
     }
 

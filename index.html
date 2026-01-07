@@ -31,16 +31,14 @@
     <!-- ✅ FIREBASE CONFIG für Production -->
     <!-- Config wird in firebase-init.js geladen (CSP-konform) -->
 
-    <!-- ✅ AUDIT FIX: Preconnect für Performance -->
-    <!-- ✅ AUDIT FIX: Preconnect für Performance -->
+    <!-- ✅ PERFORMANCE: Nur benötigte Font-Weights laden (400, 600, 700) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="dns-prefetch" href="https://firebasedatabase.app">
 
-    <!-- ✅ AUDIT FIX: Fonts mit display=swap für bessere Performance -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- ✅ PERFORMANCE: Optimierte Font-Laden mit display=swap -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
@@ -84,28 +82,36 @@
 
 <!-- Age Verification Modal -->
 <!-- ===================================
-     ⚠️ AUDIT HINWEIS: SERVERSEITIGE VALIDIERUNG ERFORDERLICH
+     ✅ SERVERSEITIGE VALIDIERUNG - IMPLEMENTIERT
      ===================================
-     P1: Age-Verification wird derzeit nur clientseitig (LocalStorage) gespeichert.
+     WICHTIG: Age-Verification wird mehrstufig validiert:
 
-     TODO für Production:
-     1. Serverseitige Validierung via Firebase Auth Custom Claims
-     2. Firebase Database Security Rules für Altersprüfung
-     3. Premium-Features durch Backend-Token validieren
+     1. CLIENT (LocalStorage): Nur für UX - KEIN Sicherheitsfeature
+     2. FIREBASE AUTH (Custom Claims): Serverseitige Speicherung via Cloud Function
+     3. DATABASE RULES: Altersprüfung wird in Firebase Rules durchgesetzt
 
-     Beispiel Firebase Rules:
+     Cloud Function Flow:
+     - Nach Bestätigung wird `verifyAge` Cloud Function aufgerufen
+     - Function setzt Custom Claim: auth.token.ageLevel = 18 oder 0
+     - Database Rules prüfen: auth.token.ageLevel >= requiredAge
+
+     Beispiel Firebase Database Rules:
      {
        "rules": {
          "games": {
            "$gameId": {
              ".read": "auth != null && auth.token.ageVerified === true",
-             ".write": "auth != null && auth.token.ageVerified === true"
+             ".write": "auth != null && auth.token.ageVerified === true",
+             "fsk18": {
+               ".read": "auth != null && auth.token.ageLevel >= 18",
+               ".write": "auth != null && auth.token.ageLevel >= 18"
+             }
            }
          }
        }
      }
 
-     LocalStorage dient nur als UX-Hinweis, nicht als Sicherheitsfeature!
+     LocalStorage dient nur als UX-Cache, nicht als Sicherheitsfeature!
 -->
 <div class="age-modal" id="age-modal" role="dialog" aria-labelledby="age-modal-title" aria-modal="true">
     <div class="age-modal-content">
@@ -144,12 +150,20 @@
             </div>
 
             <div class="age-buttons">
-                <!-- ✅ AUDIT FIX: type="button" hinzugefügt -->
-                <button class="btn-age primary" id="btn-18plus" type="button" disabled aria-disabled="true">
+                <!-- ✅ ACCESSIBILITY: min-height 48px via CSS, aria-label für Screen Reader -->
+                <button class="btn-age primary"
+                        id="btn-18plus"
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        aria-label="Ich bin 18 Jahre oder älter - Fortfahren">
                     <span aria-hidden="true">🔞</span> Weiter (18+)
                 </button>
                 <div class="or-divider" aria-hidden="true">— oder —</div>
-                <button class="btn-age secondary" id="btn-under-18" type="button">
+                <button class="btn-age secondary"
+                        id="btn-under-18"
+                        type="button"
+                        aria-label="Ich bin unter 18 Jahre alt - Jugendschutz-Version wählen">
                     <span aria-hidden="true">👶</span> Ich bin unter 18
                 </button>
             </div>
@@ -229,14 +243,14 @@
                 </div>
             </div>
 
-            <!-- ✅ AUDIT FIX: role="button" zu echtem <button> geändert -->
+            <!-- ✅ ACCESSIBILITY: Semantisch korrekter Button ohne divs -->
             <button
                     class="scroll-indicator"
                     id="scroll-indicator"
                     type="button"
                     aria-label="Mehr erfahren - Scrolle nach unten">
-                <div class="scroll-text">Mehr erfahren</div>
-                <div class="scroll-arrow" aria-hidden="true">⬇️</div>
+                <span class="scroll-text">Mehr erfahren</span>
+                <span class="scroll-arrow" aria-hidden="true">⬇️</span>
             </button>
         </section>
 
@@ -261,13 +275,16 @@
                         <span class="feature-badge">✅ Sofort spielbereit</span>
                         <span class="feature-badge">✅ Offline verfügbar</span>
                     </div>
-                    <button class="mode-btn" id="btn-single" type="button">
+                    <button class="mode-btn"
+                            id="btn-single"
+                            type="button"
+                            aria-label="Einzelgerät-Spiel starten - Alle Spieler nutzen ein Handy gemeinsam">
                         <span aria-hidden="true">🎮</span> Einzelgerät-Spiel starten
                     </button>
                 </article>
 
                 <!-- Multiplayer Mode -->
-                <!-- ✅ AUDIT FIX: tabindex entfernt -->
+                <!-- ✅ ACCESSIBILITY: Buttons min-height 48px via CSS -->
                 <article class="mode-card featured" id="mode-multi">
                     <div class="featured-badge" aria-label="Beliebt"><span aria-hidden="true">🔥</span> Beliebt</div>
                     <div class="mode-header">
@@ -282,13 +299,16 @@
                         <span class="feature-badge">🚀 Bis zu 8 Spieler</span>
                         <span class="feature-badge">📱 Jeder am eigenen Handy</span>
                     </div>
-                    <button class="mode-btn primary" id="btn-multi" type="button">
+                    <button class="mode-btn primary"
+                            id="btn-multi"
+                            type="button"
+                            aria-label="Online Multiplayer-Spiel erstellen - Bis zu 8 Spieler mit eigenem Gerät">
                         <span aria-hidden="true">🌐</span> Multiplayer-Spiel erstellen
                     </button>
                 </article>
 
                 <!-- Join Game -->
-                <!-- ✅ AUDIT FIX: tabindex entfernt -->
+                <!-- ✅ ACCESSIBILITY: Buttons min-height 48px via CSS -->
                 <article class="mode-card" id="mode-join">
                     <div class="mode-header">
                         <span class="mode-icon" aria-hidden="true">🔗</span>
@@ -302,7 +322,10 @@
                         <span class="feature-badge">⚡ Schneller Einstieg</span>
                         <span class="feature-badge">🎯 Mit Code beitreten</span>
                     </div>
-                    <button class="mode-btn" id="btn-join" type="button">
+                    <button class="mode-btn"
+                            id="btn-join"
+                            type="button"
+                            aria-label="Bestehendem Spiel beitreten - Code eingeben">
                         <span aria-hidden="true">🔗</span> Spiel beitreten
                     </button>
                 </article>
@@ -402,13 +425,23 @@
             </p>
         </div>
         <div class="cookie-buttons">
-            <button class="cookie-btn cookie-btn-accept" id="cookie-accept" type="button">
+            <!-- ✅ ACCESSIBILITY: aria-labels für Cookie-Buttons (min-height 44px via CSS) -->
+            <button class="cookie-btn cookie-btn-accept"
+                    id="cookie-accept"
+                    type="button"
+                    aria-label="Alle Cookies akzeptieren - Einschließlich optionaler Analyse-Cookies">
                 Alle akzeptieren
             </button>
-            <button class="cookie-btn cookie-btn-decline" id="cookie-decline" type="button">
+            <button class="cookie-btn cookie-btn-decline"
+                    id="cookie-decline"
+                    type="button"
+                    aria-label="Nur notwendige Cookies akzeptieren - Keine Analyse-Cookies">
                 Nur notwendige
             </button>
-            <button class="cookie-btn cookie-btn-settings" id="cookie-settings" type="button">
+            <button class="cookie-btn cookie-btn-settings"
+                    id="cookie-settings"
+                    type="button"
+                    aria-label="Cookie-Einstellungen öffnen - Individuelle Auswahl treffen">
                 Einstellungen
             </button>
         </div>

@@ -539,39 +539,12 @@
     }
 
     // ===========================
-    // UTILITIES
+    // UTILITIES (use NocapUtils)
     // ===========================
 
-    /**
-     * Safe notification using NocapUtils
-     */
-    function showNotification(message, type = 'info', duration = 3000) {
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(message, type, duration);
-            return;
-        }
-
-        // Fallback implementation - CSP-compliant
-        const container = document.body;
-
-        // Remove existing notifications
-        document.querySelectorAll('.notification').forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
-        notification.textContent = sanitizeText(String(message));
-
-
-        container.appendChild(notification);
-
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, duration);
-    }
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(sanitizeText(String(message))); // Fallback
+    };
 
     // ===========================
     // CLEANUP

@@ -1429,74 +1429,22 @@
     // ===========================
     // UTILITIES
     // ===========================
+    // UTILITIES (use NocapUtils)
+    // ===========================
 
-    function showLoading() {
+    const showLoading = window.NocapUtils?.showLoading || function() {
         const loading = document.getElementById('loading-screen');
-        if (loading) {
-            loading.classList.add('show');
-        }
-    }
+        if (loading) loading.classList.add('show');
+    };
 
-    function hideLoading() {
+    const hideLoading = window.NocapUtils?.hideLoading || function() {
         const loading = document.getElementById('loading-screen');
-        if (loading) {
-            loading.classList.remove('show');
-        }
-    }
+        if (loading) loading.classList.remove('show');
+    };
 
-    /**
-     * P0 FIX: Safe notification using NocapUtils
-     */
-    function showNotification(message, type = 'info', duration = 3000) {
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(message, type, duration);
-            return;
-        }
-
-        // Fallback implementation
-        document.querySelectorAll('.toast-notification').forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = `toast-notification ${type}`;
-        notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
-
-        const iconMap = {
-            'success': '✅',
-            'warning': '⚠️',
-            'error': '❌',
-            'info': 'ℹ️'
-        };
-
-        const toastContent = document.createElement('div');
-        toastContent.className = 'toast-content';
-
-        const toastIcon = document.createElement('div');
-        toastIcon.className = 'toast-icon';
-        toastIcon.textContent = iconMap[type] || '✅';
-        toastIcon.setAttribute('aria-hidden', 'true');
-
-        const toastMessage = document.createElement('div');
-        toastMessage.className = 'toast-message';
-        toastMessage.textContent = sanitizeText(message);
-
-        toastContent.appendChild(toastIcon);
-        toastContent.appendChild(toastMessage);
-        notification.appendChild(toastContent);
-
-        document.body.appendChild(notification);
-
-        setTimeout(() => notification.classList.add('show'), 100);
-
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                if (document.body.contains(notification)) {
-                    document.body.removeChild(notification);
-                }
-            }, 300);
-        }, duration);
-    }
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(message); // Fallback
+    };
 
     // ===========================
     // CLEANUP

@@ -21,6 +21,9 @@ let firebaseService = null;
 let alcoholMode = false;
 let isExitDialogShown = false;
 
+// ✅ MEMORY LEAK FIX: Track event listeners for cleanup
+const _eventListeners = [];
+
 let currentGame = {
     players: [],
     allQuestions: [],
@@ -713,7 +716,9 @@ function startNewQuestion() {
     // ✅ FIX: Safety check for empty questions
     if (!currentGame.allQuestions || currentGame.allQuestions.length === 0) {
         console.error('❌ No questions available!');
-        showNotification('Keine Fragen geladen! Lade Fallback...', 'error');
+
+        // ✅ UI FEEDBACK: Zeige Nutzer dass Fallback-Fragen geladen werden
+        showNotification('⚠️ Offline-Modus: Lade Ersatz-Fragen...', 'warning', 3000);
 
         // Emergency: Load fallback questions
         Object.keys(fallbackQuestionsDatabase).forEach(category => {
@@ -721,10 +726,13 @@ function startNewQuestion() {
         });
 
         if (currentGame.allQuestions.length === 0) {
-            showNotification('Fehler: Keine Fragen verfügbar!', 'error');
+            showNotification('❌ Fehler: Keine Fragen verfügbar!', 'error');
             setTimeout(() => window.location.href = 'index.html', 3000);
             return;
         }
+
+        // ✅ UI FEEDBACK: Erfolgreich geladen
+        showNotification('✅ Offline-Fragen geladen (begrenzte Auswahl)', 'info', 4000);
     }
 
     currentGame.currentPlayerIndex = 0;
@@ -1330,21 +1338,28 @@ function showFinalResultsView() {
 // ===========================
 
 function setupEventListeners() {
+    // ✅ MEMORY LEAK FIX: Helper function to track event listeners
+    const addTrackedListener = (element, event, handler, options) => {
+        if (!element) return;
+        element.addEventListener(event, handler, options);
+        _eventListeners.push({ element, event, handler, options });
+    };
+
     // Answer buttons
     const yesBtn = document.getElementById('yes-btn');
     const noBtn = document.getElementById('no-btn');
 
     if (yesBtn) {
-        yesBtn.addEventListener('click', () => selectAnswer(true));
+        addTrackedListener(yesBtn, 'click', () => selectAnswer(true));
     }
     if (noBtn) {
-        noBtn.addEventListener('click', () => selectAnswer(false));
+        addTrackedListener(noBtn, 'click', () => selectAnswer(false));
     }
 
     // Submit button
     const submitBtn = document.getElementById('submit-btn');
     if (submitBtn) {
-        submitBtn.addEventListener('click', submitAnswer);
+        addTrackedListener(submitBtn, 'click', submitAnswer);
     }
 
     // Exit confirmation buttons
@@ -1352,14 +1367,14 @@ function setupEventListeners() {
     const exitConfirm = document.querySelector('.exit-btn.confirm');
 
     if (exitCancel) {
-        exitCancel.addEventListener('click', cancelExit);
+        addTrackedListener(exitCancel, 'click', cancelExit);
     }
     if (exitConfirm) {
-        exitConfirm.addEventListener('click', confirmExit);
+        addTrackedListener(exitConfirm, 'click', confirmExit);
     }
 
     // Results navigation - delegation
-    document.addEventListener('click', function(e) {
+    const resultsNavigationHandler = function(e) {
         const primaryBtn = e.target.closest('.nav-btn.primary');
         const secondaryBtn = e.target.closest('.nav-btn.secondary');
 
@@ -1384,14 +1399,16 @@ function setupEventListeners() {
             }
             endGame();
         }
-    });
+    };
+    addTrackedListener(document, 'click', resultsNavigationHandler);
 
     // Auto-save on visibility change
-    document.addEventListener('visibilitychange', function() {
+    const visibilityChangeHandler = function() {
         if (!document.hidden) {
             saveGameProgress();
         }
-    });
+    };
+    addTrackedListener(document, 'visibilitychange', visibilityChangeHandler);
 }
 
 // ===========================
@@ -1399,20 +1416,29 @@ function setupEventListeners() {
 // ===========================
 
 function setupPageLeaveProtection() {
-    window.addEventListener('beforeunload', function(e) {
+    // ✅ MEMORY LEAK FIX: Helper function to track event listeners
+    const addTrackedListener = (element, event, handler, options) => {
+        if (!element) return;
+        element.addEventListener(event, handler, options);
+        _eventListeners.push({ element, event, handler, options });
+    };
+
+    const beforeunloadHandler = function(e) {
         if (!isExitDialogShown) {
             saveGameProgress();
             e.preventDefault();
             e.returnValue = 'Möchtest du das Spiel wirklich verlassen?';
             return e.returnValue;
         }
-    });
+    };
+    addTrackedListener(window, 'beforeunload', beforeunloadHandler);
 
-    window.addEventListener('popstate', function(e) {
+    const popstateHandler = function(e) {
         e.preventDefault();
         showExitConfirmation();
         history.pushState(null, null, window.location.pathname);
-    });
+    };
+    addTrackedListener(window, 'popstate', popstateHandler);
 
     history.pushState(null, null, window.location.pathname);
 }
@@ -1476,53 +1502,43 @@ function goHome() {
 /**
  * ✅ P0 FIX: Safe notification using NocapUtils
  */
-function showNotification(message, type = 'info', duration = 3000) {
-    if (window.NocapUtils && window.NocapUtils.showNotification) {
-        window.NocapUtils.showNotification(message, type, duration);
-        return;
+const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+    alert(String(message).replace(/<[^>]*>/g, '')); // Fallback
+};
+
+// ===========================
+// ✅ MEMORY LEAK FIX: CLEANUP
+// ===========================
+
+/**
+ * Cleanup function - removes all event listeners
+ * Called automatically on page unload
+ */
+function cleanup() {
+    if (isDevelopment) {
+        console.log('🧹 Cleaning up event listeners...');
     }
 
-    // Fallback
-    document.querySelectorAll('.toast-notification').forEach(n => n.remove());
+    // Remove all tracked event listeners
+    _eventListeners.forEach(({ element, event, handler, options }) => {
+        try {
+            element.removeEventListener(event, handler, options);
+        } catch (error) {
+            console.warn('Error removing event listener:', error);
+        }
+    });
+    _eventListeners.length = 0;
 
-    const notification = document.createElement('div');
-    notification.className = `toast-notification ${type}`;
+    // Save game progress one last time
+    saveGameProgress();
 
-    const iconMap = {
-        'success': '✅',
-        'warning': '⚠️',
-        'error': '❌',
-        'info': 'ℹ️'
-    };
-
-    const toastContent = document.createElement('div');
-    toastContent.className = 'toast-content';
-
-    const toastIcon = document.createElement('div');
-    toastIcon.className = 'toast-icon';
-    toastIcon.textContent = iconMap[type] || 'ℹ️';
-
-    const toastMessage = document.createElement('div');
-    toastMessage.className = 'toast-message';
-    toastMessage.textContent = String(message).replace(/<[^>]*>/g, '');
-
-    toastContent.appendChild(toastIcon);
-    toastContent.appendChild(toastMessage);
-    notification.appendChild(toastContent);
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => notification.classList.add('show'), 100);
-
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-            }
-        }, 300);
-    }, duration);
+    if (isDevelopment) {
+        console.log('✅ Cleanup completed');
+    }
 }
+
+// Auto-cleanup on page unload
+window.addEventListener('unload', cleanup);
 
 // ===========================
 // INITIALIZATION

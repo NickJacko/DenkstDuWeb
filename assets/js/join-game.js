@@ -823,84 +823,29 @@
     }
 
     // ===========================
-    // UTILITY FUNCTIONS
+    // ===========================
+    // UTILITY FUNCTIONS (use NocapUtils)
     // ===========================
 
-    /**
-     * ✅ P1 FIX: Enhanced loading with custom message
-     */
-    function showLoading(message = 'Lädt...') {
+    const showLoading = window.NocapUtils?.showLoading || function(message = 'Lädt...') {
         const loading = document.getElementById('loading');
         if (loading) {
             const loadingText = loading.querySelector('.loading-text');
-            if (loadingText) {
-                loadingText.textContent = message;
-            }
+            if (loadingText) loadingText.textContent = message;
             loading.classList.add('show');
         }
-    }
+    };
 
-    function hideLoading() {
+    const hideLoading = window.NocapUtils?.hideLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.remove('show');
-        }
-    }
+        if (loading) loading.classList.remove('show');
+    };
 
-    /**
-     * ✅ P0 FIX: Safe notification with textContent
-     */
-    function showNotification(message, type = 'info', duration = 3000) {
-        // Use NocapUtils if available
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(message, type, duration);
-            return;
-        }
-
-        // Fallback implementation
-        const container = document.body;
-
-        // Remove existing notifications
-        document.querySelectorAll('.notification').forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
-
-        // ✅ P0 FIX: Use textContent
-        notification.textContent = String(message);
-
-        // Inline styles for fallback
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-            z-index: 10001;
-            max-width: 300px;
-            color: white;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        `;
-
-        const colors = {
-            success: '#4CAF50',
-            error: '#f44336',
-            warning: '#ff9800',
-            info: '#2196F3'
-        };
-        notification.style.background = colors[type] || colors.info;
-
-        container.appendChild(notification);
-
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, duration);
-    }
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(message); // Fallback
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(message); // Fallback
+    };
 
     // ===========================
     // CLEANUP
@@ -915,9 +860,7 @@
             window.NocapUtils.cleanupEventListeners();
         }
 
-        if (isDevelopment) {
-            console.log('✅ Join game cleanup completed');
-        }
+        Logger.debug('✅ Join game cleanup completed');
     }
 
     window.addEventListener('beforeunload', cleanup);

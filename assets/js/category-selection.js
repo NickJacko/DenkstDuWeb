@@ -1,15 +1,24 @@
 /**
  * No-Cap Category Selection (Single Device Mode)
- * Version 6.0 - P0 Security Fixes Applied
+ * Version 7.0 - Production Hardening
  *
  * ✅ P1 FIX: Device mode is SET HERE, not on landing page
  * ✅ P0 FIX: Age verification with expiration check
  * ✅ P0 FIX: Safe DOM manipulation (no innerHTML)
  * ✅ P0 FIX: MANDATORY server-side premium validation via Cloud Function
+ * ✅ PRODUCTION: Logger statt console.log (no spam in production)
  */
 
 (function(window) {
     'use strict';
+
+    // Get Logger from utils
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
 
     // ===========================
     // CATEGORY DATA
@@ -62,23 +71,21 @@
     // ===========================
 
     async function initialize() {
-        if (isDevelopment) {
-            console.log('🎯 Initializing category selection (single device)...');
-        }
+        Logger.debug('🎯 Initializing category selection (single device)...');
 
         showLoading();
 
         try {
             // Check DOMPurify
             if (typeof DOMPurify === 'undefined') {
-                console.error('❌ CRITICAL: DOMPurify not loaded!');
+                Logger.error('❌ CRITICAL: DOMPurify not loaded!');
                 alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
                 return;
             }
 
             // Check dependencies
             if (typeof GameState === 'undefined') {
-                console.error('❌ GameState not found');
+                Logger.error('❌ GameState not found');
                 showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
                 return;
             }
@@ -92,9 +99,7 @@
 
             // ✅ P1 FIX: Set device mode HERE (not on landing page)
             if (!gameState.deviceMode) {
-                if (isDevelopment) {
-                    console.log('📱 Setting device mode: single');
-                }
+                Logger.debug('📱 Setting device mode: single');
                 gameState.setDeviceMode('single');
             }
 
@@ -122,13 +127,11 @@
 
             hideLoading();
 
-            if (isDevelopment) {
-                console.log('✅ Category selection initialized');
-                console.log('Game State:', gameState.getDebugInfo());
-            }
+            Logger.debug('✅ Category selection initialized');
+            Logger.debug('Game State:', gameState.getDebugInfo());
 
         } catch (error) {
-            console.error('❌ Initialization error:', error);
+            Logger.error('❌ Initialization error:', error);
             showNotification('Fehler beim Laden', 'error');
             hideLoading();
         }
@@ -142,9 +145,7 @@
         // ✅ P1 FIX: Device mode might not be set yet - that's OK
         // We set it above, so now validate it
         if (gameState.deviceMode !== 'single') {
-            if (isDevelopment) {
-                console.warn('⚠️ Device mode was not "single", correcting...');
-            }
+            Logger.warn('⚠️ Device mode was not "single", correcting...');
             gameState.setDeviceMode('single');
         }
 
@@ -182,21 +183,19 @@
                 const expirationTime = 24 * 60 * 60 * 1000; // 24 hours
 
                 if (now - verification.timestamp > expirationTime) {
-                    console.warn('⚠️ Age verification expired');
+                    Logger.warn('⚠️ Age verification expired');
                     clearAgeVerification();
                     window.location.href = 'index.html';
                     return false;
                 }
             } else {
                 // No valid verification
-                console.warn('⚠️ No age verification found');
+                Logger.warn('⚠️ No age verification found');
                 window.location.href = 'index.html';
                 return false;
             }
 
-            if (isDevelopment) {
-                console.log(`✅ Age verification: ${ageLevel}+`);
-            }
+            Logger.debug(`✅ Age verification: ${ageLevel}+`);
 
             // Lock categories based on age
             updateCategoryLocks(ageLevel);
@@ -204,7 +203,7 @@
             return true;
 
         } catch (error) {
-            console.error('❌ Error checking age verification:', error);
+            Logger.error('❌ Error checking age verification:', error);
             window.location.href = 'index.html';
             return false;
         }
@@ -264,7 +263,7 @@
         try {
             // ✅ P0 FIX: Use GameState's server-side validation
             if (!gameState) {
-                console.warn('⚠️ GameState not initialized, cannot check premium status');
+                Logger.warn('⚠️ GameState not initialized, cannot check premium status');
                 lockPremiumCategory();
                 return;
             }
@@ -278,9 +277,7 @@
             // ✅ P0 FIX: MANDATORY server-side validation via Cloud Function
             const isPremium = await gameState.isPremiumUser();
 
-            if (isDevelopment) {
-                console.log(`✅ Premium status (server-validated): ${isPremium}`);
-            }
+            Logger.debug(`✅ Premium status (server-validated): ${isPremium}`);
 
             const specialLocked = document.getElementById('special-locked');
 
@@ -297,16 +294,14 @@
                     specialLocked.setAttribute('aria-hidden', 'true');
                 }
 
-                if (isDevelopment) {
-                    console.log('🌟 Special Edition unlocked (server-validated)');
-                }
+                Logger.debug('🌟 Special Edition unlocked (server-validated)');
             } else {
                 // Lock Special Edition
                 lockPremiumCategory();
             }
 
         } catch (error) {
-            console.error('❌ Premium check failed:', error);
+            Logger.error('❌ Premium check failed:', error);
 
             // ✅ P0 FIX: FAIL SECURE - lock on error
             lockPremiumCategory();
@@ -350,7 +345,7 @@
     async function loadQuestionCounts() {
         try {
             if (typeof firebase === 'undefined' || !firebase.database) {
-                console.warn('⚠️ Firebase not available, using fallback counts');
+                Logger.warn('⚠️ Firebase not available, using fallback counts');
                 useFallbackCounts();
                 return;
             }
@@ -364,11 +359,9 @@
             if (firebase.auth && !firebase.auth().currentUser) {
                 try {
                     await firebase.auth().signInAnonymously();
-                    if (isDevelopment) {
-                        console.log('✅ Signed in anonymously for question counts');
-                    }
+                    Logger.debug('✅ Signed in anonymously for question counts');
                 } catch (authError) {
-                    console.warn('⚠️ Anonymous auth failed, using fallback counts:', authError);
+                    Logger.warn('⚠️ Anonymous auth failed, using fallback counts:', authError);
                     useFallbackCounts();
                     return;
                 }
@@ -397,16 +390,14 @@
                     updateQuestionCountUI(category, questionCounts[category]);
                 });
 
-                if (isDevelopment) {
-                    console.log('✅ Question counts loaded:', questionCounts);
-                }
+                Logger.debug('✅ Question counts loaded:', questionCounts);
             } else {
-                console.warn('⚠️ No questions found, using fallbacks');
+                Logger.warn('⚠️ No questions found, using fallbacks');
                 useFallbackCounts();
             }
 
         } catch (error) {
-            console.warn('⚠️ Error loading question counts:', error);
+            Logger.warn('⚠️ Error loading question counts:', error);
             useFallbackCounts();
         }
     }
@@ -417,9 +408,7 @@
             updateQuestionCountUI(category, questionCounts[category]);
         });
 
-        if (isDevelopment) {
-            console.log('✅ Using fallback counts');
-        }
+        Logger.debug('✅ Using fallback counts');
     }
 
     function getFallbackCount(category) {
@@ -880,35 +869,22 @@
     // ===========================
     // UTILITY FUNCTIONS
     // ===========================
+    // UI HELPERS (use NocapUtils)
+    // ===========================
 
-    function showLoading() {
+    const showLoading = window.NocapUtils?.showLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.add('show');
-        }
-    }
+        if (loading) loading.classList.add('show');
+    };
 
-    function hideLoading() {
+    const hideLoading = window.NocapUtils?.hideLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.remove('show');
-        }
-    }
+        if (loading) loading.classList.remove('show');
+    };
 
-    /**
-     * Safe notification using NocapUtils
-     */
-    function showNotification(message, type = 'info', duration = 3000) {
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(message, type, duration);
-            return;
-        }
-
-        // Fallback implementation
-        const container = document.getElementById('notification-container') || document.body;
-
-        // Remove existing notifications
-        document.querySelectorAll('.notification').forEach(n => n.remove());
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(message); // Fallback
+    };
 
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;

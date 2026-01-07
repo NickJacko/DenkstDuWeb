@@ -982,43 +982,9 @@
     /**
      * P0 FIX: Safe notification using NocapUtils
      */
-    function showNotification(message, type = 'info', duration = 3000) {
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(message, type, duration);
-            return;
-        }
-
-        // Fallback implementation
-        const container = document.body;
-
-        // Remove existing notifications
-        document.querySelectorAll('.notification').forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
-        notification.textContent = sanitizeText(String(message));
-
-        // Inline styles for fallback
-        notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
-        notification.style.padding = '15px 25px';
-        notification.style.borderRadius = '10px';
-        notification.style.fontWeight = '600';
-        notification.style.zIndex = '10001';
-        notification.style.maxWidth = '300px';
-        notification.style.color = 'white';
-
-        if (type === 'success') notification.style.background = '#4CAF50';
-        if (type === 'error') notification.style.background = '#f44336';
-        if (type === 'warning') notification.style.background = '#ff9800';
-        if (type === 'info') notification.style.background = '#2196F3';
-
-        container.appendChild(notification);
-
-        setTimeout(() => {
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(sanitizeText(String(message))); // Fallback
+    };
             if (notification.parentNode) {
                 notification.remove();
             }
@@ -1038,9 +1004,7 @@
                 gameListener.off();
                 gameListener = null;
             } catch (error) {
-                if (isDevelopment) {
-                    console.error('❌ Cleanup error:', error);
-                }
+                Logger.error('❌ Cleanup error:', error);
             }
         }
 
@@ -1048,9 +1012,7 @@
             window.NocapUtils.cleanupEventListeners();
         }
 
-        if (isDevelopment) {
-            console.log('✅ Multiplayer lobby cleanup completed');
-        }
+        Logger.debug('✅ Multiplayer lobby cleanup completed');
     }
 
     window.addEventListener('beforeunload', cleanup);

@@ -18,10 +18,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- ✅ OPTIMIZATION: Nur 3 Font-Gewichte -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
-    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ✅ OPTIMIZATION: Global styles + legal styles -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/privacy.css">
 
@@ -31,14 +31,23 @@
     <script defer src="/assets/js/privacy.js"></script>
 </head>
 <body>
-<div class="privacy-container">
-    <a href="index.html" class="back-button">
+
+<!-- ✅ NO-JS FALLBACK: Funktioniert auch ohne JavaScript -->
+<noscript>
+    <div class="noscript-warning" role="alert">
+        <h2>⚠️ JavaScript deaktiviert</h2>
+        <p>Diese Seite funktioniert auch ohne JavaScript. Der Cookie-Banner ist jedoch nicht interaktiv verfügbar.</p>
+    </div>
+</noscript>
+
+<div class="legal-container">
+    <a href="index.html" class="legal-back-button" aria-label="Zurück zur Startseite">
         ← Zurück zur Startseite
     </a>
 
-    <header class="privacy-header">
+    <header class="legal-header">
         <h1>🔒 Datenschutzerklärung</h1>
-        <p class="last-updated">Letzte Aktualisierung: 25. November 2024 | Version 1.0</p>
+        <p class="last-updated">Letzte Aktualisierung: 7. Januar 2026 | Version 2.0</p>
     </header>
 
     <!-- Table of Contents -->
@@ -58,7 +67,7 @@
         </ul>
     </nav>
 
-    <main class="privacy-content">
+    <main class="legal-content">
         <!-- 1. Verantwortlicher -->
         <section id="verantwortlicher">
             <h2>1. Verantwortlicher</h2>
@@ -66,14 +75,22 @@
                 <h3>Kontaktdaten</h3>
                 <p>
                     <strong>Verantwortlich für die Datenverarbeitung:</strong><br>
-                    [Ihr Name / Firmenname]<br>
-                    [Ihre Adresse]<br>
-                    [PLZ] [Stadt]<br>
+                    Nick-Mark Jacklin<br>
+                    Osnabrücker Landstr. 2-8<br>
+                    33335 Gütersloh<br>
                     Deutschland
                 </p>
                 <p>
-                    <strong>E-Mail:</strong> <a href="mailto:privacy@no-cap.app">privacy@no-cap.app</a><br>
+                    <strong>E-Mail:</strong> <a href="mailto:Nickjacklin99@web.de">Nickjacklin99@web.de</a><br>
                     <strong>Website:</strong> <a href="https://no-cap.app">https://no-cap.app</a>
+                </p>
+            </div>
+
+            <div class="info-box">
+                <h4>Hinweis</h4>
+                <p>
+                    Dieses Projekt wird von einer Privatperson betrieben.<br>
+                    Ein Datenschutzbeauftragter muss gemäß Art. 37 DSGVO nicht benannt werden.
                 </p>
             </div>
         </section>
@@ -84,8 +101,19 @@
 
             <h3>2.1 Lokaler Spielmodus (Single-Device)</h3>
             <p>
-                Im lokalen Spielmodus werden <strong>keine personenbezogenen Daten</strong> an unsere Server oder Drittanbieter übermittelt. Alle Spieldaten werden ausschließlich lokal auf Ihrem Gerät gespeichert.
+                Im lokalen Spielmodus werden <strong>keine personenbezogenen Daten</strong> an unsere Server oder Drittanbieter übermittelt. Alle Spieldaten werden ausschließlich lokal auf Ihrem Gerät gespeichert (Browser LocalStorage).
             </p>
+
+            <div class="info-box">
+                <p><strong>Gespeicherte Daten lokal:</strong></p>
+                <ul>
+                    <li>Spielernamen (nur auf Ihrem Gerät)</li>
+                    <li>Spieleinstellungen (Kategorien, Schwierigkeitsgrad)</li>
+                    <li>Spielverlauf (Fragen, Antworten, Ergebnisse)</li>
+                    <li>Altersverifikation (18+ Bestätigung)</li>
+                </ul>
+                <p><em>Diese Daten verlassen Ihr Gerät nicht und können jederzeit gelöscht werden.</em></p>
+            </div>
 
             <h3>2.2 Online-Multiplayer-Modus</h3>
             <p>
@@ -97,8 +125,19 @@
                 <li><strong>Spielantworten:</strong> Ihre Antworten auf Spielfragen (Ja/Nein und Schätzungen)</li>
                 <li><strong>Spielergebnisse:</strong> Ihre Punktzahl und Statistiken während der Spielsitzung</li>
                 <li><strong>Verbindungsdaten:</strong> Online-Status, Zeitstempel der letzten Aktivität</li>
-                <li><strong>Technische Daten:</strong> Anonyme Nutzer-ID (Firebase UID), Gerätetyp (Browser/OS)</li>
+                <li><strong>Anonyme Nutzer-ID:</strong> Firebase UID (keine personenbezogenen Daten verknüpft)</li>
             </ul>
+
+            <div class="warning-box">
+                <p><strong>⚠️ Keine Erfassung von:</strong></p>
+                <ul>
+                    <li>IP-Adressen (werden nicht dauerhaft gespeichert)</li>
+                    <li>Geräte-IDs oder eindeutige Hardware-Kennungen</li>
+                    <li>Standortdaten</li>
+                    <li>Kontakte oder Kontaktlisten</li>
+                    <li>Fotos, Videos oder andere Mediendateien</li>
+                </ul>
+            </div>
 
             <div class="success-box">
                 <strong>✅ Wichtig:</strong> Wir erheben <strong>KEINE</strong> der folgenden Daten:

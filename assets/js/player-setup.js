@@ -994,70 +994,23 @@
     // ===========================
     // UTILITY FUNCTIONS
     // ===========================
+    // UTILITY FUNCTIONS (use NocapUtils)
+    // ===========================
 
-    function showLoading() {
+    const showLoading = window.NocapUtils?.showLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.add('show');
-        }
-    }
+        if (loading) loading.classList.add('show');
+    };
 
-    function hideLoading() {
+    const hideLoading = window.NocapUtils?.hideLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) {
-            loading.classList.remove('show');
-        }
-    }
+        if (loading) loading.classList.remove('show');
+    };
 
-    /**
-     * Safe notification using NocapUtils
-     */
-    function showNotification(message, type = 'info', duration = 3000) {
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(message, type, duration);
-            return;
-        }
-
-        // Fallback implementation
-        const container = document.body;
-
-        // Remove existing notifications
-        document.querySelectorAll('.notification').forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
-
-        const textSpan = document.createElement('span');
-        textSpan.className = 'notification-text';
-        textSpan.textContent = String(message);
-
-        notification.appendChild(textSpan);
-        container.appendChild(notification);
-
-        // Inline styles for fallback
-        notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
-        notification.style.padding = '15px 20px';
-        notification.style.borderRadius = '10px';
-        notification.style.color = 'white';
-        notification.style.fontWeight = '600';
-        notification.style.zIndex = '10001';
-        notification.style.maxWidth = '300px';
-
-        if (type === 'success') notification.style.background = '#4CAF50';
-        if (type === 'error') notification.style.background = '#F44336';
-        if (type === 'warning') notification.style.background = '#FF9800';
-        if (type === 'info') notification.style.background = '#2196F3';
-
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, duration);
-    }
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+        alert(message); // Fallback
+    };
 
     // ===========================
     // CLEANUP

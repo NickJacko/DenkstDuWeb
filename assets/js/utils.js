@@ -1,6 +1,6 @@
 /**
  * NO-CAP - Utility Functions
- * Version 4.0 - Full Audit Compliance & Production Ready
+ * Version 6.0 - Production-Safe Logger
  *
  * Gemeinsame Hilfsfunktionen für die gesamte App
  *
@@ -11,6 +11,11 @@
  * ✅ P1: Error handling improvements
  * ✅ P2: Accessibility enhancements
  * ✅ P2: Performance optimizations
+ *
+ * VERSION 6.0 PRODUCTION HARDENING:
+ * ✅ PRODUCTION: Logger mit auto-sanitization sensibler Daten
+ * ✅ PRODUCTION: Kein console.log-Spam in Production
+ * ✅ PRODUCTION: Automatisches Redacting von UIDs, GameCodes, Emails
  */
 
 // ============================================================================
@@ -47,6 +52,75 @@
     // Event listener tracking (Memory-Leak-Prevention)
     const _eventListeners = [];
     const _activeNotifications = new Set();
+
+    // ============================================================================
+    // 📊 PRODUCTION-READY LOGGER
+    // ============================================================================
+
+    /**
+     * Production-safe logger
+     * - Development: Full console output
+     * - Production: Only errors/warnings, no sensitive data
+     */
+    const Logger = {
+        /**
+         * Debug logging (development only)
+         */
+        debug(...args) {
+            if (isDevelopment) {
+                console.log(...args);
+            }
+        },
+
+        /**
+         * Info logging (development only)
+         */
+        info(...args) {
+            if (isDevelopment) {
+                console.info(...args);
+            }
+        },
+
+        /**
+         * Warning logging (always)
+         */
+        warn(...args) {
+            console.warn(...args);
+        },
+
+        /**
+         * Error logging (always, sanitized)
+         */
+        error(...args) {
+            // Sanitize sensitive data from error messages
+            const sanitized = args.map(arg => {
+                if (typeof arg === 'string') {
+                    // Remove potential UIDs, game codes, tokens
+                    return arg
+                        .replace(/\b[A-Z0-9]{6}\b/g, 'XXXXXX')  // Game codes
+                        .replace(/\b[a-zA-Z0-9]{20,}\b/g, 'REDACTED')  // UIDs/Tokens
+                        .replace(/\b[\w\.-]+@[\w\.-]+\.\w+\b/g, 'EMAIL_REDACTED');  // Emails
+                }
+                return arg;
+            });
+            console.error(...sanitized);
+        },
+
+        /**
+         * Performance timing (development only)
+         */
+        time(label) {
+            if (isDevelopment && console.time) {
+                console.time(label);
+            }
+        },
+
+        timeEnd(label) {
+            if (isDevelopment && console.timeEnd) {
+                console.timeEnd(label);
+            }
+        }
+    };
 
     // ============================================================================
     // 🎨 DOM MANIPULATION - CSP COMPLIANT (No inline styles)
@@ -275,6 +349,12 @@
      */
     function hideNotification(notification) {
         if (!notification || !notification.parentNode) return;
+
+        // ✅ MEMORY LEAK FIX: Clear timeout before hiding
+        if (notification._hideTimeout) {
+            clearTimeout(notification._hideTimeout);
+            notification._hideTimeout = null;
+        }
 
         notification.classList.remove('show');
         _activeNotifications.delete(notification);
@@ -531,7 +611,7 @@
     }
 
     /**
-     * ✅ P1 FIX: Cleanup event listeners (call on page unload)
+     * ✅ MEMORY LEAK FIX: Cleanup event listeners (call on page unload)
      */
     function cleanupEventListeners() {
         _eventListeners.forEach(({ element, event, handler, options }) => {
@@ -543,16 +623,21 @@
         });
         _eventListeners.length = 0;
 
-        // Clear notification timeouts
+        // ✅ MEMORY LEAK FIX: Clear all notification timeouts before clearing
         _activeNotifications.forEach(notification => {
             if (notification._hideTimeout) {
                 clearTimeout(notification._hideTimeout);
+                notification._hideTimeout = null;
+            }
+            // Remove notification from DOM
+            if (notification.parentNode) {
+                notification.remove();
             }
         });
         _activeNotifications.clear();
 
         if (isDevelopment) {
-            console.log('✅ Event listeners cleaned up');
+            console.log('✅ Event listeners and notifications cleaned up');
         }
     }
 
@@ -1081,6 +1166,131 @@
     }
 
     // ============================================================================
+    // 📊 TELEMETRY & LOGGING
+    // ============================================================================
+
+    /**
+     * ✅ OPTIMIZATION: Log to telemetry service (Production-ready logging)
+     * @param {Object} data - Log data
+     * @param {string} data.component - Component name
+     * @param {string} data.message - Log message
+     * @param {string} data.type - Log type (info, warning, error, debug)
+     * @param {number} data.timestamp - Timestamp
+     * @param {Object} data.state - Additional state data
+     */
+    function logToTelemetry(data) {
+        // Skip in development (use console instead)
+        if (isDevelopment) {
+            return;
+        }
+
+        try {
+            // Check if Firebase Analytics is available
+            if (window.firebase && window.firebase.analytics) {
+                const analytics = window.firebase.analytics();
+
+                // Log event with sanitized data
+                analytics.logEvent('app_log', {
+                    component: sanitizeInput(data.component || 'Unknown'),
+                    message: sanitizeInput(data.message || '').substring(0, 100), // Max 100 chars
+                    type: data.type || 'info',
+                    timestamp: data.timestamp || Date.now()
+                });
+            }
+
+            // Fallback: Send to custom endpoint if available
+            if (window.NocapConfig && window.NocapConfig.telemetryEndpoint) {
+                fetch(window.NocapConfig.telemetryEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        component: data.component,
+                        message: data.message,
+                        type: data.type,
+                        timestamp: data.timestamp,
+                        state: data.state,
+                        userAgent: navigator.userAgent,
+                        url: window.location.href
+                    }),
+                    keepalive: true // Ensure request completes even if page unloads
+                }).catch(() => {
+                    // Silently fail - don't block app
+                });
+            }
+
+            // Console output only for errors in production
+            if (data.type === 'error') {
+                console.error(`[${data.component}] ${data.message}`);
+            }
+
+        } catch (error) {
+            // Silently fail - telemetry should never break the app
+            if (isDevelopment) {
+                console.warn('Telemetry logging failed:', error);
+            }
+        }
+    }
+
+    /**
+     * ✅ OPTIMIZATION: Log error with context
+     * @param {string} component - Component name
+     * @param {Error|string} error - Error object or message
+     * @param {Object} context - Additional context
+     */
+    function logError(component, error, context = {}) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+
+        // Development: Full console log
+        if (isDevelopment) {
+            console.error(`[${component}]`, errorMessage, context);
+            if (errorStack) {
+                console.error('Stack:', errorStack);
+            }
+            return;
+        }
+
+        // Production: Telemetry only
+        logToTelemetry({
+            component,
+            message: errorMessage,
+            type: 'error',
+            timestamp: Date.now(),
+            state: {
+                ...context,
+                stack: errorStack ? errorStack.substring(0, 500) : undefined, // Limit stack trace
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            }
+        });
+
+        // Also log to console for critical errors
+        console.error(`[${component}] ${errorMessage}`);
+    }
+
+    /**
+     * ✅ OPTIMIZATION: Log info message
+     * @param {string} component - Component name
+     * @param {string} message - Info message
+     * @param {Object} context - Additional context
+     */
+    function logInfo(component, message, context = {}) {
+        if (isDevelopment) {
+            console.log(`[${component}] ${message}`, context);
+            return;
+        }
+
+        // Production: Telemetry only
+        logToTelemetry({
+            component,
+            message,
+            type: 'info',
+            timestamp: Date.now(),
+            state: context
+        });
+    }
+
+    // ============================================================================
     // ⏰ TIME UTILITIES
     // ============================================================================
 
@@ -1340,7 +1550,7 @@
         _eventListeners.push({ element: document, event: 'keydown', handler: escapeHandler });
 
         if (isDevelopment) {
-            console.log('%c✅ No-Cap Utils v4.0 initialized (Full Audit Compliance)',
+            console.log('%c✅ No-Cap Utils v5.0 initialized (Memory Leak Fixes & Telemetry)',
                 'color: #4CAF50; font-weight: bold; font-size: 12px');
         }
     }
@@ -1366,7 +1576,10 @@
 
     window.NocapUtils = Object.freeze({
         // Version
-        version: '4.0',
+        version: '6.0', // ✅ PRODUCTION: Version bump - Production-Safe Logger
+
+        // ✅ PRODUCTION: Logger (sanitizes sensitive data)
+        Logger,
 
         // ✅ CSP-FIX: DOM Manipulation (CSS-Class based)
         showElement,
@@ -1385,6 +1598,11 @@
         setTextContent,
         createElementWithText,
         createButton,
+
+        // ✅ OPTIMIZATION: Telemetry & Logging
+        logToTelemetry,
+        logError,
+        logInfo,
 
         // Mobile
         initMobileOptimizations,
@@ -1441,9 +1659,10 @@
     });
 
     if (isDevelopment) {
-        console.log('%c✅ NocapUtils v4.0 exported to window.NocapUtils',
+        console.log('%c✅ NocapUtils v6.0 exported to window.NocapUtils',
             'color: #2196F3; font-weight: bold; font-size: 12px');
         console.log('   Available functions:', Object.keys(window.NocapUtils).length);
+        console.log('   New in v6.0: Production-Safe Logger (auto-sanitizes sensitive data)');
     }
 
 })(window);

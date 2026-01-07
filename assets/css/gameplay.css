@@ -18,7 +18,9 @@
 body {
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    height: 100vh;
+    /* ✅ MOBILE FIX: 100svh berücksichtigt safe-area (Notch, Navbar) */
+    height: 100svh;
+    height: 100vh; /* Fallback für ältere Browser */
     overflow: hidden;
     touch-action: manipulation;
     position: relative;
@@ -98,7 +100,9 @@ body {
    ============================================================================ */
 
 .app-container {
-    min-height: 100vh;
+    /* ✅ MOBILE FIX: 100svh berücksichtigt safe-area (Notch, Navbar) */
+    min-height: 100svh;
+    min-height: 100vh; /* Fallback für ältere Browser */
     display: flex;
     flex-direction: column;
     padding: 0;  /* KEIN Padding - geht bis zum Rand! */

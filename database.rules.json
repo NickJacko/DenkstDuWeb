@@ -5,21 +5,37 @@
 
     "games": {
       "$gameId": {
+        // ===================================
+        // READ RULES
+        // ===================================
+        // ✅ SECURITY: Nur authentifizierte User können Spiele lesen
         ".read": "auth != null",
 
-        // ✅ FIX: Erlaubt allen authentifizierten Usern zu schreiben (für Join)
-        ".write": "auth != null",
+        // ===================================
+        // WRITE RULES - Rollenbasiert
+        // ===================================
+        // ✅ SECURITY: Nur Host kann Spiel erstellen/löschen
+        // Guests können nur ihre eigenen Player-Daten und Antworten schreiben
+        ".write": "
+          (auth != null && !data.exists()) ||
+          (auth != null && auth.uid == data.child('hostId').val())
+        ",
 
+        // ===================================
+        // VALIDATION RULES
+        // ===================================
         "gameId": {
           ".validate": "newData.isString() && newData.val().length === 6 && newData.val().matches(/^[A-Z0-9]{6}$/)"
         },
 
         "hostId": {
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString()",
+          // ✅ SECURITY: hostId kann nur beim Erstellen gesetzt werden
+          ".write": "!data.exists()"
         },
 
         "hostName": {
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 20"
         },
 
         "status": {
@@ -28,7 +44,9 @@
             newData.val() == 'waiting' ||
             newData.val() == 'playing' ||
             newData.val() == 'finished'
-          )"
+          )",
+          // ✅ SECURITY: Nur Host kann Status ändern
+          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
         },
 
         "gameState": {
@@ -36,11 +54,15 @@
             newData.val() == 'waiting' ||
             newData.val() == 'playing' ||
             newData.val() == 'finished'
-          )"
+          )",
+          // ✅ SECURITY: Nur Host kann gameState ändern
+          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
         },
 
         "createdAt": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber()",
+          // ✅ SECURITY: createdAt kann nur beim Erstellen gesetzt werden
+          ".write": "!data.exists()"
         },
 
         "lastActivity": {
@@ -51,22 +73,35 @@
           ".validate": "newData.isNumber()"
         },
 
+        // ===================================
+        // PLAYERS - Rollenbasierte Regeln
+        // ===================================
         "players": {
           "$playerId": {
             ".read": "auth != null",
-            // ✅ FIX: Erlaubt allen authentifizierten Usern Spieler hinzuzufügen/ändern
-            ".write": "auth != null",
+
+            // ✅ SECURITY:
+            // - Host kann alle Spieler verwalten
+            // - Guest kann nur eigene Daten ändern (isReady, etc.)
+            // - Jeder authentifizierte User kann sich joinen (neuer Player)
+            ".write": "
+              (auth != null && !data.exists()) ||
+              (auth != null && auth.uid == data.parent().parent().child('hostId').val()) ||
+              (auth != null && auth.uid == $playerId)
+            ",
 
             "id": {
               ".validate": "newData.isString()"
             },
 
             "name": {
-              ".validate": "newData.isString()"
+              ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 20"
             },
 
             "isHost": {
-              ".validate": "newData.isBoolean()"
+              ".validate": "newData.isBoolean()",
+              // ✅ SECURITY: isHost kann nur vom Host gesetzt werden
+              ".write": "auth != null && auth.uid == data.parent().parent().parent().child('hostId').val()"
             },
 
             "isReady": {
@@ -75,45 +110,86 @@
 
             "joinedAt": {
               ".validate": "newData.isNumber()"
+            },
+
+            "lastSeen": {
+              ".validate": "newData.isNumber()"
             }
           }
         },
 
+        // ===================================
+        // SETTINGS - Premium & FSK Validation
+        // ===================================
         "settings": {
-          // ✅ FIX: Erlaubt allen authentifizierten Usern Settings zu lesen/schreiben
-          ".write": "auth != null",
+          // ✅ SECURITY: Nur Host kann Settings ändern
+          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()",
 
           "categories": {
             ".validate": "newData.val() != null"
           },
 
           "difficulty": {
-            ".validate": "newData.isString() && (newData.val() == 'easy' || newData.val() == 'medium' || newData.val() == 'hard')"
+            ".validate": "newData.isString() && (
+              newData.val() == 'easy' ||
+              newData.val() == 'medium' ||
+              newData.val() == 'hard'
+            )"
           },
 
           "alcoholMode": {
             ".validate": "newData.isBoolean()"
           },
 
-
           "mode": {
             ".validate": "newData.isString()"
+          },
+
+          // ✅ PREMIUM: Special-Kategorie nur für Premium-User
+          "special": {
+            ".validate": "
+              newData.val() == false ||
+              (newData.val() == true && auth.token.isPremium == true)
+            "
+          },
+
+          // ✅ FSK: FSK-18 nur für verifizierte User (18+)
+          "fsk18": {
+            ".validate": "
+              newData.val() == false ||
+              (newData.val() == true && auth.token.ageLevel >= 18)
+            "
+          },
+
+          // ✅ FSK: FSK-16 nur für verifizierte User (16+)
+          "fsk16": {
+            ".validate": "
+              newData.val() == false ||
+              (newData.val() == true && auth.token.ageLevel >= 16)
+            "
           }
         },
 
+        // ===================================
+        // QUESTIONS & ROUNDS
+        // ===================================
         "currentQuestion": {
           ".read": "auth != null",
-          ".write": "auth != null"
+          // ✅ SECURITY: Nur Host kann Fragen ändern
+          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
         },
 
         "currentRound": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber()",
+          // ✅ SECURITY: Nur Host kann Round ändern
+          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
         },
 
         "rounds": {
           "$roundId": {
             ".read": "auth != null",
-            ".write": "auth != null",
+            // ✅ SECURITY: Nur Host kann Rounds erstellen/ändern
+            ".write": "auth != null && auth.uid == data.parent().parent().child('hostId').val()",
 
             "question": {
               ".validate": "newData.val() != null"
@@ -122,101 +198,125 @@
             "answers": {
               "$playerId": {
                 ".read": "auth != null",
-                ".write": "auth != null"
+                // ✅ SECURITY: Nur der jeweilige Spieler kann seine Antwort schreiben
+                ".write": "auth != null && auth.uid == $playerId"
+              }
+            },
+
+            "estimates": {
+              "$playerId": {
+                ".read": "auth != null",
+                // ✅ SECURITY: Nur der jeweilige Spieler kann seine Schätzung schreiben
+                ".write": "auth != null && auth.uid == $playerId"
               }
             },
 
             "startedAt": {
               ".validate": "newData.isNumber()"
+            },
+
+            "endedAt": {
+              ".validate": "newData.isNumber()"
             }
           }
         },
 
+        // ===================================
+        // ANSWERS - Player-spezifisch
+        // ===================================
         "answers": {
           "$playerId": {
             ".read": "auth != null",
-            ".write": "auth != null"
+            // ✅ SECURITY: Nur der jeweilige Spieler kann seine Antworten schreiben
+            ".write": "auth != null && auth.uid == $playerId"
           }
         },
 
+        // ===================================
+        // SCORES & RESULTS
+        // ===================================
         "scores": {
           ".read": "auth != null",
-          ".write": "auth != null"
+          // ✅ SECURITY: Nur Host kann Scores aktualisieren
+          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
         },
 
         "showOverallResults": {
-          ".validate": "newData.isBoolean()"
+          ".validate": "newData.isBoolean()",
+          // ✅ SECURITY: Nur Host kann Results zeigen/verstecken
+          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
         },
 
         "overallStats": {
           ".read": "auth != null",
-          ".write": "auth != null"
-        },
-
-        "startedAt": {
-          ".validate": "newData.isNumber()"
+          // ✅ SECURITY: Nur Host kann Stats updaten
+          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
         }
       }
     },
 
+    // ===================================
+    // USER DATA - Nur eigene Daten
+    // ===================================
     "users": {
       "$userId": {
+        // ✅ SECURITY: User kann nur eigene Daten lesen
         ".read": "auth != null && auth.uid == $userId",
+
+        // ✅ SECURITY: User kann nur eigene Daten schreiben
         ".write": "auth != null && auth.uid == $userId",
 
-
         "displayName": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30"
+          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 20"
         },
 
-        "ageVerified": {
-          ".validate": "newData.isBoolean()"
+        "createdAt": {
+          ".validate": "newData.isNumber()"
         },
 
-        "ageVerificationLevel": {
-          ".validate": "newData.isNumber() && (newData.val() == 0 || newData.val() == 18)"
+        "lastSeen": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "gamesPlayed": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
         },
 
         "stats": {
-          ".read": "auth != null",
-          ".write": "auth != null && auth.uid == $userId"
+          ".validate": "newData.val() != null"
+        },
+
+        // ✅ PREMIUM: Premium-Status kann nur von Cloud Functions gesetzt werden
+        "isPremium": {
+          ".validate": "newData.isBoolean()",
+          ".write": false
+        },
+
+        // ✅ FSK: Age-Level kann nur von Cloud Functions gesetzt werden
+        "ageLevel": {
+          ".validate": "newData.isNumber() && (newData.val() == 0 || newData.val() == 16 || newData.val() == 18)",
+          ".write": false
         }
       }
     },
 
+    // ===================================
+    // AUDIT LOGS - Nur von Cloud Functions
+    // ===================================
     "audit_logs": {
       "$userId": {
         ".read": "auth != null && auth.uid == $userId",
+        // ✅ SECURITY: Nur Cloud Functions können Audit Logs schreiben
         ".write": false
       }
     },
 
-    "leaderboard": {
-      ".read": "auth != null",
-      ".write": false,
-      ".indexOn": ["score", "timestamp"]
-    },
-
-    "questions": {
-      ".read": "auth != null",
-      ".write": false,
-
-      "fsk0": {
-        ".read": "auth != null",
-        ".indexOn": ["category", "difficulty"]
-      },
-      "fsk16": {
-        ".read": "auth != null",
-        ".indexOn": ["category", "difficulty"]
-      },
-      "fsk18": {
-        ".read": "auth != null",
-        ".indexOn": ["category", "difficulty"]
-      },
-      "special": {
-        ".read": "auth != null",
-        ".indexOn": ["category", "difficulty"]
-      }
+    // ===================================
+    // ADMIN FUNCTIONS - Nur via Cloud Functions
+    // ===================================
+    "admin": {
+      ".read": false,
+      ".write": false
     }
   }
 }
