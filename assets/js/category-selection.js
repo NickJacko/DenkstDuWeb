@@ -868,7 +868,6 @@
 
     // ===========================
     // UTILITY FUNCTIONS
-    // ===========================
     // UI HELPERS (use NocapUtils)
     // ===========================
 
@@ -886,36 +885,6 @@
         alert(message); // Fallback
     };
 
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
-
-        const notificationContent = document.createElement('div');
-        notificationContent.className = 'notification-content';
-
-        const notificationText = document.createElement('span');
-        notificationText.className = 'notification-text';
-        notificationText.textContent = String(message);
-
-        notificationContent.appendChild(notificationText);
-        notification.appendChild(notificationContent);
-        container.appendChild(notification);
-
-        requestAnimationFrame(() => {
-            notification.classList.add('show');
-        });
-
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 300);
-        }, duration);
-    }
-
     // ===========================
     // CLEANUP
     // ===========================
@@ -925,9 +894,7 @@
             window.NocapUtils.cleanupEventListeners();
         }
 
-        if (isDevelopment) {
-            console.log('✅ Category selection cleanup completed');
-        }
+        Logger.debug('✅ Category selection cleanup completed');
     }
 
     window.addEventListener('beforeunload', cleanup);
