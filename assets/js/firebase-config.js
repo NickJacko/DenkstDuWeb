@@ -313,6 +313,23 @@
                 // Configure Firebase services
                 await configureFirebaseServices(auth, database);
 
+                // Create instances
+                window.firebaseApp = firebase.app();
+                window.firebaseAuth = firebase.auth();
+                window.firebaseDatabase = firebase.database();
+
+                // ✅ OPTIONAL: Functions (only if SDK loaded)
+                try {
+                    if (typeof firebase.functions === 'function') {
+                        // Region must match your deployed functions (default is us-central1 unless set)
+                        window.firebaseFunctions = firebase.functions();
+                    } else {
+                        window.firebaseFunctions = null;
+                    }
+                } catch (e) {
+                    window.firebaseFunctions = null;
+                }
+
                 // Export to window (for backwards compatibility)
                 window.firebaseApp = app;
                 window.firebaseAuth = auth;
@@ -361,7 +378,7 @@
             try {
                 // Method 1: Enable disk persistence (IndexedDB)
                 // Note: This must be called before any database operations
-                const dbRef = database.ref();
+                database.ref();
 
                 // Enable offline capabilities
                 database.goOffline();
@@ -463,7 +480,8 @@
         return {
             app: window.firebaseApp,
             auth: window.firebaseAuth,
-            database: window.firebaseDatabase
+            database: window.firebaseDatabase,
+            functions: window.firebaseFunctions || null
         };
     }
 
@@ -676,7 +694,7 @@
      * Sign in anonymously with retry logic
      *
      * @param {number} retries - Number of retry attempts
-     * @returns {Promise<firebase.User>} Firebase user
+     * @returns {Promise<any>} Firebase user
      */
     async function signInAnonymously(retries = 3) {
         if (!isFirebaseInitialized()) {
