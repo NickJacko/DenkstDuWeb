@@ -305,7 +305,7 @@
 
             // ✅ Check if verification is recent (7 days instead of 24h)
             const now = Date.now();
-            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+            const maxAge = 365 * 24 * 60 * 60 * 1000; // 365 days (1 year)
 
             if (verification.timestamp && now - verification.timestamp > maxAge) {
                 console.warn('⚠️ Age verification expired (>7 days)');

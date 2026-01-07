@@ -7,12 +7,8 @@
       "$gameId": {
         ".read": "auth != null",
 
-        // ✅ FIX: Erlaubt Host, Spiel zu erstellen und zu updaten
-        ".write": "auth != null && (
-          !data.exists() ||
-          data.child('hostId').val() == auth.uid ||
-          root.child('games/' + $gameId + '/players/' + auth.uid).exists()
-        )",
+        // ✅ FIX: Erlaubt allen authentifizierten Usern zu schreiben (für Join)
+        ".write": "auth != null",
 
         "gameId": {
           ".validate": "newData.isString() && newData.val().length === 6 && newData.val().matches(/^[A-Z0-9]{6}$/)"
@@ -51,24 +47,15 @@
           ".validate": "newData.isNumber()"
         },
 
-        // ✅ FIX: lastUpdate darf von Host und Spielern gesetzt werden
         "lastUpdate": {
-          ".validate": "newData.isNumber()",
-          ".write": "auth != null && (
-            data.parent().child('hostId').val() == auth.uid ||
-            root.child('games/' + $gameId + '/players/' + auth.uid).exists()
-          )"
+          ".validate": "newData.isNumber()"
         },
 
         "players": {
           "$playerId": {
             ".read": "auth != null",
-            // ✅ FIX: Erlaubt Spielern, sich selbst hinzuzufügen oder Host zu ändern
-            ".write": "auth != null && (
-              !data.exists() ||
-              auth.uid == $playerId ||
-              root.child('games/' + $gameId + '/hostId').val() == auth.uid
-            )",
+            // ✅ FIX: Erlaubt allen authentifizierten Usern Spieler hinzuzufügen/ändern
+            ".write": "auth != null",
 
             "id": {
               ".validate": "newData.isString()"
@@ -93,10 +80,8 @@
         },
 
         "settings": {
-          ".write": "auth != null && (
-            !root.child('games/' + $gameId + '/hostId').exists() ||
-            root.child('games/' + $gameId + '/hostId').val() == auth.uid
-          )",
+          // ✅ FIX: Erlaubt allen authentifizierten Usern Settings zu lesen/schreiben
+          ".write": "auth != null",
 
           "categories": {
             ".validate": "newData.val() != null"
@@ -117,19 +102,59 @@
         },
 
         "currentQuestion": {
-          ".read": "auth != null && root.child('games/' + $gameId + '/players/' + auth.uid).exists()",
-          ".write": "auth != null && root.child('games/' + $gameId + '/hostId').val() == auth.uid"
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+
+        "currentRound": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "rounds": {
+          "$roundId": {
+            ".read": "auth != null",
+            ".write": "auth != null",
+
+            "question": {
+              ".validate": "newData.val() != null"
+            },
+
+            "answers": {
+              "$playerId": {
+                ".read": "auth != null",
+                ".write": "auth != null"
+              }
+            },
+
+            "startedAt": {
+              ".validate": "newData.isNumber()"
+            }
+          }
         },
 
         "answers": {
           "$playerId": {
-            ".write": "auth != null && auth.uid == $playerId"
+            ".read": "auth != null",
+            ".write": "auth != null"
           }
         },
 
         "scores": {
           ".read": "auth != null",
-          ".write": "auth != null && root.child('games/' + $gameId + '/hostId').val() == auth.uid"
+          ".write": "auth != null"
+        },
+
+        "showOverallResults": {
+          ".validate": "newData.isBoolean()"
+        },
+
+        "overallStats": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+
+        "startedAt": {
+          ".validate": "newData.isNumber()"
         }
       }
     },

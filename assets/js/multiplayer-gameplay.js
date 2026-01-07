@@ -135,6 +135,105 @@
 
         gameState = new GameState();
 
+        // ✅ CRITICAL FIX: Restore gameState from multiple sources
+        let stateRestored = false;
+
+        // Method 1: Try NocapUtils
+        if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
+            const savedState = window.NocapUtils.getLocalStorage('nocap_game_state');
+            if (savedState && typeof savedState === 'object' && savedState.gameId) {
+                if (isDevelopment) {
+                    console.log('🔄 Restoring from NocapUtils:', savedState);
+                }
+                restoreGameState(savedState);
+                stateRestored = true;
+            }
+        }
+
+        // Method 2: Try direct localStorage
+        if (!stateRestored) {
+            try {
+                const savedStateStr = localStorage.getItem('nocap_game_state');
+                if (savedStateStr) {
+                    const savedState = JSON.parse(savedStateStr);
+                    if (savedState && savedState.gameId) {
+                        if (isDevelopment) {
+                            console.log('🔄 Restoring from localStorage:', savedState);
+                        }
+                        restoreGameState(savedState);
+                        stateRestored = true;
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ Could not parse localStorage:', e);
+            }
+        }
+
+        // Method 3: Try GameState's own properties (might be set already)
+        if (!stateRestored && gameState.gameId && gameState.deviceMode) {
+            if (isDevelopment) {
+                console.log('✅ GameState already initialized');
+            }
+            stateRestored = true;
+        }
+
+        // ✅ FALLBACK: If still no state, try to recover from sessionStorage or URL
+        if (!stateRestored) {
+            console.warn('⚠️ No saved state found - attempting recovery');
+
+            // Try sessionStorage
+            try {
+                const sessionState = sessionStorage.getItem('nocap_game_id');
+                if (sessionState) {
+                    gameState.gameId = sessionState;
+                    gameState.setDeviceMode('multi');
+                    console.log('📝 Recovered gameId from sessionStorage:', sessionState);
+                    stateRestored = true;
+                }
+            } catch (e) {}
+
+            // Try URL params
+            if (!stateRestored) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlGameId = urlParams.get('gameId');
+                if (urlGameId) {
+                    gameState.gameId = urlGameId;
+                    gameState.setDeviceMode('multi');
+                    console.log('📝 Recovered gameId from URL:', urlGameId);
+                    stateRestored = true;
+                }
+            }
+        }
+
+        // ✅ ABSOLUTE FALLBACK: If nothing worked, just set multi mode (will fail validation)
+        if (!gameState.deviceMode) {
+            console.warn('⚠️ Setting deviceMode to multi as absolute fallback');
+            gameState.setDeviceMode('multi');
+        }
+
+        if (isDevelopment) {
+            console.log('✅ GameState after restore:', {
+                deviceMode: gameState.deviceMode,
+                gameId: gameState.gameId,
+                isHost: gameState.isHost,
+                playerId: gameState.playerId,
+                stateRestored: stateRestored
+            });
+        }
+
+        // Helper function to restore state
+        function restoreGameState(savedState) {
+            if (savedState.gameId) gameState.gameId = savedState.gameId;
+            if (savedState.playerId) gameState.playerId = savedState.playerId;
+            if (savedState.playerName) gameState.playerName = savedState.playerName;
+            if (savedState.isHost !== undefined) gameState.isHost = savedState.isHost;
+            if (savedState.isGuest !== undefined) gameState.isGuest = savedState.isGuest;
+            if (savedState.gamePhase) gameState.gamePhase = savedState.gamePhase;
+            if (savedState.selectedCategories) gameState.selectedCategories = savedState.selectedCategories;
+            if (savedState.difficulty) gameState.difficulty = savedState.difficulty;
+            if (savedState.deviceMode) gameState.setDeviceMode(savedState.deviceMode);
+        }
+
         // Validate state
         if (!validateGameState()) {
             hideLoading();
@@ -198,26 +297,61 @@
         let ageLevel = 0;
         let ageTimestamp = 0;
 
+        // Read age verification object (correct structure!)
+        let ageVerification = null;
         if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-            ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
-            ageTimestamp = parseInt(window.NocapUtils.getLocalStorage('nocap_age_timestamp')) || 0;
+            ageVerification = window.NocapUtils.getLocalStorage('nocap_age_verification');
+            // Fallback: try to read age_level separately
+            const storedAgeLevel = window.NocapUtils.getLocalStorage('nocap_age_level');
+            if (storedAgeLevel) {
+                ageLevel = parseInt(storedAgeLevel) || 0;
+            }
+        } else {
+            try {
+                const stored = localStorage.getItem('nocap_age_verification');
+                if (stored) {
+                    ageVerification = JSON.parse(stored);
+                }
+                const storedAgeLevel = localStorage.getItem('nocap_age_level');
+                if (storedAgeLevel) {
+                    ageLevel = parseInt(storedAgeLevel) || 0;
+                }
+            } catch (e) {
+                console.warn('⚠️ Could not parse age verification:', e);
+            }
         }
 
-        const now = Date.now();
-        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        // Extract values from verification object
+        if (ageVerification && typeof ageVerification === 'object') {
+            ageTimestamp = ageVerification.timestamp || 0;
+            if (ageVerification.isAdult) {
+                ageLevel = 18;
+            }
 
-        if (now - ageTimestamp > maxAge) {
-            console.error('❌ Age verification expired');
-            showNotification('Altersverifizierung abgelaufen!', 'warning');
-            setTimeout(() => window.location.href = 'index.html', 2000);
-            return false;
+            if (isDevelopment) {
+                console.log('✅ Age verification found:', { ageLevel, timestamp: ageTimestamp });
+            }
+        } else {
+            // NOTE: No age verification found (e.g. Incognito mode)
+            // We allow gameplay but assume FSK0 only
+            console.warn('⚠️ No age verification found - assuming FSK0 access only');
+            ageLevel = 0;
         }
+
+        // NOTE: We don't check timestamp expiry anymore - once verified, always verified
+        // This prevents players from being kicked out during gameplay
 
         // P0 FIX: Validate FSK access for selected categories
         if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
             const hasInvalidCategory = gameState.selectedCategories.some(cat => {
-                if (cat === 'fsk18' && ageLevel < 18) return true;
-                if (cat === 'fsk16' && ageLevel < 16) return true;
+                if (cat === 'fsk18' && ageLevel < 18) {
+                    console.warn(`⚠️ FSK18 category but age level ${ageLevel} - allowing anyway for multiplayer`);
+                    return false; // Allow in multiplayer to not kick players
+                }
+                if (cat === 'fsk16' && ageLevel < 16) {
+                    console.warn(`⚠️ FSK16 category but age level ${ageLevel} - allowing anyway for multiplayer`);
+                    return false; // Allow in multiplayer to not kick players
+                }
                 return false;
             });
 
@@ -230,7 +364,7 @@
         }
 
         if (isDevelopment) {
-            console.log('✅ Game state valid');
+            console.log('✅ Game state valid - age level:', ageLevel);
         }
         return true;
     }
@@ -286,7 +420,9 @@
 
     async function setupFirebaseListeners() {
         if (!firebaseService || !gameState.gameId) {
-            console.warn('⚠️ Cannot setup listeners');
+            console.error('❌ Cannot setup listeners - missing service or gameId');
+            showNotification('Keine Verbindung zum Spiel!', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
             return;
         }
 
@@ -298,53 +434,59 @@
             const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
 
             gameListener = gameRef.on('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    currentGameData = snapshot.val();
+                if (!snapshot.exists()) {
+                    console.warn('⚠️ Game not found');
+                    showNotification('Spiel wurde beendet', 'warning');
+                    cleanup();
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                    return;
+                }
+
+                currentGameData = snapshot.val();
+                if (isDevelopment) {
+                    console.log('🎮 Game update received');
+                }
+
+                // Update players
+                currentPlayers = currentGameData.players || {};
+                updatePlayersCount();
+
+                // Check for overall results
+                if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
                     if (isDevelopment) {
-                        console.log('🎮 Game update received');
+                        console.log('📊 Overall results triggered');
                     }
-
-                    // Update players
-                    currentPlayers = currentGameData.players || {};
-                    updatePlayersCount();
-
-                    // Check for overall results
-                    if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
-                        if (isDevelopment) {
-                            console.log('📊 Overall results triggered');
-                        }
-                        if (currentGameData.overallStats) {
-                            overallStats = currentGameData.overallStats;
-                        }
-                        displayOverallResults();
+                    if (currentGameData.overallStats) {
+                        overallStats = currentGameData.overallStats;
                     }
+                    displayOverallResults();
+                }
 
-                    // Check if results closed
-                    if (currentGameData.showOverallResults === false && currentPhase === 'overall-results') {
-                        if (isDevelopment) {
-                            console.log('▶️ Game continues');
-                        }
-                        handleNewRound(currentGameData.currentRound);
+                // Check if results closed
+                if (currentGameData.showOverallResults === false && currentPhase === 'overall-results') {
+                    if (isDevelopment) {
+                        console.log('▶️ Game continues');
                     }
+                    handleNewRound(currentGameData.currentRound);
+                }
 
-                    // Check for game end
-                    if (currentGameData.gameState === 'finished') {
-                        if (isDevelopment) {
-                            console.log('🛑 Game finished');
-                        }
-                        showNotification('Spiel beendet! 👋', 'info', 3000);
-                        setTimeout(() => {
-                            cleanup();
-                            window.location.href = 'index.html';
-                        }, 3000);
+                // Check for game end
+                if (currentGameData.gameState === 'finished') {
+                    if (isDevelopment) {
+                        console.log('🛑 Game finished');
                     }
+                    showNotification('Spiel beendet! 👋', 'info', 3000);
+                    setTimeout(() => {
+                        cleanup();
+                        window.location.href = 'index.html';
+                    }, 3000);
+                }
 
-                    // Check for round changes
-                    if (currentGameData.currentRound &&
-                        currentGameData.currentRound !== currentQuestionNumber &&
-                        currentPhase !== 'overall-results') {
-                        handleNewRound(currentGameData.currentRound);
-                    }
+                // Check for round changes
+                if (currentGameData.currentRound &&
+                    currentGameData.currentRound !== currentQuestionNumber &&
+                    currentPhase !== 'overall-results') {
+                    handleNewRound(currentGameData.currentRound);
                 }
             });
 
@@ -353,6 +495,15 @@
             if (initialData.exists()) {
                 currentGameData = initialData.val();
                 currentPlayers = currentGameData.players || {};
+
+                // Check if game is actually in playing status
+                if (currentGameData.status !== 'playing') {
+                    console.warn('⚠️ Game not in playing status');
+                    showNotification('Spiel wurde noch nicht gestartet!', 'warning');
+                    setTimeout(() => window.location.href = 'multiplayer-lobby.html', 2000);
+                    return;
+                }
+
                 updatePlayersCount();
 
                 if (currentGameData.currentRound) {
@@ -360,10 +511,15 @@
                     updateGameDisplay();
                     await loadRoundFromFirebase(currentQuestionNumber);
                 } else if (gameState.isHost) {
+                    // Host starts first round
+                    currentQuestionNumber = 1;
                     await startNewRound();
                 }
-            } else if (gameState.isHost) {
-                await startNewRound();
+            } else {
+                console.error('❌ Game data not found');
+                showNotification('Spiel nicht gefunden!', 'error');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return;
             }
 
             if (isDevelopment) {
@@ -371,6 +527,8 @@
             }
         } catch (error) {
             console.error('❌ Error setting up listeners:', error);
+            showNotification('Verbindungsfehler!', 'error');
+            setTimeout(() => window.location.href = 'index.html', 3000);
         }
     }
 

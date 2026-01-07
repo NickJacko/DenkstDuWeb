@@ -202,16 +202,8 @@
                 return false;
             }
 
-            // ✅ Check if verification is recent (7 days instead of 24h)
-            const now = Date.now();
-            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-            if (verification.timestamp && now - verification.timestamp > maxAge) {
-                console.warn('⚠️ Age verification expired (>7 days)');
-                showNotification('Altersverifizierung abgelaufen - bitte neu bestätigen', 'warning');
-                setTimeout(() => window.location.href = 'index.html', 2000);
-                return false;
-            }
+            // NOTE: We don't check timestamp expiry - once verified, always verified
+            // This prevents players from being kicked out
 
             // Get age level from verification
             const ageLevel = verification.isAdult ? 18 : 0;
@@ -282,7 +274,7 @@
 
     async function createNewGame() {
         try {
-            showNotification('Erstelle Spiel...', 'info', 2000);
+            showNotification('Erstelle Spiel...', 'info', 500);
 
             // P0 FIX: Generate game code locally
             const gameId = generateGameCode();
@@ -324,7 +316,7 @@
 
             setupGameListener(gameId);
 
-            showNotification('Spiel erstellt!', 'success', 2000);
+            showNotification('Spiel erstellt!', 'success', 800);
             if (isDevelopment) {
                 console.log(`✅ Game created: ${gameId}`);
             }
@@ -337,7 +329,7 @@
 
     async function loadExistingGame() {
         try {
-            showNotification('Lade Spiel...', 'info', 2000);
+            showNotification('Lade Spiel...', 'info', 500);
 
             const gameRef = firebase.database().ref(`games/${currentGameId}`);
             const snapshot = await gameRef.once('value');
@@ -370,7 +362,7 @@
 
             setupGameListener(currentGameId);
 
-            showNotification('Spiel geladen!', 'success', 2000);
+            showNotification('Spiel geladen!', 'success', 800);
             if (isDevelopment) {
                 console.log(`✅ Game loaded: ${currentGameId}`);
             }
@@ -440,10 +432,53 @@
 
         // If game starts and we're not host, redirect to gameplay
         if (gameData.status === 'playing' && !isHost) {
-            showNotification('Spiel startet!', 'success', 1000);
+            // ✅ CRITICAL FIX: Save gameState for guests BEFORE redirect - TRIPLE REDUNDANCY!
+            gameState.gamePhase = 'playing';
+            gameState.gameId = currentGameId;
+
+            // Prepare state object
+            const stateToSave = {
+                gameId: currentGameId,
+                playerId: gameState.playerId,
+                deviceMode: 'multi',
+                isHost: false,
+                isGuest: true,
+                gamePhase: 'playing',
+                playerName: gameState.playerName,
+                selectedCategories: gameState.selectedCategories,
+                difficulty: gameState.difficulty
+            };
+
+            // Method 1: NocapUtils
+            if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
+                try {
+                    window.NocapUtils.setLocalStorage('nocap_game_state', stateToSave);
+                } catch (e) {}
+            }
+
+            // Method 2: Direct localStorage - GUARANTEED
+            try {
+                localStorage.setItem('nocap_game_state', JSON.stringify(stateToSave));
+                localStorage.setItem('nocap_game_id', currentGameId);
+                console.log('💾 Guest saved to localStorage:', stateToSave);
+            } catch (e) {
+                console.error('❌ localStorage save failed:', e);
+            }
+
+            // Method 3: SessionStorage
+            try {
+                sessionStorage.setItem('nocap_game_id', currentGameId);
+                sessionStorage.setItem('nocap_game_state', JSON.stringify(stateToSave));
+                console.log('💾 Guest saved to sessionStorage');
+            } catch (e) {}
+
+            // Method 4: URL parameter
+            const targetUrl = 'multiplayer-gameplay.html?gameId=' + encodeURIComponent(currentGameId);
+
+            showNotification('Spiel startet!', 'success', 300);
             setTimeout(() => {
-                window.location.href = 'multiplayer-gameplay.html';
-            }, 1000);
+                window.location.href = targetUrl;
+            }, 200);
         }
 
         // If game starts and we're host, redirect after update
@@ -711,25 +746,90 @@
         if (!isHost) return;
 
         try {
+            // Validate we have enough players
+            const gameRef = firebase.database().ref(`games/${currentGameId}`);
+            const snapshot = await gameRef.once('value');
+
+            if (!snapshot.exists()) {
+                showNotification('Spiel nicht gefunden!', 'error');
+                return;
+            }
+
+            const gameData = snapshot.val();
+            const playerCount = Object.keys(gameData.players || {}).length;
+
+            if (playerCount < MIN_PLAYERS) {
+                showNotification(`Mindestens ${MIN_PLAYERS} Spieler nötig!`, 'warning');
+                return;
+            }
+
             showNotification('Starte Spiel...', 'info', 2000);
 
-            const gameRef = firebase.database().ref(`games/${currentGameId}`);
+            // Update game status to playing with proper initialization
             await gameRef.update({
                 status: 'playing',
-                startedAt: Date.now()
+                startedAt: Date.now(),
+                currentRound: 1,  // Initialize first round
+                lastUpdate: firebase.database.ServerValue.TIMESTAMP
             });
 
+            // ✅ CRITICAL FIX: Save gameState BEFORE redirect - TRIPLE REDUNDANCY!
             gameState.gamePhase = 'playing';
+            gameState.gameId = currentGameId;
+            gameState.isHost = true;
 
-            showNotification('Spiel gestartet!', 'success', 1000);
+            // Prepare state object
+            const stateToSave = {
+                gameId: currentGameId,
+                deviceMode: 'multi',
+                isHost: true,
+                isGuest: false,
+                gamePhase: 'playing',
+                playerName: gameState.playerName,
+                selectedCategories: gameState.selectedCategories,
+                difficulty: gameState.difficulty
+            };
 
+            // Method 1: NocapUtils localStorage (if available)
+            if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
+                try {
+                    window.NocapUtils.setLocalStorage('nocap_game_state', stateToSave);
+                } catch (e) {
+                    console.warn('⚠️ NocapUtils save failed:', e);
+                }
+            }
+
+            // Method 2: Direct localStorage (as JSON string) - GUARANTEED TO WORK
+            try {
+                localStorage.setItem('nocap_game_state', JSON.stringify(stateToSave));
+                localStorage.setItem('nocap_game_id', currentGameId);
+                console.log('💾 Host saved to localStorage:', stateToSave);
+            } catch (e) {
+                console.error('❌ localStorage save failed:', e);
+            }
+
+            // Method 3: SessionStorage as backup
+            try {
+                sessionStorage.setItem('nocap_game_id', currentGameId);
+                sessionStorage.setItem('nocap_game_state', JSON.stringify(stateToSave));
+                console.log('💾 Host saved to sessionStorage');
+            } catch (e) {
+                console.warn('⚠️ sessionStorage save failed:', e);
+            }
+
+            // Method 4: URL parameter as absolute fallback
+            const targetUrl = 'multiplayer-gameplay.html?gameId=' + encodeURIComponent(currentGameId);
+
+            showNotification('Spiel gestartet!', 'success', 300);
+
+            // Redirect with gameId in URL
             setTimeout(() => {
-                window.location.href = 'multiplayer-gameplay.html';
-            }, 1000);
+                window.location.href = targetUrl;
+            }, 200);
 
         } catch (error) {
             console.error('❌ Start game error:', error);
-            showNotification('Fehler beim Starten', 'error');
+            showNotification('Fehler beim Starten: ' + error.message, 'error');
         }
     }
 

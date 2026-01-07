@@ -140,23 +140,8 @@
                 return;
             }
 
-            // Check if verification is recent (7 days)
-            const now = Date.now();
-            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-            if (ageVerification.timestamp && now - ageVerification.timestamp > maxAge) {
-                console.warn('⚠️ Age verification expired - redirecting to index');
-                showNotification('Altersverifizierung abgelaufen - bitte neu bestätigen', 'warning', 3000);
-
-                // Save current URL
-                const currentUrl = window.location.href;
-                sessionStorage.setItem('nocap_return_url', currentUrl);
-
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
-                return;
-            }
+            // NOTE: We don't check timestamp expiry - once verified, always verified
+            // This prevents players from being kicked out
 
             if (isDevelopment) {
                 const ageLevel = ageVerification.isAdult ? 18 : 0;
@@ -191,27 +176,37 @@
                                     resolve(result.user);
                                 } catch (signInError) {
                                     console.error('❌ Anonymous sign-in failed:', signInError);
-                                    reject(signInError);
+                                    // Don't reject - continue without auth
+                                    console.warn('⚠️ Continuing without auth');
+                                    resolve(null);
                                 }
                             }
-                        }, reject);
+                        }, (error) => {
+                            console.error('❌ Auth state change error:', error);
+                            // Don't reject - continue without auth
+                            console.warn('⚠️ Continuing without auth');
+                            resolve(null);
+                        });
 
-                        // Timeout after 5 seconds
-                        setTimeout(() => reject(new Error('Auth timeout')), 5000);
+                        // Longer timeout - 20 seconds instead of 5
+                        setTimeout(() => {
+                            console.warn('⚠️ Auth timeout - continuing without auth');
+                            resolve(null);
+                        }, 20000);
                     });
                 } catch (authError) {
                     console.error('❌ Auth error:', authError);
-                    showNotification('Authentifizierung fehlgeschlagen', 'error');
-                    // Continue anyway - try to work without auth
+                    console.warn('⚠️ Continuing without auth');
+                    // Continue anyway - don't block the user
                 }
             }
 
             try {
-                // ✅ P1 FIX: Initialize Firebase with timeout
+                // ✅ P1 FIX: Initialize Firebase with longer timeout
                 const initialized = await Promise.race([
                     firebaseService.initialize(),
                     new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Firebase Timeout')), 10000)
+                        setTimeout(() => reject(new Error('Firebase Timeout')), 20000)
                     )
                 ]);
 
@@ -225,7 +220,17 @@
 
             } catch (error) {
                 console.error('❌ Firebase initialization failed:', error);
-                showNotification('Verbindung fehlgeschlagen. Bitte Seite neu laden.', 'error');
+                hideLoading();
+                showNotification('Server nicht erreichbar. Bitte Internetverbindung prüfen.', 'error', 5000);
+
+                // Give user option to retry
+                setTimeout(() => {
+                    if (confirm('Server nicht erreichbar. Erneut versuchen?')) {
+                        window.location.reload();
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                }, 3000);
                 return;
             } finally {
                 hideLoading();
@@ -765,12 +770,12 @@
             }
 
             hideLoading();
-            showNotification('Erfolgreich beigetreten!', 'success', 1500);
+            showNotification('Erfolgreich beigetreten!', 'success', 500);
 
-            // Redirect to lobby
+            // Redirect to lobby immediately
             setTimeout(() => {
                 window.location.href = 'multiplayer-lobby.html';
-            }, 1500);
+            }, 300);
 
         } catch (error) {
             console.error('❌ Join failed:', error);

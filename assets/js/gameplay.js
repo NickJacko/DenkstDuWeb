@@ -634,7 +634,7 @@ function loadQuestionsFromCache() {
             return null;
         }
         const now = Date.now();
-        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        const maxAge = 365 * 24 * 60 * 60 * 1000; // 365 days (1 year)
 
         // Check if cache is valid
         if (now - cache.timestamp > maxAge) {
