@@ -982,14 +982,9 @@
     /**
      * P0 FIX: Safe notification using NocapUtils
      */
-    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
+    const showNotification = window.NocapUtils?.showNotification || function(message) {
         alert(sanitizeText(String(message))); // Fallback
     };
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, duration);
-    }
 
     // ===========================
     // CLEANUP

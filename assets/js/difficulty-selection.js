@@ -541,15 +541,9 @@
         if (loading) loading.classList.remove('show');
     };
 
-    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
-        alert(message); // Fallback
-    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
-        alert(message); // Fallback
+    const showNotification = window.NocapUtils?.showNotification || function(message) {
+        alert(String(message)); // Fallback
     };
-
-    // ===========================
-    // CLEANUP
-    // ===========================
 
     // ===========================
     // CLEANUP
