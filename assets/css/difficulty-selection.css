@@ -7,6 +7,11 @@
    RESET & BASE STYLES
    ============================================================================ */
 
+/* ✅ CSP FIX: Utility class for hiding elements (replaces inline style) */
+.hidden {
+    display: none !important;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -19,6 +24,7 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     position: relative;
+    color: white;
 }
 
 /* ============================================================================
@@ -225,173 +231,355 @@ body {
 }
 
 /* ============================================================================
-   DIFFICULTY CARDS
+   DIFFICULTY CARDS - MODERNIZED
    ============================================================================ */
 
 .difficulty-grid {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: 22px;
+    margin-bottom: 32px;
 }
 
 .difficulty-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    padding: 25px;
+    /* Glass Morphism */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+
+    /* Shape */
+    border-radius: 22px;
+    border: 2.5px solid rgba(255, 255, 255, 0.25);
+
+    /* Spacing */
+    padding: 28px;
+
+    /* Behavior */
     cursor: pointer;
-    transition: all 0.3s ease;
+
+    /* Transitions */
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Position */
     position: relative;
     overflow: hidden;
+
+    /* Layout */
     text-align: left;
+
+    /* Effects */
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
+/* Subtle background animation */
+.difficulty-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.difficulty-card:hover::before {
+    opacity: 1;
+}
+
+/* Hover State */
 .difficulty-card:hover {
-    transform: scale(1.02);
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-6px) scale(1.02);
+    border-color: rgba(255, 255, 255, 0.45);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.12));
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
 }
 
+/* Focus State (Accessibility) */
 .difficulty-card:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+    outline: 3px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 3px;
 }
 
+.difficulty-card:focus-visible {
+    outline: 3px solid white;
+    outline-offset: 3px;
+}
+
+/* Selected States */
 .difficulty-card.selected {
-    transform: scale(1.03);
+    transform: translateY(-4px) scale(1.03);
+    border-width: 3px;
 }
 
 .difficulty-card.easy.selected {
     border-color: #4CAF50;
-    background: rgba(76, 175, 80, 0.2);
-    box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.22), rgba(76, 175, 80, 0.15));
+    box-shadow: 0 20px 60px rgba(76, 175, 80, 0.35),
+                0 0 35px rgba(76, 175, 80, 0.25);
 }
 
 .difficulty-card.medium.selected {
     border-color: #FF9800;
-    background: rgba(255, 152, 0, 0.2);
-    box-shadow: 0 0 30px rgba(255, 152, 0, 0.3);
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.22), rgba(255, 152, 0, 0.15));
+    box-shadow: 0 20px 60px rgba(255, 152, 0, 0.35),
+                0 0 35px rgba(255, 152, 0, 0.25);
 }
 
 .difficulty-card.hard.selected {
     border-color: #F44336;
-    background: rgba(244, 67, 54, 0.2);
-    box-shadow: 0 0 30px rgba(244, 67, 54, 0.3);
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.22), rgba(244, 67, 54, 0.15));
+    box-shadow: 0 20px 60px rgba(244, 67, 54, 0.35),
+                0 0 35px rgba(244, 67, 54, 0.25);
 }
 
 .difficulty-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .difficulty-left {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 18px;
 }
 
 .sips-indicator {
-    font-size: 2.8rem;
+    font-size: 3rem;
     line-height: 1;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+    transition: transform 0.3s ease;
+}
+
+.difficulty-card:hover .sips-indicator {
+    transform: scale(1.12) rotate(-5deg);
 }
 
 .difficulty-info h2 {
     color: white;
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    letter-spacing: -0.02em;
 }
 
 .difficulty-badge {
-    padding: 6px 12px;
-    border-radius: 15px;
-    font-size: 0.8rem;
+    /* Spacing */
+    padding: 8px 16px;
+
+    /* Shape */
+    border-radius: 18px;
+
+    /* Typography */
+    font-size: 0.85rem;
     font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     color: white;
+
+    /* Effects */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .easy-badge {
-    background: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
 }
 
 .medium-badge {
-    background: #FF9800;
+    background: linear-gradient(135deg, #FF9800, #F57C00);
 }
 
 .hard-badge {
-    background: #F44336;
+    background: linear-gradient(135deg, #F44336, #d32f2f);
 }
 
 .sips-explanation {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 15px;
-    padding: 15px;
-    margin-bottom: 15px;
+    /* Appearance */
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.28));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    /* Shape */
+    border-radius: 16px;
+    border-left: 3px solid rgba(255, 255, 255, 0.4);
+
+    /* Spacing */
+    padding: 18px;
+    margin-bottom: 18px;
+
+    /* Effects */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
 .base-sips {
     color: white;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .sips-formula {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-.sips-formula > div:first-child {
-    font-weight: bold;
-}
-
-.difficulty-description {
     color: rgba(255, 255, 255, 0.9);
-    font-size: 1rem;
+    font-size: 0.95rem;
     line-height: 1.5;
 }
 
+.sips-formula > div:first-child {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.difficulty-description {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 1.02rem;
+    line-height: 1.6;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .difficulty-card {
+        transition: opacity 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .difficulty-card:hover,
+    .difficulty-card.selected {
+        transform: none;
+    }
+
+    .difficulty-card::before {
+        display: none;
+    }
+
+    .sips-indicator {
+        transition: none;
+    }
+
+    .difficulty-card:hover .sips-indicator {
+        transform: none;
+    }
+}
+
 /* ============================================================================
-   CONTROL BUTTONS
+   CONTROL BUTTONS - MODERNIZED
    ============================================================================ */
 
 .controls {
     display: flex;
-    gap: 15px;
+    gap: 16px;
     justify-content: center;
-    margin-top: 30px;
+    margin-top: 32px;
+    flex-wrap: wrap;
 }
 
 .btn {
-    padding: 15px 30px;
+    /* Layout */
+    padding: 17px 32px;
+    min-height: 56px;
+    min-width: 150px;
+
+    /* Reset */
     border: none;
-    border-radius: 25px;
+
+    /* Shape */
+    border-radius: 28px;
+
+    /* Typography */
     font-size: 1.1rem;
     font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: 0.3px;
+
+    /* Behavior */
     cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 140px;
+
+    /* Transitions */
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Font */
     font-family: inherit;
+
+    /* Position */
+    position: relative;
+    overflow: hidden;
+
+    /* Display */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
+/* Shine Effect */
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    transition: left 0.6s ease;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+/* Primary Button */
 .btn-primary {
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
-    box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 12px 30px rgba(76, 175, 80, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4);
+    background: linear-gradient(135deg, #45a049, #4CAF50);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(76, 175, 80, 0.45);
 }
 
+.btn-primary:active:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+/* Focus State (Accessibility) */
 .btn-primary:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+    outline: 3px solid rgba(76, 175, 80, 0.6);
+    outline-offset: 3px;
+}
+
+.btn-primary:focus-visible {
+    outline: 3px solid #4CAF50;
+    outline-offset: 3px;
+}
+
+/* Disabled State */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .btn {
+        transition: opacity 0.2s ease, background-color 0.2s ease;
+    }
+
+    .btn:hover {
+        transform: none;
+    }
+
+    .btn::before {
+        display: none;
+    }
 }
 
 .btn-primary:disabled {
@@ -498,7 +686,7 @@ body {
    HIGH CONTRAST MODE SUPPORT
    ============================================================================ */
 
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
     .difficulty-card {
         border: 3px solid white;
     }

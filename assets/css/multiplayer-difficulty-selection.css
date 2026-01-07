@@ -19,6 +19,7 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     padding-top: 2rem;
+    color: white;
 }
 
 /* ============================================================================
@@ -600,7 +601,7 @@ body {
    HIGH CONTRAST MODE SUPPORT
    ============================================================================ */
 
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
     .difficulty-card,
     .btn-continue {
         border: 2px solid white;

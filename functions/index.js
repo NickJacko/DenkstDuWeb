@@ -1,21 +1,17 @@
 /**
  * No-Cap Firebase Cloud Functions
  * Server-Side Security & Payment Processing
- * Version 2.0 - Using .env instead of deprecated functions.config()
+ * Version 2.1 - Core Security Functions (Stripe disabled temporarily)
  */
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 
-// ===== NEW: Load from .env instead of functions.config() =====
-// Stripe ist optional - nur initialisieren wenn API Key vorhanden
-const stripe = process.env.STRIPE_SECRET_KEY
-    ? require('stripe')(process.env.STRIPE_SECRET_KEY)
-    : null;
-
-const express = require('express');
-const cors = require('cors');
+// Stripe & Express temporarily disabled - uncomment when needed
+// const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+// const express = require('express');
+// const cors = require('cors');
 
 admin.initializeApp();
 
@@ -349,13 +345,18 @@ exports.validateAnswer = functions.https.onCall(async (data, context) => {
 
 /**
  * 3. Premium Payment Verification (Stripe Webhook)
+ * TEMPORARILY DISABLED - Enable when Stripe is configured
  */
+/*
 const app = express();
 app.use(cors({ origin: true }));
 
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    if (!stripe) {
+        return res.status(503).send('Stripe not configured');
+    }
+
     const sig = req.headers['stripe-signature'];
-    // ===== NEW: Use process.env instead of functions.config() =====
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     let event;
@@ -400,13 +401,20 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 });
 
 exports.stripeWebhook = functions.https.onRequest(app);
+*/
 
 /**
  * 4. Create Stripe Checkout Session
+ * TEMPORARILY DISABLED - Enable when Stripe is configured
  */
+/*
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    if (!stripe) {
+        throw new functions.https.HttpsError('failed-precondition', 'Stripe not configured');
     }
 
     const userId = context.auth.uid;
@@ -446,9 +454,11 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
         throw new functions.https.HttpsError('internal', 'Failed to create checkout session');
     }
 });
+*/
 
 /**
  * 5. Check Premium Status
+ * ✅ AUDIT FIX: Server-side Premium validation with Custom Claims
  */
 exports.checkPremiumStatus = functions.https.onCall(async (data, context) => {
     if (!context.auth) {
@@ -456,6 +466,18 @@ exports.checkPremiumStatus = functions.https.onCall(async (data, context) => {
     }
 
     const userId = context.auth.uid;
+
+    // ✅ P0 FIX: Check Custom Claims first (cached, faster)
+    const userToken = context.auth.token;
+    if (userToken.isPremium === true) {
+        console.log(`✅ Premium verified via Custom Claims for user ${userId}`);
+        return {
+            hasPremium: true,
+            source: 'custom_claims'
+        };
+    }
+
+    // Fallback: Check Database for purchase record
     const purchaseRef = admin.database().ref(`users/${userId}/purchases/special`);
     const snapshot = await purchaseRef.once('value');
 
@@ -469,10 +491,24 @@ exports.checkPremiumStatus = functions.https.onCall(async (data, context) => {
         return { hasPremium: false };
     }
 
+    // ✅ P0 FIX: Update Custom Claims if purchase found but not in claims
+    try {
+        await admin.auth().setCustomUserClaims(userId, {
+            ...userToken,
+            isPremium: true,
+            premiumSince: purchase.timestamp
+        });
+
+        console.log(`✅ Premium Custom Claims updated for user ${userId}`);
+    } catch (error) {
+        console.error('❌ Failed to update Custom Claims:', error);
+    }
+
     return {
         hasPremium: true,
         purchaseDate: purchase.timestamp,
-        productId: purchase.id
+        productId: purchase.id,
+        source: 'database'
     };
 });
 

@@ -404,7 +404,10 @@
         removeBtn.type = 'button';
         removeBtn.textContent = '×';
         removeBtn.dataset.index = newIndex;
-        removeBtn.style.display = newIndex < 2 ? 'none' : 'flex';
+        // ✅ CSP FIX: Use CSS class instead of inline style
+        if (newIndex < 2) {
+            removeBtn.classList.add('hidden');
+        }
         removeBtn.setAttribute('aria-label', `Spieler ${newIndex + 1} entfernen`);
 
         newRow.appendChild(numberDiv);
@@ -445,7 +448,12 @@
             inputEl.setAttribute('aria-label', `Spieler ${newIndex + 1} Name`);
 
             removeBtn.dataset.index = newIndex;
-            removeBtn.style.display = newIndex < 2 ? 'none' : 'flex';
+            // ✅ CSP FIX: Use CSS class instead of inline style
+            if (newIndex < 2) {
+                removeBtn.classList.add('hidden');
+            } else {
+                removeBtn.classList.remove('hidden');
+            }
             removeBtn.setAttribute('aria-label', `Spieler ${newIndex + 1} entfernen`);
         });
 
@@ -512,7 +520,8 @@
         const players = getPlayersList();
 
         if (players.length > 0) {
-            preview.style.display = 'block';
+            // ✅ CSP FIX: Use CSS class instead of inline style
+            preview.classList.remove('hidden');
             playersOrder.innerHTML = '';
 
             players.forEach((name, index) => {
@@ -549,7 +558,8 @@
 
             setupDragAndDrop();
         } else {
-            preview.style.display = 'none';
+            // ✅ CSP FIX: Use CSS class instead of inline style
+            preview.classList.add('hidden');
         }
     }
 
@@ -749,10 +759,11 @@
         const totalInputs = removeButtons.length;
 
         removeButtons.forEach((btn, index) => {
+            // ✅ CSP FIX: Use CSS class instead of inline style
             if (index < 2 || totalInputs <= MIN_PLAYERS) {
-                btn.style.display = 'none';
+                btn.classList.add('hidden');
             } else {
-                btn.style.display = 'flex';
+                btn.classList.remove('hidden');
             }
         });
     }

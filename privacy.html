@@ -7,16 +7,28 @@
     <meta name="robots" content="index, follow">
     <title>Datenschutzerklärung | No-Cap</title>
 
-    <!-- Favicon - Kappe Emoji -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <!-- ✅ SECURITY: Security Headers -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
 
-    <!-- Fonts -->
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- External CSS -->
+    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/privacy.css">
+
+    <!-- ✅ SECURITY: Scripts for cookie banner and privacy controls -->
+    <script src="/assets/lib/purify.min.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/privacy.js"></script>
 </head>
 <body>
 <div class="privacy-container">

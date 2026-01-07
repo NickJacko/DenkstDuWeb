@@ -573,7 +573,8 @@
 
         const personalBox = document.getElementById('personal-result');
         if (personalBox) {
-            personalBox.style.display = 'none';
+            // ✅ CSP FIX: Use CSS class instead of inline style
+            personalBox.classList.add('hidden');
         }
 
         const selectionDisplay = document.getElementById('current-selection');
@@ -995,7 +996,8 @@
         if (myResult) {
             const personalBox = document.getElementById('personal-result');
             if (personalBox) {
-                personalBox.style.display = 'block';
+                // ✅ CSP FIX: Use CSS class instead of inline style
+                personalBox.classList.remove('hidden');
             }
 
             const estEl = document.getElementById('personal-estimation');
@@ -1010,7 +1012,9 @@
             const statusEl = document.getElementById('personal-status');
             if (statusEl) {
                 statusEl.textContent = statusText;
-                statusEl.style.color = myResult.isCorrect ? '#4CAF50' : '#f44336';
+                // ✅ CSP FIX: Use CSS classes instead of inline style
+                statusEl.classList.remove('status-correct', 'status-incorrect');
+                statusEl.classList.add(myResult.isCorrect ? 'status-correct' : 'status-incorrect');
             }
 
             const sipsText = myResult.sips === 0 ?

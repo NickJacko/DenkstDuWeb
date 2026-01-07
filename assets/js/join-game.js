@@ -107,7 +107,8 @@
             }
 
             gameState.setDeviceMode('multi');
-            gameState.setIsGuest(true);
+            gameState.isHost = false;
+            gameState.isGuest = true;
 
             if (isDevelopment) {
                 console.log('✅ Device mode set:', {
@@ -117,8 +118,93 @@
                 });
             }
 
+            // ===========================
+            // CRITICAL: CHECK AGE VERIFICATION
+            // User must have completed age verification before joining
+            // ===========================
+            const ageVerification = window.NocapUtils
+                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
+                : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
+
+            if (!ageVerification || typeof ageVerification !== 'object') {
+                console.warn('⚠️ No age verification - redirecting to index');
+                showNotification('Bitte bestätige zuerst dein Alter', 'warning', 3000);
+
+                // Save current URL to return after verification
+                const currentUrl = window.location.href;
+                sessionStorage.setItem('nocap_return_url', currentUrl);
+
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return;
+            }
+
+            // Check if verification is recent (7 days)
+            const now = Date.now();
+            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+            if (ageVerification.timestamp && now - ageVerification.timestamp > maxAge) {
+                console.warn('⚠️ Age verification expired - redirecting to index');
+                showNotification('Altersverifizierung abgelaufen - bitte neu bestätigen', 'warning', 3000);
+
+                // Save current URL
+                const currentUrl = window.location.href;
+                sessionStorage.setItem('nocap_return_url', currentUrl);
+
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return;
+            }
+
+            if (isDevelopment) {
+                const ageLevel = ageVerification.isAdult ? 18 : 0;
+                console.log('✅ Age verification valid:', { ageLevel, timestamp: ageVerification.timestamp });
+            }
+
             // Initialize Firebase
             showLoading('Verbinde mit Server...');
+
+            // ✅ FIX: Ensure anonymous auth BEFORE initializing Firebase Service
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        const unsubscribe = firebase.auth().onAuthStateChanged(async (user) => {
+                            unsubscribe();
+
+                            if (user) {
+                                if (isDevelopment) {
+                                    console.log('✅ User already authenticated:', user.uid);
+                                }
+                                resolve(user);
+                            } else {
+                                if (isDevelopment) {
+                                    console.log('⚠️ No user - signing in anonymously...');
+                                }
+
+                                try {
+                                    const result = await firebase.auth().signInAnonymously();
+                                    if (isDevelopment) {
+                                        console.log('✅ Anonymous sign-in successful:', result.user.uid);
+                                    }
+                                    resolve(result.user);
+                                } catch (signInError) {
+                                    console.error('❌ Anonymous sign-in failed:', signInError);
+                                    reject(signInError);
+                                }
+                            }
+                        }, reject);
+
+                        // Timeout after 5 seconds
+                        setTimeout(() => reject(new Error('Auth timeout')), 5000);
+                    });
+                } catch (authError) {
+                    console.error('❌ Auth error:', authError);
+                    showNotification('Authentifizierung fehlgeschlagen', 'error');
+                    // Continue anyway - try to work without auth
+                }
+            }
 
             try {
                 // ✅ P1 FIX: Initialize Firebase with timeout
@@ -413,17 +499,28 @@
 
             const gameData = snapshot.val();
 
-            // ✅ P0 FIX: Validate game state
-            if (gameData.gameState === 'finished') {
+            // ✅ P0 FIX: Validate game state (check both 'status' and 'gameState')
+            const gameStatus = gameData.status || gameData.gameState;
+
+            if (gameStatus === 'finished') {
                 throw new Error('Spiel bereits beendet');
             }
 
-            if (gameData.gameState === 'playing') {
+            // ✅ FIX: 'lobby' und 'waiting' sind OK zum Joinen, nur 'playing' blockieren
+            if (gameStatus === 'playing') {
                 throw new Error('Spiel läuft bereits');
             }
 
-            // ✅ P1 FIX: Check FSK restrictions using FirebaseService
-            const userAgeLevel = firebaseService.getCachedAgeLevel();
+            if (isDevelopment) {
+                console.log('✅ Game status OK for joining:', gameStatus);
+            }
+
+            // ✅ FIX: Check FSK restrictions using local age verification
+            const ageVerification = window.NocapUtils
+                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
+                : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
+
+            const userAgeLevel = (ageVerification && ageVerification.isAdult) ? 18 : 0;
             const categories = gameData.settings?.categories || gameData.selectedCategories || [];
 
             const hasFSK18 = categories.includes('fsk18');
@@ -634,26 +731,37 @@
             // ===========================
             // CRITICAL: Setup GameState with enforced device mode
             // ===========================
-            gameState.setGameId(gameCode);
-            gameState.setPlayerId(result.playerId);
+            gameState.gameId = gameCode;
+            gameState.playerId = result.playerId;
             gameState.setPlayerName(playerName);
 
             // ENFORCE MULTIPLAYER GUEST MODE
             gameState.setDeviceMode('multi');
-            gameState.setIsGuest(true);
+            gameState.isHost = false;
+            gameState.isGuest = true;
 
             // Store game settings
             const settings = result.gameData.settings || {};
             const categories = settings.categories || result.gameData.selectedCategories || [];
 
+            // Add categories using the correct method
             categories.forEach(cat => {
-                gameState.toggleCategory(cat);
+                gameState.addCategory(cat);
             });
 
             gameState.setDifficulty(settings.difficulty || 'medium');
 
             if (isDevelopment) {
-                console.log('✅ Game state configured:', gameState.getState());
+                console.log('✅ Game state configured:', {
+                    gameId: gameState.gameId,
+                    playerId: gameState.playerId,
+                    playerName: gameState.playerName,
+                    deviceMode: gameState.deviceMode,
+                    isHost: gameState.isHost,
+                    isGuest: gameState.isGuest,
+                    categories: gameState.selectedCategories,
+                    difficulty: gameState.difficulty
+                });
             }
 
             hideLoading();

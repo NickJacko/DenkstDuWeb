@@ -19,6 +19,7 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     position: relative;
+    color: white;
 }
 
 /* ============================================================================
@@ -518,7 +519,7 @@ body {
    HIGH CONTRAST MODE SUPPORT
    ============================================================================ */
 
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
     .input-field,
     .btn {
         border: 2px solid white;

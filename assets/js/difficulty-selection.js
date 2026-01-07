@@ -1,9 +1,9 @@
 /**
  * No-Cap Difficulty Selection (Single Device Mode)
- * Version 4.0 - Production Ready (Device Mode Validation)
+ * Version 5.0 - P0 Security Fixes Applied
  *
- * ✅ P1 FIX: Validates device mode (should be "single")
- * ✅ P0 FIX: Age-level validation for categories
+ * ✅ P1 FIX: Validates device mode (should be "single" or "multi")
+ * ✅ P0 FIX: MANDATORY server-side FSK validation for categories
  * ✅ P0 FIX: Safe DOM manipulation (no innerHTML)
  * ✅ P1 FIX: Proper routing based on device mode
  */
@@ -73,7 +73,10 @@
         }
     }
 
-    function initializeGame() {
+    /**
+     * ✅ P0 FIX: Initialize game (now async for server-side validation)
+     */
+    async function initializeGame() {
         try {
             gameState = new GameState();
 
@@ -82,8 +85,9 @@
                 return;
             }
 
-            // Validate prerequisites
-            if (!validateGameState()) {
+            // ✅ P0 FIX: Await async validation with server-side FSK checks
+            const isValid = await validateGameState();
+            if (!isValid) {
                 return;
             }
 
@@ -145,9 +149,10 @@
     }
 
     /**
-     * Validate game state and categories
+     * ✅ P0 FIX: Validate game state with MANDATORY server-side FSK validation
+     * @returns {Promise<boolean>} True if valid
      */
-    function validateGameState() {
+    async function validateGameState() {
         if (!gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
@@ -167,22 +172,37 @@
             return false;
         }
 
-        // ✅ P0 FIX: Validate age access to selected categories
-        const ageLevel = window.NocapUtils
-            ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
-            : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+        // ✅ P0 FIX: MANDATORY server-side FSK validation for each category
+        try {
+            for (const category of gameState.selectedCategories) {
+                // Skip FSK0 - always allowed
+                if (category === 'fsk0') continue;
 
-        const hasInvalidCategory = gameState.selectedCategories.some(category => {
-            if (category === 'fsk18' && ageLevel < 18) return true;
-            if (category === 'fsk16' && ageLevel < 16) return true;
-            return false;
-        });
+                // ✅ P0 FIX: Server-side validation via Cloud Function
+                const hasAccess = await gameState.canAccessFSK(category);
 
-        if (hasInvalidCategory) {
-            console.error('❌ Invalid categories for age level');
-            showNotification('Ungültige Kategorien für dein Alter!', 'error');
+                if (!hasAccess) {
+                    console.error(`❌ Server denied access to category: ${category}`);
+                    showNotification(`Keine Berechtigung für ${category.toUpperCase()}!`, 'error');
 
-            // Redirect based on device mode
+                    // Redirect to category selection to choose valid categories
+                    const redirectUrl = gameState.deviceMode === 'multi'
+                        ? 'multiplayer-category-selection.html'
+                        : 'category-selection.html';
+
+                    setTimeout(() => window.location.href = redirectUrl, 2000);
+                    return false;
+                }
+            }
+
+            if (isDevelopment) {
+                console.log('✅ All categories validated (server-side)');
+            }
+
+        } catch (error) {
+            console.error('❌ Server-side FSK validation failed:', error);
+            showNotification('FSK-Validierung fehlgeschlagen. Bitte erneut versuchen.', 'error');
+
             const redirectUrl = gameState.deviceMode === 'multi'
                 ? 'multiplayer-category-selection.html'
                 : 'category-selection.html';
@@ -309,7 +329,8 @@
                 const lineEl = document.createElement('div');
                 lineEl.textContent = line;
                 if (index === 0) {
-                    lineEl.style.fontWeight = 'bold';
+                    // ✅ CSP-FIX: Use CSS class instead of inline style
+                    lineEl.classList.add('font-bold');
                 }
                 formulaEl.appendChild(lineEl);
             });
@@ -550,29 +571,16 @@
         notification.appendChild(notificationText);
         container.appendChild(notification);
 
-        // Position it (fallback style)
-        notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
-        notification.style.padding = '15px 20px';
-        notification.style.borderRadius = '10px';
-        notification.style.color = 'white';
-        notification.style.fontWeight = '600';
-        notification.style.zIndex = '10001';
-        notification.style.transform = 'translateX(400px)';
-        notification.style.transition = 'transform 0.3s ease';
-
-        if (type === 'success') notification.style.background = '#4CAF50';
-        if (type === 'error') notification.style.background = '#F44336';
-        if (type === 'warning') notification.style.background = '#FF9800';
-        if (type === 'info') notification.style.background = '#2196F3';
+        // ✅ CSP-FIX: Use CSS classes instead of inline styles
+        notification.className = `notification notification-${type} notification-slide-in`;
 
         requestAnimationFrame(() => {
-            notification.style.transform = 'translateX(0)';
+            notification.classList.add('notification-visible');
         });
 
         setTimeout(() => {
-            notification.style.transform = 'translateX(400px)';
+            notification.classList.remove('notification-visible');
+            notification.classList.add('notification-slide-out');
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.remove();

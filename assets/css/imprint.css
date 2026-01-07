@@ -431,7 +431,7 @@ body {
     }
 }
 
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
     .back-button,
     .footer-nav-link,
     .imprint-content a {

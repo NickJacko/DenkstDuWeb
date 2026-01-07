@@ -446,7 +446,7 @@ body {
     }
 }
 
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
     .back-button,
     .toc a,
     .privacy-content a {

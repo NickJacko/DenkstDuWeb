@@ -1,11 +1,11 @@
 /**
  * No-Cap Category Selection (Single Device Mode)
- * Version 5.0 - Production Ready (Device Mode Fix)
+ * Version 6.0 - P0 Security Fixes Applied
  *
  * ✅ P1 FIX: Device mode is SET HERE, not on landing page
  * ✅ P0 FIX: Age verification with expiration check
  * ✅ P0 FIX: Safe DOM manipulation (no innerHTML)
- * ✅ P1 FIX: Premium checks with server-side TODO
+ * ✅ P0 FIX: MANDATORY server-side premium validation via Cloud Function
  */
 
 (function(window) {
@@ -236,7 +236,9 @@
 
                 const lockedOverlay = document.getElementById(`${category}-locked`);
                 if (lockedOverlay) {
-                    lockedOverlay.style.display = 'flex';
+                    // ✅ CSP-FIX: Use CSS class instead of inline style
+                    lockedOverlay.classList.remove('hidden');
+                    lockedOverlay.classList.add('d-flex');
                     lockedOverlay.setAttribute('aria-hidden', 'false');
                 }
             } else {
@@ -245,7 +247,9 @@
 
                 const lockedOverlay = document.getElementById(`${category}-locked`);
                 if (lockedOverlay) {
-                    lockedOverlay.style.display = 'none';
+                    // ✅ CSP-FIX: Use CSS class instead of inline style
+                    lockedOverlay.classList.add('hidden');
+                    lockedOverlay.classList.remove('d-flex');
                     lockedOverlay.setAttribute('aria-hidden', 'true');
                 }
             }
@@ -253,66 +257,91 @@
     }
 
     /**
-     * ⚠️ WARNING: Check premium status (CLIENT-SIDE ONLY)
-     * This is NOT secure and can be manipulated
-     * Premium MUST be verified server-side via Firebase Security Rules
+     * ✅ P0 FIX: Check premium status with MANDATORY server-side validation
+     * Uses GameState.isPremiumUser() which calls Cloud Function
      */
     async function checkPremiumStatus() {
         try {
-            let isPremium = false;
-
-            // Try to check via Firebase
-            if (window.FirebaseService && window.FirebaseService.isReady) {
-                try {
-                    const userId = window.FirebaseService.getCurrentUserId();
-                    if (userId && firebase && firebase.database) {
-                        const snapshot = await firebase.database()
-                            .ref(`premiumUsers/${userId}`)
-                            .once('value');
-                        isPremium = snapshot.exists();
-                    }
-                } catch (error) {
-                    console.warn('⚠️ Premium check error:', error);
-                }
+            // ✅ P0 FIX: Use GameState's server-side validation
+            if (!gameState) {
+                console.warn('⚠️ GameState not initialized, cannot check premium status');
+                lockPremiumCategory();
+                return;
             }
+
+            // Show loading state for premium check
+            const specialCard = document.querySelector('[data-category="special"]');
+            if (specialCard) {
+                specialCard.classList.add('checking-premium');
+            }
+
+            // ✅ P0 FIX: MANDATORY server-side validation via Cloud Function
+            const isPremium = await gameState.isPremiumUser();
 
             if (isDevelopment) {
-                console.log(`ℹ️ Premium status (client-side): ${isPremium}`);
+                console.log(`✅ Premium status (server-validated): ${isPremium}`);
             }
 
-            const specialCard = document.querySelector('[data-category="special"]');
             const specialLocked = document.getElementById('special-locked');
 
             if (isPremium) {
+                // Unlock Special Edition
                 if (specialCard) {
-                    specialCard.classList.remove('locked');
+                    specialCard.classList.remove('locked', 'checking-premium');
                     specialCard.setAttribute('aria-disabled', 'false');
                 }
                 if (specialLocked) {
-                    specialLocked.style.display = 'none';
+                    // ✅ CSP-FIX: Use CSS class instead of inline style
+                    specialLocked.classList.add('hidden');
+                    specialLocked.classList.remove('d-flex');
                     specialLocked.setAttribute('aria-hidden', 'true');
                 }
+
+                if (isDevelopment) {
+                    console.log('🌟 Special Edition unlocked (server-validated)');
+                }
             } else {
-                if (specialCard) {
-                    specialCard.classList.add('locked');
-                    specialCard.setAttribute('aria-disabled', 'true');
-                }
-                if (specialLocked) {
-                    specialLocked.style.display = 'flex';
-                    specialLocked.setAttribute('aria-hidden', 'false');
-                }
+                // Lock Special Edition
+                lockPremiumCategory();
             }
 
         } catch (error) {
-            console.warn('⚠️ Premium check error:', error);
-            // Default to locked on error
-            const specialCard = document.querySelector('[data-category="special"]');
-            if (specialCard) {
-                specialCard.classList.add('locked');
-                specialCard.setAttribute('aria-disabled', 'true');
+            console.error('❌ Premium check failed:', error);
+
+            // ✅ P0 FIX: FAIL SECURE - lock on error
+            lockPremiumCategory();
+
+            // Show user-friendly error
+            if (window.NocapUtils && window.NocapUtils.showNotification) {
+                window.NocapUtils.showNotification(
+                    'Premium-Status konnte nicht überprüft werden',
+                    'warning',
+                    3000
+                );
             }
         }
     }
+
+    /**
+     * Helper: Lock premium category (fail-secure)
+     */
+    function lockPremiumCategory() {
+        const specialCard = document.querySelector('[data-category="special"]');
+        const specialLocked = document.getElementById('special-locked');
+
+        if (specialCard) {
+            specialCard.classList.add('locked');
+            specialCard.classList.remove('checking-premium');
+            specialCard.setAttribute('aria-disabled', 'true');
+        }
+        if (specialLocked) {
+            // ✅ CSP-FIX: Use CSS class instead of inline style
+            specialLocked.classList.remove('hidden');
+            specialLocked.classList.add('d-flex');
+            specialLocked.setAttribute('aria-hidden', 'false');
+        }
+    }
+
 
     // ===========================
     // QUESTION COUNTS
@@ -567,7 +596,9 @@
 
         const modal = document.getElementById('premium-modal');
         if (modal) {
-            modal.style.display = 'flex';
+            // ✅ CSP-FIX: Use CSS class instead of inline style
+            modal.classList.remove('hidden');
+            modal.classList.add('d-flex');
             modal.setAttribute('aria-hidden', 'false');
 
             // Focus trap
@@ -581,7 +612,9 @@
     function closePremiumModal() {
         const modal = document.getElementById('premium-modal');
         if (modal) {
-            modal.style.display = 'none';
+            // ✅ CSP-FIX: Use CSS class instead of inline style
+            modal.classList.add('hidden');
+            modal.classList.remove('d-flex');
             modal.setAttribute('aria-hidden', 'true');
 
             // Cleanup focus trap
@@ -639,7 +672,9 @@
 
             const specialLocked = document.getElementById('special-locked');
             if (specialLocked) {
-                specialLocked.style.display = 'none';
+                // ✅ CSP-FIX: Use CSS class instead of inline style
+                specialLocked.classList.add('hidden');
+                specialLocked.classList.remove('d-flex');
                 specialLocked.setAttribute('aria-hidden', 'true');
             }
 

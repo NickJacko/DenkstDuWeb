@@ -1,11 +1,13 @@
 /**
  * No-Cap Multiplayer Category Selection
- * Version 3.0 - Audit-Fixed & Production Ready with Device Mode Enforcement
+ * Version 4.0 - P0 Security Fixes Applied
  *
  * CRITICAL: This page is the "Source of Truth" for Multiplayer Host Mode
  * - Sets deviceMode = 'multi'
  * - Sets isHost = true, isGuest = false
  * - Creates/manages Firebase game
+ *
+ * ✅ P0 FIX: MANDATORY server-side premium validation
  */
 
 (function(window) {
@@ -59,6 +61,7 @@
     let gameState = null;
     let firebaseService = null;
     let questionCounts = { fsk0: 200, fsk16: 300, fsk18: 250, special: 150 };
+    let playerNameConfirmed = false; // Track if name is set
 
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1';
@@ -135,22 +138,108 @@
         // Update UI with player info
         updateHeaderInfo();
 
+        // Check if player name already set (from previous navigation)
+        if (gameState.playerName && gameState.playerName.trim()) {
+            playerNameConfirmed = true;
+            showCategorySelection();
+        } else {
+            showPlayerNameInput();
+        }
+
         // Initialize Firebase and load data
         await checkPremiumStatus();
         await loadQuestionCounts();
 
-        // Render categories
+        // Render categories (will be hidden if name not confirmed)
         renderCategoryCards();
 
         // Setup event listeners
         setupEventListeners();
 
         // P1 FIX: Load from GameState
-        initializeSelectedCategories();
+        if (playerNameConfirmed) {
+            initializeSelectedCategories();
+        }
 
         if (isDevelopment) {
             console.log('✅ Multiplayer category selection initialized');
         }
+    }
+
+    // ===========================
+    // PLAYER NAME INPUT
+    // ===========================
+
+    function showPlayerNameInput() {
+        const nameSection = document.getElementById('player-name-section');
+        const categoryContainer = document.getElementById('category-selection-container');
+        const multiplayerHeader = document.getElementById('multiplayer-header');
+
+        if (nameSection) nameSection.classList.remove('hidden');
+        if (categoryContainer) categoryContainer.classList.add('hidden');
+        if (multiplayerHeader) multiplayerHeader.classList.add('hidden');
+    }
+
+    function showCategorySelection() {
+        const nameSection = document.getElementById('player-name-section');
+        const categoryContainer = document.getElementById('category-selection-container');
+        const multiplayerHeader = document.getElementById('multiplayer-header');
+
+        if (nameSection) nameSection.classList.add('hidden');
+        if (categoryContainer) categoryContainer.classList.remove('hidden');
+        if (multiplayerHeader) multiplayerHeader.classList.remove('hidden');
+
+        updateHeaderInfo();
+    }
+
+    function handleNameInput(e) {
+        const input = e.target;
+        const confirmBtn = document.getElementById('confirm-name-btn');
+        const value = input.value.trim();
+
+        if (confirmBtn) {
+            if (value.length >= 2) {
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('disabled');
+                confirmBtn.setAttribute('aria-disabled', 'false');
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('disabled');
+                confirmBtn.setAttribute('aria-disabled', 'true');
+            }
+        }
+    }
+
+    function confirmPlayerName() {
+        const nameInput = document.getElementById('player-name-input');
+        if (!nameInput) return;
+
+        const playerName = sanitizeText(nameInput.value.trim());
+
+        if (playerName.length < 2) {
+            showNotification('Name muss mindestens 2 Zeichen haben', 'warning');
+            return;
+        }
+
+        if (playerName.length > 20) {
+            showNotification('Name darf maximal 20 Zeichen haben', 'warning');
+            return;
+        }
+
+        // ✅ FIX: Use setPlayerName() to save persistently
+        gameState.setPlayerName(playerName);
+        playerNameConfirmed = true;
+
+        if (isDevelopment) {
+            console.log('✅ Player name set and saved:', playerName);
+        }
+
+        showNotification(`Willkommen ${playerName}! 👋`, 'success', 1500);
+
+        // Show category selection
+        setTimeout(() => {
+            showCategorySelection();
+        }, 500);
     }
 
     // ===========================
@@ -184,12 +273,8 @@
             return false;
         }
 
-        if (!gameState.playerName || gameState.playerName.trim() === '') {
-            console.error('❌ No player name');
-            showNotification('Kein Spielername gesetzt', 'error');
-            setTimeout(() => window.location.href = 'index.html', 2000);
-            return false;
-        }
+        // ✅ FIX: playerName wird erst später in der Lobby gesetzt, nicht hier prüfen
+        // Im Multiplayer-Flow: Index → Category → Difficulty → Lobby (dort wird Name eingegeben)
 
         if (isDevelopment) {
             console.log('✅ Game state valid');
@@ -206,29 +291,31 @@
      */
     function checkAgeVerification() {
         try {
-            let ageLevel = 0;
-            let ageTimestamp = 0;
+            // ✅ Load from nocap_age_verification (consistent with index.js)
+            const verification = window.NocapUtils
+                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
+                : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
 
-            if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-                ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
-                ageTimestamp = parseInt(window.NocapUtils.getLocalStorage('age_timestamp')) || 0;
+            if (!verification || typeof verification !== 'object') {
+                console.error('❌ No age verification found');
+                showNotification('Altersverifizierung erforderlich!', 'warning');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return false;
             }
 
+            // ✅ Check if verification is recent (7 days instead of 24h)
             const now = Date.now();
-            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-            if (now - ageTimestamp > maxAge) {
-                console.error('❌ Age verification expired');
-                if (window.NocapUtils) {
-                    window.NocapUtils.setLocalStorage('age_level', null);
-                    window.NocapUtils.setLocalStorage('age_timestamp', null);
-                }
-                showNotification('Altersverifizierung abgelaufen!', 'warning');
+            if (verification.timestamp && now - verification.timestamp > maxAge) {
+                console.warn('⚠️ Age verification expired (>7 days)');
+                showNotification('Altersverifizierung abgelaufen - bitte neu bestätigen', 'warning');
                 setTimeout(() => window.location.href = 'index.html', 2000);
                 return false;
             }
 
             if (isDevelopment) {
+                const ageLevel = verification.isAdult ? 18 : 0;
                 console.log(`✅ Age verification: ${ageLevel}+`);
             }
             return true;
@@ -245,15 +332,47 @@
     // PREMIUM & QUESTION COUNTS
     // ===========================
 
+    /**
+     * ✅ P0 FIX: Check premium status with server-side validation
+     * Already uses async gameState.isPremiumUser()
+     */
     async function checkPremiumStatus() {
         try {
+            // ✅ Already using server-side validation via GameState
             const isPremium = await gameState.isPremiumUser();
+
             if (isDevelopment) {
-                console.log(`${isPremium ? '✅' : '🔒'} Premium status: ${isPremium}`);
+                console.log(`${isPremium ? '✅' : '🔒'} Premium status (server-validated): ${isPremium}`);
             }
+
+            // Update UI based on premium status
+            const specialCard = document.querySelector('[data-category="special"]');
+            if (specialCard) {
+                if (isPremium) {
+                    specialCard.classList.remove('locked');
+                    specialCard.setAttribute('aria-disabled', 'false');
+                } else {
+                    specialCard.classList.add('locked');
+                    specialCard.setAttribute('aria-disabled', 'true');
+                }
+            }
+
         } catch (error) {
-            if (isDevelopment) {
-                console.warn('⚠️ Premium check error:', error);
+            console.error('❌ Premium check failed:', error);
+
+            // ✅ P0 FIX: FAIL SECURE - lock premium on error
+            const specialCard = document.querySelector('[data-category="special"]');
+            if (specialCard) {
+                specialCard.classList.add('locked');
+                specialCard.setAttribute('aria-disabled', 'true');
+            }
+
+            if (window.NocapUtils && window.NocapUtils.showNotification) {
+                window.NocapUtils.showNotification(
+                    'Premium-Status konnte nicht überprüft werden',
+                    'warning',
+                    3000
+                );
             }
         }
     }
@@ -304,10 +423,13 @@
             hostNameEl.textContent = gameState.playerName;
         }
 
-        if (gameIdEl && gameState.gameId) {
-            gameIdEl.textContent = gameState.gameId;
-        } else if (gameIdEl) {
-            gameIdEl.textContent = 'Wird erstellt...';
+        // Game-ID wird erst in der Lobby erstellt, nicht hier
+        if (gameIdEl) {
+            if (gameState.gameId) {
+                gameIdEl.textContent = gameState.gameId;
+            } else {
+                gameIdEl.textContent = 'Wird in Lobby erstellt...';
+            }
         }
     }
 
@@ -318,12 +440,32 @@
     function setupEventListeners() {
         const backBtn = document.getElementById('back-button');
         const proceedBtn = document.getElementById('proceed-button');
+        const nameInput = document.getElementById('player-name-input');
+        const confirmNameBtn = document.getElementById('confirm-name-btn');
 
         if (backBtn) {
             backBtn.addEventListener('click', goBack);
         }
         if (proceedBtn) {
             proceedBtn.addEventListener('click', proceed);
+        }
+
+        // Player name input listeners
+        if (nameInput) {
+            nameInput.addEventListener('input', handleNameInput);
+            nameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !confirmNameBtn.disabled) {
+                    confirmPlayerName();
+                }
+            });
+            // Auto-focus
+            if (!playerNameConfirmed) {
+                setTimeout(() => nameInput.focus(), 100);
+            }
+        }
+
+        if (confirmNameBtn) {
+            confirmNameBtn.addEventListener('click', confirmPlayerName);
         }
 
         if (isDevelopment) {
@@ -560,14 +702,14 @@
         const selectedCategories = getSelectedCategories();
 
         if (selectedCategories.includes(key)) {
-            // Remove
-            gameState.selectedCategories = selectedCategories.filter(c => c !== key);
+            // ✅ FIX: Use removeCategory() for persistent storage
+            gameState.removeCategory(key);
             card.classList.remove('selected');
             card.classList.remove(key);
             card.setAttribute('aria-pressed', 'false');
         } else {
-            // Add
-            gameState.selectedCategories = [...selectedCategories, key];
+            // ✅ FIX: Use addCategory() for persistent storage
+            gameState.addCategory(key);
             card.classList.add('selected');
             card.classList.add(key);
             card.setAttribute('aria-pressed', 'true');
@@ -679,7 +821,30 @@
     }
 
     function goBack() {
-        window.location.href = 'multiplayer-lobby.html';
+        if (isDevelopment) {
+            console.log('🔙 Navigating back to index...');
+        }
+
+        // ✅ FIX: Reset game state when going back
+        if (gameState) {
+            gameState.deviceMode = null;
+            gameState.isHost = false;
+            gameState.isGuest = false;
+            gameState.selectedCategories = [];
+            gameState.playerName = '';
+            gameState.gameId = null;
+
+            // Clear from localStorage
+            if (window.NocapUtils && window.NocapUtils.removeLocalStorage) {
+                window.NocapUtils.removeLocalStorage('nocap_player_name');
+                window.NocapUtils.removeLocalStorage('nocap_game_id');
+            }
+
+            gameState.save();
+        }
+
+        // Navigate back to index
+        window.location.href = 'index.html';
     }
 
     // ===========================

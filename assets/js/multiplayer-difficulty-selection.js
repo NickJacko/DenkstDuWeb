@@ -103,6 +103,14 @@
 
             gameState = new GameState();
 
+            // ✅ FIX: Ensure device mode is set for multiplayer
+            if (!gameState.deviceMode) {
+                gameState.setDeviceMode('multi');
+                if (isDevelopment) {
+                    console.log('⚠️ Device mode was not set, setting to multi');
+                }
+            }
+
             // ===========================
             // CRITICAL: VALIDATE DEVICE MODE
             // This page requires multiplayer host mode
@@ -167,6 +175,12 @@
     function validateGameState() {
         if (isDevelopment) {
             console.log('🔍 Validating game state...');
+            console.log('GameState:', {
+                deviceMode: gameState?.deviceMode,
+                playerName: gameState?.playerName,
+                selectedCategories: gameState?.selectedCategories,
+                gameId: gameState?.gameId
+            });
         }
 
         // Strict device mode check
@@ -177,17 +191,17 @@
             return false;
         }
 
-        // Verify host status
-        if (!gameState.isHost) {
-            console.error('❌ Not host');
-            showNotification('Du bist nicht der Host', 'error');
-            setTimeout(() => window.location.href = 'multiplayer-lobby.html', 2000);
-            return false;
-        }
-
         if (!gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
+            return false;
+        }
+
+        // ✅ Player name must be set (from category-selection)
+        if (!gameState.playerName || gameState.playerName.trim() === '') {
+            console.error('❌ No player name - redirecting to category selection');
+            showNotification('Bitte zuerst Spielername eingeben', 'warning');
+            setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
             return false;
         }
 
@@ -198,31 +212,8 @@
             return false;
         }
 
-        if (!gameState.gameId) {
-            console.error('❌ No game ID');
-            showNotification('Keine Game-ID gefunden', 'error');
-            setTimeout(() => window.location.href = 'multiplayer-lobby.html', 2000);
-            return false;
-        }
-
-        // Validate FSK access
-        let ageLevel = 0;
-        if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-            ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
-        }
-
-        const hasInvalidCategory = gameState.selectedCategories.some(cat => {
-            if (cat === 'fsk18' && ageLevel < 18) return true;
-            if (cat === 'fsk16' && ageLevel < 16) return true;
-            return false;
-        });
-
-        if (hasInvalidCategory) {
-            console.error('❌ Invalid categories for age level');
-            showNotification('Ungültige Kategorien für dein Alter!', 'error');
-            setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
-            return false;
-        }
+        // ✅ FIX: Game-ID wird erst in der Lobby erstellt, nicht hier prüfen!
+        // Flow: Category → Difficulty → Lobby (Game-ID wird HIER erstellt)
 
         if (isDevelopment) {
             console.log('✅ Game state valid');
@@ -283,10 +274,13 @@
             hostNameEl.textContent = gameState.playerName;
         }
 
-        if (gameIdEl && gameState.gameId) {
-            gameIdEl.textContent = gameState.gameId;
-        } else if (gameIdEl) {
-            gameIdEl.textContent = 'Wird geladen...';
+        // ✅ Game-ID wird erst in Lobby erstellt
+        if (gameIdEl) {
+            if (gameState.gameId) {
+                gameIdEl.textContent = gameState.gameId;
+            } else {
+                gameIdEl.textContent = 'Wird in Lobby erstellt...';
+            }
         }
     }
 
@@ -305,7 +299,7 @@
 
         if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
             const emptyMsg = document.createElement('span');
-            emptyMsg.style.color = 'rgba(255,255,255,0.5)';
+            emptyMsg.className = 'empty-categories-msg';
             emptyMsg.textContent = 'Keine Kategorien';
             container.appendChild(emptyMsg);
             return;
@@ -506,15 +500,10 @@
         }
 
         try {
-            showNotification('Speichere Einstellungen...', 'info', 1000);
+            // ✅ Difficulty wird in GameState gespeichert
+            // Firebase Update erfolgt erst in Lobby wenn Game-ID erstellt wurde
 
-            // Update Firebase
-            if (firebaseService && gameState.gameId && typeof firebase !== 'undefined') {
-                const gameRef = firebase.database().ref(`games/${gameState.gameId}/settings/difficulty`);
-                await gameRef.set(gameState.difficulty);
-            }
-
-            showNotification('Einstellungen gespeichert!', 'success', 500);
+            showNotification('Weiter zur Lobby...', 'success', 500);
 
             setTimeout(() => {
                 window.location.href = 'multiplayer-lobby.html';
@@ -524,7 +513,7 @@
             if (isDevelopment) {
                 console.error('❌ Proceed error:', error);
             }
-            showNotification('Fehler beim Speichern', 'error');
+            showNotification('Fehler beim Fortfahren', 'error');
         }
     }
 
@@ -562,33 +551,18 @@
             return;
         }
 
-        // Fallback implementation
+        // Fallback implementation - CSP-compliant
         const container = document.body;
 
         // Remove existing notifications
         document.querySelectorAll('.notification').forEach(n => n.remove());
 
         const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
+        notification.className = `notification notification-${type}`;
         notification.setAttribute('role', 'alert');
         notification.setAttribute('aria-live', 'polite');
         notification.textContent = sanitizeText(String(message));
 
-        // Inline styles for fallback
-        notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
-        notification.style.padding = '15px 25px';
-        notification.style.borderRadius = '10px';
-        notification.style.fontWeight = '600';
-        notification.style.zIndex = '10001';
-        notification.style.maxWidth = '300px';
-        notification.style.color = 'white';
-
-        if (type === 'success') notification.style.background = '#4CAF50';
-        if (type === 'error') notification.style.background = '#f44336';
-        if (type === 'warning') notification.style.background = '#ff9800';
-        if (type === 'info') notification.style.background = '#2196F3';
 
         container.appendChild(notification);
 

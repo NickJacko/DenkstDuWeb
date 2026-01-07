@@ -49,6 +49,87 @@
     const _activeNotifications = new Set();
 
     // ============================================================================
+    // 🎨 DOM MANIPULATION - CSP COMPLIANT (No inline styles)
+    // ============================================================================
+
+    /**
+     * ✅ CSP-FIX: Show element using CSS class instead of inline style
+     * @param {HTMLElement} element - Element to show
+     * @param {string} displayType - Display type (flex, block, inline-flex, etc.)
+     */
+    function showElement(element, displayType = 'block') {
+        if (!element) return;
+        element.classList.remove('hidden', 'd-none');
+
+        // Set appropriate display class
+        switch(displayType) {
+            case 'flex':
+                element.classList.add('d-flex');
+                break;
+            case 'inline-flex':
+                element.classList.add('d-inline-flex');
+                break;
+            case 'grid':
+                element.classList.add('d-grid');
+                break;
+            case 'inline-block':
+                element.classList.add('d-inline-block');
+                break;
+            default:
+                element.classList.add('d-block');
+        }
+
+        element.removeAttribute('aria-hidden');
+    }
+
+    /**
+     * ✅ CSP-FIX: Hide element using CSS class instead of inline style
+     * @param {HTMLElement} element - Element to hide
+     */
+    function hideElement(element) {
+        if (!element) return;
+        element.classList.add('hidden');
+        element.classList.remove('d-flex', 'd-block', 'd-inline-flex', 'd-grid', 'd-inline-block');
+        element.setAttribute('aria-hidden', 'true');
+    }
+
+    /**
+     * ✅ CSP-FIX: Toggle element visibility
+     * @param {HTMLElement} element - Element to toggle
+     * @param {boolean} show - Force show (true) or hide (false). If undefined, toggles.
+     * @param {string} displayType - Display type when showing
+     */
+    function toggleElement(element, show, displayType = 'block') {
+        if (!element) return;
+
+        if (show === undefined) {
+            show = element.classList.contains('hidden');
+        }
+
+        if (show) {
+            showElement(element, displayType);
+        } else {
+            hideElement(element);
+        }
+    }
+
+    /**
+     * ✅ CSP-FIX: Add/remove class based on condition
+     * @param {HTMLElement} element - Target element
+     * @param {string} className - CSS class name
+     * @param {boolean} condition - Add if true, remove if false
+     */
+    function toggleClass(element, className, condition) {
+        if (!element) return;
+
+        if (condition) {
+            element.classList.add(className);
+        } else {
+            element.classList.remove(className);
+        }
+    }
+
+    // ============================================================================
     // 🎨 LOADING & UI FUNCTIONS
     // ============================================================================
 
@@ -569,21 +650,20 @@
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const actualDuration = prefersReducedMotion ? 0 : duration;
 
-        // Fade out
-        hideElement.style.transition = `opacity ${actualDuration}ms ease`;
-        hideElement.style.opacity = '0';
+        // ✅ CSP-FIX: Use CSS classes instead of inline styles
+        hideElement.classList.add('fade-out');
 
         setTimeout(() => {
-            hideElement.style.display = 'none';
+            hideElement.classList.add('hidden');
+            hideElement.classList.remove('fade-out');
 
-            // Fade in
-            showElement.style.display = 'block';
-            showElement.style.opacity = '0';
+            // Show element
+            showElement.classList.remove('hidden');
+            showElement.classList.add('fade-in');
 
-            requestFrame(() => {
-                showElement.style.transition = `opacity ${actualDuration}ms ease`;
-                showElement.style.opacity = '1';
-            });
+            setTimeout(() => {
+                showElement.classList.remove('fade-in');
+            }, actualDuration);
         }, actualDuration);
     }
 
@@ -1287,6 +1367,12 @@
     window.NocapUtils = Object.freeze({
         // Version
         version: '4.0',
+
+        // ✅ CSP-FIX: DOM Manipulation (CSS-Class based)
+        showElement,
+        hideElement,
+        toggleElement,
+        toggleClass,
 
         // UI
         showLoading,

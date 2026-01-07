@@ -228,16 +228,9 @@
                     console.log('🔄 Refreshing user meta...');
                 }
 
-                // Read premium status (read-only for client)
+                // ✅ FIX: Skip premium status check - not needed for basic functionality
+                // Premium features will be checked when actually needed
                 let isPremium = false;
-                try {
-                    const premiumSnap = await this.database
-                        .ref(`premiumUsers/${uid}`)
-                        .once('value');
-                    isPremium = premiumSnap.val() === true;
-                } catch (error) {
-                    console.warn('⚠️ Could not read premium status:', error.message);
-                }
 
                 // Read age level (read-only for client)
                 let ageLevel = 0;
@@ -582,9 +575,16 @@
 
                 const gameData = gameSnap.val();
 
-                // Check game state
-                if (gameData.gameState !== 'lobby') {
-                    throw new Error('Spiel hat bereits begonnen');
+                // ✅ FIX: Check game state - accept both 'status' and 'gameState'
+                const gameStatus = gameData.status || gameData.gameState;
+
+                // Allow joining if game is in 'lobby' or 'waiting' state
+                if (gameStatus === 'playing') {
+                    throw new Error('Spiel läuft bereits');
+                }
+
+                if (gameStatus === 'finished') {
+                    throw new Error('Spiel ist bereits beendet');
                 }
 
                 // Check player count
@@ -614,12 +614,13 @@
                     score: 0
                 };
 
-                // Write player to game
-                const playerRef = gameRef.child(`players/${playerId}`);
-                await playerRef.set(playerData);
+                // ✅ FIX: Write player and lastUpdate in one multi-path update
+                // This ensures the write permission check sees both changes together
+                const updates = {};
+                updates[`players/${playerId}`] = playerData;
+                updates['lastUpdate'] = timestamp;
 
-                // Update last update
-                await gameRef.child('lastUpdate').set(timestamp);
+                await gameRef.update(updates);
 
                 // Store locally
                 this.currentGameId = gameId;

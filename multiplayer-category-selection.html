@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Multiplayer Kategorien wählen</title>
 
+    <!-- ✅ SECURITY: Security Headers -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,25 +20,24 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 
-    <!-- P1 FIX: External CSS ONLY -->
+    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/multiplayer-category-selection.css">
 
-    <!-- P1 FIX: DOMPurify FIRST -->
-    <script defer src="/assets/lib/purify.min.js"
-            integrity="sha384-cwS6YdhLI7XS60eoDiC+egV0qHp8zI+Cms46R0nbn8JrmoAzV9uFL60etMZhAnSu"
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer"></script>
+    <!-- ✅ SECURITY: DOMPurify lokal gehostet -->
+    <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- Firebase SDK -->
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
 
-    <!-- P1 FIX: Core Scripts in correct order -->
+    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
+    <script src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/firebase-auth.js"></script>
     <script defer src="/assets/js/firebase-service.js"></script>
     <script defer src="/assets/js/multiplayer-category-selection.js"></script>
 </head>
@@ -64,8 +67,36 @@
     <h1 class="screen-title">🌐 Multiplayer Kategorien</h1>
 
     <div class="glass-card">
-        <!-- Multiplayer Header -->
-        <header class="multiplayer-header">
+        <!-- Player Name Input (First Step) -->
+        <section class="player-name-section" id="player-name-section">
+            <h2 class="section-title">👤 Dein Spielername</h2>
+            <p class="section-description">Gib deinen Namen ein, bevor du die Kategorien wählst</p>
+
+            <div class="name-input-container">
+                <input
+                    type="text"
+                    id="player-name-input"
+                    class="player-name-input"
+                    placeholder="Dein Spielername..."
+                    maxlength="20"
+                    autocomplete="off"
+                    aria-label="Spielername eingeben"
+                    required
+                />
+                <button
+                    class="confirm-name-btn"
+                    id="confirm-name-btn"
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                >
+                    ✓ Name bestätigen
+                </button>
+            </div>
+        </section>
+
+        <!-- Multiplayer Header (Hidden until name confirmed) -->
+        <header class="multiplayer-header hidden" id="multiplayer-header">
             <div class="host-info">
                 <div class="host-details">
                     <div class="host-name" id="host-name">Host Name</div>
@@ -73,29 +104,35 @@
                 </div>
                 <div class="game-id-section">
                     <div class="game-id-label">Spiel-Code:</div>
-                    <div class="game-id-display" id="game-id-display" aria-live="polite">Wird erstellt...</div>
+                    <div class="game-id-display" id="game-id-display" aria-live="polite">Wird in Lobby erstellt...</div>
                 </div>
             </div>
         </header>
 
-        <p class="selection-description">
-            Wähle die Kategorien für euer Multiplayer-Spiel
-        </p>
+        <!-- Category Selection (Hidden until name confirmed) -->
+        <div class="category-selection-container hidden" id="category-selection-container">
+            <p class="selection-description">
+                Wähle die Kategorien für euer Multiplayer-Spiel
+            </p>
 
-        <!-- Category Grid -->
-        <div class="category-grid" id="categories-grid" role="group" aria-label="Kategorie-Auswahl"></div>
+            <!-- Category Grid -->
+            <div class="category-grid" id="categories-grid" role="group" aria-label="Kategorie-Auswahl"></div>
 
-        <!-- Selection Summary -->
-        <aside class="selection-summary" id="selection-summary" role="region" aria-label="Ausgewählte Kategorien">
-            <h2 class="summary-title" id="summary-title">0 Kategorien ausgewählt</h2>
-            <div class="selected-categories" id="selected-categories"></div>
-            <div class="total-questions">
-                Insgesamt <span id="total-questions">0</span> verfügbare Fragen
-            </div>
-        </aside>
+            <!-- Selection Summary -->
+            <aside class="selection-summary" id="selection-summary" role="region" aria-label="Ausgewählte Kategorien">
+                <h2 class="summary-title" id="summary-title">0 Kategorien ausgewählt</h2>
+                <div class="selected-categories" id="selected-categories"></div>
+                <div class="total-questions">
+                    Insgesamt <span id="total-questions">0</span> verfügbare Fragen
+                </div>
+            </aside>
 
-        <!-- Proceed Button -->
-        <button class="proceed-button" id="proceed-button" type="button" disabled aria-disabled="true">
+            <!-- Proceed Button -->
+            <button class="proceed-button" id="proceed-button" type="button" disabled aria-disabled="true">
+                Weiter zur Schwierigkeitsauswahl →
+            </button>
+        </div>
+    </div>
             ➡️ Weiter zur Schwierigkeit
         </button>
     </div>

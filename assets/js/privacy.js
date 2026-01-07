@@ -344,7 +344,8 @@
 
         // Show multiplayer options
         document.querySelectorAll('.multiplayer-feature').forEach(element => {
-            element.style.display = '';
+            // ✅ CSP-FIX: Use CSS class instead of inline style
+            element.classList.remove('hidden');
         });
 
         // Add body class
@@ -369,7 +370,8 @@
 
         // Hide multiplayer options
         document.querySelectorAll('.multiplayer-feature').forEach(element => {
-            element.style.display = 'none';
+            // ✅ CSP-FIX: Use CSS class instead of inline style
+            element.classList.add('hidden');
         });
 
         // Add body class

@@ -1,6 +1,6 @@
 /**
  * NO-CAP Firebase Configuration & Initialization
- * Version 5.0 - Production-Ready with Audit Fixes
+ * Version 6.0 - P0/P1 Security Fixes Applied
  *
  * ARCHITECTURE:
  * - This file ONLY initializes Firebase SDK
@@ -8,6 +8,9 @@
  * - All auth operations are in firebase-auth.js
  *
  * SECURITY IMPROVEMENTS:
+ * - ✅ P0 FIX: Domain whitelisting to prevent third-party script abuse
+ * - ✅ P1 FIX: User-friendly error messages for auth failures
+ * - ✅ P2 FIX: UID caching with integrity checks
  * - Environment variable support via window.FIREBASE_CONFIG
  * - No hardcoded secrets in production builds
  * - Proper initialization state management
@@ -29,6 +32,50 @@
         window.location.hostname.includes('.local');
 
     const isProduction = !isDevelopment;
+
+    // ===================================
+    // 🛡️ P0 FIX: DOMAIN WHITELISTING
+    // ===================================
+
+    /**
+     * Allowed domains for Firebase configuration
+     * Prevents third-party scripts from injecting malicious configs
+     */
+    const ALLOWED_DOMAINS = [
+        'localhost',
+        '127.0.0.1',
+        'no-cap.app',
+        'denkstduwebsite.web.app',
+        'denkstduwebsite.firebaseapp.com',
+        // Development domains
+        /192\.168\.\d+\.\d+/,
+        /\.local$/,
+        /--pr\d+/  // Preview deployments
+    ];
+
+    /**
+     * ✅ P0 FIX: Validate that current domain is whitelisted
+     * @returns {boolean} True if domain is allowed
+     */
+    function isDomainWhitelisted() {
+        const hostname = window.location.hostname;
+
+        // Check exact matches
+        if (ALLOWED_DOMAINS.some(domain => {
+            if (typeof domain === 'string') {
+                return hostname === domain || hostname.endsWith('.' + domain);
+            }
+            if (domain instanceof RegExp) {
+                return domain.test(hostname);
+            }
+            return false;
+        })) {
+            return true;
+        }
+
+        console.error('❌ SECURITY: Domain not whitelisted:', hostname);
+        return false;
+    }
 
     // ===================================
     // ⚙️ FIREBASE CONFIGURATION
@@ -53,6 +100,11 @@
      * etc.
      */
     function getFirebaseConfig() {
+        // ✅ P0 FIX: Check domain whitelist BEFORE loading config
+        if (!isDomainWhitelisted()) {
+            throw new Error('SECURITY ERROR: Domain not whitelisted for Firebase initialization');
+        }
+
         // Priority 1: window.FIREBASE_CONFIG (set via build process)
         if (window.FIREBASE_CONFIG && validateConfig(window.FIREBASE_CONFIG)) {
             if (isDevelopment) {
