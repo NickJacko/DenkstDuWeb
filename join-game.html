@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -31,7 +31,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
     <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
@@ -42,13 +42,46 @@
     <script defer src="/assets/js/join-game.js"></script>
 </head>
 <body>
+<!-- ✅ P1 DSGVO: Age-Gate Modal für Jugendschutz -->
+<div class="age-gate-modal hidden" id="age-gate-modal" role="dialog" aria-labelledby="age-gate-title" aria-modal="true">
+    <div class="age-gate-backdrop"></div>
+    <div class="age-gate-content">
+        <div class="age-gate-header">
+            <h2 class="age-gate-title" id="age-gate-title">🔞 Altersverifikation erforderlich</h2>
+        </div>
+        <div class="age-gate-body">
+            <p class="age-gate-message">
+                Das Spiel enthält Fragen mit einer FSK-Einstufung von <strong id="fsk-rating">16</strong> Jahren.
+            </p>
+            <p class="age-gate-confirmation">
+                Bitte bestätige, dass du das Mindestalter erreicht hast:
+            </p>
+            <div class="age-options">
+                <label class="age-option">
+                    <input type="radio" name="age-confirmation" value="16" id="age-16">
+                    <span class="age-label">Ich bin 16 Jahre oder älter</span>
+                </label>
+                <label class="age-option">
+                    <input type="radio" name="age-confirmation" value="18" id="age-18">
+                    <span class="age-label">Ich bin 18 Jahre oder älter</span>
+                </label>
+            </div>
+            <div class="age-gate-warning">
+                <p><strong>⚠️ Hinweis:</strong></p>
+                <p>Durch die Bestätigung versicherst du, dass deine Angaben der Wahrheit entsprechen.
+                   Falsche Angaben können zum Ausschluss aus dem Spiel führen.</p>
+            </div>
+        </div>
+        <div class="age-gate-footer">
+            <button class="age-btn secondary" id="age-decline" type="button">Abbrechen</button>
+            <button class="age-btn primary" id="age-confirm" type="button" disabled>Bestätigen</button>
+        </div>
+    </div>
+</div>
+
 <!-- Background Particles -->
 <div class="background-particles" aria-hidden="true">
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
+    ...existing code...
 </div>
 
 <!-- Loading -->
@@ -71,61 +104,51 @@
             <!-- Game Code Input -->
             <div class="input-group">
                 <label class="input-label" for="game-code">Spiel-Code (6 Zeichen)</label>
-                <input
-                        type="text"
-                        id="game-code"
-                        class="input-field game-code"
-                        placeholder="ABC123"
-                        maxlength="6"
-                        autocomplete="off"
-                        aria-describedby="code-hint"
-                        aria-required="true"
-                >
+                <div class="input-wrapper">
+                    <input
+                            type="text"
+                            id="game-code"
+                            class="input-field game-code"
+                            placeholder="ABC123"
+                            maxlength="6"
+                            autocomplete="off"
+                            aria-describedby="code-hint"
+                            aria-required="true"
+                    >
+                    <!-- ✅ P1 UI/UX: Live-Validierung Icon -->
+                    <span class="validation-icon hidden" id="code-validation-icon" aria-hidden="true">✔️</span>
+                </div>
                 <span class="input-hint" id="code-hint">Vom Host mitgeteilt</span>
+                <!-- ✅ P0 Sicherheit: Rate-Limit Warnung -->
+                <div class="rate-limit-warning hidden" id="rate-limit-warning" role="alert">
+                    <strong>⏳ Zu viele Versuche</strong>
+                    <p>Bitte warte <span id="rate-limit-countdown">30</span> Sekunden bevor du es erneut versuchst.</p>
+                </div>
             </div>
 
             <!-- Game Info Preview -->
-            <aside class="game-info-preview" id="game-info" role="region" aria-label="Spiel-Informationen">
-                <h2 class="info-title">✅ Spiel gefunden!</h2>
-
-                <div class="host-info">
-                    <div class="host-label">Host</div>
-                    <div class="host-name" id="info-host">-</div>
-                </div>
-
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Schwierigkeit</div>
-                        <div class="info-value" id="info-difficulty">-</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Spieler</div>
-                        <div class="info-value" id="info-players">-</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Kategorien</div>
-                        <div class="info-value" id="info-categories">-</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Status</div>
-                        <div class="info-value" id="info-status">-</div>
-                    </div>
-                </div>
+            <aside class="game-info-preview hidden" id="game-info" role="region" aria-label="Spiel-Informationen">
+                ...existing code...
             </aside>
 
             <!-- Player Name Input -->
             <div class="input-group">
                 <label class="input-label" for="player-name">Dein Spielername</label>
-                <input
-                        type="text"
-                        id="player-name"
-                        class="input-field"
-                        placeholder="Max Mustermann"
-                        maxlength="20"
-                        autocomplete="name"
-                        aria-describedby="name-hint"
-                        aria-required="true"
-                >
+                <div class="input-wrapper">
+                    <input
+                            type="text"
+                            id="player-name"
+                            class="input-field"
+                            placeholder="Max Mustermann"
+                            maxlength="20"
+                            minlength="2"
+                            autocomplete="name"
+                            aria-describedby="name-hint"
+                            aria-required="true"
+                    >
+                    <!-- ✅ P1 UI/UX: Live-Validierung Icon -->
+                    <span class="validation-icon hidden" id="name-validation-icon" aria-hidden="true">✔️</span>
+                </div>
                 <span class="input-hint" id="name-hint">Mindestens 2 Zeichen</span>
             </div>
         </form>
@@ -141,5 +164,8 @@
         </div>
     </div>
 </div>
+    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <script src="/assets/js/error-boundary.js"></script>
+
 </body>
 </html>

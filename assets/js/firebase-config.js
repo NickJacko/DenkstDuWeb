@@ -40,26 +40,103 @@
     const isProduction = !isDevelopment;
 
     // ===================================
+    // 💾 P1 STABILITY: INDEXEDDB CACHE
+    // ===================================
+
+    const DB_NAME = 'NocapFirebaseCache';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'config_cache';
+
+    /**
+     * ✅ P1 STABILITY: Open IndexedDB connection
+     * @returns {Promise<IDBDatabase>}
+     */
+    function openDatabase() {
+        return new Promise((resolve, reject) => {
+            if (!window.indexedDB) {
+                reject(new Error('IndexedDB not supported'));
+                return;
+            }
+
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+
+                // Create object store if it doesn't exist
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME);
+                }
+            };
+        });
+    }
+
+    /**
+     * ✅ P1 STABILITY: Cache data to IndexedDB
+     * @param {string} key - Cache key
+     * @param {any} data - Data to cache
+     */
+    async function cacheData(key, data) {
+        try {
+            const db = await openDatabase();
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+
+            return new Promise((resolve, reject) => {
+                const request = store.put(data, key);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        } catch (error) {
+            if (isDevelopment) {
+                console.warn('Cache write failed:', error);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Load cached data from IndexedDB
+     * @param {string} key - Cache key
+     * @returns {Promise<any>} Cached data or null
+     */
+    async function loadCachedData(key) {
+        try {
+            const db = await openDatabase();
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+
+            return new Promise((resolve, reject) => {
+                const request = store.get(key);
+                request.onsuccess = () => resolve(request.result || null);
+                request.onerror = () => reject(request.error);
+            });
+        } catch (error) {
+            if (isDevelopment) {
+                console.warn('Cache read failed:', error);
+            }
+            return null;
+        }
+    }
+
+    // ===================================
     // 🛡️ P0 FIX: DOMAIN WHITELISTING
     // ===================================
 
+    // ===================================
+    // 🛡️ P0 SECURITY: DOMAIN WHITELISTING
+    // ✅ P0 ENHANCEMENT: Dynamic domain whitelist with external config
+    // ===================================
+
     /**
-     * ✅ OPTIMIZATION: Allowed domains for Firebase configuration
-     * Prevents third-party scripts from injecting malicious configs
-     *
-     * PRODUCTION DOMAINS:
-     * - no-cap.app (Custom domain)
-     * - denkstduwebsite.web.app (Firebase Hosting)
-     * - denkstduwebsite.firebaseapp.com (Firebase Hosting)
-     *
-     * DEVELOPMENT:
-     * - localhost, 127.0.0.1
-     * - 192.168.x.x (LAN)
-     * - *.local (mDNS)
-     * - Preview deployments (--pr*)
+     * ✅ P0 SECURITY: Allowed domains loaded from external config
+     * Fallback to hardcoded list if fetch fails
      */
-    const ALLOWED_DOMAINS = [
-        // Production domains
+    let ALLOWED_DOMAINS = [
+        // Production domains (FALLBACK - will be overridden by allowed-domains.json)
         'no-cap.app',
         'www.no-cap.app',
         'denkstduwebsite.web.app',
@@ -70,17 +147,103 @@
         '127.0.0.1',
 
         // Patterns for dynamic domains
-        /^192\.168\.\d+\.\d+$/,        // LAN IPs (192.168.x.x)
-        /^10\.\d+\.\d+\.\d+$/,          // Private network (10.x.x.x)
-        /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/, // Private network (172.16-31.x.x)
-        /\.local$/,                     // mDNS (.local)
-        /--pr\d+-/,                     // Preview deployments (--pr123-abc.web.app)
-        /^denkstduwebsite--pr\d+/,      // Firebase preview pattern
-
-        // Firebase custom domains (if you add more)
-        /\.web\.app$/,                  // All .web.app domains
-        /\.firebaseapp\.com$/           // All .firebaseapp.com domains
+        /^192\.168\.\d+\.\d+$/,
+        /^10\.\d+\.\d+\.\d+$/,
+        /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,
+        /\.local$/,
+        /--pr\d+-/,
+        /^denkstduwebsite--pr\d+/,
+        /\.web\.app$/,
+        /\.firebaseapp\.com$/
     ];
+
+    /**
+     * ✅ P0 SECURITY: Load domain whitelist from external JSON config
+     * @returns {Promise<void>}
+     */
+    async function loadDomainWhitelist() {
+        try {
+            const response = await fetch('/allowed-domains.json', {
+                cache: 'no-cache',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to load domain whitelist: ${response.status}`);
+            }
+
+            const config = await response.json();
+
+            if (!config || !config.domains || !Array.isArray(config.domains)) {
+                throw new Error('Invalid domain whitelist format');
+            }
+
+            // Build new whitelist from config
+            const newWhitelist = [
+                ...config.domains,
+                ...(config.patterns || []).map(pattern => new RegExp(pattern))
+            ];
+
+            ALLOWED_DOMAINS = newWhitelist;
+
+            if (isDevelopment) {
+                console.log('✅ Domain whitelist loaded from config:', {
+                    domains: config.domains.length,
+                    patterns: (config.patterns || []).length,
+                    version: config.version,
+                    lastUpdated: config.lastUpdated
+                });
+            }
+
+            // ✅ P1 STABILITY: Cache whitelist in IndexedDB
+            try {
+                await cacheData('domain_whitelist', {
+                    config,
+                    timestamp: Date.now()
+                });
+            } catch (cacheError) {
+                // Non-fatal
+                if (isDevelopment) {
+                    console.warn('Could not cache domain whitelist:', cacheError);
+                }
+            }
+
+        } catch (error) {
+            console.warn('⚠️ Could not load domain whitelist, using fallback:', error.message);
+
+            // Try to load from IndexedDB cache
+            try {
+                const cached = await loadCachedData('domain_whitelist');
+                if (cached && cached.config) {
+                    const cacheAge = Date.now() - (cached.timestamp || 0);
+                    const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+                    if (cacheAge < maxAge) {
+                        const newWhitelist = [
+                            ...cached.config.domains,
+                            ...(cached.config.patterns || []).map(pattern => new RegExp(pattern))
+                        ];
+
+                        ALLOWED_DOMAINS = newWhitelist;
+
+                        if (isDevelopment) {
+                            console.log('✅ Domain whitelist loaded from cache');
+                        }
+                        return;
+                    }
+                }
+            } catch (cacheError) {
+                // Ignore cache errors
+            }
+
+            // Use hardcoded fallback (already set above)
+            if (isDevelopment) {
+                console.log('ℹ️ Using hardcoded domain whitelist (fallback)');
+            }
+        }
+    }
 
     /**
      * ✅ P0 FIX: Validate that current domain is whitelisted
@@ -89,7 +252,7 @@
     function isDomainWhitelisted() {
         const hostname = window.location.hostname;
 
-        // Check exact matches
+        // Check exact matches and patterns
         if (ALLOWED_DOMAINS.some(domain => {
             if (typeof domain === 'string') {
                 return hostname === domain || hostname.endsWith('.' + domain);
@@ -111,7 +274,8 @@
     // ===================================
 
     /**
-     * Firebase configuration with environment variable support
+     * ✅ P1 STABILITY: Get Firebase configuration with offline fallback
+     * Caches successful configs to IndexedDB for offline use
      *
      * PRODUCTION DEPLOYMENT:
      * Set window.FIREBASE_CONFIG before loading this script:
@@ -128,33 +292,37 @@
      * <meta name="firebase-auth-domain" content="YOUR_AUTH_DOMAIN">
      * etc.
      */
-    function getFirebaseConfig() {
+    async function getFirebaseConfig() {
         // ✅ P0 FIX: Check domain whitelist BEFORE loading config
         if (!isDomainWhitelisted()) {
             throw new Error('SECURITY ERROR: Domain not whitelisted for Firebase initialization');
         }
+
+        let config = null;
 
         // Priority 1: window.FIREBASE_CONFIG (set via build process)
         if (window.FIREBASE_CONFIG && validateConfig(window.FIREBASE_CONFIG)) {
             if (isDevelopment) {
                 console.log('✅ Using Firebase config from window.FIREBASE_CONFIG');
             }
-            return window.FIREBASE_CONFIG;
+            config = window.FIREBASE_CONFIG;
         }
 
         // Priority 2: Meta tags (for static hosting)
-        const metaConfig = getConfigFromMetaTags();
-        if (metaConfig && validateConfig(metaConfig)) {
-            if (isDevelopment) {
-                console.log('✅ Using Firebase config from meta tags');
+        if (!config) {
+            const metaConfig = getConfigFromMetaTags();
+            if (metaConfig && validateConfig(metaConfig)) {
+                if (isDevelopment) {
+                    console.log('✅ Using Firebase config from meta tags');
+                }
+                config = metaConfig;
             }
-            return metaConfig;
         }
 
         // Priority 3: Default config (development only)
-        if (isDevelopment) {
+        if (!config && isDevelopment) {
             console.warn('⚠️ Using default Firebase config (development only)');
-            return {
+            config = {
                 apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
                 authDomain: "denkstduwebsite.firebaseapp.com",
                 databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
@@ -164,6 +332,51 @@
                 appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
                 measurementId: "G-BNKNW95HK8"
             };
+        }
+
+        // ✅ P1 STABILITY: Cache successful config for offline use
+        if (config) {
+            try {
+                await cacheData('firebase_config', {
+                    config,
+                    timestamp: Date.now()
+                });
+                if (isDevelopment) {
+                    console.log('✅ Firebase config cached to IndexedDB');
+                }
+            } catch (cacheError) {
+                // Non-fatal
+                if (isDevelopment) {
+                    console.warn('Could not cache Firebase config:', cacheError);
+                }
+            }
+            return config;
+        }
+
+        // ✅ P1 STABILITY: Fallback to cached config if available (offline support)
+        try {
+            const cached = await loadCachedData('firebase_config');
+            if (cached && cached.config) {
+                const cacheAge = Date.now() - (cached.timestamp || 0);
+                const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+                if (cacheAge < maxAge) {
+                    console.warn('⚠️ Using cached Firebase config (offline fallback)');
+                    if (isDevelopment) {
+                        console.log('ℹ️ Config cached', Math.floor(cacheAge / 1000 / 60 / 60), 'hours ago');
+                    }
+                    return cached.config;
+                } else {
+                    if (isDevelopment) {
+                        console.warn('⚠️ Cached config is too old, not using');
+                    }
+                }
+            }
+        } catch (cacheError) {
+            // Ignore cache errors
+            if (isDevelopment) {
+                console.warn('Could not load cached config:', cacheError);
+            }
         }
 
         // Production without config = error
@@ -223,15 +436,6 @@
         return true;
     }
 
-    // Get the configuration
-    let firebaseConfig;
-    try {
-        firebaseConfig = getFirebaseConfig();
-    } catch (error) {
-        console.error('❌ Firebase configuration error:', error);
-        firebaseConfig = null;
-    }
-
     // ===================================
     // 📊 INITIALIZATION STATE
     // ===================================
@@ -241,6 +445,9 @@
     let initializationError = null;
     let connectionMonitoringActive = false;
     let authListenerActive = false;
+
+    // ✅ P1 STABILITY: Firebase config is loaded async
+    let firebaseConfig = null;
 
     // ===================================
     // 🚀 INITIALIZATION
@@ -279,11 +486,17 @@
                     throw new Error('Firebase SDK not loaded. Add Firebase scripts to HTML before firebase-config.js');
                 }
 
-                // Validate config
+                // ✅ P1 STABILITY: Load config asynchronously (supports IndexedDB fallback)
                 if (!firebaseConfig) {
-                    throw new Error('Firebase configuration not available');
+                    try {
+                        firebaseConfig = await getFirebaseConfig();
+                    } catch (configError) {
+                        console.error('❌ Failed to load Firebase config:', configError);
+                        throw new Error('Firebase configuration not available');
+                    }
                 }
 
+                // Validate config
                 if (!validateConfig(firebaseConfig)) {
                     throw new Error('Invalid Firebase configuration');
                 }
@@ -296,6 +509,46 @@
                     if (isDevelopment) {
                         console.log('%c✅ Firebase App initialized',
                             'color: #4CAF50; font-weight: bold');
+                    }
+
+                    // ===================================
+                    // ✅ P0 SECURITY: Firebase App Check
+                    // ===================================
+                    // Protects against abuse (bots, unauthorized access)
+                    if (firebase.appCheck) {
+                        try {
+                            // ✅ Debug mode for localhost (prevents lockout during development)
+                            const isLocal = location.hostname === 'localhost' ||
+                                          location.hostname === '127.0.0.1' ||
+                                          location.hostname.includes('192.168.');
+
+                            if (isLocal && isDevelopment) {
+                                // Enable debug token for local development
+                                self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+                                console.log('%c⚠️  App Check: DEBUG MODE (localhost)',
+                                    'color: #FF9800; font-weight: bold');
+                            }
+
+                            // ⚠️ TODO: Replace with your actual reCAPTCHA v3 site key
+                            // Get key from: https://console.cloud.google.com/security/recaptcha
+                            const RECAPTCHA_SITE_KEY = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // Test key
+
+                            firebase.appCheck().activate(
+                                RECAPTCHA_SITE_KEY,
+                                true // autoRefresh
+                            );
+
+                            if (isDevelopment) {
+                                console.log('%c✅ App Check activated',
+                                    'color: #4CAF50; font-weight: bold');
+                            }
+                        } catch (error) {
+                            console.warn('⚠️  App Check activation failed:', error);
+                            // Non-fatal: Continue without App Check
+                        }
+                    } else if (isDevelopment) {
+                        console.warn('%c⚠️  App Check SDK not loaded',
+                            'color: #FF9800');
                     }
                 } else {
                     app = firebase.app();
@@ -830,11 +1083,8 @@
      * Auto-initialize Firebase when script loads
      */
     (async function autoInit() {
-        // Skip if no config available
-        if (!firebaseConfig) {
-            console.error('❌ Firebase auto-initialization skipped: No configuration');
-            return;
-        }
+        // ✅ P0 SECURITY: Load domain whitelist first
+        await loadDomainWhitelist();
 
         try {
             // Initialize Firebase
@@ -843,6 +1093,9 @@
             // Setup monitoring after successful initialization
             setupConnectionMonitoring();
             setupAuthStateListener();
+
+            // ✅ P1 PERFORMANCE: Setup telemetry heartbeat (180s interval)
+            setupTelemetryHeartbeat();
 
             // Auto sign-in if privacy consent is given
             const hasPrivacyConsent = localStorage.getItem('nocap_privacy_consent') === 'true';
@@ -871,8 +1124,59 @@
     // 🪝 EVENT LISTENERS
     // ===================================
 
+    // ✅ P1 PERFORMANCE: Telemetry heartbeat interval (180s to reduce network load)
+    const TELEMETRY_HEARTBEAT_INTERVAL = 180000; // 180 seconds (3 minutes)
+    let telemetryHeartbeatTimer = null;
+
+    /**
+     * ✅ P1 PERFORMANCE: Setup telemetry heartbeat (optional)
+     * Sends periodic connection status updates
+     * Interval: 180s (instead of typical 60s) to reduce network load
+     */
+    function setupTelemetryHeartbeat() {
+        if (telemetryHeartbeatTimer) {
+            clearInterval(telemetryHeartbeatTimer);
+        }
+
+        // Only in production with telemetry enabled
+        if (isDevelopment || !window.NocapUtils || !window.NocapUtils.logInfo) {
+            return;
+        }
+
+        telemetryHeartbeatTimer = setInterval(() => {
+            if (isConnected() && isAuthenticated()) {
+                window.NocapUtils.logInfo('FirebaseConfig', 'Heartbeat', {
+                    connected: true,
+                    authenticated: true,
+                    timestamp: Date.now()
+                });
+            }
+        }, TELEMETRY_HEARTBEAT_INTERVAL);
+
+        if (isDevelopment) {
+            console.log(`✅ Telemetry heartbeat active (${TELEMETRY_HEARTBEAT_INTERVAL / 1000}s interval)`);
+        }
+    }
+
+    /**
+     * ✅ P1 PERFORMANCE: Stop telemetry heartbeat
+     */
+    function stopTelemetryHeartbeat() {
+        if (telemetryHeartbeatTimer) {
+            clearInterval(telemetryHeartbeatTimer);
+            telemetryHeartbeatTimer = null;
+
+            if (isDevelopment) {
+                console.log('✅ Telemetry heartbeat stopped');
+            }
+        }
+    }
+
     // Cleanup on page unload
-    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('beforeunload', () => {
+        cleanup();
+        stopTelemetryHeartbeat();
+    });
 
     // Visibility change handling (pause/resume)
     document.addEventListener('visibilitychange', () => {

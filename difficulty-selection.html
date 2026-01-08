@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -21,8 +21,8 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 
     <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ✅ P1 PERFORMANCE: Consolidated CSS to reduce HTTP requests -->
     <link rel="stylesheet" href="/assets/css/styles.css">
-    <link rel="stylesheet" href="/assets/css/difficulty-selection.css">
 
     <!-- ✅ SECURITY: DOMPurify lokal gehostet -->
     <script src="/assets/lib/purify.min.js"></script>
@@ -31,7 +31,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
     <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
     <script src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
@@ -160,5 +160,8 @@
         </div>
     </div>
 </div>
+    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <script src="/assets/js/error-boundary.js"></script>
+
 </body>
 </html>

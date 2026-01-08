@@ -23,6 +23,29 @@
     // ===========================
     // CATEGORY DATA
     // ===========================
+
+    /**
+     * ✅ P0 SECURITY: Sanitize category data to prevent XSS
+     * Uses DOMPurify for HTML strings and validates structure
+     */
+    function sanitizeCategoryData(data) {
+        if (!data || typeof data !== 'object') {
+            Logger.warn('⚠️ Invalid category data:', data);
+            return null;
+        }
+
+        // Sanitize all string fields
+        const sanitized = {
+            name: typeof data.name === 'string' ? DOMPurify.sanitize(data.name, { ALLOWED_TAGS: [] }) : '',
+            icon: typeof data.icon === 'string' ? DOMPurify.sanitize(data.icon, { ALLOWED_TAGS: [] }) : '',
+            color: typeof data.color === 'string' ? DOMPurify.sanitize(data.color, { ALLOWED_TAGS: [] }) : '#666',
+            requiresAge: typeof data.requiresAge === 'number' ? data.requiresAge : 0,
+            requiresPremium: Boolean(data.requiresPremium)
+        };
+
+        return sanitized;
+    }
+
     const categoryData = {
         fsk0: {
             name: 'Familie & Freunde',
@@ -548,18 +571,22 @@
             categoriesListElement.innerHTML = '';
 
             selectedCategories.forEach(category => {
-                const data = categoryData[category];
+                const rawData = categoryData[category];
+                if (!rawData) return;
+
+                // ✅ P0 SECURITY: Sanitize category data before rendering
+                const data = sanitizeCategoryData(rawData);
                 if (!data) return;
 
                 const tag = document.createElement('div');
                 tag.className = 'selected-category-tag';
 
                 const iconSpan = document.createElement('span');
-                iconSpan.textContent = data.icon;
+                iconSpan.textContent = data.icon; // textContent is XSS-safe
                 iconSpan.setAttribute('aria-hidden', 'true');
 
                 const nameSpan = document.createElement('span');
-                nameSpan.textContent = data.name;
+                nameSpan.textContent = data.name; // textContent is XSS-safe
 
                 tag.appendChild(iconSpan);
                 tag.appendChild(nameSpan);

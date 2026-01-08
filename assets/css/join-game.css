@@ -147,6 +147,57 @@ body {
     margin-bottom: 25px;
 }
 
+/* ============================================================================
+   INPUT VALIDATION - P1 UI/UX ENHANCED
+   ============================================================================ */
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input-wrapper .input-field {
+    width: 100%;
+    padding-right: 50px; /* Platz für Validation Icon */
+}
+
+/* ✅ P1 UI/UX: Validation Icon */
+.validation-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+
+.validation-icon:not(.hidden) {
+    opacity: 1;
+    animation: popIn 0.3s ease;
+}
+
+@keyframes popIn {
+    0% {
+        transform: translateY(-50%) scale(0);
+    }
+    50% {
+        transform: translateY(-50%) scale(1.2);
+    }
+    100% {
+        transform: translateY(-50%) scale(1);
+    }
+}
+
+.validation-icon.valid {
+    color: #4CAF50;
+}
+
+.validation-icon.error {
+    color: #f44336;
+}
+
 .input-label {
     color: white;
     font-size: 1rem;
@@ -207,6 +258,7 @@ body {
 .input-field.valid {
     border-color: #4CAF50;
     background: rgba(76, 175, 80, 0.1);
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
 }
 
 
@@ -230,6 +282,235 @@ body {
     margin-top: 8px;
     display: block;
 }
+
+/* ============================================================================
+   RATE LIMIT WARNING - P0 Sicherheit
+   ============================================================================ */
+
+.rate-limit-warning {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.9), rgba(255, 87, 34, 0.9));
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    animation: slideDown 0.3s ease;
+}
+
+.rate-limit-warning:not(.hidden) {
+    display: block;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rate-limit-warning strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    color: white;
+}
+
+.rate-limit-warning p {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+#rate-limit-countdown {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: white;
+}
+
+/* ============================================================================
+   AGE GATE MODAL - P1 DSGVO
+   ============================================================================ */
+
+.age-gate-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.age-gate-modal:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.age-gate-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+}
+
+.age-gate-content {
+    position: relative;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.age-gate-header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.age-gate-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.age-gate-body {
+    margin-bottom: 25px;
+}
+
+.age-gate-message,
+.age-gate-confirmation {
+    color: white;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.age-options {
+    margin: 20px 0;
+}
+
+.age-option {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.age-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(5px);
+}
+
+.age-option input[type="radio"] {
+    margin-right: 12px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.age-label {
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.age-gate-warning {
+    background: rgba(255, 152, 0, 0.2);
+    border-left: 4px solid #ff9800;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.age-gate-warning strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #ffb74d;
+}
+
+.age-gate-warning p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    margin: 5px 0;
+}
+
+.age-gate-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.age-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    min-width: 120px;
+}
+
+.age-btn.primary {
+    background: linear-gradient(135deg, #4CAF50, #81C784);
+    color: white;
+}
+
+.age-btn.primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.age-btn.primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.age-btn.secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.age-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================================
+   GAME INFO PREVIEW
+   ============================================================================ */
 
 /* ============================================================================
    GAME INFO PREVIEW

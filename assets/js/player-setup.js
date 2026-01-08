@@ -15,7 +15,7 @@
     // ===========================
     // CONSTANTS
     // ===========================
-    const MAX_PLAYERS = 8;
+    const MAX_PLAYERS = 10; // ✅ P1 Stabilität: Maximum 10 Spieler (serverseitig via joinGame validiert)
     const MIN_PLAYERS = 2;
 
     // ===========================
@@ -33,9 +33,34 @@
     // Drag and drop state
     let draggedItem = null;
 
+    // ✅ P1 STABILITY: Event listener tracking for cleanup
+    const _eventListeners = [];
+
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
         window.location.hostname.includes('192.168.');
+
+    // ===========================
+    // ✅ P1 STABILITY: EVENT LISTENER HELPER
+    // ===========================
+
+    /**
+     * Add event listener with automatic tracking for cleanup
+     * @param {Element} element - DOM element
+     * @param {string} event - Event name
+     * @param {Function} handler - Event handler
+     * @param {Object} options - Event options
+     */
+    function addTrackedEventListener(element, event, handler, options) {
+        if (!element) return;
+
+        element.addEventListener(event, handler, options);
+        _eventListeners.push({ element, event, handler, options });
+
+        if (isDevelopment) {
+            console.log(`📌 Tracked event: ${event} on`, element);
+        }
+    }
 
     // ===========================
     // INITIALIZATION
@@ -273,25 +298,39 @@
 
     // ===========================
     // INPUT SANITIZATION
+    // ✅ P0 SECURITY: Use centralized sanitizer from utils.js
     // ===========================
 
     /**
-     * Sanitize player name with NocapUtils or fallback
+     * ✅ P0 SECURITY: Sanitize player name using NocapUtils
+     * Imported from utils.js to avoid code duplication
      */
-    function sanitizePlayerName(input) {
-        if (!input) return '';
-
-        // Use NocapUtils if available
+    const sanitizePlayerName = (input) => {
         if (window.NocapUtils && window.NocapUtils.sanitizeInput) {
-            return window.NocapUtils.sanitizeInput(input).substring(0, 15);
+            // Use centralized sanitizer
+            let sanitized = window.NocapUtils.sanitizeInput(input);
+
+            // Additional cleanup for player names
+            sanitized = sanitized
+                .replace(/[^\w\säöüÄÖÜß\-]/g, '') // Only alphanumeric, spaces, umlauts, hyphens
+                .trim();
+
+            // Limit to 15 characters
+            return sanitized.substring(0, 15);
         }
 
-        // Fallback sanitization
-        let sanitized = String(input).replace(/<[^>]*>/g, '');
-        sanitized = sanitized.replace(/[^a-zA-Z0-9äöüÄÖÜß\s\-_.,!?]/g, '');
+        // Fallback if NocapUtils not available
+        if (!input) return '';
 
-        return sanitized.substring(0, 15);
-    }
+        let sanitized = String(input)
+            .replace(/<[^>]*>/g, '')               // Remove HTML tags
+            .replace(/[<>'"]/g, '')                // Remove dangerous chars
+            .replace(/[^\w\säöüÄÖÜß\-]/g, '')     // Only safe chars
+            .trim()
+            .substring(0, 15);
+
+        return sanitized;
+    };
 
     // ===========================
     // PLAYER INPUT MANAGEMENT
@@ -374,10 +413,30 @@
     function addPlayerInput() {
         const inputsList = document.getElementById('players-input-list');
         const currentInputs = inputsList.querySelectorAll('.player-input-row');
+        const limitWarning = document.getElementById('player-limit-warning');
+        const addPlayerBtn = document.getElementById('add-player-btn');
 
+        // ✅ P1 Stabilität: Maximum 10 Spieler
         if (currentInputs.length >= MAX_PLAYERS) {
             showNotification(`Maximal ${MAX_PLAYERS} Spieler erlaubt`, 'warning');
+
+            // Zeige Limit-Warnung an
+            if (limitWarning) {
+                limitWarning.classList.remove('hidden');
+            }
+
+            // Deaktiviere "Spieler hinzufügen" Button
+            if (addPlayerBtn) {
+                addPlayerBtn.disabled = true;
+                addPlayerBtn.setAttribute('aria-disabled', 'true');
+            }
+
             return;
+        }
+
+        // Verstecke Warnung falls sichtbar
+        if (limitWarning) {
+            limitWarning.classList.add('hidden');
         }
 
         const newIndex = currentInputs.length;
@@ -427,10 +486,23 @@
     function removePlayerInput(index) {
         const inputsList = document.getElementById('players-input-list');
         const inputs = inputsList.querySelectorAll('.player-input-row');
+        const limitWarning = document.getElementById('player-limit-warning');
+        const addPlayerBtn = document.getElementById('add-player-btn');
 
         if (inputs.length <= MIN_PLAYERS) {
             showNotification(`Mindestens ${MIN_PLAYERS} Spieler nötig`, 'warning');
             return;
+        }
+
+        // ✅ P1 Stabilität: Reaktiviere Button wenn unter Limit
+        if (inputs.length === MAX_PLAYERS) {
+            if (addPlayerBtn) {
+                addPlayerBtn.disabled = false;
+                addPlayerBtn.removeAttribute('aria-disabled');
+            }
+            if (limitWarning) {
+                limitWarning.classList.add('hidden');
+            }
         }
 
         inputs[index].remove();
@@ -565,6 +637,7 @@
 
     // ===========================
     // DRAG & DROP FUNCTIONALITY
+    // ✅ P1 STABILITY: All drag listeners are tracked for cleanup
     // ===========================
 
     function setupDragAndDrop() {
@@ -572,14 +645,14 @@
 
         items.forEach(item => {
             // Drag & Drop
-            item.addEventListener('dragstart', handleDragStart);
-            item.addEventListener('dragend', handleDragEnd);
-            item.addEventListener('dragover', handleDragOver);
-            item.addEventListener('drop', handleDrop);
-            item.addEventListener('dragleave', handleDragLeave);
+            addTrackedEventListener(item, 'dragstart', handleDragStart);
+            addTrackedEventListener(item, 'dragend', handleDragEnd);
+            addTrackedEventListener(item, 'dragover', handleDragOver);
+            addTrackedEventListener(item, 'drop', handleDrop);
+            addTrackedEventListener(item, 'dragleave', handleDragLeave);
 
             // ✅ AUDIT FIX: Keyboard navigation for reordering
-            item.addEventListener('keydown', handleKeyboardReorder);
+            addTrackedEventListener(item, 'keydown', handleKeyboardReorder);
         });
     }
 
@@ -809,32 +882,9 @@
     // VALIDATION
     // ===========================
 
-    /**
-     * ✅ AUDIT FIX: Sanitize player names with DOMPurify
-     * Removes HTML tags, limits length, and strips dangerous characters
-     */
-    function sanitizePlayerName(name) {
-        if (!name) return '';
-
-        // Use DOMPurify to strip HTML tags
-        let sanitized = DOMPurify.sanitize(name, {
-            ALLOWED_TAGS: [], // No HTML tags allowed
-            KEEP_CONTENT: true // Keep text content
-        });
-
-        // Remove any remaining special characters that could cause issues
-        sanitized = sanitized
-            .replace(/<[^>]*>/g, '') // Extra protection: strip any remaining tags
-            .replace(/[<>'"]/g, '') // Remove quotes and angle brackets
-            .trim();
-
-        // Limit length (max 20 characters as per audit recommendation)
-        if (sanitized.length > 20) {
-            sanitized = sanitized.substring(0, 20);
-        }
-
-        return sanitized;
-    }
+    // ===========================
+    // HELPER: Get next empty input
+    // ===========================
 
     function getNextEmptyInput() {
         const inputs = document.querySelectorAll('.player-input');
@@ -867,31 +917,32 @@
 
     // ===========================
     // EVENT LISTENERS
+    // ✅ P1 STABILITY: All listeners are tracked for cleanup
     // ===========================
 
     function setupEventListeners() {
         // Back button
         const backBtn = document.getElementById('back-btn');
         if (backBtn) {
-            backBtn.addEventListener('click', goBack);
+            addTrackedEventListener(backBtn, 'click', goBack);
         }
 
         // Start button
         const startBtn = document.getElementById('start-btn');
         if (startBtn) {
-            startBtn.addEventListener('click', startGame);
+            addTrackedEventListener(startBtn, 'click', startGame);
         }
 
         // Add player button
         const addPlayerBtn = document.getElementById('add-player-btn');
         if (addPlayerBtn) {
-            addPlayerBtn.addEventListener('click', addPlayerInput);
+            addTrackedEventListener(addPlayerBtn, 'click', addPlayerInput);
         }
 
         // Input changes - delegate to parent
         const inputsList = document.getElementById('players-input-list');
         if (inputsList) {
-            inputsList.addEventListener('input', function(e) {
+            const inputHandler = function(e) {
                 if (e.target.classList.contains('player-input')) {
                     // Sanitize with NocapUtils
                     const sanitized = sanitizePlayerName(e.target.value);
@@ -901,21 +952,23 @@
                     updatePlayersFromInputs();
                     updateUI();
                 }
-            });
+            };
+            addTrackedEventListener(inputsList, 'input', inputHandler);
 
             // Remove button clicks - delegate
-            inputsList.addEventListener('click', function(e) {
+            const clickHandler = function(e) {
                 if (e.target.classList.contains('remove-player-btn')) {
                     const index = parseInt(e.target.dataset.index);
                     if (!isNaN(index)) {
                         removePlayerInput(index);
                     }
                 }
-            });
+            };
+            addTrackedEventListener(inputsList, 'click', clickHandler);
         }
 
         // Enter key to move to next input or start
-        document.addEventListener('keypress', function(e) {
+        const keypressHandler = function(e) {
             if (e.target.classList.contains('player-input') && e.key === 'Enter') {
                 e.preventDefault();
                 const nextInput = getNextEmptyInput();
@@ -925,7 +978,12 @@
                     startGame();
                 }
             }
-        });
+        };
+        addTrackedEventListener(document, 'keypress', keypressHandler);
+
+        if (isDevelopment) {
+            console.log(`✅ Setup ${_eventListeners.length} tracked event listeners`);
+        }
     }
 
     // ===========================
@@ -1013,15 +1071,22 @@
 
     // ===========================
     // CLEANUP
+    // ✅ P1 STABILITY: Remove all tracked event listeners to prevent memory leaks
     // ===========================
 
     function cleanup() {
-        if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
-            window.NocapUtils.cleanupEventListeners();
-        }
+        // Remove all tracked event listeners
+        _eventListeners.forEach(({ element, event, handler, options }) => {
+            if (element && element.removeEventListener) {
+                element.removeEventListener(event, handler, options);
+            }
+        });
+
+        // Clear the array
+        _eventListeners.length = 0;
 
         if (isDevelopment) {
-            console.log('✅ Player setup cleanup completed');
+            console.log('✅ Player setup cleanup completed - all event listeners removed');
         }
     }
 

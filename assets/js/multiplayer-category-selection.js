@@ -62,6 +62,7 @@
     let firebaseService = null;
     let questionCounts = { fsk0: 200, fsk16: 300, fsk18: 250, special: 150 };
     let playerNameConfirmed = false; // Track if name is set
+    let isHost = true; // ✅ P1 UI/UX: Track if user is host or guest
 
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1';
@@ -98,19 +99,37 @@
         // ===========================
         // CRITICAL: DEVICE MODE ENFORCEMENT
         // This page is ONLY for multiplayer host mode
+        // ✅ P1 UI/UX: But guests might navigate here - detect and handle
         // ===========================
         if (isDevelopment) {
-            console.log('🎮 Enforcing multiplayer host mode...');
+            console.log('🎮 Checking user role...');
         }
 
-        gameState.deviceMode = 'multi';
-        gameState.isHost = true;
-        gameState.isGuest = false;
+        // Check if user is guest (has gameId but isGuest flag)
+        if (gameState.isGuest === true || (gameState.gameId && !gameState.isHost)) {
+            isHost = false;
+            gameState.isHost = false;
+            gameState.isGuest = true;
+
+            if (isDevelopment) {
+                console.log('👤 User is GUEST - showing read-only view');
+            }
+        } else {
+            // Force host mode
+            isHost = true;
+            gameState.deviceMode = 'multi';
+            gameState.isHost = true;
+            gameState.isGuest = false;
+
+            if (isDevelopment) {
+                console.log('👑 User is HOST - showing editable view');
+            }
+        }
 
         if (isDevelopment) {
-            console.log('✅ Device mode set:', {
+            console.log('✅ User role set:', {
                 deviceMode: gameState.deviceMode,
-                isHost: gameState.isHost,
+                isHost: isHost,
                 isGuest: gameState.isGuest
             });
         }
@@ -159,6 +178,11 @@
         // P1 FIX: Load from GameState
         if (playerNameConfirmed) {
             initializeSelectedCategories();
+
+            // ✅ P1 STABILITY: Mark guest as ready when they view categories
+            if (!isHost) {
+                setTimeout(() => markPlayerReady(), 1000);
+            }
         }
 
         if (isDevelopment) {
@@ -506,7 +530,9 @@
     // ===========================
 
     /**
-     * Render category cards with safe DOM manipulation
+     * ✅ P0 SECURITY + P1 UI/UX: Render category cards with safe DOM manipulation
+     * - Uses textContent only (no innerHTML) to prevent XSS
+     * - Shows disabled cards for guests with clear visual feedback
      */
     async function renderCategoryCards() {
         const grid = document.getElementById('categories-grid');
@@ -530,7 +556,10 @@
             card.setAttribute('tabindex', '0');
             card.setAttribute('aria-label', `${cat.name} auswählen`);
 
-            const locked = (key === 'fsk18' && ageLevel < 18) ||
+            // ✅ P1 UI/UX: Guests see all cards as disabled
+            const isGuest = !isHost;
+            const locked = isGuest || // ✅ Guest cannot select
+                (key === 'fsk18' && ageLevel < 18) ||
                 (key === 'fsk16' && ageLevel < 16) ||
                 (key === 'special' && !hasPremium);
 
@@ -539,17 +568,28 @@
                 card.setAttribute('aria-disabled', 'true');
             }
 
-            // P0 FIX: Build with textContent instead of innerHTML
-            buildCategoryCard(card, key, cat, locked, ageLevel);
+            // ✅ P1 UI/UX: Add guest-specific class
+            if (isGuest) {
+                card.classList.add('guest-disabled');
+                card.setAttribute('aria-label', `${cat.name} (Nur Host kann auswählen)`);
+            }
+
+            // ✅ P0 SECURITY: Build with textContent instead of innerHTML
+            buildCategoryCard(card, key, cat, locked, ageLevel, isGuest);
 
             // Event listeners
-            if (!locked) {
+            if (!locked && !isGuest) {
                 card.addEventListener('click', () => toggleCategory(key));
                 card.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         toggleCategory(key);
                     }
+                });
+            } else if (isGuest) {
+                // ✅ P1 UI/UX: Show message when guest tries to click
+                card.addEventListener('click', () => {
+                    showNotification('Nur der Host kann Kategorien auswählen', 'info');
                 });
             } else if (key === 'fsk18' && ageLevel < 18) {
                 card.addEventListener('click', () => showNotification('Du musst 18+ sein', 'warning'));
@@ -568,14 +608,16 @@
         });
 
         if (isDevelopment) {
-            console.log('✅ Cards rendered');
+            console.log(`✅ Cards rendered (${isHost ? 'Host' : 'Guest'} mode)`);
         }
     }
 
     /**
-     * P0 FIX: Build category card with safe DOM manipulation
+     * ✅ P0 SECURITY: Build category card with safe DOM manipulation
+     * - Uses textContent exclusively (no innerHTML)
+     * - Sanitizes all user-facing strings
      */
-    function buildCategoryCard(card, key, cat, locked, ageLevel) {
+    function buildCategoryCard(card, key, cat, locked, ageLevel, isGuest = false) {
         // Locked overlay
         if (locked) {
             const overlay = document.createElement('div');
@@ -583,13 +625,18 @@
 
             const lockIcon = document.createElement('div');
             lockIcon.className = 'lock-icon';
-            lockIcon.textContent = '🔒';
+            // ✅ P0 SECURITY: textContent is XSS-safe
+            lockIcon.textContent = isGuest ? '👁️' : '🔒'; // Different icon for guests
             lockIcon.setAttribute('aria-hidden', 'true');
 
             const lockMessage = document.createElement('p');
             lockMessage.className = 'lock-message';
 
-            if (key === 'fsk18' && ageLevel < 18) {
+            // ✅ P1 UI/UX: Guest-specific message
+            if (isGuest) {
+                lockMessage.textContent = 'Nur Host kann auswählen';
+            } else if (key === 'fsk18' && ageLevel < 18) {
+                // ✅ P0 SECURITY: textContent is XSS-safe
                 lockMessage.textContent = 'Nur für Erwachsene (18+)';
             } else if (key === 'fsk16' && ageLevel < 16) {
                 lockMessage.textContent = 'Ab 16 Jahren';
@@ -611,6 +658,7 @@
             if (key === 'special') {
                 const badge = document.createElement('div');
                 badge.className = 'premium-badge';
+                // ✅ P0 SECURITY: textContent is XSS-safe
                 badge.textContent = '👑 PREMIUM';
                 badge.setAttribute('aria-hidden', 'true');
                 card.appendChild(badge);
@@ -623,11 +671,13 @@
 
         const icon = document.createElement('div');
         icon.className = 'category-icon';
+        // ✅ P0 SECURITY: textContent is XSS-safe
         icon.textContent = cat.icon;
         icon.setAttribute('aria-hidden', 'true');
 
         const fskBadge = document.createElement('div');
         fskBadge.className = `fsk-badge ${key}-badge`;
+        // ✅ P0 SECURITY: textContent is XSS-safe
         fskBadge.textContent = cat.fsk;
 
         header.appendChild(icon);
@@ -636,11 +686,13 @@
         // Title
         const title = document.createElement('h3');
         title.className = 'category-title';
+        // ✅ P0 SECURITY: textContent is XSS-safe
         title.textContent = cat.name;
 
         // Description
         const description = document.createElement('p');
         description.className = 'category-description';
+        // ✅ P0 SECURITY: textContent is XSS-safe
         description.textContent = cat.description;
 
         // Examples
@@ -801,16 +853,108 @@
         }
     }
 
+    /**
+     * ✅ P1 STABILITY: Check if all players have marked themselves as ready
+     * Server-side validation via Firebase
+     */
+    async function checkAllPlayersReady() {
+        if (!gameState.gameId) {
+            // No multiplayer game yet - proceed
+            return true;
+        }
+
+        try {
+            if (typeof firebase === 'undefined' || !firebase.database) {
+                if (isDevelopment) {
+                    console.warn('⚠️ Firebase not available for ready check');
+                }
+                return true; // Fallback: allow proceed
+            }
+
+            const gameRef = firebase.database().ref(`games/${gameState.gameId}/players`);
+            const snapshot = await gameRef.once('value');
+
+            if (!snapshot.exists()) {
+                // No players yet - proceed
+                return true;
+            }
+
+            const players = snapshot.val();
+            const playerList = Object.values(players);
+
+            // Check if all non-host players have categoryReady flag
+            const allReady = playerList.every(player => {
+                if (player.isHost) return true; // Host is always ready
+                return player.categoryReady === true;
+            });
+
+            if (isDevelopment) {
+                const readyCount = playerList.filter(p => p.categoryReady || p.isHost).length;
+                console.log(`✅ Ready check: ${readyCount}/${playerList.length} players ready`);
+            }
+
+            return allReady;
+
+        } catch (error) {
+            console.error('❌ Ready check error:', error);
+            // On error, show warning but allow proceed
+            showNotification('Fehler beim Ready-Check - fortfahren mit Vorsicht', 'warning');
+            return true;
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Mark current player as ready (for guests)
+     * Called when guest has viewed the category selection
+     */
+    async function markPlayerReady() {
+        if (!gameState.gameId || isHost) return;
+
+        try {
+            if (typeof firebase === 'undefined' || !firebase.database) return;
+
+            const userId = firebase.auth()?.currentUser?.uid;
+            if (!userId) return;
+
+            const playerRef = firebase.database().ref(`games/${gameState.gameId}/players/${userId}/categoryReady`);
+            await playerRef.set(true);
+
+            if (isDevelopment) {
+                console.log('✅ Player marked as ready for category selection');
+            }
+
+        } catch (error) {
+            console.error('❌ Mark ready error:', error);
+        }
+    }
+
     // ===========================
     // NAVIGATION
+    // ✅ P1 STABILITY: Ready-check before proceeding
     // ===========================
 
-    function proceed() {
+    /**
+     * ✅ P1 STABILITY: Proceed with ready-check for multiplayer
+     * Host must wait until all guests have seen the categories
+     */
+    async function proceed() {
         const selectedCategories = getSelectedCategories();
 
         if (selectedCategories.length === 0) {
             showNotification('Wähle mindestens eine Kategorie', 'warning');
             return;
+        }
+
+        // ✅ P1 STABILITY: Check if all players are ready (for multiplayer)
+        if (isHost && gameState.gameId) {
+            const allReady = await checkAllPlayersReady();
+            if (!allReady) {
+                showNotification(
+                    'Bitte warte, bis alle Spieler die Kategorieauswahl gesehen haben',
+                    'warning'
+                );
+                return;
+            }
         }
 
         // Already saved in GameState

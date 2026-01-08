@@ -48,6 +48,50 @@
       {
         "source": "/404",
         "destination": "/404.html"
+      },
+      {
+        "source": "/category-selection",
+        "destination": "/category-selection.html"
+      },
+      {
+        "source": "/difficulty-selection",
+        "destination": "/difficulty-selection.html"
+      },
+      {
+        "source": "/gameplay",
+        "destination": "/gameplay.html"
+      },
+      {
+        "source": "/player-setup",
+        "destination": "/player-setup.html"
+      },
+      {
+        "source": "/join-game",
+        "destination": "/join-game.html"
+      },
+      {
+        "source": "/multiplayer-lobby",
+        "destination": "/multiplayer-lobby.html"
+      },
+      {
+        "source": "/multiplayer-category-selection",
+        "destination": "/multiplayer-category-selection.html"
+      },
+      {
+        "source": "/multiplayer-difficulty-selection",
+        "destination": "/multiplayer-difficulty-selection.html"
+      },
+      {
+        "source": "/multiplayer-gameplay",
+        "destination": "/multiplayer-gameplay.html"
+      },
+      {
+        "source": "/multiplayer-results",
+        "destination": "/multiplayer-results.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
       }
     ],
     "headers": [
@@ -113,7 +157,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=3600, must-revalidate"
+            "value": "public, max-age=86400, must-revalidate"
           },
           {
             "key": "Content-Type",
@@ -131,6 +175,10 @@
           {
             "key": "Content-Type",
             "value": "text/html; charset=utf-8"
+          },
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' https://*.firebaseio.com https://www.gstatic.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.firebaseio.com https://www.googleapis.com wss://*.firebaseio.com; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
           }
         ]
       },
@@ -192,6 +240,9 @@
   },
   "database": {
     "rules": "database.rules.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
   },
   "emulators": {
     "auth": {

@@ -126,6 +126,92 @@
     // 🎨 DOM MANIPULATION - CSP COMPLIANT (No inline styles)
     // ============================================================================
 
+    // ============================================================================
+    // 🛡️ P0 SECURITY: CSP-COMPLIANT DYNAMIC STYLES
+    // ============================================================================
+
+    // Track dynamically generated CSS classes
+    const _dynamicStyleSheet = (() => {
+        const style = document.createElement('style');
+        style.setAttribute('data-nocap-dynamic', 'true');
+        document.head.appendChild(style);
+        return style.sheet;
+    })();
+
+    /**
+     * ✅ P0 SECURITY: Generate dynamic CSS class (CSP-compliant)
+     * Instead of setting inline styles, this creates a CSS class and injects it into <head>
+     * @param {string} className - Unique class name
+     * @param {Object} styles - CSS properties as object
+     * @returns {string} The generated class name
+     */
+    function generateDynamicClass(className, styles) {
+        if (!className || !styles || typeof styles !== 'object') {
+            Logger.warn('Invalid generateDynamicClass params');
+            return '';
+        }
+
+        // Build CSS rule
+        const cssProperties = Object.entries(styles)
+            .map(([prop, value]) => {
+                // Convert camelCase to kebab-case
+                const cssProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+                return `${cssProp}: ${value};`;
+            })
+            .join(' ');
+
+        const cssRule = `.${className} { ${cssProperties} }`;
+
+        try {
+            // Check if rule already exists
+            const existingIndex = Array.from(_dynamicStyleSheet.cssRules || [])
+                .findIndex(rule => rule.selectorText === `.${className}`);
+
+            if (existingIndex >= 0) {
+                // Update existing rule
+                _dynamicStyleSheet.deleteRule(existingIndex);
+            }
+
+            // Insert new rule
+            _dynamicStyleSheet.insertRule(cssRule, _dynamicStyleSheet.cssRules.length);
+            Logger.debug(`✅ Generated dynamic class: ${className}`);
+            return className;
+
+        } catch (error) {
+            Logger.error(`❌ Failed to generate dynamic class: ${error.message}`);
+            return '';
+        }
+    }
+
+    /**
+     * ✅ P0 SECURITY: Apply styles via CSS class (CSP-compliant)
+     * @param {HTMLElement} element - Target element
+     * @param {Object} styles - CSS properties to apply
+     * @returns {string} The generated class name
+     */
+    function applyStyles(element, styles) {
+        if (!element || !styles) return '';
+
+        // Generate unique class name
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substr(2, 5);
+        const className = `dynamic-style-${timestamp}-${random}`;
+
+        // Generate CSS class
+        const generatedClass = generateDynamicClass(className, styles);
+
+        if (generatedClass) {
+            element.classList.add(generatedClass);
+            return generatedClass;
+        }
+
+        return '';
+    }
+
+    // ============================================================================
+    // 🎨 ELEMENT VISIBILITY UTILITIES
+    // ============================================================================
+
     /**
      * ✅ CSP-FIX: Show element using CSS class instead of inline style
      * @param {HTMLElement} element - Element to show
@@ -1571,6 +1657,130 @@
     });
 
     // ============================================================================
+    // ⚡ P2 PERFORMANCE: MEMOIZATION
+    // ============================================================================
+
+    /**
+     * ✅ P2 PERFORMANCE: Generic memoization function
+     * @param {Function} fn - Function to memoize
+     * @param {Function} keyGenerator - Function to generate cache key from arguments
+     * @returns {Function} Memoized function
+     */
+    function memoize(fn, keyGenerator = (...args) => JSON.stringify(args)) {
+        const cache = new Map();
+
+        return function memoized(...args) {
+            const key = keyGenerator(...args);
+
+            if (cache.has(key)) {
+                Logger.debug(`Cache hit for ${fn.name || 'anonymous'}`);
+                return cache.get(key);
+            }
+
+            const result = fn.apply(this, args);
+            cache.set(key, result);
+
+            // Limit cache size to prevent memory leaks
+            if (cache.size > 100) {
+                const firstKey = cache.keys().next().value;
+                cache.delete(firstKey);
+            }
+
+            return result;
+        };
+    }
+
+    /**
+     * ✅ P2 PERFORMANCE: Memoized formatTime
+     * Caches results for frequently called time formats
+     */
+    const formatTime = memoize((seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    });
+
+    /**
+     * ✅ P2 PERFORMANCE: Memoized calculateBarWidth
+     * Caches width calculations for progress bars
+     */
+    const calculateBarWidth = memoize((current, total, maxWidth = 100) => {
+        if (!total || total <= 0) return 0;
+        const percentage = (current / total) * 100;
+        return Math.min(percentage, maxWidth);
+    }, (current, total, maxWidth) => `${current}-${total}-${maxWidth}`);
+
+    // ============================================================================
+    // 🌓 P1 UI/UX: DARK MODE
+    // ============================================================================
+
+    /**
+     * ✅ P1 UI/UX: Toggle dark mode and persist preference
+     * @param {boolean} force - Force dark mode on/off (optional)
+     * @returns {boolean} Current dark mode state
+     */
+    function toggleDarkMode(force) {
+        const html = document.documentElement;
+        const currentState = html.classList.contains('dark-mode');
+
+        // Determine new state
+        const newState = force !== undefined ? force : !currentState;
+
+        // Apply to DOM
+        if (newState) {
+            html.classList.add('dark-mode');
+            document.body.classList.add('dark-mode');
+        } else {
+            html.classList.remove('dark-mode');
+            document.body.classList.remove('dark-mode');
+        }
+
+        // ✅ P1 UI/UX: Persist in localStorage
+        try {
+            localStorage.setItem('nocap_dark_mode', newState.toString());
+            Logger.info(`Dark mode ${newState ? 'enabled' : 'disabled'}`);
+        } catch (error) {
+            Logger.warn('Failed to save dark mode preference:', error);
+        }
+
+        // Dispatch custom event
+        window.dispatchEvent(new CustomEvent('nocap:darkmode', {
+            detail: { enabled: newState }
+        }));
+
+        return newState;
+    }
+
+    /**
+     * ✅ P1 UI/UX: Initialize dark mode from localStorage
+     */
+    function initDarkMode() {
+        try {
+            const savedPreference = localStorage.getItem('nocap_dark_mode');
+
+            if (savedPreference === 'true') {
+                toggleDarkMode(true);
+            } else if (savedPreference === 'false') {
+                toggleDarkMode(false);
+            } else {
+                // No preference saved - check system preference
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    toggleDarkMode(true);
+                }
+            }
+        } catch (error) {
+            Logger.warn('Failed to initialize dark mode:', error);
+        }
+    }
+
+    // Auto-initialize dark mode on load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDarkMode);
+    } else {
+        initDarkMode();
+    }
+
+    // ============================================================================
     // 📤 EXPORT FUNCTIONS TO GLOBAL SCOPE
     // ============================================================================
 
@@ -1586,6 +1796,10 @@
         hideElement,
         toggleElement,
         toggleClass,
+
+        // ✅ P0 SECURITY: CSP-compliant dynamic styles
+        generateDynamicClass,
+        applyStyles,
 
         // UI
         showLoading,
@@ -1637,6 +1851,15 @@
         debounce,
         throttle,
         requestFrame,
+
+        // ✅ P2 PERFORMANCE: Memoization
+        memoize,
+        formatTime,
+        calculateBarWidth,
+
+        // ✅ P1 UI/UX: Dark Mode
+        toggleDarkMode,
+        initDarkMode,
 
         // Accessibility
         trapFocus,

@@ -25,7 +25,7 @@
 
             // ✅ P1 FIX: Improved debounce & locking with mutex
             this._saveTimer = null;
-            this._saveDelay = 200; // ✅ Optimiert: 200ms statt 500ms für besseres UX
+            this._saveDelay = 1000; // ✅ P2 PERFORMANCE: 1000ms debounce reduces localStorage writes
             this._isLoading = false;
             this._isSaving = false;
             this._isDirty = false;
@@ -60,47 +60,92 @@
         }
 
         // ===========================
-        // P0 FIX: DEEP COPY GETTER
+        // ✅ P1 STABILITY: DEEP COPY GETTER WITH STRUCTURED CLONE
         // ===========================
 
         /**
-         * ✅ P0 FIX: Return deep copy of state to prevent external mutation
+         * ✅ P1 STABILITY: Return deep copy of state using structuredClone()
+         * structuredClone() is more performant and safer than JSON.parse(JSON.stringify())
+         * Browser support: Chrome 98+, Firefox 94+, Safari 15.4+, Edge 98+
          */
         getState() {
-            // Return a DEEP COPY, not a reference
-            return {
-                deviceMode: this.deviceMode,
-                selectedCategories: [...this.selectedCategories], // Array copy
-                difficulty: this.difficulty,
-                alcoholMode: this.alcoholMode,
-                questionCount: this.questionCount,
-                players: this.players ? [...this.players] : [], // ✅ Players array copy
-                playerName: this.playerName,
-                gameId: this.gameId,
-                playerId: this.playerId,
-                isHost: this.isHost,
-                isGuest: this.isGuest,
-                gamePhase: this.gamePhase,
-                timestamp: this.timestamp,
-                version: this.VERSION
-            };
+            try {
+                // Build state object
+                const state = {
+                    deviceMode: this.deviceMode,
+                    selectedCategories: this.selectedCategories,
+                    difficulty: this.difficulty,
+                    alcoholMode: this.alcoholMode,
+                    questionCount: this.questionCount,
+                    players: this.players || [],
+                    playerName: this.playerName,
+                    gameId: this.gameId,
+                    playerId: this.playerId,
+                    isHost: this.isHost,
+                    isGuest: this.isGuest,
+                    gamePhase: this.gamePhase,
+                    timestamp: this.timestamp,
+                    version: this.VERSION
+                };
+
+                // ✅ P1 STABILITY: Use structuredClone for safer deep copy
+                // No manual copying needed - structuredClone handles everything
+                if (typeof structuredClone === 'function') {
+                    return structuredClone(state);
+                }
+
+                // Fallback for older browsers (shouldn't be needed in 2026)
+                this.log('⚠️ structuredClone not available, using JSON fallback', 'warning');
+                return JSON.parse(JSON.stringify(state));
+
+            } catch (error) {
+                this.log(`❌ getState error: ${error.message}`, 'error');
+                // Return empty state on error
+                return {
+                    deviceMode: null,
+                    selectedCategories: [],
+                    difficulty: null,
+                    alcoholMode: true,
+                    questionCount: 10,
+                    players: [],
+                    playerName: '',
+                    gameId: null,
+                    playerId: null,
+                    isHost: false,
+                    isGuest: false,
+                    gamePhase: 'lobby',
+                    timestamp: Date.now(),
+                    version: this.VERSION
+                };
+            }
         }
 
         /**
-         * Get specific state property safely
+         * ✅ P1 STABILITY: Get specific state property safely with structuredClone
          */
         get(key) {
             if (this.hasOwnProperty(key)) {
-                // Return copy for arrays
-                if (Array.isArray(this[key])) {
-                    return [...this[key]];
+                const value = this[key];
+
+                // ✅ P1 STABILITY: Use structuredClone for complex types
+                if (typeof structuredClone === 'function' && value !== null && typeof value === 'object') {
+                    try {
+                        return structuredClone(value);
+                    } catch (error) {
+                        this.log(`⚠️ structuredClone failed for ${key}, using fallback`, 'warning');
+                    }
                 }
-                // Return copy for objects
-                if (this[key] && typeof this[key] === 'object') {
-                    return { ...this[key] };
+
+                // Fallback: Manual shallow copy for objects/arrays
+                if (Array.isArray(value)) {
+                    return [...value];
                 }
-                // Return primitive value
-                return this[key];
+                if (value && typeof value === 'object') {
+                    return { ...value };
+                }
+
+                // Return primitive value directly
+                return value;
             }
             return undefined;
         }
@@ -131,6 +176,14 @@
 
                 const state = JSON.parse(saved);
 
+                // ✅ P0 SECURITY: Validate data types FIRST to prevent prototype pollution
+                if (!this.validateDataTypes(state)) {
+                    this.log('❌ Data validation failed - potential security risk', 'error');
+                    this.clearStorage();
+                    this._isLoading = false;
+                    return false;
+                }
+
                 // Validate state structure
                 if (!this.validateStateStructure(state)) {
                     this.log('⚠️ Invalid state structure, cleared', 'warning');
@@ -154,7 +207,7 @@
                 this.alcoholMode = state.alcoholMode === true;
                 this.questionCount = this.sanitizeNumber(state.questionCount, 1, 50, 10);
 
-                // ✅ CRITICAL FIX: Load players array
+                // ✅ CRITICAL FIX + P0 SECURITY: Load players array with validation
                 if (Array.isArray(state.players)) {
                     this.players = state.players
                         .filter(name => typeof name === 'string' && name.trim().length > 0)
@@ -186,10 +239,108 @@
 
         // ===========================
         // VALIDATION
+        // ✅ P0 SECURITY: Enhanced validation with prototype pollution prevention
         // ===========================
+
+        /**
+         * ✅ P0 SECURITY: Validate data types to prevent prototype pollution
+         * @param {Object} state - State object to validate
+         * @returns {boolean} True if valid
+         */
+        validateDataTypes(state) {
+            if (!state || typeof state !== 'object') {
+                this.log('❌ Validation failed: state is not an object', 'error');
+                return false;
+            }
+
+            // ✅ P0 SECURITY: Check for prototype pollution attempts
+            const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+            for (const key of dangerousKeys) {
+                if (key in state) {
+                    this.log(`❌ Validation failed: dangerous key "${key}" detected`, 'error');
+                    return false;
+                }
+            }
+
+            // ✅ P0 SECURITY: Validate expected data types
+            const typeChecks = {
+                deviceMode: (v) => v === null || v === 'single' || v === 'multi',
+                selectedCategories: (v) => Array.isArray(v),
+                difficulty: (v) => v === null || ['easy', 'medium', 'hard'].includes(v),
+                alcoholMode: (v) => typeof v === 'boolean',
+                questionCount: (v) => typeof v === 'number' && v >= 1 && v <= 50,
+                players: (v) => Array.isArray(v),
+                playerName: (v) => typeof v === 'string',
+                gameId: (v) => v === null || typeof v === 'string',
+                playerId: (v) => v === null || typeof v === 'string',
+                isHost: (v) => typeof v === 'boolean',
+                isGuest: (v) => typeof v === 'boolean',
+                gamePhase: (v) => typeof v === 'string',
+                timestamp: (v) => typeof v === 'number' && v > 0,
+                version: (v) => typeof v === 'number'
+            };
+
+            // Check each field
+            for (const [key, validator] of Object.entries(typeChecks)) {
+                if (state.hasOwnProperty(key)) {
+                    try {
+                        if (!validator(state[key])) {
+                            this.log(`❌ Validation failed: ${key} has invalid type/value`, 'error');
+                            return false;
+                        }
+                    } catch (error) {
+                        this.log(`❌ Validation error for ${key}: ${error.message}`, 'error');
+                        return false;
+                    }
+                }
+            }
+
+            // ✅ P0 SECURITY: Validate array contents
+            if (state.selectedCategories) {
+                const validCategories = ['fsk0', 'fsk16', 'fsk18', 'special'];
+                for (const cat of state.selectedCategories) {
+                    if (typeof cat !== 'string' || !validCategories.includes(cat)) {
+                        this.log(`❌ Validation failed: invalid category "${cat}"`, 'error');
+                        return false;
+                    }
+                }
+            }
+
+            if (state.players) {
+                for (const player of state.players) {
+                    // Support both string and object format
+                    if (typeof player === 'string') {
+                        continue; // Valid
+                    } else if (typeof player === 'object' && player !== null) {
+                        // Validate object format
+                        if (!player.name || typeof player.name !== 'string') {
+                            this.log(`❌ Validation failed: invalid player object`, 'error');
+                            return false;
+                        }
+                        // Check for prototype pollution in player objects
+                        for (const key of dangerousKeys) {
+                            if (key in player) {
+                                this.log(`❌ Validation failed: dangerous key in player object`, 'error');
+                                return false;
+                            }
+                        }
+                    } else {
+                        this.log(`❌ Validation failed: invalid player type`, 'error');
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
 
         validateStateStructure(state) {
             if (!state || typeof state !== 'object') {
+                return false;
+            }
+
+            // ✅ P0 SECURITY: Validate data types first
+            if (!this.validateDataTypes(state)) {
                 return false;
             }
 
@@ -844,13 +995,23 @@
         }
 
         /**
-         * ✅ AUDIT FIX: Set players array
+         * ✅ P0 SECURITY: Set players array with type validation
          * @param {Array<string>} players - Array of player names
          */
         setPlayers(players) {
+            // ✅ P0 SECURITY: Validate input type
             if (!Array.isArray(players)) {
                 this.log('⚠️ setPlayers: Invalid input, must be array', 'warning');
                 return;
+            }
+
+            // ✅ P0 SECURITY: Check for prototype pollution in array
+            const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+            for (const key of dangerousKeys) {
+                if (key in players) {
+                    this.log('❌ setPlayers: Prototype pollution attempt detected', 'error');
+                    return;
+                }
             }
 
             // Sanitize each player name

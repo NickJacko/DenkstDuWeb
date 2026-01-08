@@ -400,7 +400,8 @@
         }
 
         /**
-         * Sign in with Google
+         * ✅ P0 SECURITY + P1 GDPR: Sign in with Google (minimal scopes)
+         * Only requests profile and email - no contacts, drive, or other data
          * @returns {Promise<Object>} Result object
          */
         async signInWithGoogle() {
@@ -410,7 +411,21 @@
                 }
 
                 const { auth } = window.FirebaseConfig.getFirebaseInstances();
+
+                // ✅ P0 SECURITY: Only initialize Google provider (remove unused providers)
+                // ✅ P1 GDPR: Minimal scope - only profile and email
                 const provider = new firebase.auth.GoogleAuthProvider();
+
+                // ✅ P1 GDPR: Explicitly set minimal scopes
+                // Default scopes are already minimal (profile, email), but we make it explicit
+                provider.setCustomParameters({
+                    prompt: 'select_account', // Allow account selection
+                });
+
+                // ✅ P1 GDPR: Do NOT add additional scopes
+                // NO: provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+                // NO: provider.addScope('https://www.googleapis.com/auth/drive.readonly');
+                // We only use the default scopes: profile, email (implicit)
 
                 // Upgrade anonymous account if applicable
                 if (this.isAnonymous && this.currentUser) {
@@ -523,6 +538,114 @@
                     error: error.message
                 };
             }
+        }
+
+        // ===================================
+        // 🔄 P1 STABILITY: TOKEN & CLAIMS REFRESH
+        // ===================================
+
+        /**
+         * ✅ P1 STABILITY: Refresh authentication token to get updated custom claims
+         * Call this after server-side claim updates (e.g., premium activation)
+         * @param {boolean} forceRefresh - Force token refresh even if not expired
+         * @returns {Promise<Object>} Result object with updated token
+         */
+        async refreshAuthToken(forceRefresh = true) {
+            try {
+                if (!this.initialized) {
+                    await this.initialize();
+                }
+
+                if (!this.isAuthenticated) {
+                    return {
+                        success: false,
+                        error: 'No user authenticated'
+                    };
+                }
+
+                const { auth } = window.FirebaseConfig.getFirebaseInstances();
+                const user = auth.currentUser;
+
+                if (!user) {
+                    return {
+                        success: false,
+                        error: 'No current user'
+                    };
+                }
+
+                // ✅ P1 STABILITY: Force token refresh to get updated custom claims
+                const token = await user.getIdToken(forceRefresh);
+
+                if (this._isDevelopment) {
+                    console.log('✅ Auth token refreshed');
+
+                    // Decode token to show custom claims (dev only)
+                    try {
+                        const tokenResult = await user.getIdTokenResult(forceRefresh);
+                        console.log('Custom claims:', tokenResult.claims);
+                    } catch (e) {
+                        // Ignore decode errors
+                    }
+                }
+
+                // Dispatch event for components to react to claim updates
+                window.dispatchEvent(new CustomEvent('nocap:tokenRefreshed', {
+                    detail: { userId: user.uid }
+                }));
+
+                return {
+                    success: true,
+                    token: token
+                };
+
+            } catch (error) {
+                console.error('❌ Token refresh failed:', error);
+
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Get current custom claims
+         * @returns {Promise<Object>} Custom claims object
+         */
+        async getCustomClaims() {
+            try {
+                if (!this.initialized) {
+                    await this.initialize();
+                }
+
+                if (!this.isAuthenticated) {
+                    return {};
+                }
+
+                const { auth } = window.FirebaseConfig.getFirebaseInstances();
+                const user = auth.currentUser;
+
+                if (!user) {
+                    return {};
+                }
+
+                const tokenResult = await user.getIdTokenResult();
+                return tokenResult.claims || {};
+
+            } catch (error) {
+                console.error('❌ Failed to get custom claims:', error);
+                return {};
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Check if user has specific claim
+         * @param {string} claimName - Name of the claim to check
+         * @returns {Promise<boolean>} True if claim exists and is truthy
+         */
+        async hasClaim(claimName) {
+            const claims = await this.getCustomClaims();
+            return claims[claimName] === true;
         }
 
         // ===================================
@@ -827,20 +950,36 @@
         }
 
         /**
-         * ⚠️ Check if user has premium status
-         * WARNING: This MUST be validated server-side!
-         * @returns {boolean} Premium status (client-side only)
+         * ✅ P1 STABILITY: Check if user has premium status (with custom claims)
+         * WARNING: This checks custom claims which MUST be set server-side!
+         * @returns {Promise<boolean>} Premium status
          */
-        isPremiumUser() {
-            // ⚠️ P0 WARNING: Client-side check is NOT authoritative
-            // This MUST be validated server-side via custom claims or database
+        async isPremiumUser() {
+            // ⚠️ P0 WARNING: Anonymous users cannot have premium
             if (!this.isAuthenticated || this.isAnonymous) {
                 return false;
             }
 
-            // TODO: Check custom claims or database for actual premium status
-            // For now, always return false until server-side validation is implemented
-            return false;
+            try {
+                // ✅ P1 STABILITY: Check custom claims (set by server)
+                const claims = await this.getCustomClaims();
+
+                // Check for premium claim (server-side validation required)
+                if (claims.premium === true) {
+                    return true;
+                }
+
+                // Fallback: Check for stripeRole claim (if using Stripe)
+                if (claims.stripeRole === 'premium' || claims.stripeRole === 'pro') {
+                    return true;
+                }
+
+                return false;
+
+            } catch (error) {
+                console.error('❌ Failed to check premium status:', error);
+                return false;
+            }
         }
 
         // ===================================

@@ -308,25 +308,35 @@
     /**
      * Safe content update with DOM manipulation
      */
+    /**
+     * ✅ P0 SECURITY: Update difficulty UI with safe DOM manipulation
+     * No innerHTML - only textContent to prevent HTML injection
+     */
     function updateDifficultyUI(difficulty, content) {
         const iconEl = document.getElementById(`${difficulty}-icon`);
         const baseEl = document.getElementById(`${difficulty}-base`);
         const formulaEl = document.getElementById(`${difficulty}-formula`);
 
         if (iconEl) {
+            // ✅ P0 SECURITY: textContent is XSS-safe
             iconEl.textContent = content.icon;
         }
 
         if (baseEl) {
+            // ✅ P0 SECURITY: textContent is XSS-safe
             baseEl.textContent = content.base;
         }
 
         if (formulaEl && Array.isArray(content.formula)) {
-            // Clear and rebuild with safe DOM manipulation
-            formulaEl.innerHTML = '';
+            // ✅ P0 SECURITY: Clear with assignment, not innerHTML
+            // Preserve child nodes during rebuild
+            while (formulaEl.firstChild) {
+                formulaEl.removeChild(formulaEl.firstChild);
+            }
 
             content.formula.forEach((line, index) => {
                 const lineEl = document.createElement('div');
+                // ✅ P0 SECURITY: textContent is XSS-safe
                 lineEl.textContent = line;
                 if (index === 0) {
                     // ✅ CSP-FIX: Use CSS class instead of inline style

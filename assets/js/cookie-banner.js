@@ -1,7 +1,15 @@
 /**
  * NO-CAP Cookie Banner
  * DSGVO-konformes Cookie-Consent Management
- * Version 1.0
+ * Version 2.0 - Production Hardened
+ *
+ * ✅ Features:
+ * - Wiederverwendbar auf allen Seiten
+ * - Zentrale Consent-Verwaltung
+ * - LocalStorage-Persistierung
+ * - Analytics-Integration
+ * - Accessibility-optimiert
+ * - Dynamic Banner Creation (optional)
  */
 
 (function(window) {
@@ -12,8 +20,12 @@
     // ===================================
 
     const COOKIE_CONSENT_KEY = 'nocap_cookie_consent';
-    const COOKIE_CONSENT_VERSION = '1.0';
+    const COOKIE_CONSENT_VERSION = '2.0';
     const CONSENT_EXPIRY_DAYS = 365;
+
+    const isDevelopment = window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.includes('192.168.');
 
     // ===================================
     // 🍪 COOKIE CONSENT MANAGEMENT
@@ -170,6 +182,54 @@
     // ===================================
 
     /**
+     * ✅ NEW: Create banner dynamically if it doesn't exist in HTML
+     * Allows cookie-banner.js to work standalone on any page
+     */
+    function createBannerElement() {
+        // Check if banner already exists
+        if (document.getElementById('cookie-banner')) {
+            return;
+        }
+
+        const banner = document.createElement('div');
+        banner.id = 'cookie-banner';
+        banner.className = 'cookie-banner';
+        banner.setAttribute('role', 'dialog');
+        banner.setAttribute('aria-labelledby', 'cookie-banner-title');
+        banner.setAttribute('aria-describedby', 'cookie-banner-desc');
+
+        banner.innerHTML = `
+            <div class="cookie-banner-content">
+                <div class="cookie-banner-text">
+                    <h3 id="cookie-banner-title">🍪 Cookie-Hinweis</h3>
+                    <p id="cookie-banner-desc">
+                        Wir verwenden Cookies, um deine Erfahrung zu verbessern.
+                        Notwendige Cookies sind für die Funktionalität erforderlich.
+                        <a href="/privacy.html" target="_blank" rel="noopener">Mehr erfahren</a>
+                    </p>
+                </div>
+                <div class="cookie-banner-actions">
+                    <button id="cookie-accept" class="btn btn-primary" aria-label="Alle Cookies akzeptieren">
+                        ✅ Alle akzeptieren
+                    </button>
+                    <button id="cookie-decline" class="btn btn-secondary" aria-label="Nur notwendige Cookies">
+                        ❌ Nur Notwendige
+                    </button>
+                    <button id="cookie-settings" class="btn btn-link" aria-label="Cookie-Einstellungen anpassen">
+                        ⚙️ Einstellungen
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(banner);
+
+        if (isDevelopment) {
+            console.log('✅ Cookie banner element created dynamically');
+        }
+    }
+
+    /**
      * Show cookie banner
      */
     function showBanner() {
@@ -269,11 +329,14 @@
 
     /**
      * Initialize cookie banner
+     * @param {Object} options - Configuration options
      */
-    function init() {
+    function init(options = {}) {
         // ✅ FIX: Verhindere Mehrfach-Initialisierung
         if (window._cookieBannerInitialized) {
-            console.log('ℹ️ Cookie banner already initialized, skipping');
+            if (isDevelopment) {
+                console.log('ℹ️ Cookie banner already initialized, skipping');
+            }
             return;
         }
         window._cookieBannerInitialized = true;
@@ -284,12 +347,20 @@
         if (consent) {
             // User has already given consent
             applyConsent(consent);
-            console.log('ℹ️ Cookie consent already given');
+
+            if (isDevelopment) {
+                console.log('ℹ️ Cookie consent already given:', consent);
+            }
             return;
         }
 
+        // ✅ NEW: Create banner element if it doesn't exist
+        // This allows cookie-banner.js to work standalone
+        createBannerElement();
+
         // Show banner after short delay (better UX)
-        setTimeout(showBanner, 1000);
+        const delay = options.delay !== undefined ? options.delay : 1000;
+        setTimeout(showBanner, delay);
 
         // Setup event listeners
         const btnAccept = document.getElementById('cookie-accept');
@@ -308,22 +379,71 @@
             btnSettings.addEventListener('click', handleSettings);
         }
 
-        console.log('✅ Cookie banner initialized');
+        if (isDevelopment) {
+            console.log('✅ Cookie banner initialized (v2.0)');
+        }
     }
 
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => init());
     } else {
         init();
     }
 
-    // Export to window for external access
+    // ===================================
+    // 📤 PUBLIC API
+    // ===================================
+
+    /**
+     * ✅ ENHANCED: Comprehensive Public API
+     * Can be used from any page or component
+     */
     window.NocapCookies = {
-        getConsent,
-        saveConsent,
-        showBanner,
-        hideBanner
+        // Core functions
+        getConsent: getConsent,
+        saveConsent: saveConsent,
+        showBanner: showBanner,
+        hideBanner: hideBanner,
+
+        // ✅ NEW: Additional utility functions
+        hasConsent: () => getConsent() !== null,
+        hasAnalyticsConsent: () => {
+            const consent = getConsent();
+            return consent ? consent.analytics === true : false;
+        },
+        hasFunctionalConsent: () => {
+            const consent = getConsent();
+            return consent ? consent.functional === true : false;
+        },
+
+        // ✅ NEW: Revoke consent (for "Einstellungen zurücksetzen")
+        revokeConsent: () => {
+            try {
+                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                localStorage.removeItem('nocap_privacy_consent');
+                localStorage.removeItem('nocap_privacy_date');
+
+                if (isDevelopment) {
+                    console.log('✅ Cookie consent revoked');
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Error revoking consent:', error);
+                return false;
+            }
+        },
+
+        // ✅ NEW: Re-initialize (useful after revoke)
+        reinitialize: (options) => {
+            window._cookieBannerInitialized = false;
+            init(options);
+        },
+
+        // Metadata
+        version: COOKIE_CONSENT_VERSION,
+        expiryDays: CONSENT_EXPIRY_DAYS
     };
 
 })(window);

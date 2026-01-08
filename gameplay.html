@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -31,7 +31,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
     <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
     <script src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
@@ -42,6 +42,14 @@
     <script defer src="/assets/js/gameplay.js"></script>
 </head>
 <body>
+<!-- ✅ P1 UI/UX: Loading Spinner für Fragen und Submissions -->
+<div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite" aria-label="Lädt">
+    <div class="loading-content">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="loading-text" id="loading-text">Lade Frage...</p>
+    </div>
+</div>
+
 <!-- Background Particles -->
 <div class="background-particles" aria-hidden="true">
     <div class="particle"></div>
@@ -56,8 +64,14 @@
     <main class="game-content">
         <!-- Question Card -->
         <article class="question-card fadeInUp">
-            <div class="question-category" id="question-category" role="status">
-                🎮 Loading...
+            <div class="question-category-wrapper">
+                <div class="question-category" id="question-category" role="status">
+                    🎮 Loading...
+                </div>
+                <!-- ✅ P1 DSGVO: FSK-Badge für Jugendschutz -->
+                <div class="fsk-badge hidden" id="fsk-badge" role="status" aria-label="FSK Einstufung">
+                    <span class="fsk-text" id="fsk-text">ab 16</span>
+                </div>
             </div>
             <h1 class="question-text" id="question-text">
                 Lade Frage...
@@ -171,5 +185,8 @@
         </div>
     </div>
 </div>
+    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <script src="/assets/js/error-boundary.js"></script>
+
 </body>
 </html>

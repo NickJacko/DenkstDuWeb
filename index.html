@@ -6,27 +6,37 @@
     <title>No-Cap - Das ultimative Schätzspiel</title>
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="No-Cap - Das ultimative Multiplayer Schätzspiel. Spiele online mit Freunden!">
-    <meta name="keywords" content="Party Spiel, Trinkspiel, Schätzspiel, Multiplayer, Online">
+    <meta name="description" content="No-Cap - Das ultimative Multiplayer Schätzspiel für unvergessliche Abende! Spiele online mit bis zu 8 Freunden. Schätze, wer was gemacht hat und lache über peinliche Geständnisse. Kostenlos spielen!">
+    <meta name="keywords" content="Schätzspiel, Partyspiel, Multiplayer, Online Spiel, Trinkspiel, Freunde, No-Cap, Gesellschaftsspiel, Handy Spiel, Quiz">
     <meta name="author" content="No-Cap Team">
     <meta name="theme-color" content="#667eea">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://no-cap.app">
 
     <!-- ✅ AUDIT FIX: Security Headers werden via firebase.json HTTP Headers gesetzt -->
     <!-- CSP, X-Frame-Options, X-Content-Type-Options sind in firebase.json konfiguriert -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
 
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="No-Cap - Das ultimative Schätzspiel">
-    <meta property="og:description" content="Spiele das ultimative Schätzspiel mit deinen Freunden!">
+    <meta property="og:title" content="No-Cap - Das ultimative Schätzspiel für unvergessliche Abende">
+    <meta property="og:description" content="Das ultimative Multiplayer Schätzspiel! Spiele online mit bis zu 8 Freunden. Schätze, wer was gemacht hat und erlebe peinliche Geständnisse. Jetzt kostenlos spielen!">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="/assets/img/og-image.png">
+    <meta property="og:image" content="https://no-cap.app/assets/img/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="No-Cap - Das ultimative Schätzspiel">
     <meta property="og:url" content="https://no-cap.app">
+    <meta property="og:site_name" content="No-Cap">
+    <meta property="og:locale" content="de_DE">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="No-Cap - Das ultimative Schätzspiel">
-    <meta name="twitter:description" content="Spiele das ultimative Schätzspiel mit deinen Freunden!">
-    <meta name="twitter:image" content="/assets/img/og-image.png">
+    <meta name="twitter:description" content="Spiele das ultimative Multiplayer Schätzspiel mit deinen Freunden! Bis zu 8 Spieler online.">
+    <meta name="twitter:image" content="https://no-cap.app/assets/img/og-image.png">
+    <meta name="twitter:image:alt" content="No-Cap Spielvorschau">
+    <meta name="twitter:site" content="@nocap">
+    <meta name="twitter:creator" content="@nocap">
 
     <!-- ✅ FIREBASE CONFIG für Production -->
     <!-- Config wird in firebase-init.js geladen (CSP-konform) -->
@@ -36,6 +46,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com">
     <link rel="dns-prefetch" href="https://firebasedatabase.app">
+
+    <!-- ✅ P2 PERFORMANCE: Firebase Services Preconnect für schnellere Verbindung -->
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+    <link rel="preconnect" href="https://securetoken.googleapis.com">
+    <link rel="dns-prefetch" href="https://firebase.googleapis.com">
+    <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com">
 
     <!-- ✅ PERFORMANCE: Optimierte Font-Laden mit display=swap -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -64,6 +80,9 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js" crossorigin="anonymous"></script>
 
+    <!-- ✅ P0 SECURITY: Firebase App Check -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
+
     <!-- ✅ AUDIT FIX: Korrekte Script-Reihenfolge mit firebase-config.js & firebase-auth.js -->
     <script src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
@@ -72,6 +91,10 @@
     <script defer src="/assets/js/firebase-auth.js"></script>
     <script defer src="/assets/js/firebase-service.js"></script>
     <script defer src="/assets/js/privacy.js"></script>
+
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling (load FIRST) -->
+    <script src="/assets/js/error-boundary.js"></script>
+
     <!-- ✅ AUDIT FIX: Cookie-Banner Script -->
     <script defer src="/assets/js/cookie-banner.js"></script>
     <script defer src="/assets/js/index.js"></script>

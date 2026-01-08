@@ -32,7 +32,12 @@ let currentGame = {
     currentPlayerIndex: 0,
     currentAnswers: {},
     currentEstimates: {},
-    gameHistory: []
+    gameHistory: [],
+
+    // ✅ P1 PERFORMANCE: Pre-shuffled question queue
+    // Questions are shuffled once and consumed sequentially
+    shuffledQuestionQueue: [],
+    questionQueueIndex: 0
 };
 
 let currentAnswer = null;
@@ -41,6 +46,63 @@ let currentEstimation = null;
 const isDevelopment = window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1' ||
     window.location.hostname.includes('192.168.');
+
+// ===========================
+// UI HELPER FUNCTIONS - P1 UI/UX
+// ===========================
+
+/**
+ * ✅ P1 UI/UX: Show loading overlay
+ */
+function showLoading(message = 'Lädt...') {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.getElementById('loading-text');
+
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('active');
+    }
+    if (loadingText) {
+        loadingText.textContent = message;
+    }
+}
+
+/**
+ * ✅ P1 UI/UX: Hide loading overlay
+ */
+function hideLoading() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('active');
+    }
+}
+
+/**
+ * ✅ P1 DSGVO: Display FSK badge for age-restricted content
+ */
+function updateFSKBadge(question) {
+    const fskBadge = document.getElementById('fsk-badge');
+    const fskText = document.getElementById('fsk-text');
+
+    if (!fskBadge || !fskText) return;
+
+    // Check if question has FSK rating
+    if (question.category === 'fsk16' || question.fsk === 16) {
+        fskBadge.classList.remove('hidden', 'fsk-18');
+        fskBadge.classList.add('fsk-16');
+        fskText.textContent = 'ab 16';
+        fskBadge.setAttribute('aria-label', 'FSK 16 - Freigegeben ab 16 Jahren');
+    } else if (question.category === 'fsk18' || question.fsk === 18) {
+        fskBadge.classList.remove('hidden', 'fsk-16');
+        fskBadge.classList.add('fsk-18');
+        fskText.textContent = 'ab 18';
+        fskBadge.setAttribute('aria-label', 'FSK 18 - Freigegeben ab 18 Jahren');
+    } else {
+        // FSK 0 or no rating - hide badge
+        fskBadge.classList.add('hidden');
+        fskBadge.classList.remove('fsk-16', 'fsk-18');
+    }
+}
 
 // ===========================
 // FALLBACK QUESTIONS DATABASE
@@ -443,6 +505,9 @@ function checkAlcoholMode() {
  * ✅ P0 FIX: Load questions from Firebase with caching
  */
 async function loadQuestions() {
+    // ✅ P1 UI/UX: Show loading state
+    showLoading('Lade Fragen...');
+
     currentGame.allQuestions = [];
 
     if (isDevelopment) {
@@ -456,6 +521,7 @@ async function loadQuestions() {
             console.log('✅ Loaded questions from cache:', cachedQuestions.length);
         }
         currentGame.allQuestions = cachedQuestions;
+        hideLoading(); // ✅ Hide loading when done
         return;
     }
 
@@ -511,11 +577,20 @@ async function loadQuestions() {
         console.log('Sample questions:', currentGame.allQuestions.slice(0, 3));
     }
 
-    // Shuffle
+    // ✅ P1 PERFORMANCE: Shuffle once and create consumption queue
     currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
+    currentGame.shuffledQuestionQueue = [...currentGame.allQuestions];
+    currentGame.questionQueueIndex = 0;
+
+    if (isDevelopment) {
+        console.log('✅ Question queue initialized with', currentGame.shuffledQuestionQueue.length, 'questions');
+    }
 
     // Cache questions
     cacheQuestions(currentGame.allQuestions);
+
+    // ✅ P1 UI/UX: Hide loading when done
+    hideLoading();
 }
 
 /**
@@ -577,18 +652,159 @@ async function loadCategoryQuestions(category) {
     }
 }
 
+// ✅ P1 STABILITY: Track which fallback categories have been loaded
+const _fallbackLoadedCategories = new Set();
+
 /**
- * Load fallback questions for category
+ * ✅ P1 STABILITY: Load fallback questions for category (only once per session)
+ * Caches to IndexedDB to avoid repeated database queries
  */
-function loadFallbackQuestions(category) {
+async function loadFallbackQuestions(category) {
+    // ✅ P1 STABILITY: Check if already loaded this session
+    if (_fallbackLoadedCategories.has(category)) {
+        if (isDevelopment) {
+            console.log(`ℹ️ Fallback questions for ${category} already loaded this session`);
+        }
+        return;
+    }
+
+    // Try to load from IndexedDB cache first
+    try {
+        const cached = await loadFallbackFromIndexedDB(category);
+        if (cached && cached.length > 0) {
+            if (isDevelopment) {
+                console.log(`✅ Loaded ${cached.length} ${category} questions from IndexedDB cache`);
+            }
+
+            cached.forEach(q => {
+                currentGame.allQuestions.push({
+                    text: sanitizeQuestionText(q),
+                    category: category
+                });
+            });
+
+            _fallbackLoadedCategories.add(category);
+            return;
+        }
+    } catch (error) {
+        console.warn('⚠️ IndexedDB cache read failed:', error);
+    }
+
+    // Load from fallback database
     if (fallbackQuestionsDatabase[category]) {
-        fallbackQuestionsDatabase[category].forEach(q => {
+        const questions = fallbackQuestionsDatabase[category];
+
+        questions.forEach(q => {
             currentGame.allQuestions.push({
                 text: sanitizeQuestionText(q),
                 category: category
             });
         });
+
+        // ✅ P1 STABILITY: Cache to IndexedDB for next time
+        try {
+            await saveFallbackToIndexedDB(category, questions);
+            if (isDevelopment) {
+                console.log(`✅ Cached ${questions.length} ${category} questions to IndexedDB`);
+            }
+        } catch (error) {
+            console.warn('⚠️ IndexedDB cache write failed:', error);
+        }
+
+        _fallbackLoadedCategories.add(category);
     }
+}
+
+/**
+ * ✅ P1 STABILITY: Save fallback questions to IndexedDB
+ */
+async function saveFallbackToIndexedDB(category, questions) {
+    return new Promise((resolve, reject) => {
+        const dbName = 'NocapFallbackQuestions';
+        const request = indexedDB.open(dbName, 1);
+
+        request.onerror = () => reject(request.error);
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('fallback')) {
+                db.createObjectStore('fallback');
+            }
+        };
+
+        request.onsuccess = (event) => {
+            const db = event.target.result;
+            const transaction = db.transaction(['fallback'], 'readwrite');
+            const store = transaction.objectStore('fallback');
+
+            const data = {
+                questions: questions,
+                timestamp: Date.now()
+            };
+
+            const putRequest = store.put(data, category);
+
+            putRequest.onsuccess = () => resolve();
+            putRequest.onerror = () => reject(putRequest.error);
+        };
+    });
+}
+
+/**
+ * ✅ P1 STABILITY: Load fallback questions from IndexedDB
+ */
+async function loadFallbackFromIndexedDB(category) {
+    return new Promise((resolve, reject) => {
+        const dbName = 'NocapFallbackQuestions';
+        const request = indexedDB.open(dbName, 1);
+
+        request.onerror = () => reject(request.error);
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('fallback')) {
+                db.createObjectStore('fallback');
+            }
+        };
+
+        request.onsuccess = (event) => {
+            const db = event.target.result;
+
+            if (!db.objectStoreNames.contains('fallback')) {
+                resolve(null);
+                return;
+            }
+
+            const transaction = db.transaction(['fallback'], 'readonly');
+            const store = transaction.objectStore('fallback');
+            const getRequest = store.get(category);
+
+            getRequest.onsuccess = () => {
+                const data = getRequest.result;
+
+                if (!data) {
+                    resolve(null);
+                    return;
+                }
+
+                // Check if cache is still valid (7 days)
+                const maxAge = 7 * 24 * 60 * 60 * 1000;
+                const age = Date.now() - (data.timestamp || 0);
+
+                if (age > maxAge) {
+                    if (isDevelopment) {
+                        console.log(`⚠️ IndexedDB cache for ${category} is too old (${Math.floor(age / 1000 / 60 / 60)}h)`);
+                    }
+                    resolve(null);
+                    return;
+                }
+
+                resolve(data.questions);
+            };
+
+            getRequest.onerror = () => reject(getRequest.error);
+        };
+    });
 }
 
 /**
@@ -672,23 +888,38 @@ function loadQuestionsFromCache() {
 }
 
 /**
- * Get next question
+ * ✅ P1 PERFORMANCE: Get next question from pre-shuffled queue
+ * Questions are consumed sequentially from shuffled queue instead of random selection
  */
 function getNextQuestion() {
-    if (currentGame.usedQuestions.length >= currentGame.allQuestions.length) {
+    // ✅ P1 PERFORMANCE: Use shuffled queue instead of random selection
+    if (currentGame.questionQueueIndex >= currentGame.shuffledQuestionQueue.length) {
+        // All questions used - reshuffle and restart queue
+        if (isDevelopment) {
+            console.log('🔄 All questions used. Reshuffling queue...');
+        }
+
+        currentGame.shuffledQuestionQueue = shuffleArray([...currentGame.allQuestions]);
+        currentGame.questionQueueIndex = 0;
         currentGame.usedQuestions = [];
-        currentGame.allQuestions = shuffleArray(currentGame.allQuestions);
+
         showNotification('Alle Fragen gespielt! Mische neu...', 'success');
     }
 
-    for (let question of currentGame.allQuestions) {
-        if (!currentGame.usedQuestions.includes(question.text)) {
-            currentGame.usedQuestions.push(question.text);
-            return question;
+    // Get next question from queue
+    const question = currentGame.shuffledQuestionQueue[currentGame.questionQueueIndex];
+    currentGame.questionQueueIndex++;
+
+    // Track as used (for compatibility)
+    if (question) {
+        currentGame.usedQuestions.push(question.text);
+
+        if (isDevelopment) {
+            console.log(`📖 Question ${currentGame.questionQueueIndex}/${currentGame.shuffledQuestionQueue.length}:`, question.text);
         }
     }
 
-    return currentGame.allQuestions[0];
+    return question || currentGame.allQuestions[0];
 }
 
 /**
@@ -792,6 +1023,9 @@ function loadQuestion(question) {
     if (questionCategory) {
         questionCategory.textContent = categoryNames[question.category] || '🎮 Spiel';
     }
+
+    // ✅ P1 DSGVO: Update FSK badge for age-restricted content
+    updateFSKBadge(question);
 }
 
 function updateGameDisplay() {

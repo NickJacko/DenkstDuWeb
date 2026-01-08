@@ -256,6 +256,7 @@ body {
 
 /* ============================================================================
    CATEGORY CARDS
+   ✅ P1 UI/UX: Guest-disabled styles added
    ============================================================================ */
 
 .category-card {
@@ -269,7 +270,7 @@ body {
     overflow: hidden;
 }
 
-.category-card:hover:not(.locked) {
+.category-card:hover:not(.locked):not(.guest-disabled) {
     transform: translateY(-5px);
     border-color: rgba(255, 255, 255, 0.4);
     background: rgba(255, 255, 255, 0.15);
@@ -283,6 +284,34 @@ body {
 .category-card.locked {
     opacity: 0.7;
     cursor: not-allowed;
+}
+
+/* ✅ P1 UI/UX: Guest-disabled cards have distinct styling */
+.category-card.guest-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: rgba(158, 158, 158, 0.1);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+}
+
+.category-card.guest-disabled:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(158, 158, 158, 0.15);
+}
+
+/* ✅ P1 UI/UX: Add subtle pulse animation for guest-disabled cards */
+.category-card.guest-disabled .locked-overlay {
+    animation: guestPulse 3s ease-in-out infinite;
+}
+
+@keyframes guestPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }
 
 .category-card.selected {

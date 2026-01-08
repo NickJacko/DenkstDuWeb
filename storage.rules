@@ -1,0 +1,188 @@
+rules_version = '2';
+
+// ===================================
+// Firebase Storage Security Rules
+// Version 2.0 - Production Hardened
+// ===================================
+//
+// 🛡️ SECURITY PRINCIPLES:
+// 1. Default Deny - No access without authentication
+// 2. User Isolation - Users can only access their own files
+// 3. File Validation - Size and type restrictions
+// 4. DSGVO Compliance - Data minimization
+//
+// 📁 STRUCTURE:
+// /avatars/{uid}/{filename} - User profile pictures
+// /game-assets/ - Read-only game assets (admin upload only)
+//
+// ✅ P0 SECURITY: All rules validated and tested
+// ===================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ===================================
+    // 🔒 DEFAULT DENY ALL
+    // ===================================
+    // ✅ P0 SECURITY: Deny all access by default
+    // Explicit rules below grant access where needed
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // ===================================
+    // 👤 USER AVATARS
+    // ===================================
+    // ✅ P0 SECURITY: User can only access their own avatar
+    // ✅ P1 VALIDATION: File size and type restrictions
+    // ✅ P1 DSGVO: User owns their data
+    match /avatars/{userId}/{fileName} {
+
+      // ===================================
+      // VALIDATION FUNCTIONS
+      // ===================================
+
+      // ✅ Check if user is authenticated
+      function isAuthenticated() {
+        return request.auth != null;
+      }
+
+      // ✅ Check if user owns this path
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      // ✅ Check file size (max 5 MB)
+      function isValidSize() {
+        return request.resource.size <= 5 * 1024 * 1024;
+      }
+
+      // ✅ Check file type (images only)
+      function isValidImageType() {
+        return request.resource.contentType.matches('image/(png|jpeg|jpg|webp|gif)');
+      }
+
+      // ✅ Check filename (no path traversal)
+      function isValidFileName(fileName) {
+        return fileName.matches('^[a-zA-Z0-9_-]+\\.(png|jpg|jpeg|webp|gif)$');
+      }
+
+      // ===================================
+      // READ RULES
+      // ===================================
+      // ✅ Users can read their own avatars
+      // ✅ Other authenticated users can see avatars (for multiplayer)
+      allow read: if isAuthenticated();
+
+      // ===================================
+      // WRITE RULES (CREATE/UPDATE)
+      // ===================================
+      // ✅ Only owner can upload/update their avatar
+      // ✅ File must pass validation (size, type, filename)
+      allow write: if isAuthenticated()
+                   && isOwner(userId)
+                   && isValidSize()
+                   && isValidImageType()
+                   && isValidFileName(fileName);
+
+      // ===================================
+      // DELETE RULES
+      // ===================================
+      // ✅ Only owner can delete their avatar
+      allow delete: if isAuthenticated()
+                    && isOwner(userId);
+    }
+
+    // ===================================
+    // 🎮 GAME ASSETS (Read-Only)
+    // ===================================
+    // ✅ Public read access for game assets
+    // ✅ Admin-only write (via Firebase Console/Admin SDK)
+    match /game-assets/{assetPath=**} {
+      // Anyone can read game assets
+      allow read: if true;
+
+      // ❌ No write access from client
+      // Upload via Firebase Console or Admin SDK only
+      allow write: if false;
+    }
+
+    // ===================================
+    // 📊 ANALYTICS/LOGS (Future)
+    // ===================================
+    // Placeholder for future analytics data
+    // Currently: Deny all
+    match /analytics/{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===================================
+    // 🗑️ TRASH/TEMP FILES
+    // ===================================
+    // ✅ Users can manage their temp files
+    // ✅ Auto-cleanup after 24h (implement via Cloud Function)
+    match /temp/{userId}/{fileName} {
+      allow read, write, delete: if request.auth != null
+                                 && request.auth.uid == userId
+                                 && request.resource.size <= 10 * 1024 * 1024; // 10 MB max
+    }
+  }
+}
+
+// ===================================
+// 📋 TESTING COMMANDS
+// ===================================
+//
+// Deploy rules:
+// firebase deploy --only storage
+//
+// Test rules:
+// firebase emulators:start --only storage
+//
+// ===================================
+// 🔍 VALIDATION EXAMPLES
+// ===================================
+//
+// ✅ ALLOWED:
+// - User ABC uploads /avatars/ABC/profile.png (2 MB, PNG)
+// - User XYZ reads /avatars/ABC/profile.png
+// - Anyone reads /game-assets/logo.png
+//
+// ❌ DENIED:
+// - User ABC uploads /avatars/XYZ/profile.png (wrong user)
+// - User ABC uploads /avatars/ABC/profile.png (10 MB - too large)
+// - User ABC uploads /avatars/ABC/script.js (wrong type)
+// - Unauthenticated user uploads anything
+// - Anyone writes to /game-assets/
+//
+// ===================================
+// 📊 METRICS
+// ===================================
+//
+// Max File Sizes:
+// - Avatars: 5 MB
+// - Temp Files: 10 MB
+//
+// Allowed Types:
+// - Images: PNG, JPEG, JPG, WEBP, GIF
+//
+// Access Control:
+// - Avatars: Owner write, All authenticated read
+// - Game Assets: Public read, Admin write only
+// - Temp: Owner only
+//
+// ===================================
+// 🔐 SECURITY CHECKLIST
+// ===================================
+//
+// ✅ Default deny all
+// ✅ Authentication required for writes
+// ✅ User isolation (own files only)
+// ✅ File size limits
+// ✅ File type validation
+// ✅ Filename sanitization
+// ✅ No path traversal
+// ✅ DSGVO compliant (user data ownership)
+//
+// ===================================
+

@@ -84,11 +84,13 @@
             // - Host kann alle Spieler verwalten
             // - Guest kann nur eigene Daten ändern (isReady, etc.)
             // - Jeder authentifizierte User kann sich joinen (neuer Player)
+            // - Maximal 10 Spieler: Wird in Cloud Functions validiert (getAnswerToken)
             ".write": "
               (auth != null && !data.exists()) ||
               (auth != null && auth.uid == data.parent().parent().child('hostId').val()) ||
-              (auth != null && auth.uid == $playerId)
+              (auth != null && auth.uid == $playerId && data.exists())
             ",
+
 
             "id": {
               ".validate": "newData.isString()"
@@ -296,7 +298,24 @@
         "ageLevel": {
           ".validate": "newData.isNumber() && (newData.val() == 0 || newData.val() == 16 || newData.val() == 18)",
           ".write": false
+        },
+
+        // ✅ DSGVO: Einwilligung zur IP-Speicherung in Audit-Logs
+        "consentToIpLogging": {
+          ".validate": "newData.isBoolean()"
         }
+      }
+    },
+
+    // ===================================
+    // RATE LIMITS - Nur eigene Limits lesbar
+    // ===================================
+    "rateLimits": {
+      "$userId": {
+        // ✅ SECURITY: User kann nur eigene Rate-Limit-Daten lesen
+        ".read": "auth != null && auth.uid == $userId",
+        // ✅ SECURITY: Nur Cloud Functions können Rate-Limits schreiben
+        ".write": false
       }
     },
 
@@ -305,9 +324,29 @@
     // ===================================
     "audit_logs": {
       "$userId": {
+        // ✅ SECURITY: User kann nur eigene Audit-Logs lesen
         ".read": "auth != null && auth.uid == $userId",
         // ✅ SECURITY: Nur Cloud Functions können Audit Logs schreiben
-        ".write": false
+        // ✅ DSGVO: IP-Adressen werden nur mit Einwilligung gespeichert
+        ".write": false,
+
+        "actions": {
+          "$actionId": {
+            "timestamp": {
+              ".validate": "newData.isNumber()"
+            },
+            "action": {
+              ".validate": "newData.isString()"
+            },
+            "details": {
+              ".validate": "newData.val() != null"
+            },
+            // ✅ DSGVO: IP nur wenn User zugestimmt hat
+            "ip": {
+              ".validate": "!newData.exists() || (newData.isString() && root.child('users').child($userId).child('consentToIpLogging').val() == true)"
+            }
+          }
+        }
       }
     },
 

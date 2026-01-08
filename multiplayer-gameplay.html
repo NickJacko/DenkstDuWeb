@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -31,7 +31,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
     <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
@@ -42,18 +42,44 @@
     <script defer src="/assets/js/multiplayer-gameplay.js"></script>
 </head>
 <body>
+<!-- ✅ P1 Stabilität: Error Modal für Verbindungsabbrüche und Fehlerfälle -->
+<div class="error-modal hidden" id="error-modal" role="dialog" aria-labelledby="error-title" aria-modal="true">
+    <div class="error-modal-backdrop" id="error-backdrop"></div>
+    <div class="error-modal-content">
+        <div class="error-modal-header">
+            <h2 class="error-modal-title" id="error-title">⚠️ Fehler aufgetreten</h2>
+        </div>
+        <div class="error-modal-body">
+            <p class="error-modal-message" id="error-message">Ein unerwarteter Fehler ist aufgetreten.</p>
+            <div class="error-modal-details hidden" id="error-details">
+                <strong>Details:</strong>
+                <p id="error-details-text"></p>
+            </div>
+        </div>
+        <div class="error-modal-footer">
+            <button class="error-btn primary" id="error-action-primary" type="button">OK</button>
+            <button class="error-btn secondary hidden" id="error-action-secondary" type="button">Abbrechen</button>
+        </div>
+    </div>
+</div>
+
 <!-- Background Particles -->
 <div class="background-particles" aria-hidden="true">
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
+    ...existing code...
 </div>
 
 <!-- Loading Screen -->
 <div class="loading-screen" id="loading-screen" role="status" aria-live="polite">
     <div class="loading-spinner" aria-hidden="true"></div>
     <p class="loading-text">Lade Spiel...</p>
+</div>
+
+<!-- ✅ P1 UI/UX: Loading Overlay für Zustandswechsel -->
+<div class="loading-overlay hidden" id="loading-overlay" role="status" aria-live="polite">
+    <div class="loading-content">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="loading-text" id="loading-text">Lädt...</p>
+    </div>
 </div>
 
 <!-- App Container -->
@@ -69,8 +95,14 @@
     <section class="game-phase active" id="question-phase" role="region" aria-label="Frage beantworten">
         <!-- Question Card -->
         <article class="question-card">
-            <div class="question-category" id="question-category" aria-live="polite">
-                🎮 Loading...
+            <div class="question-category-wrapper">
+                <div class="question-category" id="question-category" aria-live="polite">
+                    🎮 Loading...
+                </div>
+                <!-- ✅ P1 DSGVO: FSK-Badge für Jugendschutz -->
+                <div class="fsk-badge hidden" id="fsk-badge" role="status" aria-label="FSK Einstufung">
+                    <span class="fsk-text" id="fsk-text">ab 16</span>
+                </div>
             </div>
             <h1 class="question-text" id="question-text">
                 Lade Frage...
@@ -240,5 +272,8 @@
 <div class="privacy-footer">
     <a href="privacy.html" class="privacy-link">Datenschutz</a>
 </div>
+    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <script src="/assets/js/error-boundary.js"></script>
+
 </body>
 </html>

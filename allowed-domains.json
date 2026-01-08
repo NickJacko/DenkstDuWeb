@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-01-08",
+  "domains": [
+    "no-cap.app",
+    "www.no-cap.app",
+    "denkstduwebsite.web.app",
+    "denkstduwebsite.firebaseapp.com",
+    "localhost",
+    "127.0.0.1"
+  ],
+  "patterns": [
+    "^192\\.168\\.\\d+\\.\\d+$",
+    "^10\\.\\d+\\.\\d+\\.\\d+$",
+    "^172\\.(1[6-9]|2\\d|3[01])\\.\\d+\\.\\d+$",
+    "\\.local$",
+    "--pr\\d+-",
+    "^denkstduwebsite--pr\\d+",
+    "\\.web\\.app$",
+    "\\.firebaseapp\\.com$"
+  ]
+}
+

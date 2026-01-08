@@ -74,9 +74,75 @@
         playerStats: {}
     };
 
+    // ✅ P2 PERFORMANCE: Track event listeners for cleanup
+    const _eventListeners = [];
+    const _phaseListeners = new Map(); // Listeners specific to each phase
+
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
         window.location.hostname.includes('192.168.');
+
+    // ===========================
+    // ✅ P1 STABILITY: ERROR HANDLING
+    // ===========================
+
+    /**
+     * ✅ P1 STABILITY: Handle Firebase errors with user-friendly UI feedback
+     * @param {Error} error - The error object
+     * @param {string} operation - Description of the operation that failed
+     * @param {boolean} fatal - Whether this is a fatal error (redirects to lobby)
+     */
+    function handleFirebaseError(error, operation = 'Firebase operation', fatal = false) {
+        console.error(`❌ ${operation} failed:`, error);
+
+        // Get user-friendly error message
+        const message = getFirebaseErrorMessage(error, operation);
+
+        // Show notification to user
+        if (window.NocapUtils && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification(message, 'error', fatal ? 10000 : 5000);
+        } else {
+            alert(message);
+        }
+
+        // Log to telemetry if available
+        if (window.NocapUtils && window.NocapUtils.logError && !isDevelopment) {
+            window.NocapUtils.logError('MultiplayerGameplay', error, {
+                operation,
+                gameId: gameState.gameId,
+                isHost: gameState.isHost
+            });
+        }
+
+        // Handle fatal errors
+        if (fatal) {
+            setTimeout(() => {
+                window.location.href = '/multiplayer-lobby.html';
+            }, 3000);
+        }
+    }
+
+    /**
+     * Get user-friendly error message for Firebase errors
+     */
+    function getFirebaseErrorMessage(error, operation) {
+        const errorCode = error?.code || '';
+
+        const messages = {
+            'PERMISSION_DENIED': 'Keine Berechtigung für diese Aktion',
+            'permission-denied': 'Keine Berechtigung für diese Aktion',
+            'NETWORK_ERROR': 'Netzwerkfehler - Prüfe deine Internetverbindung',
+            'network-request-failed': 'Netzwerkfehler - Prüfe deine Internetverbindung',
+            'TIMEOUT': `${operation} dauert zu lange`,
+            'timeout': `${operation} dauert zu lange`,
+            'NOT_FOUND': 'Spiel nicht gefunden',
+            'not-found': 'Spiel nicht gefunden',
+            'UNAVAILABLE': 'Firebase nicht verfügbar',
+            'unavailable': 'Firebase nicht verfügbar'
+        };
+
+        return messages[errorCode] || `${operation} fehlgeschlagen: ${error.message || 'Unbekannter Fehler'}`;
+    }
 
     // ===========================
     // P0 FIX: INPUT SANITIZATION
@@ -415,14 +481,104 @@
     }
 
     // ===========================
+    // ✅ P2 PERFORMANCE: LISTENER MANAGEMENT
+    // ===========================
+
+    /**
+     * ✅ P2 PERFORMANCE: Cleanup listeners for a specific phase
+     * @param {string} phase - The phase to cleanup listeners for
+     */
+    function cleanupPhaseListeners(phase) {
+        const listeners = _phaseListeners.get(phase);
+        if (!listeners) return;
+
+        listeners.forEach(({ element, event, handler }) => {
+            if (element && element.removeEventListener) {
+                element.removeEventListener(event, handler);
+            }
+        });
+
+        _phaseListeners.delete(phase);
+
+        if (isDevelopment) {
+            console.log(`🧹 Cleaned up ${listeners.length} listeners for phase: ${phase}`);
+        }
+    }
+
+    /**
+     * ✅ P2 PERFORMANCE: Add phase-specific event listener
+     * @param {string} phase - The phase this listener belongs to
+     * @param {Element} element - DOM element
+     * @param {string} event - Event name
+     * @param {Function} handler - Event handler
+     */
+    function addPhaseListener(phase, element, event, handler) {
+        if (!element) return;
+
+        element.addEventListener(event, handler);
+
+        if (!_phaseListeners.has(phase)) {
+            _phaseListeners.set(phase, []);
+        }
+
+        _phaseListeners.get(phase).push({ element, event, handler });
+
+        if (isDevelopment) {
+            console.log(`📌 Added ${event} listener for phase: ${phase}`);
+        }
+    }
+
+    // ===========================
+    // ✅ P0 SECURITY: HOST VALIDATION
+    // ===========================
+
+    /**
+     * ✅ P0 SECURITY: Validate that current user is the host before executing host-only operations
+     * @param {string} operation - Description of the operation (for error messages)
+     * @returns {boolean} True if user is host, false otherwise
+     */
+    function validateHostRole(operation = 'Diese Aktion') {
+        if (!gameState.isHost) {
+            console.warn(`⚠️ Guest attempted host operation: ${operation}`);
+
+            if (window.NocapUtils && window.NocapUtils.showNotification) {
+                window.NocapUtils.showNotification(
+                    'Nur der Host kann diese Aktion ausführen',
+                    'warning',
+                    3000
+                );
+            } else {
+                alert('Nur der Host kann diese Aktion ausführen');
+            }
+
+            // Log security event in production
+            if (window.NocapUtils && window.NocapUtils.logError && !isDevelopment) {
+                window.NocapUtils.logError('MultiplayerGameplay',
+                    new Error(`Unauthorized host operation: ${operation}`), {
+                    operation,
+                    gameId: gameState.gameId,
+                    playerId: gameState.playerId
+                });
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    // ===========================
     // FIREBASE LISTENERS - REAL-TIME SYNC
     // ===========================
 
     async function setupFirebaseListeners() {
         if (!firebaseService || !gameState.gameId) {
             console.error('❌ Cannot setup listeners - missing service or gameId');
-            showNotification('Keine Verbindung zum Spiel!', 'error');
-            setTimeout(() => window.location.href = 'index.html', 2000);
+            handleFirebaseError(
+                new Error('Service or GameID missing'),
+                'Listener-Setup',
+                true // fatal
+            );
             return;
         }
 
@@ -433,62 +589,105 @@
         try {
             const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
 
-            gameListener = gameRef.on('value', (snapshot) => {
-                if (!snapshot.exists()) {
-                    console.warn('⚠️ Game not found');
-                    showNotification('Spiel wurde beendet', 'warning');
-                    cleanup();
-                    setTimeout(() => window.location.href = 'index.html', 2000);
-                    return;
-                }
-
-                currentGameData = snapshot.val();
-                if (isDevelopment) {
-                    console.log('🎮 Game update received');
-                }
-
-                // Update players
-                currentPlayers = currentGameData.players || {};
-                updatePlayersCount();
-
-                // Check for overall results
-                if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
-                    if (isDevelopment) {
-                        console.log('📊 Overall results triggered');
-                    }
-                    if (currentGameData.overallStats) {
-                        overallStats = currentGameData.overallStats;
-                    }
-                    displayOverallResults();
-                }
-
-                // Check if results closed
-                if (currentGameData.showOverallResults === false && currentPhase === 'overall-results') {
-                    if (isDevelopment) {
-                        console.log('▶️ Game continues');
-                    }
-                    handleNewRound(currentGameData.currentRound);
-                }
-
-                // Check for game end
-                if (currentGameData.gameState === 'finished') {
-                    if (isDevelopment) {
-                        console.log('🛑 Game finished');
-                    }
-                    showNotification('Spiel beendet! 👋', 'info', 3000);
-                    setTimeout(() => {
+            // ✅ P1 STABILITY: Error handler for listener
+            gameRef.on('value', (snapshot) => {
+                try {
+                    if (!snapshot.exists()) {
+                        console.warn('⚠️ Game not found');
+                        handleFirebaseError(
+                            new Error('Game not found'),
+                            'Spiel-Synchronisation',
+                            false
+                        );
                         cleanup();
-                        window.location.href = 'index.html';
-                    }, 3000);
-                }
+                        setTimeout(() => window.location.href = 'index.html', 2000);
+                        return;
+                    }
 
-                // Check for round changes
-                if (currentGameData.currentRound &&
-                    currentGameData.currentRound !== currentQuestionNumber &&
-                    currentPhase !== 'overall-results') {
-                    handleNewRound(currentGameData.currentRound);
+                    currentGameData = snapshot.val();
+                    if (isDevelopment) {
+                        console.log('🎮 Game update received');
+                    }
+
+                    // ...existing update logic...
+                } catch (error) {
+                    handleFirebaseError(error, 'Spiel-Update verarbeiten', false);
                 }
+            }, (error) => {
+                // ✅ P1 STABILITY: Listener error callback
+                handleFirebaseError(error, 'Echtzeit-Synchronisation', true);
             });
+
+            // ✅ P1 STABILITY: Error handler for listener
+            gameRef.on('value', (snapshot) => {
+                try {
+                    if (!snapshot.exists()) {
+                        console.warn('⚠️ Game not found');
+                        handleFirebaseError(
+                            new Error('Game not found'),
+                            'Spiel-Synchronisation',
+                            false
+                        );
+                        cleanup();
+                        setTimeout(() => window.location.href = 'index.html', 2000);
+                        return;
+                    }
+
+                    currentGameData = snapshot.val();
+                    if (isDevelopment) {
+                        console.log('🎮 Game update received');
+                    }
+
+                    // Update players
+                    currentPlayers = currentGameData.players || {};
+                    updatePlayersCount();
+
+                    // Check for overall results
+                    if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
+                        if (isDevelopment) {
+                            console.log('📊 Overall results triggered');
+                        }
+                        if (currentGameData.overallStats) {
+                            overallStats = currentGameData.overallStats;
+                        }
+                        displayOverallResults();
+                    }
+
+                    // Check if results closed
+                    if (currentGameData.showOverallResults === false && currentPhase === 'overall-results') {
+                        if (isDevelopment) {
+                            console.log('▶️ Game continues');
+                        }
+                        handleNewRound(currentGameData.currentRound);
+                    }
+
+                    // Check for game end
+                    if (currentGameData.gameState === 'finished') {
+                        if (isDevelopment) {
+                            console.log('🛑 Game finished');
+                        }
+                        showNotification('Spiel beendet! 👋', 'info', 3000);
+                        setTimeout(() => {
+                            cleanup();
+                            window.location.href = 'index.html';
+                        }, 3000);
+                    }
+
+                    // Check for round changes
+                    if (currentGameData.currentRound &&
+                        currentGameData.currentRound !== currentQuestionNumber &&
+                        currentPhase !== 'overall-results') {
+                        handleNewRound(currentGameData.currentRound);
+                    }
+                } catch (error) {
+                    handleFirebaseError(error, 'Spiel-Update verarbeiten', false);
+                }
+            }, (error) => {
+                // ✅ P1 STABILITY: Listener error callback
+                handleFirebaseError(error, 'Echtzeit-Synchronisation', true);
+            });
+
+            gameListener = gameRef;
 
             // Load initial game data
             const initialData = await gameRef.once('value');
@@ -1245,25 +1444,35 @@
     // GAME CONTROLS
     // ===========================
 
+    /**
+     * ✅ P0 SECURITY: Next question (HOST ONLY)
+     */
     async function nextQuestion() {
-        if (!gameState.isHost) {
-            showNotification('Nur der Host kann weitermachen!', 'warning');
+        // ✅ P0 SECURITY: Validate host role
+        if (!validateHostRole('Nächste Frage starten')) {
             return;
         }
 
-        currentQuestionNumber++;
-        hasSubmittedThisRound = false; // Reset anti-cheat
-        updateGameDisplay();
-        resetForNewQuestion();
-        showPhase('question');
+        try {
+            currentQuestionNumber++;
+            hasSubmittedThisRound = false; // Reset anti-cheat
+            updateGameDisplay();
+            resetForNewQuestion();
+            showPhase('question');
 
-        await startNewRound();
-        showNotification('Neue Frage! 🎮', 'success', 2000);
+            await startNewRound();
+            showNotification('Neue Frage! 🎮', 'success', 2000);
+        } catch (error) {
+            handleFirebaseError(error, 'Nächste Frage laden', false);
+        }
     }
 
+    /**
+     * ✅ P0 SECURITY: Show overall results (HOST ONLY)
+     */
     async function showOverallResults() {
-        if (!gameState.isHost) {
-            showNotification('Nur der Host kann die Gesamtergebnisse zeigen!', 'warning');
+        // ✅ P0 SECURITY: Validate host role
+        if (!validateHostRole('Gesamtergebnisse anzeigen')) {
             return;
         }
 
@@ -1282,11 +1491,11 @@
             if (isDevelopment) {
                 console.log('✅ Overall results notification sent');
             }
-        } catch (error) {
-            console.error('❌ Error:', error);
-        }
 
-        displayOverallResults();
+            displayOverallResults();
+        } catch (error) {
+            handleFirebaseError(error, 'Gesamtergebnisse anzeigen', false);
+        }
     }
 
     /**
@@ -1361,9 +1570,12 @@
         showPhase('overall-results');
     }
 
+    /**
+     * ✅ P0 SECURITY: Continue game (HOST ONLY)
+     */
     async function continueGame() {
-        if (!gameState.isHost) {
-            showNotification('Nur der Host kann fortfahren!', 'warning');
+        // ✅ P0 SECURITY: Validate host role
+        if (!validateHostRole('Spiel fortsetzen')) {
             return;
         }
 
@@ -1377,23 +1589,26 @@
                 showOverallResults: false,
                 lastUpdate: firebase.database.ServerValue.TIMESTAMP
             });
+
+            currentQuestionNumber++;
+            hasSubmittedThisRound = false;
+            updateGameDisplay();
+            resetForNewQuestion();
+            showPhase('question');
+
+            await startNewRound();
+            showNotification('Spiel wird fortgesetzt! 🎮', 'success', 2000);
         } catch (error) {
-            console.error('❌ Error:', error);
+            handleFirebaseError(error, 'Spiel fortsetzen', false);
         }
-
-        currentQuestionNumber++;
-        hasSubmittedThisRound = false;
-        updateGameDisplay();
-        resetForNewQuestion();
-        showPhase('question');
-
-        await startNewRound();
-        showNotification('Spiel wird fortgesetzt! 🎮', 'success', 2000);
     }
 
+    /**
+     * ✅ P0 SECURITY: End game for all (HOST ONLY)
+     */
     async function endGameForAll() {
-        if (!gameState.isHost) {
-            showNotification('Nur der Host kann beenden!', 'warning');
+        // ✅ P0 SECURITY: Validate host role
+        if (!validateHostRole('Spiel beenden')) {
             return;
         }
 
@@ -1421,8 +1636,7 @@
             }, 2000);
 
         } catch (error) {
-            console.error('❌ Error ending game:', error);
-            showNotification('Fehler beim Beenden', 'error');
+            handleFirebaseError(error, 'Spiel beenden', false);
         }
     }
 

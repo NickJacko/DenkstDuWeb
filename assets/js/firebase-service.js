@@ -43,6 +43,9 @@
             this._generationAttempts = new Map();
             this.MAX_GENERATION_ATTEMPTS = 5;
 
+            // ✅ P1 STABILITY: Timeout for DB operations (10 seconds)
+            this.DB_OPERATION_TIMEOUT = 10000;
+
             // ✅ P1 NEW: User meta caching (Premium & Age)
             this._userMeta = {
                 isPremium: false,
@@ -51,6 +54,30 @@
                 uid: null
             };
             this._metaRefreshInterval = 5 * 60 * 1000; // 5 minutes
+        }
+
+        // ===========================
+        // ⏱️ P1 STABILITY: TIMEOUT WRAPPER
+        // ===========================
+
+        /**
+         * ✅ P1 STABILITY: Wrap database operation with timeout
+         * @param {Promise} operation - Database operation promise
+         * @param {number} timeout - Timeout in milliseconds
+         * @param {string} operationName - Name for error messages
+         * @returns {Promise} Operation result or timeout error
+         */
+        async _withTimeout(operation, timeout = this.DB_OPERATION_TIMEOUT, operationName = 'DB operation') {
+            return Promise.race([
+                operation,
+                new Promise((_, reject) =>
+                    setTimeout(() => {
+                        const error = new Error(`${operationName} timeout after ${timeout}ms`);
+                        error.code = 'TIMEOUT';
+                        reject(error);
+                    }, timeout)
+                )
+            ]);
         }
 
         // ===========================
@@ -384,6 +411,160 @@
         }
 
         // ===========================
+        // 🛡️ P0 SECURITY: DATA VALIDATION & SANITIZATION
+        // ===========================
+
+        /**
+         * ✅ P0 SECURITY: Validate game ID format
+         */
+        _isValidGameId(gameId) {
+            if (typeof gameId !== 'string') return false;
+            return /^[A-Z0-9]{6}$/.test(gameId);
+        }
+
+        /**
+         * ✅ P0 SECURITY: Validate player ID format
+         */
+        _isValidPlayerId(playerId) {
+            if (typeof playerId !== 'string') return false;
+            return /^p_[a-z0-9]+_\d+$/.test(playerId);
+        }
+
+        /**
+         * ✅ P0 SECURITY: Sanitize player name
+         */
+        _sanitizePlayerName(name) {
+            if (typeof name !== 'string') {
+                return 'Spieler';
+            }
+
+            // Trim and limit length
+            let sanitized = name.trim().slice(0, 20);
+
+            // Remove dangerous characters
+            sanitized = sanitized.replace(/[<>\"'&]/g, '');
+
+            // Ensure minimum length
+            if (sanitized.length < 2) {
+                sanitized = 'Spieler';
+            }
+
+            return sanitized;
+        }
+
+        /**
+         * ✅ P0 SECURITY: Validate boolean response
+         */
+        _validateResponse(response) {
+            if (typeof response !== 'boolean') {
+                throw new Error('Response must be a boolean');
+            }
+            return response;
+        }
+
+        /**
+         * ✅ P0 SECURITY: Validate and sanitize estimate
+         */
+        _validateEstimate(estimate) {
+            const num = parseInt(estimate, 10);
+
+            if (isNaN(num)) {
+                throw new Error('Estimate must be a number');
+            }
+
+            if (num < 0) {
+                throw new Error('Estimate cannot be negative');
+            }
+
+            if (num > 100) {
+                throw new Error('Estimate too large (max: 100)');
+            }
+
+            return num;
+        }
+
+        /**
+         * ✅ P0 SECURITY: Validate game phase
+         */
+        _validatePhase(phase) {
+            const validPhases = ['waiting', 'question', 'answering', 'estimating', 'results', 'finished'];
+
+            if (!validPhases.includes(phase)) {
+                throw new Error(`Invalid phase: ${phase}`);
+            }
+
+            return phase;
+        }
+
+        /**
+         * ✅ P0 SECURITY: Sanitize game settings
+         */
+        _sanitizeGameSettings(settings) {
+            const sanitized = {};
+
+            // Categories: array of strings
+            if (Array.isArray(settings.categories)) {
+                sanitized.categories = settings.categories
+                    .filter(c => typeof c === 'string' && c.length > 0)
+                    .map(c => c.trim())
+                    .slice(0, 10); // Max 10 categories
+            }
+
+            // Difficulty: enum
+            const validDifficulties = ['easy', 'medium', 'hard'];
+            if (validDifficulties.includes(settings.difficulty)) {
+                sanitized.difficulty = settings.difficulty;
+            }
+
+            // Alcohol mode: boolean
+            sanitized.isAlcoholMode = settings.isAlcoholMode === true;
+
+            // Max players: number 2-8
+            const maxP = parseInt(settings.maxPlayers, 10);
+            sanitized.maxPlayers = (maxP >= 2 && maxP <= 8) ? maxP : 8;
+
+            // Questions per round: number 5-30
+            const qpr = parseInt(settings.questionsPerRound, 10);
+            sanitized.questionsPerRound = (qpr >= 5 && qpr <= 30) ? qpr : 10;
+
+            // Host name: string 2-20 chars
+            if (typeof settings.hostName === 'string') {
+                sanitized.hostName = this._sanitizePlayerName(settings.hostName);
+            }
+
+            // Age level: 0, 16, or 18
+            if ([0, 16, 18].includes(settings.ageLevel)) {
+                sanitized.ageLevel = settings.ageLevel;
+            }
+
+            return sanitized;
+        }
+
+        /**
+         * ✅ P0 SECURITY: Validate question object
+         */
+        _validateQuestion(question) {
+            if (!question || typeof question !== 'object') {
+                throw new Error('Invalid question object');
+            }
+
+            if (typeof question.text !== 'string' || question.text.length === 0) {
+                throw new Error('Question must have text');
+            }
+
+            if (typeof question.id !== 'string') {
+                throw new Error('Question must have ID');
+            }
+
+            return {
+                id: question.id,
+                text: question.text.slice(0, 500), // Limit length
+                category: question.category || 'default',
+                ageLevel: [0, 16, 18].includes(question.ageLevel) ? question.ageLevel : 0
+            };
+        }
+
+        // ===========================
         // GAME CREATION
         // ===========================
 
@@ -460,7 +641,13 @@
 
                 // Write to database
                 const gameRef = this.database.ref(`games/${gameId}`);
-                await gameRef.set(gameData);
+
+                // ✅ P1 STABILITY: Wrap with timeout
+                await this._withTimeout(
+                    gameRef.set(gameData),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Create game'
+                );
 
                 // Store locally
                 this.currentGameId = gameId;
@@ -567,7 +754,13 @@
 
                 // Check if game exists
                 const gameRef = this.database.ref(`games/${gameId}`);
-                const gameSnap = await gameRef.once('value');
+
+                // ✅ P1 STABILITY: Wrap with timeout
+                const gameSnap = await this._withTimeout(
+                    gameRef.once('value'),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Fetch game data'
+                );
 
                 if (!gameSnap.exists()) {
                     throw new Error('Spiel nicht gefunden');
@@ -620,7 +813,12 @@
                 updates[`players/${playerId}`] = playerData;
                 updates['lastUpdate'] = timestamp;
 
-                await gameRef.update(updates);
+                // ✅ P1 STABILITY: Wrap with timeout
+                await this._withTimeout(
+                    gameRef.update(updates),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Join game'
+                );
 
                 // Store locally
                 this.currentGameId = gameId;
@@ -787,7 +985,7 @@
         }
 
         /**
-         * ✅ P1 NEW: Submit player estimate (only own)
+         * ✅ P0 SECURITY + P1 STABILITY: Submit player estimate (only own)
          */
         async submitEstimate(gameId, playerId, estimate) {
             if (!this.isConnected) {
@@ -795,25 +993,38 @@
             }
 
             try {
+                // ✅ P0 SECURITY: Validate game ID
+                if (!this._isValidGameId(gameId)) {
+                    throw new Error('Invalid game ID');
+                }
+
+                // ✅ P0 SECURITY: Validate player ID
+                if (!this._isValidPlayerId(playerId)) {
+                    throw new Error('Invalid player ID');
+                }
+
                 // Validate ownership
                 if (playerId !== this.currentPlayerId) {
                     throw new Error('Can only submit own estimate');
                 }
 
-                // Validate estimate (number >= 0)
-                const num = parseInt(estimate, 10);
-                if (isNaN(num) || num < 0) {
-                    throw new Error('Invalid estimate');
-                }
+                // ✅ P0 SECURITY: Validate and sanitize estimate
+                const validatedEstimate = this._validateEstimate(estimate);
 
                 const estimateRef = this.database.ref(`games/${gameId}/estimates/${playerId}`);
-                await estimateRef.set({
-                    value: num,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
+
+                // ✅ P1 STABILITY: Wrap with timeout
+                await this._withTimeout(
+                    estimateRef.set({
+                        value: validatedEstimate,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    }),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Submit estimate'
+                );
 
                 if (this.isDevelopment) {
-                    console.log(`✅ Estimate submitted: ${num}`);
+                    console.log(`✅ Estimate submitted: ${validatedEstimate}`);
                 }
 
                 return true;
@@ -829,7 +1040,7 @@
         // ===========================
 
         /**
-         * ✅ P1 NEW: Update game phase (HOST ONLY)
+         * ✅ P0 SECURITY + P1 STABILITY: Update game phase (HOST ONLY)
          * DB rules enforce host-only write access
          */
         async updateGamePhase(gameId, phase) {
@@ -838,19 +1049,28 @@
             }
 
             try {
-                const validPhases = ['waiting', 'question', 'answering', 'estimating', 'results', 'finished'];
-                if (!validPhases.includes(phase)) {
-                    throw new Error('Invalid phase');
+                // ✅ P0 SECURITY: Validate game ID
+                if (!this._isValidGameId(gameId)) {
+                    throw new Error('Invalid game ID');
                 }
 
+                // ✅ P0 SECURITY: Validate phase
+                const validatedPhase = this._validatePhase(phase);
+
                 const gameRef = this.database.ref(`games/${gameId}`);
-                await gameRef.update({
-                    phase: phase,
-                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
-                });
+
+                // ✅ P1 STABILITY: Wrap with timeout
+                await this._withTimeout(
+                    gameRef.update({
+                        phase: validatedPhase,
+                        lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                    }),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Update game phase'
+                );
 
                 if (this.isDevelopment) {
-                    console.log(`✅ Game phase updated: ${phase}`);
+                    console.log(`✅ Game phase updated: ${validatedPhase}`);
                 }
 
                 return true;
@@ -873,7 +1093,7 @@
         }
 
         /**
-         * ✅ P1 NEW: Set current question (HOST ONLY)
+         * ✅ P0 SECURITY + P1 STABILITY: Set current question (HOST ONLY)
          */
         async setCurrentQuestion(gameId, question) {
             if (!this.isConnected) {
@@ -881,11 +1101,25 @@
             }
 
             try {
+                // ✅ P0 SECURITY: Validate game ID
+                if (!this._isValidGameId(gameId)) {
+                    throw new Error('Invalid game ID');
+                }
+
+                // ✅ P0 SECURITY: Validate question object
+                const validatedQuestion = this._validateQuestion(question);
+
                 const gameRef = this.database.ref(`games/${gameId}`);
-                await gameRef.update({
-                    currentQuestion: question,
-                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
-                });
+
+                // ✅ P1 STABILITY: Wrap with timeout
+                await this._withTimeout(
+                    gameRef.update({
+                        currentQuestion: validatedQuestion,
+                        lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                    }),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Set current question'
+                );
 
                 if (this.isDevelopment) {
                     console.log(`✅ Current question set`);
@@ -927,7 +1161,7 @@
         }
 
         /**
-         * ✅ P1 NEW: Update scores (HOST ONLY)
+         * ✅ P1 PERFORMANCE: Update scores (HOST ONLY) with batch operation
          */
         async updateScores(gameId, scores) {
             if (!this.isConnected) {
@@ -935,14 +1169,21 @@
             }
 
             try {
-                const scoresRef = this.database.ref(`games/${gameId}/scores`);
-                await scoresRef.set(scores);
+                // ✅ P1 PERFORMANCE: Batch update to minimize writes
+                const updates = {
+                    [`games/${gameId}/scores`]: scores,
+                    [`games/${gameId}/lastUpdate`]: firebase.database.ServerValue.TIMESTAMP
+                };
 
-                const gameRef = this.database.ref(`games/${gameId}/lastUpdate`);
-                await gameRef.set(firebase.database.ServerValue.TIMESTAMP);
+                // ✅ P1 STABILITY: Wrap with timeout
+                await this._withTimeout(
+                    this.database.ref().update(updates),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Update scores'
+                );
 
                 if (this.isDevelopment) {
-                    console.log(`✅ Scores updated`);
+                    console.log(`✅ Scores updated (batch)`);
                 }
 
                 return true;

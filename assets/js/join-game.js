@@ -25,7 +25,9 @@
     const MAX_GAME_CODE_LENGTH = 6;
     const MIN_PLAYER_NAME_LENGTH = 2;
     const MAX_PLAYER_NAME_LENGTH = 20;
-    const CHECK_DEBOUNCE_MS = 800;
+
+    // ✅ P1 STABILITY: Optimized debounce (300ms instead of 800ms)
+    const CHECK_DEBOUNCE_MS = 300;
 
     // ✅ P0 FIX: Strict regex patterns
     const GAME_CODE_REGEX = /^[A-Z0-9]{6}$/;
@@ -368,15 +370,24 @@
     // ===========================
 
     /**
-     * ✅ P0 FIX: Handle game code input with live validation
+     * ✅ P0 SECURITY + P1 STABILITY: Handle game code input with immediate sanitization and debounced validation
      */
     function handleGameCodeInput() {
         const input = document.getElementById('game-code');
         if (!input) return;
 
-        // ✅ P0 FIX: Sanitize and format
-        const sanitized = sanitizeGameCode(input.value);
-        input.value = sanitized;
+        // ✅ P0 SECURITY: Sanitize immediately (before any processing)
+        const rawValue = input.value;
+        const sanitized = sanitizeGameCode(rawValue);
+
+        // Update input if sanitization changed the value
+        if (sanitized !== rawValue) {
+            input.value = sanitized;
+
+            if (isDevelopment && sanitized !== rawValue) {
+                console.log(`🛡️ Sanitized: "${rawValue}" → "${sanitized}"`);
+            }
+        }
 
         // Clear previous timeout
         if (checkTimeout) {
@@ -397,6 +408,8 @@
         // Check if complete
         if (sanitized.length === MAX_GAME_CODE_LENGTH) {
             input.setAttribute('aria-busy', 'true');
+
+            // ✅ P1 STABILITY: Debounced server check (300ms)
             checkTimeout = setTimeout(() => {
                 checkGameExists(sanitized);
             }, CHECK_DEBOUNCE_MS);
@@ -452,15 +465,32 @@
     // ===========================
 
     /**
-     * ✅ P0 FIX: Sanitize game code
+     * ✅ P0 SECURITY: Sanitize game code - ONLY uppercase letters and digits allowed
+     * All other characters are immediately rejected
+     *
+     * @param {string} code - Raw input code
+     * @returns {string} Sanitized code (uppercase A-Z and 0-9 only, max 6 chars)
      */
     function sanitizeGameCode(code) {
         if (!code) return '';
 
-        // Convert to uppercase and remove invalid chars
-        let sanitized = String(code).toUpperCase().replace(GAME_CODE_CHAR_REGEX, '');
+        // Convert to string (safety)
+        let sanitized = String(code);
 
-        // Limit length
+        // ✅ P0 SECURITY: Convert to uppercase first
+        sanitized = sanitized.toUpperCase();
+
+        // ✅ P0 SECURITY: Remove ALL invalid characters (anything not A-Z or 0-9)
+        const before = sanitized;
+        sanitized = sanitized.replace(GAME_CODE_CHAR_REGEX, '');
+
+        // Log if invalid characters were removed (dev only)
+        if (isDevelopment && before !== sanitized) {
+            const removed = before.split('').filter((c, i) => sanitized[i] !== c);
+            console.log(`🛡️ Blocked invalid characters: ${removed.join(', ')}`);
+        }
+
+        // ✅ P0 SECURITY: Limit to max length
         if (sanitized.length > MAX_GAME_CODE_LENGTH) {
             sanitized = sanitized.substring(0, MAX_GAME_CODE_LENGTH);
         }
@@ -553,6 +583,18 @@
             input.classList.add('valid');
             input.setAttribute('aria-invalid', 'false');
             showNotification('Spiel gefunden!', 'success', 2000);
+
+            // ✅ P1 UI/UX: Auto-focus on name field after successful validation
+            setTimeout(() => {
+                const playerNameInput = document.getElementById('player-name');
+                if (playerNameInput && !playerNameInput.value.trim()) {
+                    playerNameInput.focus();
+
+                    if (isDevelopment) {
+                        console.log('✅ Auto-focused on player name input');
+                    }
+                }
+            }, 100);
 
         } catch (error) {
             console.error('❌ Check failed:', error.message);

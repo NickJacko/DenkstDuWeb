@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -31,7 +31,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
     <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
     <script src="/assets/js/firebase-init.js"></script>
     <script defer src="/assets/js/GameState.js"></script>
@@ -83,31 +83,64 @@
                 <!-- Player Input Section -->
                 <div class="players-input-section">
                     <div class="input-header">
-                        <h2>Spieler eingeben</h2>
-                        <div class="player-count-badge" aria-live="polite">
-                            <span id="current-count">0</span>/8 Spieler
+                        <h2 id="player-input-heading">Spieler eingeben</h2>
+                        <div class="player-count-badge" aria-live="polite" aria-atomic="true">
+                            <span id="current-count">0</span>/10 Spieler
                         </div>
                     </div>
 
+                    <!-- ✅ P1 UI/UX: Hilfetext für Screen Reader -->
+                    <div class="sr-only" id="player-name-help">
+                        Namen zwischen 2 und 15 Zeichen. Nur Buchstaben, Zahlen, Leerzeichen und Bindestriche erlaubt.
+                    </div>
+
                     <!-- Dynamic Player Inputs -->
-                    <div class="players-input-list" id="players-input-list" role="list" aria-label="Spielerliste">
+                    <div class="players-input-list" id="players-input-list" role="list" aria-labelledby="player-input-heading" aria-describedby="player-name-help">
                         <div class="player-input-row" role="listitem">
-                            <div class="player-number" aria-hidden="true">1</div>
-                            <input type="text" class="player-input" placeholder="Erster Spieler..." maxlength="15" data-index="0" aria-label="Spieler 1 Name" autocomplete="off">
+                            <label for="player-input-0" class="player-number">1</label>
+                            <input
+                                type="text"
+                                id="player-input-0"
+                                class="player-input"
+                                placeholder="Erster Spieler..."
+                                maxlength="15"
+                                minlength="2"
+                                data-index="0"
+                                aria-label="Spieler 1 Name"
+                                aria-describedby="player-name-help"
+                                aria-required="true"
+                                autocomplete="off">
                             <button class="remove-player-btn hidden" data-index="0" type="button" aria-label="Spieler 1 entfernen">×</button>
                         </div>
                         <div class="player-input-row" role="listitem">
-                            <div class="player-number" aria-hidden="true">2</div>
-                            <input type="text" class="player-input" placeholder="Zweiter Spieler..." maxlength="15" data-index="1" aria-label="Spieler 2 Name" autocomplete="off">
+                            <label for="player-input-1" class="player-number">2</label>
+                            <input
+                                type="text"
+                                id="player-input-1"
+                                class="player-input"
+                                placeholder="Zweiter Spieler..."
+                                maxlength="15"
+                                minlength="2"
+                                data-index="1"
+                                aria-label="Spieler 2 Name"
+                                aria-describedby="player-name-help"
+                                aria-required="true"
+                                autocomplete="off">
                             <button class="remove-player-btn hidden" data-index="1" type="button" aria-label="Spieler 2 entfernen">×</button>
                         </div>
                     </div>
 
                     <!-- Add Player Button -->
-                    <button class="add-player-btn" id="add-player-btn" type="button">
+                    <button class="add-player-btn" id="add-player-btn" type="button" aria-label="Weiteren Spieler hinzufügen (maximal 10 Spieler)">
                         <span class="btn-icon" aria-hidden="true">➕</span>
                         <span class="btn-text">Spieler hinzufügen</span>
                     </button>
+
+                    <!-- ✅ P1 Stabilität: Limit-Warnung -->
+                    <div class="info-box hidden" id="player-limit-warning" role="alert" aria-live="assertive">
+                        <p><strong>ℹ️ Maximale Spielerzahl erreicht</strong></p>
+                        <p>Es können maximal 10 Spieler teilnehmen. Entfernen Sie einen Spieler, um einen anderen hinzuzufügen.</p>
+                    </div>
                 </div>
 
                 <!-- Players Preview with Drag & Drop -->
@@ -165,5 +198,8 @@
         </div>
     </div>
 </div>
+    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <script src="/assets/js/error-boundary.js"></script>
+
 </body>
 </html>

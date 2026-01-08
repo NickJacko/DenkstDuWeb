@@ -54,6 +54,7 @@
     let isHost = false;
     let currentUserId = null;
     let gameListener = null;
+    let heartbeatInterval = null; // ✅ P1 STABILITY: Track heartbeat for cleanup
 
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1';
@@ -398,9 +399,12 @@
     }
 
     /**
-     * Setup Firebase game listener for real-time updates
+     * ✅ P2 PERFORMANCE: Setup Firebase game listener for real-time updates
+     * - Only registers listener once
+     * - Properly cleans up on component unmount
      */
     function setupGameListener(gameId) {
+        // ✅ P2 PERFORMANCE: Remove existing listener before adding new one
         if (gameListener) {
             gameListener.off();
         }
@@ -419,8 +423,51 @@
             }
         });
 
+        // ✅ P1 STABILITY: Setup heartbeat to update lastSeen
+        setupPlayerHeartbeat(gameId);
+
         if (isDevelopment) {
             console.log('✅ Game listener setup');
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Setup heartbeat to keep player status updated
+     * Updates lastSeen every 10 seconds to detect offline players
+     */
+    function setupPlayerHeartbeat(gameId) {
+        // Clear existing heartbeat
+        if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+        }
+
+        // Update lastSeen immediately
+        updatePlayerLastSeen(gameId);
+
+        // Update every 10 seconds
+        heartbeatInterval = setInterval(() => {
+            updatePlayerLastSeen(gameId);
+        }, 10000);
+
+        if (isDevelopment) {
+            console.log('✅ Player heartbeat started');
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Update player's lastSeen timestamp
+     */
+    async function updatePlayerLastSeen(gameId) {
+        if (!currentUserId || !gameId) return;
+
+        try {
+            const playerRef = firebase.database().ref(`games/${gameId}/players/${currentUserId}/lastSeen`);
+            await playerRef.set(Date.now());
+        } catch (error) {
+            // Silent fail - not critical
+            if (isDevelopment) {
+                console.warn('⚠️ Failed to update lastSeen:', error);
+            }
         }
     }
 
@@ -565,7 +612,10 @@
     }
 
     /**
-     * P0 FIX: Update players list with textContent only
+     * ✅ P1 STABILITY: Update players list with offline detection and sorting
+     * - Shows offline players with rejoin timer
+     * - Sorts players (host first, then alphabetically)
+     * - Uses textContent only for XSS safety
      */
     function updatePlayersList(players) {
         const playersList = document.getElementById('players-list');
@@ -585,13 +635,29 @@
         if (playersList) {
             playersList.innerHTML = '';
 
-            playersArray.forEach(player => {
+            // ✅ P1 UI/UX: Sort players - Host first, then alphabetically
+            const sortedPlayers = playersArray.sort((a, b) => {
+                if (a.isHost) return -1;
+                if (b.isHost) return 1;
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+            sortedPlayers.forEach(player => {
                 const playerItem = document.createElement('div');
                 playerItem.className = 'player-item';
                 playerItem.setAttribute('role', 'listitem');
 
+                // ✅ P1 UI/UX: Enhanced CSS classes for visual distinction
                 if (player.isHost) playerItem.classList.add('host');
                 if (player.isReady) playerItem.classList.add('ready');
+
+                // ✅ P1 STABILITY: Check if player is offline
+                const isOffline = checkPlayerOffline(player);
+                if (isOffline) {
+                    playerItem.classList.add('offline');
+                }
 
                 const avatar = document.createElement('div');
                 avatar.className = 'player-avatar';
@@ -609,7 +675,13 @@
                 const status = document.createElement('div');
                 status.className = 'player-status';
 
-                if (player.isHost) {
+                // ✅ P1 STABILITY: Show offline status with rejoin timer
+                if (isOffline) {
+                    const offlineTime = Date.now() - (player.lastSeen || player.joinedAt || Date.now());
+                    const remainingTime = Math.max(0, Math.floor((120000 - offlineTime) / 1000)); // 2 min timeout
+                    status.textContent = `🔌 Offline (${remainingTime}s)`;
+                    status.classList.add('offline-status');
+                } else if (player.isHost) {
                     status.textContent = '👑 Host';
                 } else if (player.isReady) {
                     status.textContent = '✅ Bereit';
@@ -637,6 +709,20 @@
                 playersList.appendChild(playerItem);
             });
         }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Check if player is offline
+     * Returns true if player hasn't updated lastSeen in 30+ seconds
+     */
+    function checkPlayerOffline(player) {
+        if (!player) return false;
+
+        const lastSeen = player.lastSeen || player.joinedAt || 0;
+        const timeSinceLastSeen = Date.now() - lastSeen;
+
+        // Consider offline if no activity for 30 seconds
+        return timeSinceLastSeen > 30000;
     }
 
     function displayEmptyPlayers() {
@@ -991,18 +1077,33 @@
     // ===========================
 
     /**
-     * Cleanup Firebase listeners
+     * ✅ P2 PERFORMANCE: Cleanup Firebase listeners and intervals
+     * Ensures no memory leaks by removing all listeners on unmount
      */
     function cleanup() {
+        // ✅ P2 PERFORMANCE: Remove Firebase listener
         if (gameListener) {
             try {
                 gameListener.off();
                 gameListener = null;
+                if (isDevelopment) {
+                    console.log('✅ Firebase listener removed');
+                }
             } catch (error) {
                 Logger.error('❌ Cleanup error:', error);
             }
         }
 
+        // ✅ P1 STABILITY: Clear heartbeat interval
+        if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+            if (isDevelopment) {
+                console.log('✅ Heartbeat interval cleared');
+            }
+        }
+
+        // ✅ P2 PERFORMANCE: Cleanup event listeners
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();
         }

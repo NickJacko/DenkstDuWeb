@@ -1,0 +1,298 @@
+<!-- NEUE SECTIONS FÜR PRIVACY.HTML -->
+<!-- Einf
+
+ügen VOR Section 9 (Sicherheit) -->
+
+        <!-- 7. Cookie-Tabelle -->
+        <section id="cookies-detail">
+            <h2>7. Cookies und lokale Speicherung im Detail</h2>
+
+            <h3>7.1 Was sind Cookies?</h3>
+            <p>
+                Cookies sind kleine Textdateien, die auf Ihrem Gerät gespeichert werden.
+                Wir verwenden ausschließlich technisch notwendige Cookies und solche, die Sie über
+                unser Cookie-Banner explizit akzeptiert haben.
+            </p>
+
+            <h3>7.2 Verwendete Cookies und LocalStorage-Keys</h3>
+            <table class="cookie-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Typ</th>
+                        <th>Zweck</th>
+                        <th>Speicherdauer</th>
+                        <th>Kategorie</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Notwendige Cookies -->
+                    <tr>
+                        <td><code>nocap_cookie_consent</code></td>
+                        <td>LocalStorage</td>
+                        <td>Speichert Ihre Cookie-Einstellungen</td>
+                        <td>365 Tage</td>
+                        <td>Notwendig</td>
+                    </tr>
+                    <tr>
+                        <td><code>nocap_privacy_consent</code></td>
+                        <td>LocalStorage</td>
+                        <td>Datenschutz-Zustimmung</td>
+                        <td>Permanent</td>
+                        <td>Notwendig</td>
+                    </tr>
+                    <tr>
+                        <td><code>nocap_age_verification</code></td>
+                        <td>LocalStorage</td>
+                        <td>Altersverifikation für Jugendschutz</td>
+                        <td>30 Tage</td>
+                        <td>Notwendig</td>
+                    </tr>
+                    <tr>
+                        <td><code>nocap_game_state</code></td>
+                        <td>LocalStorage</td>
+                        <td>Spielstand-Zwischenspeicherung</td>
+                        <td>Session</td>
+                        <td>Notwendig</td>
+                    </tr>
+
+                    <!-- Funktionale Cookies -->
+                    <tr>
+                        <td><code>nocap_cached_questions</code></td>
+                        <td>LocalStorage</td>
+                        <td>Zwischenspeicherung von Fragen (Performance)</td>
+                        <td>24 Stunden</td>
+                        <td>Funktional</td>
+                    </tr>
+                    <tr>
+                        <td><code>firebase:authUser</code></td>
+                        <td>LocalStorage</td>
+                        <td>Firebase Authentication Status</td>
+                        <td>Bis Abmeldung</td>
+                        <td>Funktional</td>
+                    </tr>
+
+                    <!-- Analytics Cookies (nur mit Consent) -->
+                    <tr>
+                        <td><code>_ga</code></td>
+                        <td>Cookie</td>
+                        <td>Google Analytics - Nutzer-Identifikation</td>
+                        <td>2 Jahre</td>
+                        <td>Analyse</td>
+                    </tr>
+                    <tr>
+                        <td><code>_ga_*</code></td>
+                        <td>Cookie</td>
+                        <td>Google Analytics - Session-Daten</td>
+                        <td>2 Jahre</td>
+                        <td>Analyse</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>7.3 Cookie-Einstellungen ändern</h3>
+            <p>
+                Sie können Ihre Cookie-Einstellungen jederzeit ändern:
+            </p>
+            <button onclick="if(window.NocapCookies){window.NocapCookies.revokeConsent(); window.NocapCookies.reinitialize();}"
+                    class="btn btn-secondary">
+                Cookie-Einstellungen zurücksetzen
+            </button>
+        </section>
+
+        <!-- 8. Jugendschutz und Altersverifikation -->
+        <section id="age-verification-detail">
+            <h2>8. Jugendschutz und Altersverifikation</h2>
+
+            <h3>8.1 Warum Altersverifikation?</h3>
+            <p>
+                Gemäß Jugendschutzgesetz (JuSchG) und Jugendmedienschutz-Staatsvertrag (JMStV) müssen wir
+                sicherstellen, dass Inhalte mit FSK16/FSK18-Einstufung nur für entsprechende Altersgruppen
+                zugänglich sind.
+            </p>
+
+            <h3>8.2 Welche Daten werden bei der Altersverifikation gespeichert?</h3>
+            <p>
+                Bei der Altersverifikation speichern wir folgende Daten:
+            </p>
+            <ul>
+                <li><strong>Eingegebenes Geburtsdatum:</strong> Zur Berechnung des Alters</li>
+                <li><strong>Zeitstempel:</strong> Wann die Verifikation stattfand</li>
+                <li><strong>IP-Adresse (anonymisiert):</strong>
+                    Zur Missbrauchsprävention und Erfüllung der Nachweispflicht gemäß JMStV §5</li>
+                <li><strong>Verifikations-Status:</strong> Ob Verifikation erfolgreich war (FSK0/16/18)</li>
+            </ul>
+
+            <h3>8.3 IP-Adress-Speicherung im Detail</h3>
+            <div class="info-box">
+                <p>
+                    <strong>Zweck:</strong> Nachweis der Altersverifikation gemäß Jugendmedienschutz-Staatsvertrag (JMStV)<br>
+                    <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. c DSGVO (rechtliche Verpflichtung)<br>
+                    <strong>Speicherung:</strong> IP-Adresse wird gekürzt (letztes Oktett entfernt, z.B. 192.168.1.xxx)<br>
+                    <strong>Speicherdauer:</strong> 30 Tage ab Verifikation<br>
+                    <strong>Automatische Löschung:</strong> Nach Ablauf der 30 Tage werden die Daten automatisch gelöscht
+                </p>
+            </div>
+
+            <h3>8.4 Wie funktioniert die Anonymisierung?</h3>
+            <p>
+                Ihre IP-Adresse wird vor der Speicherung anonymisiert:
+            </p>
+            <pre><code>Original:      192.168.1.42
+Anonymisiert:  192.168.1.0
+→ Kein Personenbezug mehr möglich</code></pre>
+
+            <h3>8.5 Löschfristen</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Datenart</th>
+                        <th>Löschfrist</th>
+                        <th>Grund</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Anonymisierte IP-Adresse</td>
+                        <td>30 Tage</td>
+                        <td>Nachweis Jugendschutz (JMStV)</td>
+                    </tr>
+                    <tr>
+                        <td>Geburtsdatum</td>
+                        <td>30 Tage</td>
+                        <td>Nachweis Altersverifikation</td>
+                    </tr>
+                    <tr>
+                        <td>Verifikations-Timestamp</td>
+                        <td>30 Tage</td>
+                        <td>Audit-Trail</td>
+                    </tr>
+                    <tr>
+                        <td>LocalStorage-Eintrag</td>
+                        <td>30 Tage oder bei Browserdaten-Löschung</td>
+                        <td>Client-seitige Speicherung</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 8B. Ihre Rechte als betroffene Person -->
+        <section id="your-rights">
+            <h2>8B. Ihre Rechte als betroffene Person</h2>
+
+            <h3>8B.1 Auskunftsrecht (Art. 15 DSGVO)</h3>
+            <p>
+                Sie haben das Recht, Auskunft über die von uns gespeicherten personenbezogenen Daten zu erhalten.
+            </p>
+
+            <h3>8B.2 Recht auf Berichtigung (Art. 16 DSGVO)</h3>
+            <p>
+                Sie haben das Recht, die Berichtigung unrichtiger oder die Vervollständigung unvollständiger
+                personenbezogenen Daten zu verlangen.
+            </p>
+
+            <h3>8B.3 Recht auf Löschung - "Recht auf Vergessenwerden" (Art. 17 DSGVO)</h3>
+            <p>
+                Sie haben das Recht, die Löschung Ihrer personenbezogenen Daten zu verlangen.
+            </p>
+
+            <h4>So beantragen Sie die Löschung Ihrer Daten:</h4>
+
+            <div class="deletion-process">
+                <div class="step">
+                    <h5>Schritt 1: Löschanfrage stellen</h5>
+                    <p>
+                        Senden Sie eine E-Mail an:<br>
+                        <a href="mailto:Nickjacklin99@web.de">Nickjacklin99@web.de</a>
+                    </p>
+                    <p>
+                        Bitte geben Sie an:
+                    </p>
+                    <ul>
+                        <li>Ihre E-Mail-Adresse (falls Sie ein Konto haben)</li>
+                        <li>Ihre User-ID (finden Sie in den Einstellungen)</li>
+                        <li>Welche Daten gelöscht werden sollen</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <h5>Schritt 2: Identitätsprüfung</h5>
+                    <p>
+                        Um Missbrauch zu vermeiden, müssen wir Ihre Identität prüfen.
+                        Wir senden Ihnen eine Bestätigungs-E-Mail an die hinterlegte Adresse.
+                    </p>
+                </div>
+
+                <div class="step">
+                    <h5>Schritt 3: Löschung durchführen</h5>
+                    <p>
+                        Nach Bestätigung Ihrer Identität löschen wir innerhalb von
+                        <strong>14 Tagen</strong> folgende Daten:
+                    </p>
+                    <ul>
+                        <li>✅ Ihr Benutzer-Account (Firebase Auth)</li>
+                        <li>✅ Alle Spielstände (Realtime Database)</li>
+                        <li>✅ Hochgeladene Avatare (Storage)</li>
+                        <li>✅ LocalStorage-Einträge (Sie müssen Browser-Daten selbst löschen)</li>
+                        <li>✅ Altersverifikations-Daten</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <h5>Schritt 4: Bestätigung</h5>
+                    <p>
+                        Sie erhalten eine Bestätigungs-E-Mail, sobald die Löschung abgeschlossen ist.
+                    </p>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ Welche Daten können NICHT gelöscht werden?</h4>
+                <p>
+                    Aus rechtlichen Gründen müssen wir folgende Daten aufbewahren:
+                </p>
+                <ul>
+                    <li>📋 Rechnungen und Zahlungsdaten (Steuerrecht: 10 Jahre)</li>
+                    <li>📋 Anonymisierte Nutzungsstatistiken (kein Personenbezug)</li>
+                </ul>
+            </div>
+
+            <h3>8B.4 Bearbeitungszeit</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Anfrage-Typ</th>
+                        <th>Unsere Bearbeitungszeit</th>
+                        <th>Gesetzliche Frist</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Auskunftsanfrage</td>
+                        <td>7 Tage</td>
+                        <td>30 Tage (DSGVO Art. 15)</td>
+                    </tr>
+                    <tr>
+                        <td>Löschanfrage</td>
+                        <td>14 Tage</td>
+                        <td>30 Tage (DSGVO Art. 17)</td>
+                    </tr>
+                    <tr>
+                        <td>Berichtigungsanfrage</td>
+                        <td>7 Tage</td>
+                        <td>30 Tage (DSGVO Art. 16)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>8B.5 Weitere Rechte</h3>
+            <ul>
+                <li><strong>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO):</strong>
+                    Sie können die Einschränkung der Verarbeitung Ihrer Daten verlangen.</li>
+                <li><strong>Recht auf Datenübertragbarkeit (Art. 20 DSGVO):</strong>
+                    Sie können Ihre Daten in einem strukturierten Format erhalten.</li>
+                <li><strong>Widerspruchsrecht (Art. 21 DSGVO):</strong>
+                    Sie können der Verarbeitung Ihrer Daten widersprechen.</li>
+            </ul>
+        </section>
+

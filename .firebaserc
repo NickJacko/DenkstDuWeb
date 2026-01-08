@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "denkstduwebsite"
+    "default": "denkstduwebsite",
+    "prod": "denkstduwebsite",
+    "staging": "denkstduwebsite-staging"
   }
 }
