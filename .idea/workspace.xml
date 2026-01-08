@@ -4,7 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor showNotification function to simplify message handling" />
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update script tags to use 'defer' for improved loading performance">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-init.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-init.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/imprint.html" beforeDir="false" afterPath="$PROJECT_DIR$/imprint.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/join-game.html" beforeDir="false" afterPath="$PROJECT_DIR$/join-game.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-gameplay.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-lobby.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-lobby.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-results.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-results.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/player-setup.html" beforeDir="false" afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -123,15 +137,7 @@
       <workItem from="1765964163592" duration="30703000" />
       <workItem from="1767609144829" duration="68000" />
       <workItem from="1767771199341" duration="31527000" />
-      <workItem from="1767865110916" duration="13747000" />
-    </task>
-    <task id="LOCAL-00037" summary="Lobby update">
-      <option name="closed" value="true" />
-      <created>1762557268703</created>
-      <option name="number" value="00037" />
-      <option name="presentableId" value="LOCAL-00037" />
-      <option name="project" value="LOCAL" />
-      <updated>1762557268703</updated>
+      <workItem from="1767865110916" duration="15760000" />
     </task>
     <task id="LOCAL-00038" summary="Lobby auto load">
       <option name="closed" value="true" />
@@ -517,7 +523,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767883884284</updated>
     </task>
-    <option name="localTasksCounter" value="86" />
+    <task id="LOCAL-00086" summary="Update script tags to use 'defer' for improved loading performance">
+      <option name="closed" value="true" />
+      <created>1767884254914</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1767884254914</updated>
+    </task>
+    <option name="localTasksCounter" value="87" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -538,7 +552,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="GesErgebnisse MGP" />
     <MESSAGE value="Index anpassungen" />
     <MESSAGE value="category-selection.html update" />
     <MESSAGE value="difficulty-selection.html update" />
@@ -563,7 +576,8 @@
     <MESSAGE value="Update index.html" />
     <MESSAGE value="Update credentials" />
     <MESSAGE value="Refactor showNotification function to simplify message handling" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor showNotification function to simplify message handling" />
+    <MESSAGE value="Update script tags to use 'defer' for improved loading performance" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update script tags to use 'defer' for improved loading performance" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
