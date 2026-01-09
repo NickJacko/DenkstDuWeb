@@ -61,7 +61,7 @@
                         }
 
                         firebase.appCheck().activate(
-                            "6LeSPUQsAAAAANnUhOAey-M8Mgr0eeT9-inR7wKZ", // SITE KEY
+                            "6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l", // SITE KEY
                             true
                         );
                     }

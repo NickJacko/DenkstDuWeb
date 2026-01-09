@@ -531,7 +531,7 @@
 
                             // ⚠️ TODO: Replace with your actual reCAPTCHA v3 site key
                             // Get key from: https://console.cloud.google.com/security/recaptcha
-                            const RECAPTCHA_SITE_KEY = '6LeSPUQsAAAAANnUhOAey-M8Mgr0eeT9-inR7wKZ'; // Test key
+                            const RECAPTCHA_SITE_KEY = '6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l'; // Test key
 
                             firebase.appCheck().activate(
                                 RECAPTCHA_SITE_KEY,
