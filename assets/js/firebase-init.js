@@ -6,6 +6,8 @@
         location.hostname === "127.0.0.1" ||
         location.hostname.includes("192.168.");
 
+    const isProduction = !isDevelopment;
+
     function getFirebaseConfig() {
         if (window.FIREBASE_CONFIG) return window.FIREBASE_CONFIG;
 
@@ -54,20 +56,27 @@
                 if (!firebase.apps || firebase.apps.length === 0) {
                     firebase.initializeApp(config);
 
-                    // 🔐 App Check (reCAPTCHA v3)
-                    if (firebase.appCheck) {
-                        if (isDevelopment) {
-                            self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-                        }
+                    // 🔐 App Check (reCAPTCHA v3) - PRODUCTION ONLY
+                    if (firebase.appCheck && isProduction) {
+                        try {
+                            firebase.appCheck().activate(
+                                "6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l", // SITE KEY
+                                true
+                            );
 
-                        firebase.appCheck().activate(
-                            "6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l", // SITE KEY
-                            true
-                        );
+                            if (isDevelopment) {
+                                console.log("✅ Firebase initialized + App Check active (Production)");
+                            }
+                        } catch (error) {
+                            console.warn("⚠️ App Check activation failed:", error);
+                            // Non-fatal: Continue without App Check
+                        }
+                    } else if (isDevelopment) {
+                        console.log("⚠️ App Check disabled (Development mode)");
                     }
 
                     if (isDevelopment) {
-                        console.log("✅ Firebase initialized + App Check active");
+                        console.log("✅ Firebase initialized");
                     }
                 }
             } catch (e) {

@@ -520,16 +520,11 @@
                         try {
                             const RECAPTCHA_SITE_KEY = '6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l';
 
-                            const appCheckInstance = firebase.appCheck();
-
-                            // ✅ P1 FIX: Catch App Check promise rejections (prevents unhandled rejections)
-                            appCheckInstance.activate(
+                            // ✅ FIX: Activate App Check and handle errors properly
+                            firebase.appCheck().activate(
                                 RECAPTCHA_SITE_KEY,
                                 true // autoRefresh
-                            ).catch(appCheckError => {
-                                console.warn('⚠️ App Check activation failed:', appCheckError);
-                                // Non-fatal: Continue without App Check
-                            });
+                            );
 
                             if (isDevelopment) {
                                 console.log('%c✅ App Check activated (Production)',

@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update script tags to use 'defer' for improved loading performance">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update Firebase configuration in HTML files for security compliance">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-config.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -127,31 +127,7 @@
       <workItem from="1767609144829" duration="68000" />
       <workItem from="1767771199341" duration="31527000" />
       <workItem from="1767865110916" duration="17234000" />
-      <workItem from="1767952682710" duration="2355000" />
-    </task>
-    <task id="LOCAL-00040" summary="Lobby auto load fixed users">
-      <option name="closed" value="true" />
-      <created>1762765670126</created>
-      <option name="number" value="00040" />
-      <option name="presentableId" value="LOCAL-00040" />
-      <option name="project" value="LOCAL" />
-      <updated>1762765670126</updated>
-    </task>
-    <task id="LOCAL-00041" summary="Firebase fix">
-      <option name="closed" value="true" />
-      <created>1762766695495</created>
-      <option name="number" value="00041" />
-      <option name="presentableId" value="LOCAL-00041" />
-      <option name="project" value="LOCAL" />
-      <updated>1762766695495</updated>
-    </task>
-    <task id="LOCAL-00042" summary="Backup">
-      <option name="closed" value="true" />
-      <created>1762773711564</created>
-      <option name="number" value="00042" />
-      <option name="presentableId" value="LOCAL-00042" />
-      <option name="project" value="LOCAL" />
-      <updated>1762773711564</updated>
+      <workItem from="1767952682710" duration="5876000" />
     </task>
     <task id="LOCAL-00043" summary="Backup">
       <option name="closed" value="true" />
@@ -521,7 +497,31 @@
       <option name="project" value="LOCAL" />
       <updated>1767953085967</updated>
     </task>
-    <option name="localTasksCounter" value="89" />
+    <task id="LOCAL-00089" summary="Update Firebase configuration in HTML files for security compliance">
+      <option name="closed" value="true" />
+      <created>1767956300297</created>
+      <option name="number" value="00089" />
+      <option name="presentableId" value="LOCAL-00089" />
+      <option name="project" value="LOCAL" />
+      <updated>1767956300297</updated>
+    </task>
+    <task id="LOCAL-00090" summary="Update Firebase configuration in HTML files for security compliance">
+      <option name="closed" value="true" />
+      <created>1767958672809</created>
+      <option name="number" value="00090" />
+      <option name="presentableId" value="LOCAL-00090" />
+      <option name="project" value="LOCAL" />
+      <updated>1767958672809</updated>
+    </task>
+    <task id="LOCAL-00091" summary="Update Firebase configuration in HTML files for security compliance">
+      <option name="closed" value="true" />
+      <created>1767959439633</created>
+      <option name="number" value="00091" />
+      <option name="presentableId" value="LOCAL-00091" />
+      <option name="project" value="LOCAL" />
+      <updated>1767959439633</updated>
+    </task>
+    <option name="localTasksCounter" value="92" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -542,7 +542,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Index anpassungen" />
     <MESSAGE value="category-selection.html update" />
     <MESSAGE value="difficulty-selection.html update" />
     <MESSAGE value="Gamestate change" />
@@ -567,7 +566,8 @@
     <MESSAGE value="Update credentials" />
     <MESSAGE value="Refactor showNotification function to simplify message handling" />
     <MESSAGE value="Update script tags to use 'defer' for improved loading performance" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update script tags to use 'defer' for improved loading performance" />
+    <MESSAGE value="Update Firebase configuration in HTML files for security compliance" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update Firebase configuration in HTML files for security compliance" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
