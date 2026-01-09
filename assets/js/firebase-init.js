@@ -56,7 +56,8 @@
                 if (!firebase.apps || firebase.apps.length === 0) {
                     firebase.initializeApp(config);
 
-                    // 🔐 App Check (reCAPTCHA v3) - PRODUCTION ONLY
+                    // 🔐 App Check (reCAPTCHA v3) - TEMPORÄR DEAKTIVIERT
+                    // TODO: reCAPTCHA muss in Firebase Console für no-cap.app konfiguriert werden
                     if (firebase.appCheck && isProduction) {
                         try {
                             firebase.appCheck().activate(
@@ -73,6 +74,8 @@
                         }
                     } else if (isDevelopment) {
                         console.log("⚠️ App Check disabled (Development mode)");
+                    } else {
+                        console.warn("⚠️ App Check TEMPORARILY DISABLED (reCAPTCHA misconfigured)");
                     }
 
                     if (isDevelopment) {

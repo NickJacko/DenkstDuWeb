@@ -512,10 +512,14 @@
                     }
 
                     // ===================================
-                    // ✅ P0 SECURITY: Firebase App Check (Production only)
+                    // ⚠️ P0 SECURITY: Firebase App Check (TEMPORÄR DEAKTIVIERT)
                     // ===================================
-                    // Protects against abuse (bots, unauthorized access)
-                    // Disabled in development to avoid reCAPTCHA errors on localhost
+                    // TODO: reCAPTCHA v3 muss in Firebase Console neu konfiguriert werden
+                    // 1. Firebase Console → App Check → reCAPTCHA v3
+                    // 2. Domain registrieren: no-cap.app
+                    // 3. Site Key hier eintragen
+                    // 4. Zeile 519 ändern: if (firebase.appCheck && isProduction && false) → if (firebase.appCheck && isProduction)
+
                     if (firebase.appCheck && isProduction) {
                         try {
                             const RECAPTCHA_SITE_KEY = '6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l';
@@ -537,6 +541,9 @@
                     } else if (isDevelopment) {
                         console.log('%c⚠️  App Check disabled (Development mode)',
                             'color: #FF9800');
+                    } else {
+                        console.warn('%c⚠️  App Check TEMPORARILY DISABLED (reCAPTCHA misconfigured)',
+                            'color: #FF5722; font-weight: bold');
                     }
                 } else {
                     app = firebase.app();
