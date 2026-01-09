@@ -512,34 +512,27 @@
                     }
 
                     // ===================================
-                    // ✅ P0 SECURITY: Firebase App Check
+                    // ✅ P0 SECURITY: Firebase App Check (Production only)
                     // ===================================
                     // Protects against abuse (bots, unauthorized access)
-                    if (firebase.appCheck) {
+                    // Disabled in development to avoid reCAPTCHA errors on localhost
+                    if (firebase.appCheck && isProduction) {
                         try {
-                            // ✅ Debug mode for localhost (prevents lockout during development)
-                            const isLocal = location.hostname === 'localhost' ||
-                                          location.hostname === '127.0.0.1' ||
-                                          location.hostname.includes('192.168.');
+                            const RECAPTCHA_SITE_KEY = '6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l';
 
-                            if (isLocal && isDevelopment) {
-                                // Enable debug token for local development
-                                self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-                                console.log('%c⚠️  App Check: DEBUG MODE (localhost)',
-                                    'color: #FF9800; font-weight: bold');
-                            }
+                            const appCheckInstance = firebase.appCheck();
 
-                            // ⚠️ TODO: Replace with your actual reCAPTCHA v3 site key
-                            // Get key from: https://console.cloud.google.com/security/recaptcha
-                            const RECAPTCHA_SITE_KEY = '6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l'; // Test key
-
-                            firebase.appCheck().activate(
+                            // ✅ P1 FIX: Catch App Check promise rejections (prevents unhandled rejections)
+                            appCheckInstance.activate(
                                 RECAPTCHA_SITE_KEY,
                                 true // autoRefresh
-                            );
+                            ).catch(appCheckError => {
+                                console.warn('⚠️ App Check activation failed:', appCheckError);
+                                // Non-fatal: Continue without App Check
+                            });
 
                             if (isDevelopment) {
-                                console.log('%c✅ App Check activated',
+                                console.log('%c✅ App Check activated (Production)',
                                     'color: #4CAF50; font-weight: bold');
                             }
                         } catch (error) {
@@ -547,7 +540,7 @@
                             // Non-fatal: Continue without App Check
                         }
                     } else if (isDevelopment) {
-                        console.warn('%c⚠️  App Check SDK not loaded',
+                        console.log('%c⚠️  App Check disabled (Development mode)',
                             'color: #FF9800');
                     }
                 } else {
@@ -625,6 +618,27 @@
         try {
             // ===== AUTH CONFIGURATION =====
             auth.useDeviceLanguage(); // Use browser language for auth messages
+
+            // ✅ P1 FIX: Tracking Prevention (Safari/Firefox) - Use IndexedDB instead of localStorage
+            try {
+                await auth.setPersistence(firebase.auth.Auth.Persistence.INDEXED_DB);
+
+                if (isDevelopment) {
+                    console.log('✅ Auth persistence: INDEXED_DB (Tracking Prevention fix)');
+                }
+            } catch (persistenceError) {
+                // Fallback: Session persistence (nur für aktive Browser-Session)
+                try {
+                    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+
+                    if (isDevelopment) {
+                        console.warn('⚠️ Fallback to SESSION persistence:', persistenceError.message);
+                    }
+                } catch (sessionError) {
+                    console.warn('⚠️ Could not set auth persistence:', sessionError.message);
+                    // Non-fatal: Auth will work without persistence (requires re-login on page reload)
+                }
+            }
 
             // ===== DATABASE CONFIGURATION =====
             // Enable offline persistence
