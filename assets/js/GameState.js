@@ -40,6 +40,9 @@
                 cacheTTL: 5 * 60 * 1000 // 5 Minuten Cache
             };
 
+            // ✅ P0 SECURITY: Clean localStorage from potentially corrupted data on startup
+            this.cleanCorruptedLocalStorage();
+
             // State properties
             this.deviceMode = null;           // 'single' | 'multi'
             this.selectedCategories = [];     // ['fsk0', 'fsk16', 'fsk18', 'special']
@@ -57,6 +60,51 @@
 
             // Auto-load on instantiation
             this.load();
+        }
+
+        // ===========================
+        // ✅ P0 SECURITY: CLEANUP CORRUPTED LOCALSTORAGE
+        // ===========================
+
+        /**
+         * ✅ P0 SECURITY: Remove corrupted localStorage entries on startup
+         * Prevents prototype pollution from old/malicious data
+         */
+        cleanCorruptedLocalStorage() {
+            try {
+                const saved = localStorage.getItem(this.STORAGE_KEY);
+                if (!saved) {
+                    return; // No data to clean
+                }
+
+                // Quick check if data contains dangerous patterns
+                const dangerousPatterns = [
+                    '__proto__',
+                    'constructor',
+                    'prototype',
+                    '"__proto__"',
+                    '"constructor"',
+                    '"prototype"'
+                ];
+
+                let isCorrupted = false;
+                for (const pattern of dangerousPatterns) {
+                    if (saved.includes(pattern)) {
+                        this.log(`🛡️ Detected dangerous pattern "${pattern}" in localStorage`, 'warning');
+                        isCorrupted = true;
+                        break;
+                    }
+                }
+
+                if (isCorrupted) {
+                    this.log('🧹 Cleaning corrupted localStorage data...', 'warning');
+                    localStorage.removeItem(this.STORAGE_KEY);
+                    this.log('✅ localStorage cleaned successfully', 'info');
+                }
+            } catch (error) {
+                this.log(`⚠️ Error during localStorage cleanup: ${error.message}`, 'warning');
+                // Non-fatal: Continue with fresh state
+            }
         }
 
         // ===========================
@@ -174,7 +222,24 @@
                     return false;
                 }
 
-                const state = JSON.parse(saved);
+                // ✅ P0 SECURITY: Safe JSON parse with prototype pollution prevention
+                let state;
+                try {
+                    // Parse with reviver function to block dangerous keys
+                    state = JSON.parse(saved, (key, value) => {
+                        // Block dangerous keys during parse
+                        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                            this.log(`🛡️ Blocked dangerous key "${key}" during JSON parse`, 'warning');
+                            return undefined; // Skip this property
+                        }
+                        return value;
+                    });
+                } catch (parseError) {
+                    this.log(`❌ JSON parse error: ${parseError.message}`, 'error');
+                    this.clearStorage();
+                    this._isLoading = false;
+                    return false;
+                }
 
                 // ✅ P0 SECURITY: Validate data types FIRST to prevent prototype pollution
                 if (!this.validateDataTypes(state)) {
@@ -253,13 +318,52 @@
                 return false;
             }
 
-            // ✅ P0 SECURITY: Check for prototype pollution attempts
+            // ✅ P0 SECURITY: Deep check for prototype pollution (recursive)
             const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
-            for (const key of dangerousKeys) {
-                if (key in state) {
-                    this.log(`❌ Validation failed: dangerous key "${key}" detected`, 'error');
-                    return false;
+
+            /**
+             * Recursively check object for dangerous keys
+             * @param {Object} obj - Object to check
+             * @param {string} path - Current path (for debugging)
+             * @returns {boolean} True if safe
+             */
+            const checkObjectSafety = (obj, path = 'root') => {
+                if (!obj || typeof obj !== 'object') {
+                    return true;
                 }
+
+                // Check current level for dangerous keys
+                for (const key of dangerousKeys) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        this.log(`❌ Validation failed: dangerous key "${key}" at ${path}`, 'error');
+                        return false;
+                    }
+                }
+
+                // Recursively check nested objects and arrays
+                for (const key of Object.keys(obj)) {
+                    const value = obj[key];
+
+                    if (Array.isArray(value)) {
+                        // Check array elements
+                        for (let i = 0; i < value.length; i++) {
+                            if (!checkObjectSafety(value[i], `${path}.${key}[${i}]`)) {
+                                return false;
+                            }
+                        }
+                    } else if (value && typeof value === 'object') {
+                        // Check nested object
+                        if (!checkObjectSafety(value, `${path}.${key}`)) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            };
+
+            if (!checkObjectSafety(state)) {
+                return false;
             }
 
             // ✅ P0 SECURITY: Validate expected data types

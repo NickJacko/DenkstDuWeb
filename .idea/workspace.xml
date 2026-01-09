@@ -5,8 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update Firebase configuration in HTML files for security compliance">
+      <change afterPath="$PROJECT_DIR$/docs/APP_CHECK_RECAPTCHA_SETUP.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/firebase-config.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/GameState.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/GameState.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -127,23 +128,7 @@
       <workItem from="1767609144829" duration="68000" />
       <workItem from="1767771199341" duration="31527000" />
       <workItem from="1767865110916" duration="17234000" />
-      <workItem from="1767952682710" duration="5876000" />
-    </task>
-    <task id="LOCAL-00043" summary="Backup">
-      <option name="closed" value="true" />
-      <created>1762783404926</created>
-      <option name="number" value="00043" />
-      <option name="presentableId" value="LOCAL-00043" />
-      <option name="project" value="LOCAL" />
-      <updated>1762783404926</updated>
-    </task>
-    <task id="LOCAL-00044" summary="Change from html to js &amp; html">
-      <option name="closed" value="true" />
-      <created>1763020372212</created>
-      <option name="number" value="00044" />
-      <option name="presentableId" value="LOCAL-00044" />
-      <option name="project" value="LOCAL" />
-      <updated>1763020372212</updated>
+      <workItem from="1767952682710" duration="9170000" />
     </task>
     <task id="LOCAL-00045" summary="Change from html to js &amp; html">
       <option name="closed" value="true" />
@@ -521,7 +506,23 @@
       <option name="project" value="LOCAL" />
       <updated>1767959439633</updated>
     </task>
-    <option name="localTasksCounter" value="92" />
+    <task id="LOCAL-00092" summary="Update Firebase configuration in HTML files for security compliance">
+      <option name="closed" value="true" />
+      <created>1767960237492</created>
+      <option name="number" value="00092" />
+      <option name="presentableId" value="LOCAL-00092" />
+      <option name="project" value="LOCAL" />
+      <updated>1767960237493</updated>
+    </task>
+    <task id="LOCAL-00093" summary="Update Firebase configuration in HTML files for security compliance">
+      <option name="closed" value="true" />
+      <created>1767962938777</created>
+      <option name="number" value="00093" />
+      <option name="presentableId" value="LOCAL-00093" />
+      <option name="project" value="LOCAL" />
+      <updated>1767962938777</updated>
+    </task>
+    <option name="localTasksCounter" value="94" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
