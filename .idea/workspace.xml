@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Enhance accessibility and security across HTML files with ARIA roles, improved error handling, and age verification features">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor HTML structure for category and difficulty selection, enhance accessibility with ARIA roles, and improve Firebase initialization error handling">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-config.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
     </list>
@@ -129,15 +129,7 @@
       <workItem from="1767609144829" duration="68000" />
       <workItem from="1767771199341" duration="31527000" />
       <workItem from="1767865110916" duration="17234000" />
-      <workItem from="1767952682710" duration="24078000" />
-    </task>
-    <task id="LOCAL-00050" summary="Change from html to js &amp; html">
-      <option name="closed" value="true" />
-      <created>1763038231860</created>
-      <option name="number" value="00050" />
-      <option name="presentableId" value="LOCAL-00050" />
-      <option name="project" value="LOCAL" />
-      <updated>1763038231862</updated>
+      <workItem from="1767952682710" duration="24761000" />
     </task>
     <task id="LOCAL-00051" summary="Change from html to js &amp; html">
       <option name="closed" value="true" />
@@ -523,7 +515,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768147091623</updated>
     </task>
-    <option name="localTasksCounter" value="99" />
+    <task id="LOCAL-00099" summary="Refactor HTML structure for category and difficulty selection, enhance accessibility with ARIA roles, and improve Firebase initialization error handling">
+      <option name="closed" value="true" />
+      <created>1768147873072</created>
+      <option name="number" value="00099" />
+      <option name="presentableId" value="LOCAL-00099" />
+      <option name="project" value="LOCAL" />
+      <updated>1768147873072</updated>
+    </task>
+    <option name="localTasksCounter" value="100" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -544,7 +544,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="difficulty-selection.html update" />
     <MESSAGE value="Gamestate change" />
     <MESSAGE value="Gameplay change" />
     <MESSAGE value="MDS change" />
@@ -569,7 +568,8 @@
     <MESSAGE value="Update script tags to use 'defer' for improved loading performance" />
     <MESSAGE value="Update Firebase configuration in HTML files for security compliance" />
     <MESSAGE value="Enhance accessibility and security across HTML files with ARIA roles, improved error handling, and age verification features" />
-    <option name="LAST_COMMIT_MESSAGE" value="Enhance accessibility and security across HTML files with ARIA roles, improved error handling, and age verification features" />
+    <MESSAGE value="Refactor HTML structure for category and difficulty selection, enhance accessibility with ARIA roles, and improve Firebase initialization error handling" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor HTML structure for category and difficulty selection, enhance accessibility with ARIA roles, and improve Firebase initialization error handling" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

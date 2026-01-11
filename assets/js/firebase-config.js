@@ -661,6 +661,7 @@
                 window.firebaseDatabase = database;
 
                 isInitialized = true;
+                window.firebaseInitialized = true; // ✅ FIX: Set global flag for other scripts
 
                 if (isDevelopment) {
                     console.log('%c✅ Firebase services ready',
