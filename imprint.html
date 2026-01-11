@@ -27,13 +27,17 @@
 </head>
 <body>
 <div class="imprint-container">
-    <a href="index.html" class="back-button">
+    <a href="/" class="back-button" tabindex="0" aria-label="Zurück zur Startseite">
         ← Zurück zur Startseite
     </a>
 
     <header class="imprint-header">
         <h1>📋 Impressum</h1>
         <p class="header-subtitle">Angaben gemäß § 5 TMG (Telemediengesetz)</p>
+        <nav class="quick-links" aria-label="Schnellzugriff">
+            <a href="/privacy.html" tabindex="0">📄 Datenschutzerklärung</a> |
+            <a href="/privacy-new-sections.html#jugendschutz" tabindex="0">🔞 Jugendschutz</a>
+        </nav>
     </header>
 
     <main class="imprint-content">
@@ -173,7 +177,7 @@
                 Wir behalten uns vor, dieses Impressum bei Bedarf anzupassen, um es rechtlichen Anforderungen oder Änderungen unseres Angebots anzupassen.
             </p>
             <p>
-                <strong>Letzte Aktualisierung:</strong> 8. Januar 2026
+                <strong>Letzte Aktualisierung:</strong> 11. Januar 2026
             </p>
         </section>
 
@@ -185,7 +189,7 @@
                     Falls Sie der Meinung sind, dass Inhalte auf dieser Website Ihre Rechte verletzen, kontaktieren Sie uns bitte umgehend:
                 </p>
                 <p>
-                    <strong>E-Mail:</strong> <a href="mailto:legal@no-cap.app">legal@no-cap.app</a><br>
+                    <strong>E-Mail:</strong> <a href="mailto:Nickjacklin99@web.de">Nickjacklin99@web.de</a><br>
                     <strong>Betreff:</strong> "Rechtsverletzung - No-Cap"
                 </p>
                 <p>
@@ -194,37 +198,54 @@
             </div>
         </section>
 
-        <!-- Checkliste für Betreiber -->
-        <section id="checkliste">
-            <h2>✅ Checkliste für Sie als Betreiber</h2>
-            <div class="success-box">
-                <p><strong>Bevor Sie diese Website veröffentlichen, stellen Sie sicher, dass:</strong></p>
+        <!-- DSGVO: Datenschutzanfragen & Löschrecht -->
+        <section id="datenschutz-anfragen">
+            <h2>🔒 Datenschutzanfragen & Ihre Rechte</h2>
+            <div class="info-box">
+                <p>
+                    Sie haben gemäß der Datenschutz-Grundverordnung (DSGVO) folgende Rechte:
+                </p>
                 <ul>
-                    <li>✅ Alle Platzhalter-Daten ([...]) durch Ihre echten Daten ersetzt wurden</li>
-                    <li>✅ Name, Adresse, E-Mail und (falls vorhanden) Telefonnummer korrekt sind</li>
-                    <li>✅ Die USt-IdNr. korrekt ist (oder der Abschnitt entfernt wurde, falls nicht zutreffend)</li>
-                    <li>✅ Sie die Datenschutzerklärung ebenfalls ausgefüllt haben (privacy.html)</li>
-                    <li>✅ Alle Links im Impressum funktionieren</li>
+                    <li><strong>Auskunft:</strong> Sie können Auskunft über Ihre bei uns gespeicherten Daten verlangen (Art. 15 DSGVO)</li>
+                    <li><strong>Berichtigung:</strong> Sie können die Berichtigung unrichtiger Daten verlangen (Art. 16 DSGVO)</li>
+                    <li><strong>Löschung:</strong> Sie können die Löschung Ihrer Daten verlangen ("Recht auf Vergessenwerden", Art. 17 DSGVO)</li>
+                    <li><strong>Einschränkung:</strong> Sie können die Einschränkung der Verarbeitung verlangen (Art. 18 DSGVO)</li>
+                    <li><strong>Datenübertragbarkeit:</strong> Sie können Ihre Daten in einem strukturierten Format erhalten (Art. 20 DSGVO)</li>
+                    <li><strong>Widerspruch:</strong> Sie können der Verarbeitung Ihrer Daten widersprechen (Art. 21 DSGVO)</li>
                 </ul>
             </div>
 
+            <div class="contact-info">
+                <p>
+                    <strong>Kontakt für Datenschutzanfragen:</strong><br>
+                    📧 E-Mail: <a href="mailto:Nickjacklin99@web.de?subject=Datenschutzanfrage - No-Cap">Nickjacklin99@web.de</a><br>
+                    <strong>Betreff:</strong> "Datenschutzanfrage - No-Cap"
+                </p>
+                <p>
+                    <strong>Reaktionszeit:</strong> Wir werden Ihre Anfrage innerhalb von 30 Tagen bearbeiten, wie in Art. 12 Abs. 3 DSGVO vorgeschrieben.
+                </p>
+            </div>
+
             <div class="warning-box">
-                <p><strong>⚠️ Rechtliche Hinweise:</strong></p>
-                <ul>
-                    <li>Dieses Impressum ist eine <strong>Vorlage</strong> und keine Rechtsberatung</li>
-                    <li>Für besondere Situationen (z.B. reglementierte Berufe, bestimmte Geschäftsmodelle) können zusätzliche Angaben erforderlich sein</li>
-                    <li>Im Zweifelsfall konsultieren Sie einen Rechtsanwalt für Medienrecht</li>
-                    <li>Weitere Informationen: <a href="https://www.e-recht24.de/impressum-generator.html" target="_blank" rel="noopener noreferrer">e-recht24.de Impressum-Generator</a></li>
-                </ul>
+                <p><strong>⚠️ Wichtig:</strong></p>
+                <p>
+                    Für vollständige Informationen zur Datenverarbeitung lesen Sie bitte unsere:
+                </p>
+                <p>
+                    📄 <a href="/privacy.html" class="inline-link"><strong>Datenschutzerklärung</strong></a><br>
+                    🔞 <a href="/privacy-new-sections.html#jugendschutz" class="inline-link"><strong>Jugendschutz-Hinweise</strong></a>
+                </p>
             </div>
         </section>
     </main>
 
     <footer class="imprint-footer">
         <div class="footer-navigation">
-            <a href="index.html" class="footer-nav-link">← Startseite</a>
-            <a href="privacy.html" class="footer-nav-link">Datenschutz →</a>
+            <a href="/" class="footer-nav-link" tabindex="0">← Startseite</a>
+            <a href="/privacy.html" class="footer-nav-link" tabindex="0">📄 Datenschutz</a>
+            <a href="/privacy-new-sections.html#jugendschutz" class="footer-nav-link" tabindex="0">🔞 Jugendschutz</a>
         </div>
+        <p class="footer-copyright">© 2026 Nick-Mark Jacklin | No-Cap Party Game</p>
     </footer>
 </div>
 

@@ -178,7 +178,11 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' https://*.firebaseio.com https://www.gstatic.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.firebaseio.com https://www.googleapis.com wss://*.firebaseio.com; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+            "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://firebase.googleapis.com https://www.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://firebasestorage.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com wss://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+          },
+          {
+            "key": "Set-Cookie",
+            "value": "SameSite=Lax; Secure"
           }
         ]
       },
@@ -234,6 +238,7 @@
         "type": 301
       }
     ],
+    "appAssociation": "AUTO",
     "i18n": {
       "root": "/"
     }

@@ -311,7 +311,8 @@
 }
 
 .responsibility-info,
-.help-section {
+.help-section,
+.privacy-notice {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 15px;
     padding: 20px;
@@ -319,10 +320,48 @@
 }
 
 .responsibility-info h4,
-.help-section h4 {
+.help-section h4,
+.privacy-notice h4 {
     font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 15px;
+}
+
+.privacy-notice ul {
+    list-style: none;
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+.privacy-notice li {
+    padding: 5px 0;
+    position: relative;
+}
+
+.privacy-notice li::before {
+    content: "•";
+    position: absolute;
+    left: -15px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.privacy-notice p {
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.privacy-notice strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.privacy-links {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .responsibility-info ul {

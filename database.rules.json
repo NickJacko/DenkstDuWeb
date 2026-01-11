@@ -1,173 +1,148 @@
 {
   "rules": {
-    // ===================================
-    // 📚 QUESTIONS COLLECTION
-    // ✅ P0 SECURITY: Read-only access for authenticated users
-    // ✅ P2 PERFORMANCE: Indexed for category and difficulty queries
-    // ===================================
-    "questions": {
-      ".read": "auth != null",
-      ".write": false,
+    ".read": false,
+    ".write": false,
 
-      "fsk0": {
-        ".read": "auth != null",
-        ".write": false,
-        ".indexOn": ["category", "difficulty", "type"]
-      },
-      "fsk16": {
-        ".read": "auth != null",
-        ".write": false,
-        ".indexOn": ["category", "difficulty", "type"]
-      },
-      "fsk18": {
-        ".read": "auth != null",
-        ".write": false,
-        ".indexOn": ["category", "difficulty", "type"]
-      },
-      "special": {
-        ".read": "auth != null",
-        ".write": false,
-        ".indexOn": ["category", "difficulty", "type"]
-      }
-    },
-
-    // ===================================
-    // 🎮 GAMES COLLECTION
-    // ✅ P0 SECURITY: Host-only write access for game settings
-    // ✅ P2 PERFORMANCE: Indexed for queries
-    // ===================================
     "games": {
-      ".read": "auth != null",
-      ".indexOn": ["createdAt", "status", "hostId"],
-
       "$gameId": {
-        ".read": "auth != null",
-        ".write": "!data.exists() && auth != null",
+        ".read": "auth != null && (
+          data.child('players').child(auth.uid).exists() ||
+          data.child('hostId').val() === auth.uid
+        )",
 
-        // ===================================
-        // HOST-ONLY FIELDS
-        // ===================================
+        ".write": "auth != null && (
+          !data.exists() ||
+          data.child('hostId').val() === auth.uid
+        )",
+
         "hostId": {
-          ".write": "!data.exists() && auth != null"
-        },
-        "status": {
-          ".write": "data.parent().child('hostId').val() === auth.uid"
-        },
-        "settings": {
-          ".write": "data.parent().child('hostId').val() === auth.uid"
-        },
-        "currentQuestion": {
-          ".write": "data.parent().child('hostId').val() === auth.uid"
-        },
-        "roundNumber": {
-          ".write": "data.parent().child('hostId').val() === auth.uid"
+          ".validate": "newData.isString() && newData.val().length > 0"
         },
 
-        // ===================================
-        // PLAYERS COLLECTION
-        // ✅ P0 SECURITY: Players can only write their own data
-        // ✅ P2 PERFORMANCE: Indexed for online status queries
-        // ===================================
+        "gameCode": {
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)"
+        },
+
+        "phase": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isString() && (
+            newData.val() === 'lobby' ||
+            newData.val() === 'playing' ||
+            newData.val() === 'results' ||
+            newData.val() === 'finished'
+          )"
+        },
+
+        "currentQuestionIndex": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+
+        "scores": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid"
+        },
+
+        "difficulty": {
+          ".validate": "newData.isString() && (
+            newData.val() === 'easy' ||
+            newData.val() === 'medium' ||
+            newData.val() === 'hard'
+          )"
+        },
+
+        "alcoholMode": {
+          ".validate": "newData.isBoolean()"
+        },
+
+        "selectedCategories": {
+          ".validate": "newData.hasChildren()",
+          "$category": {
+            ".validate": "newData.isString() && (
+              newData.val() === 'fsk0' ||
+              newData.val() === 'fsk16' ||
+              newData.val() === 'fsk18' ||
+              newData.val() === 'special'
+            )"
+          }
+        },
+
         "players": {
-          ".indexOn": ["isOnline", "joinedAt", "score"],
-
           "$playerId": {
-            ".read": "auth != null",
-            ".write": "(
-              // Allow creation if doesn't exist
-              !data.exists() && auth != null
-            ) || (
-              // Allow update only by player themselves
-              auth.uid === $playerId
-            ) || (
-              // Allow host to kick players
-              data.parent().parent().child('hostId').val() === auth.uid && !newData.exists()
+            ".write": "auth != null && (
+              $playerId === auth.uid ||
+              root.child('games').child($gameId).child('hostId').val() === auth.uid
             )",
 
-            // ===================================
-            // PLAYER-SPECIFIC FIELDS
-            // ===================================
-            "answer": {
-              ".write": "auth.uid === $playerId"
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 15"
             },
-            "guess": {
-              ".write": "auth.uid === $playerId"
+
+            "isPremium": {
+              ".write": "auth != null && $playerId === auth.uid",
+              ".validate": "newData.isBoolean()"
             },
+
+            "isHost": {
+              ".validate": "newData.isBoolean()"
+            },
+
             "isReady": {
-              ".write": "auth.uid === $playerId"
+              ".validate": "newData.isBoolean()"
             },
-            "isOnline": {
-              ".write": "auth.uid === $playerId"
-            },
-            "lastSeen": {
-              ".write": "auth.uid === $playerId"
-            },
-            "score": {
-              ".write": "auth.uid === $playerId || data.parent().parent().parent().child('hostId').val() === auth.uid"
+
+            "joinedAt": {
+              ".validate": "newData.isNumber()"
             }
           }
         },
 
-        // ===================================
-        // ANSWERS COLLECTION (read-only after submission)
-        // ===================================
-        "answers": {
-          ".indexOn": ["submittedAt"],
-
-          "$playerId": {
-            ".read": "auth != null",
-            ".write": "!data.exists() && auth.uid === $playerId"
-          }
+        "createdAt": {
+          ".validate": "newData.isNumber()"
         },
 
-        // ===================================
-        // RESULTS (Host-only write)
-        // ===================================
-        "results": {
-          ".read": "auth != null",
-          ".write": "data.parent().child('hostId').val() === auth.uid"
+        "lastActivity": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "ttl": {
+          ".validate": "newData.isNumber()"
         }
       }
     },
 
-    // ===================================
-    // 👤 USER METADATA
-    // ✅ P0 SECURITY: Users can only read/write their own data
-    // ✅ P1 STABILITY: Cached premium & age verification
-    // ===================================
+    "questions": {
+      ".read": "auth != null",
+      ".write": false,
+
+      "$category": {
+        ".validate": "$category === 'fsk0' || $category === 'fsk16' || $category === 'fsk18' || $category === 'special'"
+      }
+    },
+
     "users": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
+      "$userId": {
+        ".read": "auth != null && auth.uid === $userId",
+        ".write": "auth != null && auth.uid === $userId",
 
-        "profile": {
-          ".validate": "newData.hasChildren(['displayName'])"
+        "isPremium": {
+          ".validate": "newData.isBoolean()"
         },
 
-        "meta": {
-          "isPremium": {
-            ".write": false
-          },
-          "ageLevel": {
-            ".write": "auth != null && auth.uid === $uid"
-          },
-          "lastRefresh": {
-            ".write": "auth != null && auth.uid === $uid"
-          }
+        "ageVerified": {
+          ".validate": "newData.isBoolean()"
+        },
+
+        "ageLevel": {
+          ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 16 || newData.val() === 18)"
+        },
+
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "lastLogin": {
+          ".validate": "newData.isNumber()"
         }
-      }
-    },
-
-    // ===================================
-    // 📊 STATISTICS (Optional)
-    // ✅ P2 PERFORMANCE: Indexed for leaderboards
-    // ===================================
-    "statistics": {
-      ".indexOn": ["score", "gamesPlayed", "wins"],
-
-      "$uid": {
-        ".read": true,
-        ".write": "auth != null && auth.uid === $uid"
       }
     }
   }

@@ -10,6 +10,74 @@
         window.location.hostname.includes('192.168.');
 
     // ============================================================================
+    // 🎯 P1 STABILITY: EVENT LISTENER REGISTRY
+    // ============================================================================
+
+    /**
+     * ✅ P1 STABILITY: Central event listener registry
+     * Prevents memory leaks by tracking and cleaning up event listeners
+     */
+    const eventListenerRegistry = {
+        listeners: [],
+
+        /**
+         * Register an event listener
+         * @param {EventTarget} element - Target element
+         * @param {string} event - Event type
+         * @param {Function} handler - Event handler
+         * @param {Object} options - Event listener options
+         */
+        add(element, event, handler, options = {}) {
+            if (!element || !event || !handler) {
+                console.warn('Invalid event listener parameters');
+                return;
+            }
+
+            element.addEventListener(event, handler, options);
+            this.listeners.push({ element, event, handler, options });
+
+            if (isDevelopment) {
+                console.log(`📌 Registered listener: ${event} on`, element);
+            }
+        },
+
+        /**
+         * Remove all registered event listeners
+         */
+        removeAll() {
+            this.listeners.forEach(({ element, event, handler, options }) => {
+                try {
+                    element.removeEventListener(event, handler, options);
+                } catch (error) {
+                    console.warn('Error removing event listener:', error);
+                }
+            });
+
+            const count = this.listeners.length;
+            this.listeners = [];
+
+            if (isDevelopment) {
+                console.log(`🧹 Cleaned up ${count} event listeners`);
+            }
+        },
+
+        /**
+         * Remove specific event listener
+         * @param {EventTarget} element - Target element
+         * @param {string} event - Event type
+         */
+        remove(element, event) {
+            this.listeners = this.listeners.filter(listener => {
+                if (listener.element === element && listener.event === event) {
+                    element.removeEventListener(event, listener.handler, listener.options);
+                    return false;
+                }
+                return true;
+            });
+        }
+    };
+
+    // ============================================================================
     // 🛡️ P0 SECURITY: SANITIZATION HELPERS
     // ============================================================================
 
@@ -181,7 +249,59 @@
         // P1 FIX: Trap focus in modal
         if (window.NocapUtils && window.NocapUtils.trapFocus) {
             window.NocapUtils.trapFocus(modalContent);
+        } else {
+            // Fallback: Basic focus trap
+            setupModalFocusTrap(modalContent);
         }
+
+        // ✅ P1 UI/UX: Close on Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closePrivacyModal();
+            }
+        };
+        eventListenerRegistry.add(document, 'keydown', escapeHandler);
+
+        // ✅ P1 UI/UX: Focus first interactive element
+        requestAnimationFrame(() => {
+            const firstButton = modalContent.querySelector('button, a');
+            if (firstButton) {
+                firstButton.focus();
+            }
+        });
+    }
+
+    /**
+     * ✅ P1 UI/UX: Basic modal focus trap fallback
+     * @param {HTMLElement} modalContent - Modal content element
+     */
+    function setupModalFocusTrap(modalContent) {
+        const focusableElements = modalContent.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        const trapHandler = (e) => {
+            if (e.key !== 'Tab') return;
+
+            if (e.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+
+        eventListenerRegistry.add(modalContent, 'keydown', trapHandler);
     }
 
     /**
@@ -705,7 +825,12 @@
         button.id = 'privacy-back-to-top';
         button.className = 'back-to-top hidden';
         button.setAttribute('aria-label', 'Zurück nach oben');
-        button.innerHTML = '<span aria-hidden="true">↑</span>';
+
+        // ✅ P0 SECURITY: Use textContent instead of innerHTML
+        const icon = document.createElement('span');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = '↑';
+        button.appendChild(icon);
 
         document.body.appendChild(button);
 
@@ -782,6 +907,9 @@
      */
     function exportUserData() {
         try {
+            // ✅ P1 UI/UX: Show loading indicator
+            showExportProgress(true);
+
             const userData = {
                 meta: {
                     exportDate: new Date().toISOString(),
@@ -793,12 +921,21 @@
                     date: localStorage.getItem('nocap_privacy_date'),
                     version: localStorage.getItem('nocap_privacy_version')
                 },
-                gameState: null
+                gameState: null,
+                localStorage: {}
             };
 
             // Add GameState if available
             if (window.gameState && typeof window.gameState.getDebugInfo === 'function') {
                 userData.gameState = window.gameState.getDebugInfo();
+            }
+
+            // ✅ P1 DSGVO: Export all nocap_* localStorage items
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('nocap_')) {
+                    userData.localStorage[key] = localStorage.getItem(key);
+                }
             }
 
             // Create and download file
@@ -816,6 +953,9 @@
             // Clean up URL
             URL.revokeObjectURL(link.href);
 
+            // Hide loading indicator
+            showExportProgress(false);
+
             // Show confirmation
             if (window.NocapUtils) {
                 window.NocapUtils.showNotification(
@@ -826,11 +966,13 @@
             }
 
             if (isDevelopment) {
-                console.log('✅ User data exported');
+                console.log('✅ User data exported', userData);
             }
 
         } catch (error) {
             console.error('❌ Error exporting user data:', error);
+
+            showExportProgress(false);
 
             if (window.NocapUtils) {
                 window.NocapUtils.showNotification(
@@ -838,6 +980,145 @@
                     'error'
                 );
             }
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Show/hide export progress indicator
+     * @param {boolean} show - Whether to show or hide
+     */
+    function showExportProgress(show) {
+        let indicator = document.getElementById('privacy-export-progress');
+
+        if (show && !indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'privacy-export-progress';
+            indicator.className = 'export-progress';
+            indicator.setAttribute('role', 'status');
+            indicator.setAttribute('aria-live', 'polite');
+
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            spinner.setAttribute('aria-hidden', 'true');
+
+            const text = document.createElement('p');
+            text.textContent = 'Daten werden exportiert...';
+
+            indicator.appendChild(spinner);
+            indicator.appendChild(text);
+            document.body.appendChild(indicator);
+
+            requestAnimationFrame(() => {
+                indicator.classList.add('visible');
+            });
+        } else if (!show && indicator) {
+            indicator.classList.remove('visible');
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 300);
+        }
+    }
+
+    /**
+     * ✅ P1 DSGVO: Delete all user data (GDPR Art. 17)
+     */
+    function deleteAllUserData() {
+        // Confirmation dialog
+        const confirmed = confirm(
+            '⚠️ WARNUNG: Alle Ihre gespeicherten Daten werden unwiderruflich gelöscht!\n\n' +
+            'Dies umfasst:\n' +
+            '• Spielstände und Statistiken\n' +
+            '• Datenschutz-Einstellungen\n' +
+            '• Cookie-Präferenzen\n' +
+            '• Altersverifikation\n\n' +
+            'Möchten Sie wirklich fortfahren?'
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            // Clear all game data
+            clearAllGameData();
+
+            // Clear privacy consent
+            revokePrivacyConsentSilent();
+
+            // Clear cookie consent
+            if (window.NocapCookies && typeof window.NocapCookies.revokeConsent === 'function') {
+                window.NocapCookies.revokeConsent();
+            }
+
+            // Clear all nocap_* items
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('nocap_')) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+
+            // Show success message
+            if (window.NocapUtils) {
+                window.NocapUtils.showNotification(
+                    '✅ Alle Daten wurden gelöscht.',
+                    'success',
+                    5000
+                );
+            } else {
+                alert('✅ Alle Daten wurden gelöscht.');
+            }
+
+            if (isDevelopment) {
+                console.log('✅ All user data deleted');
+            }
+
+            // Redirect to home after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+
+        } catch (error) {
+            console.error('❌ Error deleting user data:', error);
+
+            if (window.NocapUtils) {
+                window.NocapUtils.showNotification(
+                    'Fehler beim Löschen der Daten',
+                    'error'
+                );
+            }
+        }
+    }
+
+    /**
+     * ✅ P1 DSGVO: Generate deletion request email
+     */
+    function generateDeletionRequestEmail() {
+        const subject = encodeURIComponent('Löschantrag gemäß Art. 17 DSGVO - No-Cap');
+        const body = encodeURIComponent(
+            'Sehr geehrte Damen und Herren,\n\n' +
+            'hiermit beantrage ich gemäß Art. 17 DSGVO die Löschung aller mich betreffenden personenbezogenen Daten.\n\n' +
+            'Betroffene Daten:\n' +
+            '• Spielstände und Statistiken\n' +
+            '• Altersverifikations-Daten\n' +
+            '• Sonstige gespeicherte Nutzerdaten\n\n' +
+            'Datum der Anfrage: ' + new Date().toLocaleDateString('de-DE') + '\n\n' +
+            'Mit freundlichen Grüßen'
+        );
+
+        const mailtoLink = `mailto:Nickjacklin99@web.de?subject=${subject}&body=${body}`;
+        window.location.href = mailtoLink;
+
+        if (window.NocapUtils) {
+            window.NocapUtils.showNotification(
+                'E-Mail-Programm wird geöffnet...',
+                'info',
+                3000
+            );
         }
     }
 
@@ -902,6 +1183,9 @@
             // Add back-to-top button
             addBackToTopButton();
 
+            // ✅ P0 SECURITY: Setup event delegation for action buttons
+            setupActionButtons();
+
             // Handle URL hash on load
             if (window.location.hash) {
                 const hash = window.location.hash.substring(1);
@@ -916,6 +1200,90 @@
 
         } catch (error) {
             console.error('❌ Error initializing privacy page UI:', error);
+        }
+    }
+
+    /**
+     * ✅ P0 SECURITY: Setup action buttons with event delegation
+     */
+    function setupActionButtons() {
+        // Event delegation for all action buttons
+        eventListenerRegistry.add(document, 'click', (event) => {
+            const target = event.target.closest('[data-action]');
+            if (!target) return;
+
+            const action = target.getAttribute('data-action');
+
+            switch (action) {
+                case 'reset-cookies':
+                    event.preventDefault();
+                    handleCookieReset();
+                    break;
+
+                case 'revoke-consent':
+                    event.preventDefault();
+                    revokePrivacyConsent();
+                    break;
+
+                case 'export-data':
+                    event.preventDefault();
+                    exportUserData();
+                    break;
+
+                case 'delete-data':
+                    event.preventDefault();
+                    deleteAllUserData();
+                    break;
+
+                case 'request-deletion':
+                    event.preventDefault();
+                    generateDeletionRequestEmail();
+                    break;
+
+                default:
+                    if (isDevelopment) {
+                        console.warn('Unknown action:', action);
+                    }
+            }
+        });
+    }
+
+    /**
+     * ✅ P1 UI/UX: Handle cookie reset button click
+     */
+    function handleCookieReset() {
+        if (window.NocapCookies && typeof window.NocapCookies.revokeConsent === 'function') {
+            window.NocapCookies.revokeConsent();
+
+            // Reinitialize cookie banner
+            if (typeof window.NocapCookies.reinitialize === 'function') {
+                setTimeout(() => {
+                    window.NocapCookies.reinitialize();
+                }, 500);
+            }
+
+            // Show success message
+            if (window.NocapUtils && typeof window.NocapUtils.showNotification === 'function') {
+                window.NocapUtils.showNotification(
+                    'Cookie-Einstellungen zurückgesetzt. Sie werden nun erneut gefragt.',
+                    'success',
+                    3000
+                );
+            }
+        } else {
+            // Fallback: Manually remove cookie consent
+            localStorage.removeItem('nocap_cookie_consent');
+            localStorage.removeItem('cookieConsent');
+
+            if (window.NocapUtils && typeof window.NocapUtils.showNotification === 'function') {
+                window.NocapUtils.showNotification(
+                    'Cookie-Einstellungen gelöscht. Bitte laden Sie die Seite neu.',
+                    'info',
+                    5000
+                );
+            } else {
+                alert('Cookie-Einstellungen gelöscht. Bitte laden Sie die Seite neu.');
+            }
         }
     }
 

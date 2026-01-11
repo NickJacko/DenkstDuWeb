@@ -8,15 +8,10 @@
     <!-- ✅ SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
-    <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
-    <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
-    <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
-    <meta name="firebase-project-id" content="denkstduwebsite">
-    <meta name="firebase-storage-bucket" content="denkstduwebsite.firebasestorage.app">
-    <meta name="firebase-messaging-sender-id" content="27029260611">
-    <meta name="firebase-app-id" content="1:27029260611:web:3c7da4db0bf92e8ce247f6">
-    <meta name="firebase-measurement-id" content="G-BNKNW95HK8">
+
+    <!-- ✅ FIREBASE CONFIG für Production -->
+    <!-- Config wird aus /firebase-client-config.json geladen (CSP-konform) -->
+
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -165,9 +160,11 @@
 
 <!-- Privacy Footer -->
 <div class="privacy-footer">
-    <a href="privacy.html" class="privacy-link" target="_blank" rel="noopener">Datenschutz</a>
+    <a href="/privacy.html" class="privacy-link" target="_blank" rel="noopener">Datenschutz</a>
     <span class="footer-separator" aria-hidden="true">•</span>
-    <a href="imprint.html" class="privacy-link" target="_blank" rel="noopener">Impressum</a>
+    <a href="/imprint.html" class="privacy-link" target="_blank" rel="noopener">Impressum</a>
+    <span class="footer-separator" aria-hidden="true">•</span>
+    <a href="/privacy-new-sections.html#jugendschutz" class="privacy-link" target="_blank" rel="noopener">Jugendschutz</a>
 </div>
 
     <!-- ✅ ERROR BOUNDARY: Global Error Handling -->

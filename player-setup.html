@@ -8,15 +8,10 @@
     <!-- ✅ SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
-    <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
-    <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
-    <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
-    <meta name="firebase-project-id" content="denkstduwebsite">
-    <meta name="firebase-storage-bucket" content="denkstduwebsite.firebasestorage.app">
-    <meta name="firebase-messaging-sender-id" content="27029260611">
-    <meta name="firebase-app-id" content="1:27029260611:web:3c7da4db0bf92e8ce247f6">
-    <meta name="firebase-measurement-id" content="G-BNKNW95HK8">
+
+    <!-- ✅ FIREBASE CONFIG für Production -->
+    <!-- Config wird aus /firebase-client-config.json geladen (CSP-konform) -->
+
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,6 +65,17 @@
     <p class="loading-text">Lade Fragen...</p>
 </div>
 
+<!-- ✅ P1 STABILITY: Offline-Modus Warnung -->
+<div class="offline-warning hidden" id="offline-warning" role="alert" aria-live="assertive">
+    <div class="offline-content">
+        <span class="offline-icon" aria-hidden="true">📡</span>
+        <div class="offline-text">
+            <strong>Offline-Modus aktiv</strong>
+            <p>Firebase nicht erreichbar. Verwende lokale Fragen-Datenbank.</p>
+        </div>
+    </div>
+</div>
+
 <!-- App Container -->
 <div class="app-container">
     <div class="screen active">
@@ -114,12 +120,61 @@
                     <div class="privacy-notice-content">
                         <strong id="privacy-notice-title">Datenschutz-Hinweis</strong>
                         <p>
-                            Dein Name wird nur lokal auf diesem Gerät gespeichert und nach dem Spiel automatisch gelöscht.
-                            Avatare werden auf Firebase Storage hochgeladen und nach 24 Stunden automatisch gelöscht.
-                            <a href="privacy.html" target="_blank" rel="noopener" class="privacy-link-inline">
-                                Mehr erfahren
-                            </a>
+                            <strong>Lokale Speicherung:</strong> Dein Name wird nur lokal auf diesem Gerät gespeichert und nach dem Spiel automatisch gelöscht.
                         </p>
+                        <p>
+                            <strong>Avatare:</strong> Werden auf Firebase Storage hochgeladen und nach 24 Stunden automatisch gelöscht.
+                            Du kannst Avatare optional auch lokal speichern (siehe Einstellungen unten).
+                        </p>
+                        <details class="privacy-details">
+                            <summary>Mehr Informationen</summary>
+                            <ul>
+                                <li>Keine Weitergabe an Dritte</li>
+                                <li>Keine Tracking-Cookies</li>
+                                <li>Jederzeit widerrufbar durch Browserdaten-Löschung</li>
+                                <li>Altersverifikation gemäß JMStV (siehe Jugendschutz)</li>
+                            </ul>
+                        </details>
+                        <div class="privacy-links">
+                            <a href="/privacy.html" target="_blank" rel="noopener" class="privacy-link-inline">
+                                📄 Datenschutzerklärung
+                            </a>
+                            <a href="/privacy-new-sections.html#jugendschutz" target="_blank" rel="noopener" class="privacy-link-inline">
+                                🔞 Jugendschutz
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ✅ P1 DSGVO: Avatar-Speicherung Opt-In -->
+                <div class="avatar-storage-options" role="group" aria-labelledby="avatar-storage-title">
+                    <h4 id="avatar-storage-title">Avatar-Speicherung</h4>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="save-avatars-locally" class="privacy-checkbox">
+                        <label for="save-avatars-locally">
+                            Avatare lokal im Browser speichern (keine Cloud-Synchronisierung)
+                        </label>
+                    </div>
+                    <p class="help-text">
+                        <small>
+                            Wenn aktiviert, werden Avatare nur im Browser-Cache gespeichert und nicht auf Firebase hochgeladen.
+                            Dadurch funktionieren sie nur auf diesem Gerät.
+                        </small>
+                    </p>
+                </div>
+
+                <!-- ✅ P1 DSGVO/Jugendschutz: Altersfreigabe-Hinweis -->
+                <div class="age-rating-notice" role="alert" aria-live="polite">
+                    <span class="age-icon" aria-hidden="true">🔞</span>
+                    <div class="age-content">
+                        <strong>Jugendschutz-Hinweis</strong>
+                        <p>
+                            Einige Kategorien enthalten Inhalte ab 16 oder 18 Jahren.
+                            Bitte achte darauf, dass alle Spieler das entsprechende Alter haben.
+                        </p>
+                        <div class="selected-difficulty-info" id="difficulty-age-info">
+                            <!-- Wird dynamisch befüllt basierend auf gewählter Schwierigkeit -->
+                        </div>
                     </div>
                 </div>
 
@@ -325,15 +380,15 @@
 
                 <!-- Privacy Footer -->
                 <div class="privacy-footer">
-                    <a href="privacy.html" target="_blank" rel="noopener" class="privacy-link">
+                    <a href="/privacy.html" target="_blank" rel="noopener" class="privacy-link">
                         Datenschutzerklärung
                     </a>
                     <span class="footer-separator" aria-hidden="true">•</span>
-                    <a href="privacy.html#jugendschutz" target="_blank" rel="noopener" class="privacy-link">
+                    <a href="/privacy-new-sections.html#jugendschutz" target="_blank" rel="noopener" class="privacy-link">
                         Jugendschutz
                     </a>
                     <span class="footer-separator" aria-hidden="true">•</span>
-                    <a href="imprint.html" target="_blank" rel="noopener" class="privacy-link">
+                    <a href="/imprint.html" target="_blank" rel="noopener" class="privacy-link">
                         Impressum
                     </a>
                 </div>

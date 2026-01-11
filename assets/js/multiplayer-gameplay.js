@@ -78,6 +78,24 @@
     const _eventListeners = [];
     const _phaseListeners = new Map(); // Listeners specific to each phase
 
+    // ✅ P1 STABILITY: Reconnection and offline support
+    let connectionState = 'connected';
+    let reconnectAttempts = 0;
+    let maxReconnectAttempts = 5;
+    let offlineGameState = null; // Cached state for reconnection
+
+    // ✅ P1 UI/UX: Timer management with server sync
+    let questionTimer = null;
+    let timerAnimationFrame = null;
+    let timerStartTime = null;
+    let timerDuration = 30000; // 30 seconds default
+    let isPaused = false;
+    let pausedTimeRemaining = 0;
+
+    // ✅ P1 DSGVO: Data cleanup tracking
+    let answerCleanupScheduled = false;
+    const ANSWER_RETENTION_TIME = 5 * 60 * 1000; // 5 minutes
+
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
         window.location.hostname.includes('192.168.');
@@ -85,6 +103,149 @@
     // ===========================
     // ✅ P1 STABILITY: ERROR HANDLING
     // ===========================
+
+    /**
+     * ✅ P1 STABILITY: Monitor Firebase connection status
+     */
+    function setupConnectionMonitoring() {
+        const connectedRef = firebase.database().ref('.info/connected');
+        connectedRef.on('value', (snapshot) => {
+            if (snapshot.val() === true) {
+                if (connectionState === 'disconnected') {
+                    console.log('✅ Reconnected to Firebase');
+                    handleReconnection();
+                }
+                connectionState = 'connected';
+                reconnectAttempts = 0;
+                updateConnectionUI(true);
+            } else {
+                console.warn('⚠️ Disconnected from Firebase');
+                connectionState = 'disconnected';
+                handleDisconnection();
+                updateConnectionUI(false);
+            }
+        });
+    }
+
+    /**
+     * ✅ P1 STABILITY: Handle disconnection - save state offline
+     */
+    function handleDisconnection() {
+        // Cache current game state for recovery
+        offlineGameState = {
+            gameId: gameState.gameId,
+            playerId: gameState.playerId,
+            playerName: gameState.playerName,
+            isHost: gameState.isHost,
+            currentQuestionNumber,
+            currentPhase,
+            userAnswer,
+            userEstimation,
+            hasSubmittedThisRound,
+            currentQuestion,
+            timestamp: Date.now()
+        };
+
+        // Save to localStorage
+        if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
+            window.NocapUtils.setLocalStorage('nocap_offline_state', offlineGameState);
+        } else {
+            try {
+                localStorage.setItem('nocap_offline_state', JSON.stringify(offlineGameState));
+            } catch (e) {
+                console.warn('⚠️ Could not save offline state:', e);
+            }
+        }
+
+        if (isDevelopment) {
+            console.log('💾 Offline state saved:', offlineGameState);
+        }
+
+        showNotification('Verbindung unterbrochen - Daten werden lokal gespeichert', 'warning', 5000);
+    }
+
+    /**
+     * ✅ P1 STABILITY: Handle reconnection - restore state
+     */
+    async function handleReconnection() {
+        showNotification('Verbindung wiederhergestellt! Synchronisiere...', 'info', 3000);
+
+        // Try to restore from cached state
+        if (!offlineGameState) {
+            // Load from localStorage
+            if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
+                offlineGameState = window.NocapUtils.getLocalStorage('nocap_offline_state');
+            } else {
+                try {
+                    const stored = localStorage.getItem('nocap_offline_state');
+                    if (stored) {
+                        offlineGameState = JSON.parse(stored);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Could not load offline state:', e);
+                }
+            }
+        }
+
+        if (offlineGameState) {
+            // Check if state is still valid (less than 10 minutes old)
+            const age = Date.now() - offlineGameState.timestamp;
+            if (age < 10 * 60 * 1000) {
+                // Restore state
+                currentQuestionNumber = offlineGameState.currentQuestionNumber;
+                currentPhase = offlineGameState.currentPhase;
+                userAnswer = offlineGameState.userAnswer;
+                userEstimation = offlineGameState.userEstimation;
+                hasSubmittedThisRound = offlineGameState.hasSubmittedThisRound;
+                currentQuestion = offlineGameState.currentQuestion;
+
+                if (isDevelopment) {
+                    console.log('✅ Restored from offline state:', offlineGameState);
+                }
+
+                // Reload current round from Firebase
+                await loadRoundFromFirebase(currentQuestionNumber);
+
+                // Restore UI
+                updateGameDisplay();
+                showPhase(currentPhase);
+
+                showNotification('Spielstand wiederhergestellt! ✅', 'success', 3000);
+            } else {
+                console.warn('⚠️ Offline state too old, discarding');
+                offlineGameState = null;
+            }
+        }
+
+        // Clear offline state
+        if (window.NocapUtils && window.NocapUtils.removeLocalStorage) {
+            window.NocapUtils.removeLocalStorage('nocap_offline_state');
+        } else {
+            try {
+                localStorage.removeItem('nocap_offline_state');
+            } catch (e) {}
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Update connection indicator
+     */
+    function updateConnectionUI(isConnected) {
+        const indicator = document.getElementById('connection-indicator');
+        if (!indicator) return;
+
+        if (isConnected) {
+            indicator.classList.remove('disconnected');
+            indicator.classList.add('connected');
+            indicator.textContent = '🟢 Verbunden';
+            indicator.setAttribute('aria-label', 'Mit Server verbunden');
+        } else {
+            indicator.classList.remove('connected');
+            indicator.classList.add('disconnected');
+            indicator.textContent = '🔴 Offline';
+            indicator.setAttribute('aria-label', 'Vom Server getrennt');
+        }
+    }
 
     /**
      * ✅ P1 STABILITY: Handle Firebase errors with user-friendly UI feedback
@@ -148,24 +309,59 @@
     // P0 FIX: INPUT SANITIZATION
     // ===========================
 
+    /**
+     * ✅ P0 SECURITY: Sanitize with DOMPurify (required for XSS protection)
+     * @param {string} input - The input to sanitize
+     * @param {boolean} allowHtml - Whether to allow safe HTML (default: false)
+     * @returns {string} Sanitized text
+     */
+    function sanitizeWithDOMPurify(input, allowHtml = false) {
+        if (!input) return '';
+
+        if (typeof DOMPurify === 'undefined') {
+            console.error('❌ CRITICAL: DOMPurify not available!');
+            // Fallback to aggressive stripping
+            return String(input).replace(/<[^>]*>/g, '').substring(0, 500);
+        }
+
+        if (allowHtml) {
+            // Allow only safe HTML tags
+            return DOMPurify.sanitize(input, {
+                ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'span'],
+                ALLOWED_ATTR: []
+            });
+        }
+
+        // Strip all HTML
+        return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
+    }
+
     function sanitizeText(input) {
         if (!input) return '';
 
+        // Use DOMPurify first
+        const purified = sanitizeWithDOMPurify(input, false);
+
+        // Additional fallback with NocapUtils
         if (window.NocapUtils && window.NocapUtils.sanitizeInput) {
-            return window.NocapUtils.sanitizeInput(String(input));
+            return window.NocapUtils.sanitizeInput(purified).substring(0, 500);
         }
 
-        return String(input).replace(/<[^>]*>/g, '').substring(0, 500);
+        return purified.substring(0, 500);
     }
 
     function sanitizePlayerName(name) {
         if (!name) return 'Spieler';
 
+        // Use DOMPurify first
+        const purified = sanitizeWithDOMPurify(name, false);
+
+        // Additional fallback with NocapUtils
         if (window.NocapUtils && window.NocapUtils.sanitizeInput) {
-            return window.NocapUtils.sanitizeInput(String(name)).substring(0, 20);
+            return window.NocapUtils.sanitizeInput(purified).substring(0, 20);
         }
 
-        return String(name).replace(/<[^>]*>/g, '').substring(0, 20);
+        return purified.substring(0, 20);
     }
 
     // ===========================
@@ -319,6 +515,9 @@
         // Setup Firebase listeners
         await setupFirebaseListeners();
 
+        // ✅ P1 STABILITY: Setup connection monitoring
+        setupConnectionMonitoring();
+
         // Initialize UI
         updateGameDisplay();
         createNumberGrid();
@@ -464,6 +663,12 @@
             showOverallBtn.addEventListener('click', showOverallResults);
         }
 
+        // Pause button
+        const pauseTimerBtn = document.getElementById('pause-timer-btn');
+        if (pauseTimerBtn) {
+            pauseTimerBtn.addEventListener('click', pauseTimer);
+        }
+
         // Overall results controls
         const continueGameBtn = document.getElementById('continue-game-btn');
         if (continueGameBtn) {
@@ -475,8 +680,53 @@
             endGameBtn.addEventListener('click', endGameForAll);
         }
 
+        // ✅ P1 UI/UX: Keyboard shortcuts
+        setupKeyboardShortcuts();
+
         if (isDevelopment) {
             console.log('✅ Event listeners setup');
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Setup keyboard shortcuts for accessibility
+     */
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Only in question phase
+            if (currentPhase !== 'question' || hasSubmittedThisRound) return;
+
+            // Number keys 0-9 for estimation
+            if (e.key >= '0' && e.key <= '9') {
+                const number = parseInt(e.key);
+                const maxPlayers = totalPlayers || 8;
+                if (number <= maxPlayers) {
+                    selectNumber(number);
+                    e.preventDefault();
+                }
+            }
+
+            // Y for Yes
+            if (e.key.toLowerCase() === 'y' || e.key.toLowerCase() === 'j') {
+                selectAnswer(true);
+                e.preventDefault();
+            }
+
+            // N for No
+            if (e.key.toLowerCase() === 'n') {
+                selectAnswer(false);
+                e.preventDefault();
+            }
+
+            // Enter to submit
+            if (e.key === 'Enter' && userAnswer !== null && userEstimation !== null) {
+                submitAnswers();
+                e.preventDefault();
+            }
+        });
+
+        if (isDevelopment) {
+            console.log('⌨️ Keyboard shortcuts enabled');
         }
     }
 
@@ -529,6 +779,175 @@
     }
 
     // ===========================
+    // ✅ P1 UI/UX: TIMER MANAGEMENT WITH SERVER SYNC
+    // ===========================
+
+    /**
+     * ✅ P1 UI/UX: Start countdown timer with server timestamp
+     * @param {number} serverStartTime - Server timestamp when timer started
+     * @param {number} duration - Duration in milliseconds
+     */
+    function startTimer(serverStartTime, duration = timerDuration) {
+        stopTimer(); // Clear any existing timer
+
+        timerStartTime = serverStartTime || Date.now();
+        timerDuration = duration;
+        isPaused = false;
+
+        if (isDevelopment) {
+            console.log('⏱️ Starting timer:', { serverStartTime, duration });
+        }
+
+        updateTimerDisplay();
+    }
+
+    /**
+     * ✅ P2 PERFORMANCE: Update timer using requestAnimationFrame
+     */
+    function updateTimerDisplay() {
+        if (isPaused) return;
+
+        const now = Date.now();
+        const elapsed = now - timerStartTime;
+        const remaining = Math.max(0, timerDuration - elapsed);
+
+        // Update progress bar
+        const progressBar = document.getElementById('timer-progress');
+        if (progressBar) {
+            const percentage = (remaining / timerDuration) * 100;
+            progressBar.style.width = `${percentage}%`;
+
+            // Color coding
+            if (percentage > 50) {
+                progressBar.style.backgroundColor = '#4caf50'; // green
+            } else if (percentage > 25) {
+                progressBar.style.backgroundColor = '#ff9800'; // orange
+            } else {
+                progressBar.style.backgroundColor = '#f44336'; // red
+            }
+        }
+
+        // Update text display
+        const timerText = document.getElementById('timer-text');
+        if (timerText) {
+            const seconds = Math.ceil(remaining / 1000);
+            timerText.textContent = `${seconds}s`;
+        }
+
+        // Timer expired
+        if (remaining <= 0) {
+            stopTimer();
+            handleTimerExpired();
+            return;
+        }
+
+        // Continue animation
+        timerAnimationFrame = requestAnimationFrame(updateTimerDisplay);
+    }
+
+    /**
+     * ✅ P1 UI/UX: Stop timer
+     */
+    function stopTimer() {
+        if (timerAnimationFrame) {
+            cancelAnimationFrame(timerAnimationFrame);
+            timerAnimationFrame = null;
+        }
+
+        if (questionTimer) {
+            clearTimeout(questionTimer);
+            questionTimer = null;
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Pause timer (HOST ONLY)
+     */
+    async function pauseTimer() {
+        if (!validateHostRole('Timer pausieren')) {
+            return;
+        }
+
+        if (isPaused) {
+            // Resume
+            isPaused = false;
+            timerStartTime = Date.now() - (timerDuration - pausedTimeRemaining);
+
+            try {
+                await firebase.database().ref(`games/${gameState.gameId}`).update({
+                    timerPaused: false,
+                    timerStartTime: firebase.database.ServerValue.TIMESTAMP,
+                    timerRemaining: pausedTimeRemaining
+                });
+
+                showNotification('Timer fortgesetzt ▶️', 'info', 2000);
+                updateTimerDisplay();
+            } catch (error) {
+                handleFirebaseError(error, 'Timer fortsetzen', false);
+            }
+        } else {
+            // Pause
+            isPaused = true;
+            const now = Date.now();
+            const elapsed = now - timerStartTime;
+            pausedTimeRemaining = Math.max(0, timerDuration - elapsed);
+
+            stopTimer();
+
+            try {
+                await firebase.database().ref(`games/${gameState.gameId}`).update({
+                    timerPaused: true,
+                    timerRemaining: pausedTimeRemaining
+                });
+
+                showNotification('Timer pausiert ⏸️', 'warning', 2000);
+            } catch (error) {
+                handleFirebaseError(error, 'Timer pausieren', false);
+            }
+        }
+
+        updatePauseButton();
+    }
+
+    /**
+     * ✅ P1 UI/UX: Update pause button state
+     */
+    function updatePauseButton() {
+        const pauseBtn = document.getElementById('pause-timer-btn');
+        if (!pauseBtn) return;
+
+        if (isPaused) {
+            pauseBtn.textContent = '▶️ Fortsetzen';
+            pauseBtn.classList.add('paused');
+        } else {
+            pauseBtn.textContent = '⏸️ Pausieren';
+            pauseBtn.classList.remove('paused');
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Handle timer expiration
+     */
+    function handleTimerExpired() {
+        if (isDevelopment) {
+            console.log('⏱️ Timer expired!');
+        }
+
+        showNotification('Zeit abgelaufen! ⏰', 'warning', 3000);
+
+        // Auto-submit if not submitted yet
+        if (!hasSubmittedThisRound && userAnswer !== null && userEstimation !== null) {
+            submitAnswers();
+        } else if (!hasSubmittedThisRound) {
+            showNotification('Du hast nicht rechtzeitig geantwortet!', 'error', 3000);
+            // Submit empty answer to not block others
+            if (userAnswer === null) userAnswer = false;
+            if (userEstimation === null) userEstimation = 0;
+            submitAnswers();
+        }
+    }
+
+    // ===========================
     // ✅ P0 SECURITY: HOST VALIDATION
     // ===========================
 
@@ -561,6 +980,89 @@
                 });
             }
 
+            return false;
+        }
+
+        return true;
+    }
+
+    // ===========================
+    // ✅ P1 DSGVO: DATA MINIMIZATION & CLEANUP
+    // ===========================
+
+    /**
+     * ✅ P1 DSGVO: Schedule automatic deletion of answer data
+     * @param {number} roundNumber - The round number to clean up
+     */
+    function scheduleAnswerCleanup(roundNumber) {
+        if (answerCleanupScheduled) return;
+        if (!gameState.isHost) return; // Only host performs cleanup
+
+        answerCleanupScheduled = true;
+
+        setTimeout(async () => {
+            try {
+                const roundRef = firebase.database().ref(
+                    `games/${gameState.gameId}/rounds/round_${roundNumber}/answers`
+                );
+
+                // Get answers for aggregation
+                const snapshot = await roundRef.once('value');
+                if (snapshot.exists()) {
+                    const answers = snapshot.val();
+
+                    // Create anonymized summary
+                    const summary = {
+                        totalAnswers: Object.keys(answers).length,
+                        yesCount: Object.values(answers).filter(a => a.answer === true).length,
+                        aggregatedAt: firebase.database.ServerValue.TIMESTAMP
+                    };
+
+                    // Save summary
+                    await firebase.database()
+                        .ref(`games/${gameState.gameId}/rounds/round_${roundNumber}/summary`)
+                        .set(summary);
+
+                    // Delete individual answers (DSGVO data minimization)
+                    await roundRef.remove();
+
+                    if (isDevelopment) {
+                        console.log(`🗑️ Cleaned up answers for round ${roundNumber}`);
+                    }
+                }
+
+                answerCleanupScheduled = false;
+            } catch (error) {
+                console.error('❌ Error cleaning up answers:', error);
+                answerCleanupScheduled = false;
+            }
+        }, ANSWER_RETENTION_TIME);
+    }
+
+    /**
+     * ✅ P1 DSGVO/Jugendschutz: Verify age for FSK18 questions
+     * @param {string} category - Question category
+     * @returns {boolean} True if user is allowed to see this question
+     */
+    function verifyAgeForQuestion(category) {
+        if (category !== 'fsk18') return true;
+
+        let ageVerification = null;
+        if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
+            ageVerification = window.NocapUtils.getLocalStorage('nocap_age_verification');
+        } else {
+            try {
+                const stored = localStorage.getItem('nocap_age_verification');
+                if (stored) {
+                    ageVerification = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.warn('⚠️ Could not parse age verification:', e);
+            }
+        }
+
+        if (!ageVerification || !ageVerification.isAdult) {
+            console.warn('⚠️ FSK18 question blocked - user not verified');
             return false;
         }
 
@@ -744,9 +1246,37 @@
                 const roundData = snapshot.val();
                 currentQuestion = roundData.question;
 
+                // ✅ P1 DSGVO/Jugendschutz: Verify age for loaded question
+                if (currentQuestion && currentQuestion.category === 'fsk18' && !verifyAgeForQuestion('fsk18')) {
+                    // Block FSK18 content for unverified users
+                    currentQuestion = {
+                        text: "Diese Frage ist für dein Alter nicht freigegeben",
+                        category: "fsk0"
+                    };
+                }
+
                 if (currentQuestion) {
                     displayQuestion(currentQuestion);
                     setupRoundListener(roundNumber);
+
+                    // ✅ P1 UI/UX: Sync timer from server
+                    const gameSnapshot = await firebase.database()
+                        .ref(`games/${gameState.gameId}`)
+                        .once('value');
+
+                    if (gameSnapshot.exists()) {
+                        const gameData = gameSnapshot.val();
+
+                        if (gameData.timerPaused) {
+                            isPaused = true;
+                            pausedTimeRemaining = gameData.timerRemaining || 0;
+                            updatePauseButton();
+                        } else if (gameData.timerStartTime && roundData.timerDuration) {
+                            const serverTime = await getServerTimestamp();
+                            startTimer(gameData.timerStartTime, roundData.timerDuration);
+                        }
+                    }
+
                     if (isDevelopment) {
                         console.log('✅ Round loaded');
                     }
@@ -802,6 +1332,31 @@
             }
         });
 
+        // ✅ P1 UI/UX: Listen for timer pause events
+        const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
+        gameRef.on('value', (snapshot) => {
+            if (snapshot.exists() && !gameState.isHost) {
+                const gameData = snapshot.val();
+
+                // Sync timer pause state for guests
+                if (gameData.timerPaused !== isPaused) {
+                    if (gameData.timerPaused) {
+                        isPaused = true;
+                        pausedTimeRemaining = gameData.timerRemaining || 0;
+                        stopTimer();
+                        showNotification('⏸️ Timer pausiert vom Host', 'info', 2000);
+                    } else if (gameData.timerStartTime) {
+                        isPaused = false;
+                        getServerTimestamp().then(serverTime => {
+                            startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
+                        });
+                        showNotification('▶️ Timer fortgesetzt', 'info', 2000);
+                    }
+                    updatePauseButton();
+                }
+            }
+        });
+
         if (isDevelopment) {
             console.log('✅ Round listener active');
         }
@@ -811,6 +1366,10 @@
         if (roundNumber > currentQuestionNumber) {
             currentQuestionNumber = roundNumber;
             hasSubmittedThisRound = false; // Reset anti-cheat
+
+            // ✅ P1 UI/UX: Stop old timer
+            stopTimer();
+
             updateGameDisplay();
             loadRoundFromFirebase(roundNumber);
             resetForNewQuestion();
@@ -833,23 +1392,39 @@
         // Generate question
         currentQuestion = generateRandomQuestion();
 
+        // ✅ P1 DSGVO/Jugendschutz: Verify age for FSK18
+        if (currentQuestion.category === 'fsk18' && !verifyAgeForQuestion('fsk18')) {
+            // Fallback to safe question
+            currentQuestion = {
+                text: "Ich habe schon mal... etwas Lustiges erlebt",
+                category: "fsk0"
+            };
+        }
+
         // Display question
         displayQuestion(currentQuestion);
 
-        // Start round in Firebase
+        // Start round in Firebase with server timestamp
         try {
             const roundRef = firebase.database().ref(`games/${gameState.gameId}/rounds/round_${currentQuestionNumber}`);
             await roundRef.set({
                 question: currentQuestion,
                 answers: {},
-                startedAt: firebase.database.ServerValue.TIMESTAMP
+                startedAt: firebase.database.ServerValue.TIMESTAMP,
+                timerDuration: timerDuration
             });
 
             const gameRef = firebase.database().ref(`games/${gameState.gameId}`);
             await gameRef.update({
                 currentRound: currentQuestionNumber,
+                timerStartTime: firebase.database.ServerValue.TIMESTAMP,
+                timerPaused: false,
                 lastUpdate: firebase.database.ServerValue.TIMESTAMP
             });
+
+            // ✅ P1 UI/UX: Start timer with server sync
+            const serverTime = await getServerTimestamp();
+            startTimer(serverTime, timerDuration);
 
             setupRoundListener(currentQuestionNumber);
             if (isDevelopment) {
@@ -857,6 +1432,20 @@
             }
         } catch (error) {
             console.error('❌ Error starting round:', error);
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Get server timestamp for timer sync
+     */
+    async function getServerTimestamp() {
+        try {
+            const ref = firebase.database().ref('.info/serverTimeOffset');
+            const snapshot = await ref.once('value');
+            const offset = snapshot.val() || 0;
+            return Date.now() + offset;
+        } catch (e) {
+            return Date.now();
         }
     }
 
@@ -898,6 +1487,7 @@
 
     /**
      * P0 FIX: Display question with textContent only
+     * ✅ P1 UI/UX: Add progress indicator
      */
     function displayQuestion(question) {
         if (!question) return;
@@ -911,6 +1501,12 @@
 
         if (categoryEl) {
             categoryEl.textContent = categoryNames[question.category] || '🎮 Spiel';
+        }
+
+        // ✅ P1 UI/UX: Update progress indicator
+        const progressEl = document.getElementById('question-progress');
+        if (progressEl) {
+            progressEl.textContent = `Frage ${currentQuestionNumber}`;
         }
 
         if (isDevelopment) {
@@ -1041,11 +1637,19 @@
     }
 
     function selectAnswer(answer) {
+        // ✅ P1 UI/UX: Don't allow changes after submission
+        if (hasSubmittedThisRound) {
+            showNotification('Du hast bereits abgesendet!', 'warning', 2000);
+            return;
+        }
+
         userAnswer = answer;
 
+        // ✅ P1 UI/UX: Clear previous selection and highlight new one
         document.querySelectorAll('.answer-btn').forEach(btn => {
             btn.classList.remove('selected');
             btn.setAttribute('aria-checked', 'false');
+            btn.disabled = false;
         });
 
         const selectedBtn = answer ?
@@ -1055,6 +1659,11 @@
         if (selectedBtn) {
             selectedBtn.classList.add('selected');
             selectedBtn.setAttribute('aria-checked', 'true');
+        }
+
+        // ✅ P1 UI/UX: Provide haptic feedback
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
         }
 
         updateSubmitButton();
@@ -1111,6 +1720,7 @@
 
     /**
      * P0 FIX: Submit with anti-cheat check
+     * ✅ P1 DSGVO: Schedule data cleanup
      */
     async function submitAnswers() {
         // P0: Anti-cheat - prevent double submission
@@ -1155,6 +1765,19 @@
 
             // P0: Mark as submitted
             hasSubmittedThisRound = true;
+
+            // ✅ P1 UI/UX: Disable answer buttons
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+
+            // ✅ P1 UI/UX: Stop timer for this player
+            stopTimer();
+
+            // ✅ P1 DSGVO: Schedule cleanup (host only)
+            if (gameState.isHost) {
+                scheduleAnswerCleanup(currentQuestionNumber);
+            }
 
             if (isDevelopment) {
                 console.log('✅ Answer submitted');
@@ -1456,6 +2079,12 @@
         try {
             currentQuestionNumber++;
             hasSubmittedThisRound = false; // Reset anti-cheat
+
+            // ✅ P1 UI/UX: Stop and reset timer
+            stopTimer();
+            isPaused = false;
+            pausedTimeRemaining = 0;
+
             updateGameDisplay();
             resetForNewQuestion();
             showPhase('question');
@@ -1592,6 +2221,12 @@
 
             currentQuestionNumber++;
             hasSubmittedThisRound = false;
+
+            // ✅ P1 UI/UX: Stop and reset timer
+            stopTimer();
+            isPaused = false;
+            pausedTimeRemaining = 0;
+
             updateGameDisplay();
             resetForNewQuestion();
             showPhase('question');
@@ -1665,6 +2300,9 @@
     // ===========================
 
     function cleanup() {
+        // ✅ P1 UI/UX: Stop timers
+        stopTimer();
+
         if (gameListener) {
             try {
                 firebase.database().ref(`games/${gameState.gameId}`).off();
@@ -1675,6 +2313,11 @@
                 firebase.database().ref(`games/${gameState.gameId}/rounds/round_${currentQuestionNumber}`).off();
             } catch (e) {}
         }
+
+        // ✅ P2 PERFORMANCE: Cleanup phase listeners
+        _phaseListeners.forEach((listeners, phase) => {
+            cleanupPhaseListeners(phase);
+        });
 
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();

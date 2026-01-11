@@ -26,6 +26,17 @@
         hard: 2
     };
 
+    // ✅ P1 STABILITY: Fallback difficulty limits for offline mode
+    const FALLBACK_DIFFICULTY_LIMITS = {
+        fsk0: { easy: 50, medium: 100, hard: 150 },
+        fsk16: { easy: 50, medium: 120, hard: 180 },
+        fsk18: { easy: 40, medium: 100, hard: 150 },
+        special: { easy: 30, medium: 50, hard: 80 }
+    };
+
+    // ✅ P1 STABILITY: Question counts cache
+    let questionCountsCache = null;
+
     // ===========================
     // GLOBAL STATE
     // ===========================
@@ -93,6 +104,9 @@
 
             // Check alcohol mode
             checkAlcoholMode();
+
+            // ✅ P1 STABILITY: Load question counts with fallback
+            await loadQuestionCounts();
 
             // Load difficulty from GameState
             initializeSelection();
@@ -258,6 +272,145 @@
         }
 
         return true;
+    }
+
+    // ===========================
+    // QUESTION COUNTS & FALLBACK
+    // ✅ P1 STABILITY: Load with Firebase check and local fallback
+    // ===========================
+
+    /**
+     * Load question counts with fallback support
+     */
+    async function loadQuestionCounts() {
+        try {
+            // Check if Firebase is available
+            if (typeof firebase !== 'undefined' && firebase.database) {
+                const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances();
+
+                if (firebaseInstances && firebaseInstances.database) {
+                    // Try loading from Firebase
+                    questionCountsCache = await loadCountsFromFirebase(firebaseInstances.database);
+
+                    if (questionCountsCache) {
+                        if (isDevelopment) {
+                            console.log('✅ Question counts loaded from Firebase:', questionCountsCache);
+                        }
+                        updateDifficultyCardsWithCounts();
+                        return;
+                    }
+                }
+            }
+
+            // Fallback to local JSON
+            console.warn('⚠️ Firebase not available, loading fallback counts');
+            await loadCountsFromLocalFile();
+
+        } catch (error) {
+            console.error('❌ Error loading question counts:', error);
+            await loadCountsFromLocalFile();
+        }
+    }
+
+    /**
+     * Load counts from Firebase
+     */
+    async function loadCountsFromFirebase(database) {
+        try {
+            const counts = {};
+            const categories = gameState.selectedCategories || [];
+
+            for (const category of categories) {
+                const snapshot = await database.ref(`questions/${category}`).once('value');
+
+                if (snapshot.exists()) {
+                    const questions = snapshot.val();
+                    counts[category] = Object.keys(questions).length;
+                } else {
+                    counts[category] = FALLBACK_DIFFICULTY_LIMITS[category]?.medium || 50;
+                }
+            }
+
+            return counts;
+        } catch (error) {
+            console.error('❌ Error loading from Firebase:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Load counts from local JSON file
+     */
+    async function loadCountsFromLocalFile() {
+        try {
+            const response = await fetch('/assets/data/difficulty-limits.json');
+
+            if (response.ok) {
+                const data = await response.json();
+                questionCountsCache = data.counts || FALLBACK_DIFFICULTY_LIMITS;
+
+                if (isDevelopment) {
+                    console.log('✅ Question counts loaded from local file:', questionCountsCache);
+                }
+            } else {
+                throw new Error('Local file not found');
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not load local file, using hardcoded fallback');
+            questionCountsCache = FALLBACK_DIFFICULTY_LIMITS;
+        }
+
+        updateDifficultyCardsWithCounts();
+    }
+
+    /**
+     * ✅ P1 UI/UX: Update difficulty cards with question counts
+     */
+    function updateDifficultyCardsWithCounts() {
+        if (!questionCountsCache) return;
+
+        const categories = gameState.selectedCategories || [];
+
+        ['easy', 'medium', 'hard'].forEach(difficulty => {
+            const card = document.querySelector(`[data-difficulty="${difficulty}"]`);
+            if (!card) return;
+
+            // Calculate total questions for this difficulty
+            let totalQuestions = 0;
+            let hasInsufficientQuestions = false;
+
+            categories.forEach(category => {
+                const categoryLimits = questionCountsCache[category];
+                if (categoryLimits) {
+                    const count = typeof categoryLimits === 'object'
+                        ? categoryLimits[difficulty]
+                        : categoryLimits;
+                    totalQuestions += count || 0;
+
+                    // Check if category has too few questions
+                    if (count < 10) {
+                        hasInsufficientQuestions = true;
+                    }
+                }
+            });
+
+            // Update question count display
+            const countEl = card.querySelector('.question-count');
+            if (countEl) {
+                countEl.textContent = `${totalQuestions} Fragen verfügbar`;
+            }
+
+            // Disable if insufficient questions
+            if (hasInsufficientQuestions || totalQuestions < 20) {
+                card.classList.add('disabled');
+                card.setAttribute('aria-disabled', 'true');
+
+                const reasonEl = card.querySelector('.disabled-reason');
+                if (reasonEl) {
+                    reasonEl.textContent = 'Zu wenige Fragen in dieser Kategorie';
+                }
+            }
+        });
     }
 
     // ===========================
@@ -481,15 +634,27 @@
         }
 
         // Difficulty cards with keyboard support
-        document.querySelectorAll('.difficulty-card').forEach(card => {
+        const difficultyCards = document.querySelectorAll('.difficulty-card');
+        difficultyCards.forEach((card, index) => {
             card.addEventListener('click', function() {
-                selectDifficulty(this);
+                if (!this.classList.contains('disabled')) {
+                    selectDifficulty(this);
+                }
             });
 
+            // ✅ P1 UI/UX: Enhanced keyboard support
             card.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    selectDifficulty(this);
+                    if (!this.classList.contains('disabled')) {
+                        selectDifficulty(this);
+                    }
+                } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    focusNextCard(index, difficultyCards);
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    focusPreviousCard(index, difficultyCards);
                 }
             });
         });
@@ -500,6 +665,40 @@
                 proceedToNextStep();
             }
         });
+    }
+
+    /**
+     * ✅ P1 UI/UX: Focus next difficulty card (skip disabled)
+     */
+    function focusNextCard(currentIndex, cards) {
+        let nextIndex = (currentIndex + 1) % cards.length;
+        let attempts = 0;
+
+        while (cards[nextIndex].classList.contains('disabled') && attempts < cards.length) {
+            nextIndex = (nextIndex + 1) % cards.length;
+            attempts++;
+        }
+
+        if (!cards[nextIndex].classList.contains('disabled')) {
+            cards[nextIndex].focus();
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Focus previous difficulty card (skip disabled)
+     */
+    function focusPreviousCard(currentIndex, cards) {
+        let prevIndex = (currentIndex - 1 + cards.length) % cards.length;
+        let attempts = 0;
+
+        while (cards[prevIndex].classList.contains('disabled') && attempts < cards.length) {
+            prevIndex = (prevIndex - 1 + cards.length) % cards.length;
+            attempts++;
+        }
+
+        if (!cards[prevIndex].classList.contains('disabled')) {
+            cards[prevIndex].focus();
+        }
     }
 
     // ===========================

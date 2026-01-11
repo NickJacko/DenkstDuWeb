@@ -1878,6 +1878,290 @@
 
             throw new Error('Firebase service not ready');
         }
+
+        // ===========================
+        // ✅ P0 SECURITY: INPUT SANITIZATION
+        // ===========================
+
+        /**
+         * Sanitize game ID
+         */
+        _sanitizeGameId(gameId) {
+            if (!gameId || typeof gameId !== 'string') {
+                throw new Error('Invalid gameId');
+            }
+            return gameId.replace(/[^a-zA-Z0-9\-_]/g, '').substring(0, 100);
+        }
+
+        /**
+         * Sanitize game code
+         */
+        _sanitizeGameCode(code) {
+            if (!code || typeof code !== 'string') {
+                throw new Error('Invalid game code');
+            }
+            return code.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+        }
+
+        /**
+         * Sanitize player name
+         */
+        _sanitizePlayerName(name) {
+            if (!name || typeof name !== 'string') {
+                throw new Error('Invalid player name');
+            }
+            // Use NocapUtils if available
+            if (window.NocapUtils && window.NocapUtils.sanitizeInput) {
+                return window.NocapUtils.sanitizeInput(name).substring(0, 15);
+            }
+            return name.replace(/[<>]/g, '').substring(0, 15);
+        }
+
+        /**
+         * Sanitize category
+         */
+        _sanitizeCategory(category) {
+            const validCategories = ['fsk0', 'fsk16', 'fsk18', 'special'];
+            if (!validCategories.includes(category)) {
+                throw new Error('Invalid category: ' + category);
+            }
+            return category;
+        }
+
+        /**
+         * Sanitize difficulty
+         */
+        _sanitizeDifficulty(difficulty) {
+            const validDifficulties = ['easy', 'medium', 'hard'];
+            if (!validDifficulties.includes(difficulty)) {
+                throw new Error('Invalid difficulty: ' + difficulty);
+            }
+            return difficulty;
+        }
+
+        /**
+         * Sanitize phase
+         */
+        _sanitizePhase(phase) {
+            const validPhases = ['lobby', 'playing', 'results', 'finished'];
+            if (!validPhases.includes(phase)) {
+                throw new Error('Invalid phase: ' + phase);
+            }
+            return phase;
+        }
+
+        // ===========================
+        // ✅ P1 UI/UX: EVENT SYSTEM
+        // ===========================
+
+        /**
+         * Event callbacks for UI integration
+         */
+        _eventCallbacks = {
+            onError: [],
+            onStatusChange: [],
+            onConnectionChange: [],
+            onGameUpdate: [],
+            onPlayerJoined: [],
+            onPlayerLeft: []
+        };
+
+        /**
+         * Register event callback
+         */
+        on(event, callback) {
+            if (!this._eventCallbacks[event]) {
+                this._eventCallbacks[event] = [];
+            }
+            this._eventCallbacks[event].push(callback);
+
+            // Return unsubscribe function
+            return () => this.off(event, callback);
+        }
+
+        /**
+         * Unregister event callback
+         */
+        off(event, callback) {
+            if (!this._eventCallbacks[event]) return;
+
+            const index = this._eventCallbacks[event].indexOf(callback);
+            if (index > -1) {
+                this._eventCallbacks[event].splice(index, 1);
+            }
+        }
+
+        /**
+         * Emit event to all registered callbacks
+         */
+        _emit(event, data) {
+            if (!this._eventCallbacks[event]) return;
+
+            this._eventCallbacks[event].forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error('Error in event callback:', error);
+                }
+            });
+        }
+
+        /**
+         * Public API for error callbacks
+         */
+        setErrorCallback(callback) {
+            return this.on('error', callback);
+        }
+
+        /**
+         * Public API for status callbacks
+         */
+        setStatusCallback(callback) {
+            return this.on('statusChange', callback);
+        }
+
+        /**
+         * Public API for connection callbacks
+         */
+        setConnectionCallback(callback) {
+            return this.on('connectionChange', callback);
+        }
+
+        // ===========================
+        // ✅ P2 PERFORMANCE: CACHING
+        // ===========================
+
+        _cache = new Map();
+        _cacheTTL = 5 * 60 * 1000; // 5 minutes
+
+        /**
+         * Set cache value
+         */
+        _cacheSet(key, value, ttl = this._cacheTTL) {
+            this._cache.set(key, {
+                value: value,
+                expires: Date.now() + ttl
+            });
+        }
+
+        /**
+         * Get cache value
+         */
+        _cacheGet(key) {
+            const item = this._cache.get(key);
+
+            if (!item) return null;
+
+            if (Date.now() > item.expires) {
+                this._cache.delete(key);
+                return null;
+            }
+
+            return item.value;
+        }
+
+        /**
+         * Check if cache has valid value
+         */
+        _cacheHas(key) {
+            return this._cacheGet(key) !== null;
+        }
+
+        /**
+         * Clear cache
+         */
+        _cacheClear() {
+            this._cache.clear();
+        }
+
+        // ===========================
+        // ✅ P1 DSGVO: DATA DELETION
+        // ===========================
+
+        /**
+         * Delete game manually
+         */
+        async deleteGame(gameId) {
+            const sanitizedGameId = this._sanitizeGameId(gameId);
+
+            try {
+                await this._withTimeout(
+                    this.database.ref(`games/${sanitizedGameId}`).remove(),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Delete game'
+                );
+
+                this._emit('statusChange', {
+                    status: 'gameDeleted',
+                    gameId: sanitizedGameId
+                });
+
+                if (this.isDevelopment) {
+                    console.log('✅ Game deleted:', sanitizedGameId);
+                }
+
+                return { success: true };
+
+            } catch (error) {
+                this._handleError(error, { operation: 'deleteGame', gameId: sanitizedGameId });
+                throw error;
+            }
+        }
+
+        /**
+         * Get server timestamp
+         */
+        getServerTimestamp() {
+            return this.database ? this.database.ServerValue.TIMESTAMP : Date.now();
+        }
+
+        // ===========================
+        // ✅ P1 STABILITY: ERROR HANDLING
+        // ===========================
+
+        /**
+         * Handle error with user-friendly messages
+         */
+        _handleError(error, context = {}) {
+            const errorInfo = {
+                message: error.message || 'Unknown error',
+                code: error.code || 'UNKNOWN',
+                context: context,
+                timestamp: Date.now()
+            };
+
+            // Log to console
+            console.error('Firebase Service Error:', errorInfo);
+
+            // Emit to UI
+            this._emit('error', errorInfo);
+
+            // Send to error boundary if available
+            if (window.ErrorBoundary) {
+                window.ErrorBoundary.handleError(error, context);
+            }
+
+            return this._getUserFriendlyMessage(error);
+        }
+
+        /**
+         * Get user-friendly error message
+         */
+        _getUserFriendlyMessage(error) {
+            const errorMessages = {
+                'PERMISSION_DENIED': 'Keine Berechtigung für diese Aktion',
+                'NETWORK_ERROR': 'Netzwerkfehler. Bitte Verbindung prüfen.',
+                'INVALID_GAME_CODE': 'Ungültiger Spiel-Code',
+                'GAME_NOT_FOUND': 'Spiel nicht gefunden',
+                'GAME_FULL': 'Spiel ist voll',
+                'ALREADY_IN_GAME': 'Du bist bereits in einem Spiel',
+                'NOT_HOST': 'Nur der Host kann diese Aktion ausführen',
+                'INVALID_FSK': 'Keine Berechtigung für diese Altersstufe',
+                'TIMEOUT': 'Zeitüberschreitung bei Serveranfrage'
+            };
+
+            return errorMessages[error.code] || 'Ein Fehler ist aufgetreten';
+        }
     }
 
     // ===========================
@@ -1891,9 +2175,32 @@
             window.location.hostname === '127.0.0.1';
 
         if (isDev) {
-            console.log('%c✅ FirebaseGameService v6.0 loaded (Premium & Age Meta)',
+            console.log('%c✅ FirebaseGameService v8.0 loaded (Security + DSGVO Enhanced)',
                 'color: #FF6F00; font-weight: bold; font-size: 12px');
         }
+
+        // ✅ P1 STABILITY: Setup connection monitoring
+        window.addEventListener('DOMContentLoaded', () => {
+            const service = window.FirebaseService;
+
+            if (service.database) {
+                const connectedRef = service.database.ref('.info/connected');
+
+                connectedRef.on('value', (snapshot) => {
+                    const isConnected = snapshot.val() === true;
+                    service.isConnected = isConnected;
+
+                    service._emit('connectionChange', {
+                        status: isConnected ? 'connected' : 'disconnected',
+                        timestamp: Date.now()
+                    });
+
+                    if (isDev) {
+                        console.log(isConnected ? '✅ Firebase connected' : '⚠️ Firebase disconnected');
+                    }
+                });
+            }
+        });
     }
 
     // Cleanup on unload

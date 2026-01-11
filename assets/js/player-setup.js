@@ -33,6 +33,10 @@
     // Drag and drop state
     let draggedItem = null;
 
+    // ✅ P1 STABILITY: Undo functionality
+    let undoStack = [];
+    const MAX_UNDO_STACK = 10;
+
     // ✅ P1 STABILITY: Event listener tracking for cleanup
     const _eventListeners = [];
 
@@ -245,18 +249,20 @@
                 console.log('📊 Loading question counts...');
             }
 
-            // ✅ FIX: Check if Firebase is initialized
+            // ✅ P1 STABILITY: Check if Firebase is initialized
             if (!window.firebaseInitialized || typeof firebase === 'undefined' || !firebase.database) {
-                console.warn('⚠️ Firebase not available, using fallback counts');
-                useFallbackCounts();
+                console.warn('⚠️ Firebase not available, using offline mode');
+                showOfflineMode();
+                await loadLocalBackup();
                 return;
             }
 
             // ✅ FIX: Get Firebase instances from FirebaseConfig
             const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances();
             if (!firebaseInstances || !firebaseInstances.database) {
-                console.warn('⚠️ Firebase database not available, using fallback counts');
-                useFallbackCounts();
+                console.warn('⚠️ Firebase database not available, using offline mode');
+                showOfflineMode();
+                await loadLocalBackup();
                 return;
             }
 
@@ -280,6 +286,7 @@
                 }
             }
 
+            hideOfflineMode();
             updateTotalQuestions();
 
             if (isDevelopment) {
@@ -288,7 +295,51 @@
 
         } catch (error) {
             console.error('Error loading question counts:', error);
+            showOfflineMode();
+            await loadLocalBackup();
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Load local backup when offline
+     */
+    async function loadLocalBackup() {
+        try {
+            const response = await fetch('/assets/data/questions-backup.json');
+            if (response.ok) {
+                const backup = await response.json();
+                questionCounts = backup.counts || useFallbackCounts();
+                updateTotalQuestions();
+
+                if (isDevelopment) {
+                    console.log('✅ Loaded local backup:', questionCounts);
+                }
+            } else {
+                throw new Error('Backup file not found');
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not load backup, using fallback:', error);
             useFallbackCounts();
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Show offline mode warning
+     */
+    function showOfflineMode() {
+        const offlineWarning = document.getElementById('offline-warning');
+        if (offlineWarning) {
+            offlineWarning.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Hide offline mode warning
+     */
+    function hideOfflineMode() {
+        const offlineWarning = document.getElementById('offline-warning');
+        if (offlineWarning) {
+            offlineWarning.classList.add('hidden');
         }
     }
 
@@ -520,6 +571,22 @@
             return;
         }
 
+        // ✅ P1 STABILITY: Save to undo stack before removing
+        const removedPlayerName = inputs[index].querySelector('.player-input').value;
+        if (removedPlayerName && removedPlayerName.trim()) {
+            addToUndoStack({
+                action: 'remove',
+                playerName: removedPlayerName,
+                index: index
+            });
+
+            // Show undo notification
+            showNotificationWithUndo(
+                `Spieler "${removedPlayerName}" entfernt`,
+                () => undoLastAction()
+            );
+        }
+
         // ✅ P1 Stabilität: Reaktiviere Button wenn unter Limit
         if (inputs.length === MAX_PLAYERS) {
             if (addPlayerBtn) {
@@ -561,6 +628,139 @@
 
         if (isDevelopment) {
             console.log(`➖ Removed player input #${index + 1}`);
+        }
+    }
+
+    // ===========================
+    // UNDO FUNCTIONALITY
+    // ✅ P1 STABILITY: Undo for accidentally deleted players
+    // ===========================
+
+    /**
+     * Add action to undo stack
+     */
+    function addToUndoStack(action) {
+        undoStack.push(action);
+
+        // Limit stack size
+        if (undoStack.length > MAX_UNDO_STACK) {
+            undoStack.shift();
+        }
+
+        if (isDevelopment) {
+            console.log('📚 Undo stack:', undoStack);
+        }
+    }
+
+    /**
+     * Undo last action
+     */
+    function undoLastAction() {
+        if (undoStack.length === 0) {
+            showNotification('Nichts zum Rückgängigmachen', 'info');
+            return;
+        }
+
+        const lastAction = undoStack.pop();
+
+        if (lastAction.action === 'remove') {
+            // Re-add the player
+            const inputsList = document.getElementById('players-input-list');
+            const currentInputs = inputsList.querySelectorAll('.player-input-row');
+
+            // Add input at the original position or at the end
+            const targetIndex = Math.min(lastAction.index, currentInputs.length);
+
+            addPlayerInput();
+
+            // Set the name
+            const newInputs = document.querySelectorAll('.player-input');
+            if (newInputs[targetIndex]) {
+                newInputs[targetIndex].value = lastAction.playerName;
+                newInputs[targetIndex].focus();
+            }
+
+            updatePlayersFromInputs();
+            updateUI();
+
+            showNotification('Rückgängig gemacht', 'success', 1500);
+
+            if (isDevelopment) {
+                console.log(`↩️ Undid removal of "${lastAction.playerName}"`);
+            }
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Show notification with undo button
+     */
+    function showNotificationWithUndo(message, undoCallback) {
+        if (window.NocapUtils && window.NocapUtils.showNotificationWithAction) {
+            window.NocapUtils.showNotificationWithAction(
+                message,
+                'Rückgängig',
+                undoCallback,
+                'info',
+                5000
+            );
+        } else {
+            // Fallback
+            showNotification(message, 'info', 3000);
+        }
+    }
+
+    /**
+     * ✅ P1 DSGVO: Delete all player data
+     */
+    function deleteAllPlayerData() {
+        const confirmed = confirm(
+            '⚠️ WARNUNG: Alle Spielerdaten werden unwiderruflich gelöscht!\n\n' +
+            'Dies umfasst:\n' +
+            '• Alle Spielernamen\n' +
+            '• Hochgeladene Avatare\n' +
+            '• Gespeicherte Spielreihenfolge\n\n' +
+            'Möchten Sie wirklich fortfahren?'
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            // Clear all player inputs
+            const inputsList = document.getElementById('players-input-list');
+            const inputs = inputsList.querySelectorAll('.player-input');
+
+            inputs.forEach(input => {
+                input.value = '';
+            });
+
+            // Clear GameState
+            gameState.players = [];
+            gameState.save();
+
+            // Clear undo stack
+            undoStack = [];
+
+            // Clear any avatar data from localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('avatar_')) {
+                    localStorage.removeItem(key);
+                }
+            }
+
+            updatePlayersFromInputs();
+            updateUI();
+
+            showNotification('✅ Alle Spielerdaten gelöscht', 'success', 3000);
+
+            if (isDevelopment) {
+                console.log('🗑️ All player data deleted');
+            }
+        } catch (error) {
+            console.error('Error deleting player data:', error);
+            showNotification('Fehler beim Löschen der Daten', 'error');
         }
     }
 
@@ -1017,6 +1217,51 @@
     // START GAME
     // ===========================
 
+    /**
+     * ✅ P1 DSGVO/Jugendschutz: Check FSK rating before starting
+     */
+    function checkFSKRating() {
+        const difficulty = gameState.difficulty;
+        const categories = gameState.selectedCategories || [];
+
+        let requiredAge = 0;
+        let warning = '';
+
+        // Check difficulty-based FSK
+        if (difficulty === 'hard' || categories.includes('fsk18')) {
+            requiredAge = 18;
+            warning = 'FSK 18 - Nur für Erwachsene';
+        } else if (difficulty === 'medium' || categories.includes('fsk16')) {
+            requiredAge = 16;
+            warning = 'FSK 16 - Ab 16 Jahren';
+        }
+
+        if (requiredAge > 0) {
+            // Check if user has verified age
+            const ageVerification = localStorage.getItem('nocap_age_verification');
+            const ageLevel = localStorage.getItem('nocap_age_level');
+
+            if (!ageVerification || !ageLevel) {
+                showNotification('Altersverifikation erforderlich!', 'error');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return false;
+            }
+
+            const userAge = parseInt(ageLevel);
+            if (userAge < requiredAge) {
+                showNotification(
+                    `${warning} - Diese Kategorien sind für deine Altersgruppe nicht verfügbar.`,
+                    'error'
+                );
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     async function startGame() {
         if (isDevelopment) {
             console.log('🚀 Starting game...');
@@ -1040,6 +1285,11 @@
 
         if (!gameState.difficulty) {
             showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
+            return;
+        }
+
+        // ✅ P1 DSGVO/Jugendschutz: FSK-Check
+        if (!checkFSKRating()) {
             return;
         }
 

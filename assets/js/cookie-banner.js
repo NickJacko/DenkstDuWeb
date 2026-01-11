@@ -23,13 +23,104 @@
     const COOKIE_CONSENT_VERSION = '2.0';
     const CONSENT_EXPIRY_DAYS = 365;
 
+    // ✅ P1 STABILITY: Cookie fallback for private mode
+    const COOKIE_NAME = 'nocap_consent';
+    const COOKIE_MAX_AGE = CONSENT_EXPIRY_DAYS * 24 * 60 * 60; // in seconds
+
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
         window.location.hostname.includes('192.168.');
 
+    // ✅ P1 STABILITY: Check if localStorage is available
+    let localStorageAvailable = false;
+    try {
+        const test = '__test__';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        localStorageAvailable = true;
+    } catch (e) {
+        console.warn('⚠️ localStorage not available, using cookie fallback');
+        localStorageAvailable = false;
+    }
+
     // ===================================
     // 🛡️ P0 SECURITY: SANITIZATION HELPERS
     // ===================================
+
+    /**
+     * ✅ P0 SECURITY: Set secure cookie with proper flags
+     * @param {string} name - Cookie name
+     * @param {string} value - Cookie value
+     * @param {number} maxAge - Max age in seconds
+     */
+    function setSecureCookie(name, value, maxAge = COOKIE_MAX_AGE) {
+        try {
+            // ✅ P0 SECURITY: Sanitize name and value
+            const safeName = encodeURIComponent(name);
+            const safeValue = encodeURIComponent(value);
+
+            const isSecure = window.location.protocol === 'https:';
+
+            let cookieString = `${safeName}=${safeValue}; max-age=${maxAge}; path=/`;
+
+            // ✅ P0 SECURITY: Add security flags
+            if (isSecure) {
+                cookieString += '; Secure';
+            }
+
+            cookieString += '; SameSite=Strict';
+
+            document.cookie = cookieString;
+
+            if (isDevelopment) {
+                console.log('✅ Secure cookie set:', safeName);
+            }
+        } catch (error) {
+            console.error('Error setting secure cookie:', error);
+        }
+    }
+
+    /**
+     * ✅ P0 SECURITY: Get cookie value
+     * @param {string} name - Cookie name
+     * @returns {string|null} Cookie value or null
+     */
+    function getSecureCookie(name) {
+        try {
+            const safeName = encodeURIComponent(name);
+            const cookies = document.cookie.split(';');
+
+            for (let cookie of cookies) {
+                const [cookieName, cookieValue] = cookie.trim().split('=');
+
+                if (cookieName === safeName) {
+                    return decodeURIComponent(cookieValue);
+                }
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error getting cookie:', error);
+            return null;
+        }
+    }
+
+    /**
+     * ✅ P0 SECURITY: Delete cookie
+     * @param {string} name - Cookie name
+     */
+    function deleteSecureCookie(name) {
+        try {
+            const safeName = encodeURIComponent(name);
+            document.cookie = `${safeName}=; max-age=0; path=/`;
+
+            if (isDevelopment) {
+                console.log('✅ Cookie deleted:', safeName);
+            }
+        } catch (error) {
+            console.error('Error deleting cookie:', error);
+        }
+    }
 
     /**
      * ✅ P0 SECURITY: Sanitize data from localStorage before DOM insertion
@@ -101,6 +192,66 @@
     // ===================================
 
     /**
+     * ✅ P1 STABILITY: Storage helper with cookie fallback
+     * @param {string} key - Storage key
+     * @param {*} value - Value to store
+     */
+    function setStorage(key, value) {
+        const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+
+        if (localStorageAvailable) {
+            try {
+                localStorage.setItem(key, stringValue);
+                return true;
+            } catch (error) {
+                console.warn('localStorage.setItem failed, falling back to cookie:', error);
+            }
+        }
+
+        // Fallback to cookie
+        setSecureCookie(key, stringValue);
+        return true;
+    }
+
+    /**
+     * ✅ P1 STABILITY: Get from storage with cookie fallback
+     * @param {string} key - Storage key
+     * @returns {string|null} Stored value or null
+     */
+    function getStorage(key) {
+        if (localStorageAvailable) {
+            try {
+                const value = localStorage.getItem(key);
+                if (value !== null) {
+                    return value;
+                }
+            } catch (error) {
+                console.warn('localStorage.getItem failed, trying cookie:', error);
+            }
+        }
+
+        // Fallback to cookie
+        return getSecureCookie(key);
+    }
+
+    /**
+     * ✅ P1 STABILITY: Remove from storage
+     * @param {string} key - Storage key
+     */
+    function removeStorage(key) {
+        if (localStorageAvailable) {
+            try {
+                localStorage.removeItem(key);
+            } catch (error) {
+                console.warn('localStorage.removeItem failed:', error);
+            }
+        }
+
+        // Also remove cookie
+        deleteSecureCookie(key);
+    }
+
+    /**
      * ✅ P0 SECURITY + P1 DSGVO: Check if user has already given consent
      * ✅ Validates and sanitizes all data from localStorage
      * ✅ 6-month expiry (180 days) as per DSGVO requirements
@@ -108,7 +259,7 @@
      */
     function getConsent() {
         try {
-            const saved = localStorage.getItem(COOKIE_CONSENT_KEY);
+            const saved = getStorage(COOKIE_CONSENT_KEY);
             if (!saved) return null;
 
             // ✅ P0 SECURITY: Parse with error handling
@@ -117,14 +268,14 @@
                 consent = JSON.parse(saved);
             } catch (parseError) {
                 console.warn('⚠️ Invalid consent data format, clearing');
-                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                removeStorage(COOKIE_CONSENT_KEY);
                 return null;
             }
 
             // ✅ P0 SECURITY: Validate object structure
             if (!consent || typeof consent !== 'object') {
                 console.warn('⚠️ Invalid consent object, clearing');
-                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                removeStorage(COOKIE_CONSENT_KEY);
                 return null;
             }
 
@@ -132,7 +283,7 @@
             const timestamp = validateTimestamp(consent.timestamp);
             if (!timestamp) {
                 console.warn('⚠️ Invalid consent timestamp, clearing');
-                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                removeStorage(COOKIE_CONSENT_KEY);
                 return null;
             }
 
@@ -145,7 +296,7 @@
                 if (isDevelopment) {
                     console.log('ℹ️ Cookie consent expired (>6 months), asking again');
                 }
-                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                removeStorage(COOKIE_CONSENT_KEY);
                 return null;
             }
 
@@ -156,7 +307,7 @@
                 if (isDevelopment) {
                     console.log('ℹ️ Cookie consent version changed, asking again');
                 }
-                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                removeStorage(COOKIE_CONSENT_KEY);
                 return null;
             }
 
@@ -173,7 +324,7 @@
             console.error('❌ Error reading cookie consent:', error);
             // Clear corrupted data
             try {
-                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                removeStorage(COOKIE_CONSENT_KEY);
             } catch (e) {
                 // Ignore
             }
@@ -201,11 +352,11 @@
                 necessary: true // Always true
             };
 
-            // ✅ P1 STABILITY: Save to localStorage with error handling
+            // ✅ P1 STABILITY: Save with storage helper (localStorage + cookie fallback)
             try {
-                localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent));
+                setStorage(COOKIE_CONSENT_KEY, JSON.stringify(consent));
             } catch (storageError) {
-                console.error('❌ Failed to save consent to localStorage:', storageError);
+                console.error('❌ Failed to save consent:', storageError);
 
                 // Show user-friendly error
                 if (window.NocapUtils?.showNotification) {
@@ -220,8 +371,8 @@
 
             // ✅ P1 DSGVO: Also set old privacy consent for compatibility
             try {
-                localStorage.setItem('nocap_privacy_consent', 'true');
-                localStorage.setItem('nocap_privacy_date', new Date().toISOString());
+                setStorage('nocap_privacy_consent', 'true');
+                setStorage('nocap_privacy_date', new Date().toISOString());
             } catch (e) {
                 // Non-fatal
                 if (isDevelopment) {
@@ -236,7 +387,8 @@
                 console.log('✅ Cookie consent saved:', {
                     analytics: analyticsConsent,
                     functional: functionalConsent,
-                    expiresIn: '6 months'
+                    expiresIn: '6 months',
+                    storage: localStorageAvailable ? 'localStorage' : 'cookie'
                 });
             }
 

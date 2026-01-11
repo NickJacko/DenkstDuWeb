@@ -57,6 +57,13 @@
     let heartbeatInterval = null; // ✅ P1 STABILITY: Track heartbeat for cleanup
     let currentPlayers = {}; // ✅ Track current players for dialog
 
+    // ✅ P1 STABILITY: Presence & Rejoin system
+    let presenceRef = null;
+    let connectedRef = null;
+    let isRejoining = false;
+    const REJOIN_BUFFER_TIME = 120000; // 2 minutes to rejoin
+    const PRESENCE_UPDATE_INTERVAL = 10000; // 10 seconds
+
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1';
 
@@ -180,6 +187,9 @@
             console.error('❌ No user ID after auth');
             return;
         }
+
+        // ✅ P1 STABILITY: Setup presence system
+        setupPresenceSystem();
 
         // Determine if creating or joining
         if (gameState.gameId) {
@@ -563,6 +573,44 @@
         const codeDisplay = document.getElementById('game-code-display');
         if (codeDisplay) {
             codeDisplay.textContent = gameId;
+
+            // ✅ P1 UI/UX: Add click-to-copy if not already added
+            if (!codeDisplay.parentElement.querySelector('.copy-button')) {
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-button';
+                copyButton.textContent = '📋';
+                copyButton.type = 'button';
+                copyButton.setAttribute('aria-label', 'Spiel-Code kopieren');
+                copyButton.setAttribute('title', 'Code kopieren');
+
+                copyButton.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(gameId);
+                        showNotification('Spiel-Code kopiert!', 'success', 2000);
+                        copyButton.textContent = '✅';
+                        setTimeout(() => {
+                            copyButton.textContent = '📋';
+                        }, 2000);
+                    } catch (error) {
+                        // Fallback
+                        const textArea = document.createElement('textarea');
+                        textArea.value = gameId;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            showNotification('Spiel-Code kopiert!', 'success', 2000);
+                        } catch (e) {
+                            showNotification('Kopieren fehlgeschlagen', 'error');
+                        }
+                        document.body.removeChild(textArea);
+                    }
+                });
+
+                codeDisplay.parentElement.appendChild(copyButton);
+            }
         }
     }
 
@@ -842,10 +890,24 @@
                 const status = document.createElement('div');
                 status.className = 'player-status';
 
-                // ✅ P1 STABILITY: Show offline status with rejoin timer
-                if (isOffline) {
+                // ✅ P1 STABILITY: Show presence-based status
+                if (player.online === false && player.disconnectedAt) {
+                    // Player disconnected - show rejoin timer
+                    const disconnectTime = player.disconnectedAt;
+                    const rejoinDeadline = player.rejoinDeadline || (disconnectTime + REJOIN_BUFFER_TIME);
+                    const remainingTime = Math.max(0, Math.floor((rejoinDeadline - Date.now()) / 1000));
+
+                    if (remainingTime > 0) {
+                        status.textContent = `🔌 Offline (${Math.floor(remainingTime / 60)}:${String(remainingTime % 60).padStart(2, '0')})`;
+                        status.classList.add('offline-status', 'rejoining');
+                    } else {
+                        status.textContent = '❌ Verbindung verloren';
+                        status.classList.add('offline-status', 'timed-out');
+                    }
+                } else if (isOffline) {
+                    // Legacy offline detection (no heartbeat)
                     const offlineTime = Date.now() - (player.lastSeen || player.joinedAt || Date.now());
-                    const remainingTime = Math.max(0, Math.floor((120000 - offlineTime) / 1000)); // 2 min timeout
+                    const remainingTime = Math.max(0, Math.floor((120000 - offlineTime) / 1000));
                     status.textContent = `🔌 Offline (${remainingTime}s)`;
                     status.classList.add('offline-status');
                 } else if (player.isHost) {
@@ -962,6 +1024,162 @@
 
     // ===========================
     // ACTIONS
+    // ===========================
+
+    /**
+     * ✅ P1 STABILITY: Setup Firebase presence system with onDisconnect
+     * - Tracks player connection status
+     * - Sets up rejoin buffer on disconnect
+     * - Removes player after buffer expires
+     */
+    function setupPresenceSystem() {
+        if (!firebase.database) {
+            console.warn('⚠️ Firebase database not available for presence');
+            return;
+        }
+
+        // Reference to .info/connected
+        connectedRef = firebase.database().ref('.info/connected');
+
+        connectedRef.on('value', (snapshot) => {
+            if (snapshot.val() === true) {
+                onConnectionEstablished();
+            } else {
+                onConnectionLost();
+            }
+        });
+
+        if (isDevelopment) {
+            console.log('✅ Presence system initialized');
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Handle connection established
+     */
+    function onConnectionEstablished() {
+        if (!currentGameId || !currentUserId) return;
+
+        const playerId = gameState.playerId || currentUserId;
+        presenceRef = firebase.database().ref(`games/${currentGameId}/players/${playerId}`);
+
+        // Set online status
+        presenceRef.update({
+            online: true,
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        // Setup onDisconnect handler
+        presenceRef.onDisconnect().update({
+            online: false,
+            disconnectedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        // Don't remove immediately - give rejoin buffer
+        const rejoinBufferTime = Date.now() + REJOIN_BUFFER_TIME;
+        presenceRef.onDisconnect().update({
+            rejoinDeadline: rejoinBufferTime
+        });
+
+        if (isDevelopment) {
+            console.log('✅ Connection established, presence set');
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Handle connection lost
+     */
+    function onConnectionLost() {
+        if (isDevelopment) {
+            console.log('⚠️ Connection lost, will attempt rejoin');
+        }
+
+        showNotification('Verbindung verloren... Versuche neu zu verbinden', 'warning', 0);
+    }
+
+    /**
+     * ✅ P1 STABILITY: Check if player can rejoin
+     */
+    async function checkRejoinEligibility() {
+        if (!currentGameId) return false;
+
+        try {
+            const gameRef = firebase.database().ref(`games/${currentGameId}`);
+            const snapshot = await gameRef.once('value');
+
+            if (!snapshot.exists()) {
+                return false; // Game doesn't exist anymore
+            }
+
+            const gameData = snapshot.val();
+            const playerId = gameState.playerId || currentUserId;
+            const player = gameData.players?.[playerId];
+
+            if (!player) {
+                return false; // Player not in game
+            }
+
+            // Check if rejoin deadline hasn't passed
+            if (player.rejoinDeadline && Date.now() < player.rejoinDeadline) {
+                return true;
+            }
+
+            return false;
+
+        } catch (error) {
+            console.error('❌ Rejoin check error:', error);
+            return false;
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Attempt to rejoin game
+     */
+    async function attemptRejoin() {
+        if (isRejoining) return;
+        isRejoining = true;
+
+        try {
+            showNotification('Trete Spiel wieder bei...', 'info');
+
+            const canRejoin = await checkRejoinEligibility();
+
+            if (!canRejoin) {
+                showNotification('Rejoin-Zeit abgelaufen', 'error');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return;
+            }
+
+            // Update player status
+            const playerId = gameState.playerId || currentUserId;
+            const playerRef = firebase.database().ref(`games/${currentGameId}/players/${playerId}`);
+
+            await playerRef.update({
+                online: true,
+                lastSeen: firebase.database.ServerValue.TIMESTAMP,
+                rejoinedAt: firebase.database.ServerValue.TIMESTAMP,
+                rejoinDeadline: null // Clear deadline
+            });
+
+            // Re-setup presence
+            setupPresenceSystem();
+
+            showNotification('Erfolgreich wieder verbunden!', 'success');
+
+            if (isDevelopment) {
+                console.log('✅ Rejoin successful');
+            }
+
+        } catch (error) {
+            console.error('❌ Rejoin error:', error);
+            showNotification('Fehler beim Rejoin', 'error');
+        } finally {
+            isRejoining = false;
+        }
+    }
+
+    // ===========================
+    // ACTIONS (continued)
     // ===========================
 
     async function toggleReady() {

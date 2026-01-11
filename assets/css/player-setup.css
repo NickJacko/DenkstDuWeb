@@ -216,6 +216,239 @@ body {
     line-height: 1.4;
 }
 
+/* ============================================================================
+   PRIVACY NOTICE & DSGVO
+   ============================================================================ */
+
+.privacy-notice {
+    background: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    display: flex;
+    gap: 15px;
+}
+
+.privacy-notice-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.privacy-notice-content {
+    flex: 1;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.privacy-notice-content strong {
+    color: white;
+    font-weight: 600;
+}
+
+.privacy-notice-content p {
+    margin: 10px 0;
+}
+
+.privacy-details {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.privacy-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 10px;
+    user-select: none;
+}
+
+.privacy-details summary:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.privacy-details ul {
+    list-style: none;
+    padding-left: 20px;
+    margin-top: 10px;
+}
+
+.privacy-details li {
+    position: relative;
+    margin: 5px 0;
+}
+
+.privacy-details li::before {
+    content: "✓";
+    position: absolute;
+    left: -20px;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.privacy-links {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.privacy-link-inline {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.privacy-link-inline:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.avatar-storage-options {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.avatar-storage-options h4 {
+    color: white;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.privacy-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.help-text {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin-top: 10px;
+}
+
+.age-rating-notice {
+    background: rgba(255, 152, 0, 0.1);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    display: flex;
+    gap: 15px;
+}
+
+.age-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.age-content {
+    flex: 1;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.age-content strong {
+    color: white;
+    font-weight: 600;
+}
+
+.age-content p {
+    margin: 10px 0;
+}
+
+.selected-difficulty-info {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+/* ============================================================================
+   OFFLINE WARNING
+   ============================================================================ */
+
+.offline-warning {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    background: rgba(255, 152, 0, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 15px 25px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    animation: slideDown 0.3s ease;
+}
+
+.offline-warning.hidden {
+    display: none;
+}
+
+.offline-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.offline-icon {
+    font-size: 2rem;
+}
+
+.offline-text {
+    color: white;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.offline-text strong {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.offline-text p {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
 .selection-description {
     color: rgba(255, 255, 255, 0.9);
     text-align: center;
