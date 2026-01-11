@@ -55,6 +55,7 @@
     let currentUserId = null;
     let gameListener = null;
     let heartbeatInterval = null; // ✅ P1 STABILITY: Track heartbeat for cleanup
+    let currentPlayers = {}; // ✅ Track current players for dialog
 
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1';
@@ -719,7 +720,7 @@
                 categoriesDisplay.removeChild(categoriesDisplay.firstChild);
             }
 
-            settings.categories.forEach((cat, index) => {
+            settings.categories.forEach((cat) => {
                 const icon = categoryIcons[cat] || '❓';
                 const name = categoryNames[cat] || cat;
 
@@ -786,10 +787,12 @@
         const playerCount = document.getElementById('player-count');
 
         if (!players || Object.keys(players).length === 0) {
+            currentPlayers = {}; // ✅ Update global state
             displayEmptyPlayers();
             return;
         }
 
+        currentPlayers = players; // ✅ Update global state
         const playersArray = Object.values(players);
 
         if (playerCount) {
@@ -902,13 +905,6 @@
             while (playersList.firstChild) {
                 playersList.removeChild(playersList.firstChild);
             }
-
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'empty-players';
-            emptyDiv.textContent = 'Keine Spieler in der Lobby';
-            playersList.appendChild(emptyDiv);
-        }
-    }
 
             const emptyDiv = document.createElement('div');
             emptyDiv.className = 'empty-players';
@@ -1166,8 +1162,7 @@
         // ✅ P1 STABILITY: Update player count for host
         if (isHost && connectedPlayersCount) {
             const playerCount = Object.keys(currentPlayers).length;
-            const playerText = playerCount === 1 ? '1 Spieler' : `${playerCount} Spieler`;
-            connectedPlayersCount.textContent = playerText;
+            connectedPlayersCount.textContent = playerCount === 1 ? '1 Spieler' : `${playerCount} Spieler`;
         }
 
         // Show dialog
@@ -1260,12 +1255,6 @@
         }
     }
 
-    // ===========================
-    // CLEANUP
-    // ===========================
-            showNotification('Kopieren nicht unterstützt', 'warning');
-        }
-    }
 
     // ===========================
     // UTILITIES
