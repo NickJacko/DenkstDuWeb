@@ -103,16 +103,38 @@
 <div class="app-container">
     <div class="glass-card">
         <!-- Header -->
-        <header class="header">
-            <h1>🔗 Spiel beitreten</h1>
+        <header class="header" role="banner">
+            <h1 id="page-title">🔗 Spiel beitreten</h1>
             <p>Gib den Spiel-Code und deinen Namen ein</p>
         </header>
 
+        <!-- ✅ P1 DSGVO: Datenschutzhinweis -->
+        <div class="privacy-notice" role="region" aria-labelledby="privacy-heading">
+            <h2 id="privacy-heading" class="privacy-heading">🔒 Datenschutzhinweis</h2>
+            <p class="privacy-text">
+                Beim Beitreten werden <strong>Name</strong>, <strong>Alter</strong> und <strong>IP-Adresse</strong>
+                temporär für das Multiplayer-Spiel gespeichert. Daten werden nach Spielende automatisch gelöscht.
+                <a href="/privacy.html" class="privacy-link" target="_blank" rel="noopener">Mehr erfahren</a>
+            </p>
+        </div>
+
+        <!-- ✅ P0 SECURITY: Fehlermeldungen Container -->
+        <div class="error-messages hidden" id="error-container" role="alert" aria-live="assertive" aria-atomic="true">
+            <!-- Fehler werden hier dynamisch eingefügt (via textContent, NICHT innerHTML) -->
+        </div>
+
+        <!-- ✅ P1 STABILITY: Offline-Warnung -->
+        <div class="offline-warning hidden" id="offline-warning" role="alert" aria-live="polite">
+            <strong>📡 Verbindung verloren</strong>
+            <p>Überprüfe deine Internetverbindung und versuche es erneut.</p>
+        </div>
+
         <!-- Form Section -->
-        <form class="form-section" id="join-form">
-            <!-- Game Code Input -->
-            <div class="input-group">
-                <label class="input-label" for="game-code">Spiel-Code (6 Zeichen)</label>
+        <form class="form-section" id="join-form" novalidate aria-labelledby="page-title">
+            <!-- Step 1: Game Code Input -->
+            <fieldset class="input-group" id="step-game-code">
+                <legend class="input-label">Schritt 1: Spiel-Code eingeben</legend>
+                <label class="sr-only" for="game-code">Spiel-Code (6 Zeichen)</label>
                 <div class="input-wrapper">
                     <input
                             type="text"
@@ -121,28 +143,56 @@
                             placeholder="ABC123"
                             maxlength="6"
                             autocomplete="off"
-                            aria-describedby="code-hint"
+                            aria-describedby="code-hint code-error"
                             aria-required="true"
+                            aria-invalid="false"
                     >
                     <!-- ✅ P1 UI/UX: Live-Validierung Icon -->
                     <span class="validation-icon hidden" id="code-validation-icon" aria-hidden="true">✔️</span>
                 </div>
-                <span class="input-hint" id="code-hint">Vom Host mitgeteilt</span>
+                <span class="input-hint" id="code-hint">Vom Host mitgeteilt (z.B. ABC123)</span>
+
+                <!-- ✅ P1 UI/UX: Fehlermeldung für ungültigen Code -->
+                <span class="input-error hidden" id="code-error" role="alert">
+                    <!-- Fehlertext wird dynamisch eingefügt -->
+                </span>
+
                 <!-- ✅ P0 Sicherheit: Rate-Limit Warnung -->
-                <div class="rate-limit-warning hidden" id="rate-limit-warning" role="alert">
+                <div class="rate-limit-warning hidden" id="rate-limit-warning" role="alert" aria-live="polite">
                     <strong>⏳ Zu viele Versuche</strong>
-                    <p>Bitte warte <span id="rate-limit-countdown">30</span> Sekunden bevor du es erneut versuchst.</p>
+                    <p>Bitte warte <span id="rate-limit-countdown" aria-live="polite">30</span> Sekunden bevor du es erneut versuchst.</p>
                 </div>
-            </div>
+            </fieldset>
 
             <!-- Game Info Preview -->
-            <aside class="game-info-preview hidden" id="game-info" role="region" aria-label="Spiel-Informationen">
-                ...existing code...
+            <aside class="game-info-preview hidden" id="game-info" role="region" aria-label="Spiel-Informationen" aria-live="polite">
+                <h3 class="game-info-title">📋 Spiel-Details</h3>
+                <dl class="game-info-list">
+                    <dt>Host:</dt>
+                    <dd id="game-host-name">Wird geladen...</dd>
+
+                    <dt>Spieler:</dt>
+                    <dd id="game-player-count">0/10</dd>
+
+                    <dt>Kategorien:</dt>
+                    <dd id="game-categories">Wird geladen...</dd>
+
+                    <dt>Schwierigkeit:</dt>
+                    <dd id="game-difficulty">Wird geladen...</dd>
+
+                    <!-- ✅ P1 DSGVO/Jugendschutz: FSK-Warnung -->
+                    <dt>FSK-Einstufung:</dt>
+                    <dd id="game-fsk-rating" class="fsk-warning" role="status">
+                        <strong>⚠️ FSK 16+</strong>
+                        <span class="fsk-hint">Altersprüfung erforderlich</span>
+                    </dd>
+                </dl>
             </aside>
 
-            <!-- Player Name Input -->
-            <div class="input-group">
-                <label class="input-label" for="player-name">Dein Spielername</label>
+            <!-- Step 2: Player Name Input -->
+            <fieldset class="input-group hidden" id="step-player-name">
+                <legend class="input-label">Schritt 2: Deinen Namen eingeben</legend>
+                <label class="sr-only" for="player-name">Dein Spielername</label>
                 <div class="input-wrapper">
                     <input
                             type="text"
@@ -152,22 +202,28 @@
                             maxlength="20"
                             minlength="2"
                             autocomplete="name"
-                            aria-describedby="name-hint"
+                            aria-describedby="name-hint name-error"
                             aria-required="true"
+                            aria-invalid="false"
                     >
                     <!-- ✅ P1 UI/UX: Live-Validierung Icon -->
                     <span class="validation-icon hidden" id="name-validation-icon" aria-hidden="true">✔️</span>
                 </div>
-                <span class="input-hint" id="name-hint">Mindestens 2 Zeichen</span>
-            </div>
+                <span class="input-hint" id="name-hint">2-20 Zeichen, nur Buchstaben und Zahlen</span>
+
+                <!-- ✅ P1 UI/UX: Fehlermeldung für ungültigen Namen -->
+                <span class="input-error hidden" id="name-error" role="alert">
+                    <!-- Fehlertext wird dynamisch eingefügt -->
+                </span>
+            </fieldset>
         </form>
 
         <!-- Controls -->
-        <div class="controls">
-            <button class="btn btn-outline" id="back-btn" type="button">
+        <div class="controls" role="navigation" aria-label="Formular-Navigation">
+            <button class="btn btn-outline" id="back-btn" type="button" aria-label="Zurück zur Startseite">
                 ← Zurück
             </button>
-            <button class="btn btn-primary" id="join-btn" type="button" disabled aria-disabled="true">
+            <button class="btn btn-primary" id="join-btn" type="button" disabled aria-disabled="true" aria-label="Spiel beitreten">
                 🚀 Beitreten
             </button>
         </div>

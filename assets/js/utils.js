@@ -1781,12 +1781,231 @@
     }
 
     // ============================================================================
+    // 🔥 FIREBASE INITIALIZATION HELPER
+    // ============================================================================
+
+    /**
+     * ✅ P0 FIX: Wait for Firebase App initialization
+     * Prevents "No Firebase App '[DEFAULT]'" errors in multiplayer pages
+     * @param {number} maxWaitMs - Maximum wait time in milliseconds (default: 10000)
+     * @returns {Promise<boolean>} True if initialized, false if timeout
+     */
+    async function waitForFirebaseInit(maxWaitMs = 10000) {
+        if (typeof firebase === 'undefined') {
+            Logger.error('❌ Firebase SDK not loaded');
+            return false;
+        }
+
+        const startTime = Date.now();
+        const checkInterval = 100; // Check every 100ms
+
+        while (Date.now() - startTime < maxWaitMs) {
+            // Check if Firebase App is initialized
+            if (firebase.apps && firebase.apps.length > 0) {
+                if (isDevelopment) {
+                    Logger.debug(`✅ Firebase App initialized: ${firebase.app().name}`);
+                }
+                return true;
+            }
+
+            // Wait before next check
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+
+        // Timeout
+        Logger.error(`❌ Firebase App not initialized after ${maxWaitMs}ms`);
+        return false;
+    }
+
+    // ============================================================================
+    // 🔞 AGE VERIFICATION HELPERS (P1 DSGVO/Jugendschutz)
+    // ============================================================================
+
+    /**
+     * ✅ P1 DSGVO: Check if age verification is valid
+     * Verifies the nocap_age_verification token and checks expiry (7 days)
+     *
+     * @returns {Object} Validation result
+     * @returns {boolean} .isValid - Whether verification is valid
+     * @returns {number|null} .age - Verified age (if valid)
+     * @returns {number|null} .expiresAt - Expiry timestamp (if valid)
+     * @returns {string|null} .reason - Reason for invalidity
+     *
+     * @example
+     * const ageCheck = checkAgeVerification();
+     * if (!ageCheck.isValid) {
+     *     window.location.href = 'age-gate.html';
+     * }
+     */
+    function checkAgeVerification() {
+        try {
+            const token = getLocalStorage('nocap_age_verification');
+
+            if (!token) {
+                return {
+                    isValid: false,
+                    age: null,
+                    expiresAt: null,
+                    reason: 'NO_TOKEN'
+                };
+            }
+
+            let data;
+            try {
+                data = JSON.parse(token);
+            } catch (error) {
+                Logger.warn('⚠️ Invalid age verification token format');
+                removeLocalStorage('nocap_age_verification');
+                return {
+                    isValid: false,
+                    age: null,
+                    expiresAt: null,
+                    reason: 'INVALID_FORMAT'
+                };
+            }
+
+            if (!data.age || !data.verifiedAt || !data.expiresAt) {
+                Logger.warn('⚠️ Incomplete age verification data');
+                removeLocalStorage('nocap_age_verification');
+                return {
+                    isValid: false,
+                    age: null,
+                    expiresAt: null,
+                    reason: 'INCOMPLETE_DATA'
+                };
+            }
+
+            const now = Date.now();
+            if (now > data.expiresAt) {
+                Logger.info('ℹ️ Age verification expired');
+                removeLocalStorage('nocap_age_verification');
+                return {
+                    isValid: false,
+                    age: data.age,
+                    expiresAt: data.expiresAt,
+                    reason: 'EXPIRED'
+                };
+            }
+
+            const age = parseInt(data.age);
+            if (isNaN(age) || age < 0 || age > 150) {
+                Logger.warn('⚠️ Invalid age value');
+                removeLocalStorage('nocap_age_verification');
+                return {
+                    isValid: false,
+                    age: null,
+                    expiresAt: null,
+                    reason: 'INVALID_AGE'
+                };
+            }
+
+            return {
+                isValid: true,
+                age: age,
+                expiresAt: data.expiresAt,
+                reason: null
+            };
+
+        } catch (error) {
+            Logger.error('❌ Age verification check failed:', error);
+            return {
+                isValid: false,
+                age: null,
+                expiresAt: null,
+                reason: 'ERROR'
+            };
+        }
+    }
+
+    /**
+     * ✅ P1 DSGVO: Get verified age (or null if invalid)
+     */
+    function getVerifiedAge() {
+        const check = checkAgeVerification();
+        return check.isValid ? check.age : null;
+    }
+
+    /**
+     * ✅ P1 DSGVO: Check if user can access FSK level
+     */
+    function canAccessFSK(fskLevel) {
+        const age = getVerifiedAge();
+        if (!age) return fskLevel === 0;
+        return age >= fskLevel;
+    }
+
+    /**
+     * ✅ P1 DSGVO: Set age verification token (valid for 7 days)
+     */
+    function setAgeVerification(age) {
+        try {
+            const ageNum = parseInt(age);
+            if (isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
+                Logger.warn('⚠️ Invalid age for verification:', age);
+                return false;
+            }
+
+            const now = Date.now();
+            const expiresAt = now + (7 * 24 * 60 * 60 * 1000);
+
+            const token = {
+                age: ageNum,
+                verifiedAt: now,
+                expiresAt: expiresAt,
+                version: '1.0'
+            };
+
+            setLocalStorage('nocap_age_verification', JSON.stringify(token));
+            Logger.info(`✅ Age verification set: ${ageNum} years (expires in 7 days)`);
+            return true;
+
+        } catch (error) {
+            Logger.error('❌ Failed to set age verification:', error);
+            return false;
+        }
+    }
+
+    /**
+     * ✅ P1 DSGVO: Clear age verification
+     */
+    function clearAgeVerification() {
+        removeLocalStorage('nocap_age_verification');
+        Logger.info('🔄 Age verification cleared');
+    }
+
+    /**
+     * ✅ P1 DSGVO: Get time until age verification expires
+     */
+    function getAgeVerificationTimeLeft() {
+        const check = checkAgeVerification();
+        if (!check.isValid || !check.expiresAt) return null;
+        return check.expiresAt - Date.now();
+    }
+
+    /**
+     * ✅ P1 DSGVO: Format age verification expiry for display
+     */
+    function formatAgeVerificationExpiry() {
+        const check = checkAgeVerification();
+        if (!check.isValid || !check.expiresAt) return null;
+
+        const date = new Date(check.expiresAt);
+        return date.toLocaleString('de-DE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // ============================================================================
     // 📤 EXPORT FUNCTIONS TO GLOBAL SCOPE
     // ============================================================================
 
     window.NocapUtils = Object.freeze({
         // Version
-        version: '6.0', // ✅ PRODUCTION: Version bump - Production-Safe Logger
+        version: '6.1', // ✅ FIREBASE FIX: Added waitForFirebaseInit
 
         // ✅ PRODUCTION: Logger (sanitizes sensitive data)
         Logger,
@@ -1874,18 +2093,31 @@
         // Error handling
         getFirebaseErrorMessage,
 
+        // Firebase
+        waitForFirebaseInit,
+
         // Cleanup
         cleanupEventListeners,
 
         // Expose DOMPurify
-        DOMPurify: typeof DOMPurify !== 'undefined' ? DOMPurify : null
+        DOMPurify: typeof DOMPurify !== 'undefined' ? DOMPurify : null,
+
+        // DSGVO/Jugendschutz: Age verification helpers
+        checkAgeVerification,
+        getVerifiedAge,
+        canAccessFSK,
+        setAgeVerification,
+        clearAgeVerification,
+        getAgeVerificationTimeLeft,
+        formatAgeVerificationExpiry
     });
 
     if (isDevelopment) {
-        console.log('%c✅ NocapUtils v6.0 exported to window.NocapUtils',
+        console.log('%c✅ NocapUtils v6.1 exported to window.NocapUtils',
             'color: #2196F3; font-weight: bold; font-size: 12px');
         console.log('   Available functions:', Object.keys(window.NocapUtils).length);
-        console.log('   New in v6.0: Production-Safe Logger (auto-sanitizes sensitive data)');
+        console.log('   New in v6.1: waitForFirebaseInit() helper');
     }
 
 })(window);
+

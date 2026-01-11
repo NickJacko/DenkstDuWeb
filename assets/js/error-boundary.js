@@ -63,7 +63,8 @@
     // ===================================
 
     /**
-     * ✅ Handle JavaScript errors (window.onerror)
+     * ✅ P0 SECURITY: Handle JavaScript errors (window.onerror)
+     * Sanitizes all error data before storage and transmission
      * @param {string} message - Error message
      * @param {string} source - Script URL
      * @param {number} lineno - Line number
@@ -72,13 +73,13 @@
      */
     function handleError(message, source, lineno, colno, error) {
         try {
-            // Create error object
+            // ✅ P0 SECURITY: Create error object with sanitized data
             const errorInfo = {
-                message: message || 'Unknown error',
-                source: source || 'Unknown source',
+                message: sanitizeErrorMessage(message || 'Unknown error'),
+                source: sanitizeErrorMessage(source || 'Unknown source'),
                 lineno: lineno || 0,
                 colno: colno || 0,
-                stack: error?.stack || 'No stack trace',
+                stack: sanitizeStackTrace(error?.stack || 'No stack trace'),
                 timestamp: Date.now(),
                 url: window.location.href,
                 userAgent: navigator.userAgent
@@ -111,19 +112,22 @@
     }
 
     /**
-     * ✅ Handle unhandled promise rejections
+     * ✅ P1 STABILITY: Handle unhandled promise rejections
+     * ✅ P0 SECURITY: Sanitizes all error data before storage
      * @param {PromiseRejectionEvent} event
      */
     function handleUnhandledRejection(event) {
         try {
             // Extract error info
             const reason = event.reason;
+
+            // ✅ P0 SECURITY: Create error object with sanitized data
             const errorInfo = {
-                message: reason?.message || String(reason) || 'Unhandled Promise Rejection',
+                message: sanitizeErrorMessage(reason?.message || String(reason) || 'Unhandled Promise Rejection'),
                 source: 'Promise',
                 lineno: 0,
                 colno: 0,
-                stack: reason?.stack || 'No stack trace',
+                stack: sanitizeStackTrace(reason?.stack || 'No stack trace'),
                 timestamp: Date.now(),
                 url: window.location.href,
                 userAgent: navigator.userAgent,
@@ -194,11 +198,74 @@
     }
 
     // ===================================
+    // 🛡️ P0 SECURITY: SANITIZATION
+    // ===================================
+
+    /**
+     * ✅ P0 SECURITY: Sanitize error message - remove sensitive data
+     * Removes: API keys, tokens, passwords, email addresses, stack traces
+     * @param {string} message - Raw error message
+     * @returns {string} Sanitized message
+     */
+    function sanitizeErrorMessage(message) {
+        if (!message) return '';
+
+        let sanitized = String(message);
+
+        // ✅ P0 SECURITY: Remove API keys (various patterns)
+        sanitized = sanitized.replace(/[A-Za-z0-9]{32,}/g, '[REDACTED_KEY]');
+        sanitized = sanitized.replace(/AIza[A-Za-z0-9_-]{35}/g, '[REDACTED_API_KEY]');
+        sanitized = sanitized.replace(/sk_[a-z]+_[A-Za-z0-9]{24,}/g, '[REDACTED_SECRET_KEY]');
+
+        // ✅ P0 SECURITY: Remove tokens
+        sanitized = sanitized.replace(/Bearer\s+[A-Za-z0-9\-_.]+/gi, 'Bearer [REDACTED_TOKEN]');
+        sanitized = sanitized.replace(/token[=:]\s*[A-Za-z0-9\-_.]+/gi, 'token=[REDACTED]');
+
+        // ✅ P0 SECURITY: Remove email addresses
+        sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL_REDACTED]');
+
+        // ✅ P0 SECURITY: Remove file paths (may contain usernames)
+        sanitized = sanitized.replace(/[A-Z]:\\[^\s]+/g, '[PATH_REDACTED]');
+        sanitized = sanitized.replace(/\/[a-z]+\/[^\s]+/g, '[PATH_REDACTED]');
+
+        // ✅ P0 SECURITY: Remove URLs with credentials
+        sanitized = sanitized.replace(/https?:\/\/[^:]+:[^@]+@/g, 'https://[CREDENTIALS_REDACTED]@');
+
+        // ✅ P0 SECURITY: Remove stack trace lines in production
+        if (!CONFIG.isDevelopment) {
+            sanitized = sanitized.split('\n')[0]; // Only first line
+        }
+
+        return sanitized.substring(0, 500); // Max length
+    }
+
+    /**
+     * ✅ P0 SECURITY: Sanitize stack trace - remove sensitive file paths
+     * @param {string} stack - Raw stack trace
+     * @returns {string} Sanitized stack trace
+     */
+    function sanitizeStackTrace(stack) {
+        if (!stack) return '';
+        if (!CONFIG.isDevelopment) return '[STACK_REDACTED]'; // Never show in production
+
+        let sanitized = String(stack);
+
+        // Remove absolute file paths
+        sanitized = sanitized.replace(/[A-Z]:\\[^\s)]+/g, '[PATH]');
+        sanitized = sanitized.replace(/\/[a-z]+\/[^\s)]+/g, '[PATH]');
+
+        // Remove webpack URLs
+        sanitized = sanitized.replace(/webpack:\/\/[^\s)]+/g, '[WEBPACK]');
+
+        return sanitized.substring(0, 1000); // Max length
+    }
+
+    // ===================================
     // 🔔 USER NOTIFICATIONS
     // ===================================
 
     /**
-     * ✅ Show user-friendly error notification
+     * ✅ P1 STABILITY: Show user-friendly error notification with actions
      * @param {Object} errorInfo
      */
     function showUserNotification(errorInfo) {
@@ -206,33 +273,204 @@
 
         // Get user-friendly message
         const userMessage = getUserFriendlyMessage(errorInfo);
+        const errorId = generateErrorId(errorInfo);
 
-        // Try NocapUtils first
-        if (window.NocapUtils && window.NocapUtils.showNotification) {
-            window.NocapUtils.showNotification(
-                userMessage,
-                'error',
-                5000
-            );
-            return;
+        // ✅ P1 STABILITY: Create error modal with action buttons
+        createErrorModal(userMessage, errorId, errorInfo);
+    }
+
+    /**
+     * ✅ P1 STABILITY: Create error modal with reload and report options
+     * @param {string} message - User-friendly message
+     * @param {string} errorId - Unique error ID
+     * @param {Object} errorInfo - Full error info (for reporting)
+     */
+    function createErrorModal(message, errorId, errorInfo) {
+        // Check if modal already exists
+        let modal = document.getElementById('nocap-error-modal');
+
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'nocap-error-modal';
+            modal.className = 'error-modal';
+            modal.setAttribute('role', 'alertdialog');
+            modal.setAttribute('aria-labelledby', 'error-modal-title');
+            modal.setAttribute('aria-describedby', 'error-modal-desc');
+            modal.setAttribute('aria-modal', 'true');
+
+            modal.innerHTML = `
+                <div class="error-modal-overlay"></div>
+                <div class="error-modal-content">
+                    <div class="error-modal-header">
+                        <h2 id="error-modal-title">⚠️ Es ist ein Fehler aufgetreten</h2>
+                    </div>
+                    <div class="error-modal-body">
+                        <p id="error-modal-desc" class="error-message"></p>
+                        <p class="error-id">Fehler-ID: <code></code></p>
+                    </div>
+                    <div class="error-modal-actions">
+                        <button id="error-reload-btn" class="btn btn-primary">
+                            🔄 Seite neu laden
+                        </button>
+                        <button id="error-report-btn" class="btn btn-secondary">
+                            📧 Fehler melden
+                        </button>
+                        <button id="error-close-btn" class="btn btn-link">
+                            ❌ Schließen
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
         }
 
-        // Fallback: alert (not ideal, but better than nothing)
-        if (CONFIG.isDevelopment) {
-            alert(`❌ Fehler: ${userMessage}`);
+        // ✅ P0 SECURITY: Set sanitized message (textContent, not innerHTML)
+        const messageEl = modal.querySelector('.error-message');
+        messageEl.textContent = message;
+
+        const errorIdEl = modal.querySelector('.error-id code');
+        errorIdEl.textContent = errorId;
+
+        // Show modal
+        modal.style.display = 'flex';
+        modal.classList.add('visible');
+
+        // ✅ P1 STABILITY: Setup event handlers
+        const reloadBtn = modal.querySelector('#error-reload-btn');
+        const reportBtn = modal.querySelector('#error-report-btn');
+        const closeBtn = modal.querySelector('#error-close-btn');
+
+        // Reload page
+        reloadBtn.onclick = () => {
+            window.location.reload();
+        };
+
+        // Report error
+        reportBtn.onclick = () => {
+            reportErrorToSupport(errorInfo, errorId);
+        };
+
+        // Close modal
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+            modal.classList.remove('visible');
+        };
+
+        // Auto-focus on reload button
+        reloadBtn.focus();
+
+        // ESC key to close
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                closeBtn.click();
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+    }
+
+    /**
+     * ✅ P1 STABILITY: Generate unique error ID for tracking
+     * @param {Object} errorInfo
+     * @returns {string} Error ID
+     */
+    function generateErrorId(errorInfo) {
+        const timestamp = errorInfo.timestamp || Date.now();
+        const hash = simpleHash(errorInfo.message + errorInfo.source);
+        return `ERR-${timestamp}-${hash}`;
+    }
+
+    /**
+     * Simple hash function for error IDs
+     * @param {string} str
+     * @returns {string} 4-char hash
+     */
+    function simpleHash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return Math.abs(hash).toString(36).substring(0, 4).toUpperCase();
+    }
+
+    /**
+     * ✅ P1 STABILITY: Report error to support (email or feedback form)
+     * @param {Object} errorInfo - Full error info
+     * @param {string} errorId - Error ID
+     */
+    function reportErrorToSupport(errorInfo, errorId) {
+        try {
+            // ✅ P0 SECURITY: Sanitize all data before sending
+            const sanitizedReport = {
+                errorId: errorId,
+                message: sanitizeErrorMessage(errorInfo.message),
+                source: sanitizeErrorMessage(errorInfo.source),
+                timestamp: errorInfo.timestamp,
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                // ✅ P0 SECURITY: Stack trace only in development
+                stack: CONFIG.isDevelopment ? sanitizeStackTrace(errorInfo.stack) : '[REDACTED]'
+            };
+
+            // Create email body
+            const emailBody = encodeURIComponent(
+                `Fehler-ID: ${sanitizedReport.errorId}\n\n` +
+                `Nachricht: ${sanitizedReport.message}\n` +
+                `Seite: ${sanitizedReport.url}\n` +
+                `Zeit: ${new Date(sanitizedReport.timestamp).toLocaleString()}\n\n` +
+                `Bitte beschreibe, was du getan hast, als der Fehler auftrat:\n\n`
+            );
+
+            // Open email client or feedback form
+            const supportEmail = 'support@no-cap.app'; // Replace with your support email
+            window.location.href = `mailto:${supportEmail}?subject=Fehlerbericht ${errorId}&body=${emailBody}`;
+
+            if (CONFIG.isDevelopment) {
+                console.log('📧 Error report prepared:', sanitizedReport);
+            }
+
+            // Show confirmation
+            if (window.NocapUtils?.showNotification) {
+                window.NocapUtils.showNotification(
+                    'E-Mail-Client geöffnet. Vielen Dank für deine Hilfe!',
+                    'success',
+                    3000
+                );
+            }
+
+        } catch (error) {
+            console.error('Failed to create error report:', error);
+
+            // Fallback: Copy to clipboard
+            const reportText = `Fehler-ID: ${errorId}\nBitte sende diese ID an support@no-cap.app`;
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(reportText)
+                    .then(() => {
+                        alert('Fehler-ID in Zwischenablage kopiert. Bitte sende sie an support@no-cap.app');
+                    })
+                    .catch(() => {
+                        alert(reportText);
+                    });
+            } else {
+                alert(reportText);
+            }
         }
     }
 
     /**
-     * Convert technical error to user-friendly message
+     * ✅ P0 SECURITY: Convert technical error to user-friendly message
+     * NEVER shows stack traces, API keys, or sensitive data
      * @param {Object} errorInfo
-     * @returns {string}
+     * @returns {string} User-friendly message
      */
     function getUserFriendlyMessage(errorInfo) {
-        const message = errorInfo.message || '';
+        const message = sanitizeErrorMessage(errorInfo.message || '');
 
         // Common error patterns
-        if (message.includes('Network') || message.includes('fetch')) {
+        if (message.includes('Network') || message.includes('fetch') || message.includes('Failed to fetch')) {
             return 'Netzwerkfehler. Bitte prüfe deine Internetverbindung.';
         }
 
@@ -241,20 +479,28 @@
         }
 
         if (message.includes('localStorage') || message.includes('QuotaExceeded')) {
-            return 'Speicher voll. Bitte lösche Browser-Daten.';
+            return 'Speicher voll. Bitte lösche Browser-Daten oder verwende den Inkognito-Modus.';
         }
 
-        if (message.includes('undefined') || message.includes('null')) {
-            return 'Ein Fehler ist aufgetreten. Bitte lade die Seite neu.';
+        if (message.includes('undefined') || message.includes('null') || message.includes('Cannot read property')) {
+            return 'Ein unerwarteter Fehler ist aufgetreten. Bitte lade die Seite neu.';
         }
 
-        // Development: Show actual error
+        if (message.includes('timeout') || message.includes('Timeout')) {
+            return 'Die Anfrage hat zu lange gedauert. Bitte versuche es erneut.';
+        }
+
+        if (message.includes('script') || message.includes('blocked')) {
+            return 'Ein Skript konnte nicht geladen werden. Bitte deaktiviere Adblocker.';
+        }
+
+        // ✅ P0 SECURITY: Development - show sanitized error
         if (CONFIG.isDevelopment) {
-            return `Fehler: ${message}`;
+            return `Fehler: ${message.substring(0, 100)}`;
         }
 
-        // Production: Generic message
-        return 'Ein Fehler ist aufgetreten. Wir arbeiten daran!';
+        // ✅ P0 SECURITY: Production - generic message (NEVER show technical details)
+        return 'Ein Fehler ist aufgetreten. Wir arbeiten daran! Bitte versuche, die Seite neu zu laden.';
     }
 
     // ===================================

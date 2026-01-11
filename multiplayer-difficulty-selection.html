@@ -103,6 +103,17 @@
         <!-- Difficulty Grid -->
         <div class="difficulty-grid" id="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad-Auswahl"></div>
 
+        <!-- ✅ P1 UI/UX: Players Status Display -->
+        <section class="players-status-section" id="players-status-section" role="region" aria-labelledby="players-status-title">
+            <h2 id="players-status-title" class="status-title">👥 Spieler-Status</h2>
+            <div class="players-status-grid" id="players-status-grid" role="list">
+                <div class="loading-players">Lade Spieler...</div>
+            </div>
+            <div class="status-summary" id="status-summary" aria-live="polite">
+                <span id="ready-count">0</span> von <span id="total-count">0</span> Spielern bereit
+            </div>
+        </section>
+
         <!-- Controls -->
         <div class="controls">
             <button class="btn-continue" id="continue-btn" type="button" disabled aria-disabled="true">
@@ -112,11 +123,54 @@
     </div>
 </div>
 
+<!-- ✅ P1 DSGVO: FSK18 Age Confirmation Dialog -->
+<div class="fsk-confirmation-dialog"
+     id="fsk-confirmation-dialog"
+     role="alertdialog"
+     aria-modal="true"
+     aria-labelledby="fsk-dialog-title"
+     aria-describedby="fsk-dialog-desc"
+     aria-hidden="true"
+     hidden>
+    <div class="dialog-overlay" aria-hidden="true"></div>
+    <div class="dialog-content">
+        <h2 id="fsk-dialog-title" class="dialog-title">
+            <span aria-hidden="true">🔞</span> FSK18-Bestätigung erforderlich
+        </h2>
+        <p id="fsk-dialog-desc" class="dialog-description">
+            <strong>Du hast FSK18-Kategorien ausgewählt.</strong><br><br>
+            Bitte bestätige, dass alle teilnehmenden Spieler mindestens 18 Jahre alt sind.
+            Als Host bist du dafür verantwortlich, dass alle Teilnehmer die Altersbeschränkung erfüllen.
+        </p>
+        <div class="fsk-warning-box" role="alert">
+            <span class="warning-icon" aria-hidden="true">⚠️</span>
+            <span>Dies ist eine rechtlich bindende Bestätigung gemäß Jugendschutzgesetz (JuSchG)</span>
+        </div>
+        <div class="dialog-buttons" role="group" aria-label="Bestätigungsoptionen">
+            <button class="btn-cancel"
+                    id="fsk-cancel-btn"
+                    type="button"
+                    aria-label="Abbrechen und zurück">
+                ❌ Abbrechen
+            </button>
+            <button class="btn-confirm-fsk"
+                    id="fsk-confirm-btn"
+                    type="button"
+                    aria-label="Ich bestätige das Alter aller Spieler">
+                ✅ Ich bestätige, dass alle Spieler 18+ sind
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Privacy Footer -->
 <div class="privacy-footer">
-    <a href="privacy.html" class="privacy-link">Datenschutz</a>
+    <a href="privacy.html" class="privacy-link" target="_blank" rel="noopener">Datenschutz</a>
+    <span class="footer-separator" aria-hidden="true">•</span>
+    <a href="imprint.html" class="privacy-link" target="_blank" rel="noopener">Impressum</a>
 </div>
-    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>

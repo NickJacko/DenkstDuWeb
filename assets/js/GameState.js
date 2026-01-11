@@ -1,16 +1,58 @@
 /**
  * No-Cap GameState - Central State Management
- * Version 8.0 - Optimizations & Player Management
+ * Version 9.0 - Event System & Enhanced State Management
  *
+ * ✅ P1 STABILITY: Single Source of Truth - Alle Seiten nutzen dieselbe Instanz
+ * ✅ P1 STABILITY: Event System - onChange Callbacks für reactive UI
+ * ✅ P1 UI/UX: Vollständige JSDoc-Dokumentation
+ * ✅ P1 UI/UX: reset() Methode zum Zurücksetzen des States
  * ✅ P0 FIX: getState() returns deep copy (no mutation possible)
  * ✅ P0 FIX: isPremiumUser() & canAccessFSK() use MANDATORY server validation
  * ✅ P1 FIX: Improved debounce with cancel function and mutex
  * ✅ P1 FIX: Proper cleanup on page unload
  * ✅ P0 FIX: All string values sanitized on load/save
  * ✅ P2 FIX: Production logging via logger service instead of console
- * ✅ OPTIMIZATION: Session cache for Premium/FSK checks (5min TTL) - verhindert redundante Cloud Function Calls
+ * ✅ OPTIMIZATION: Session cache for Premium/FSK checks (5min TTL)
  * ✅ OPTIMIZATION: addPlayer() / removePlayer() / getPlayerCount() methods
  * ✅ OPTIMIZATION: Support for player metadata (avatar, gender)
+ *
+ * @class GameState
+ * @description Zentrale State-Verwaltung für das No-Cap Spiel.
+ *              Stellt sicher, dass alle Seiten denselben State verwenden.
+ *              Bietet Event-System für reactive UI-Updates.
+ *
+ * @property {string|null} deviceMode - Spielmodus: 'single' oder 'multi'
+ * @property {string[]} selectedCategories - Ausgewählte Kategorien: ['fsk0', 'fsk16', 'fsk18', 'special']
+ * @property {string|null} difficulty - Schwierigkeitsgrad: 'easy', 'medium', 'hard'
+ * @property {boolean} alcoholMode - Alkohol-Modus aktiv
+ * @property {number} questionCount - Anzahl der Fragen
+ * @property {Array<string|Object>} players - Spieler-Liste (Namen oder Objekte mit name/avatar/age)
+ * @property {string} playerName - Name des aktuellen Spielers
+ * @property {string|null} gameId - 6-stelliger Spiel-Code
+ * @property {string|null} playerId - Eindeutige Spieler-ID
+ * @property {boolean} isHost - Ist dieser Nutzer der Host?
+ * @property {boolean} isGuest - Ist dieser Nutzer ein Gast?
+ * @property {string} gamePhase - Aktuelle Spielphase: 'lobby', 'playing', 'results'
+ * @property {number} timestamp - Zeitstempel der State-Erstellung
+ *
+ * @example
+ * // Import (automatisch verfügbar als window.gameState)
+ * const gameState = window.gameState;
+ *
+ * // Event-Listener registrieren
+ * gameState.on('change:difficulty', (newValue, oldValue) => {
+ *     console.log(`Difficulty changed from ${oldValue} to ${newValue}`);
+ *     updateUI();
+ * });
+ *
+ * // State setzen (triggert Event)
+ * gameState.set('difficulty', 'hard');
+ *
+ * // State abrufen (Deep Copy)
+ * const state = gameState.getState();
+ *
+ * // State zurücksetzen
+ * gameState.reset();
  */
 
 (function(window) {
@@ -20,7 +62,7 @@
         constructor() {
             // Storage configuration
             this.STORAGE_KEY = 'nocap_game_state';
-            this.VERSION = 8.0; // ✅ OPTIMIZATION: Version bump
+            this.VERSION = 9.0; // ✅ P1 STABILITY: Version bump for event system
             this.MAX_AGE_HOURS = 24;
 
             // ✅ P1 FIX: Improved debounce & locking with mutex
@@ -31,6 +73,11 @@
             this._isDirty = false;
             this._lastModified = Date.now();
             this._saveMutex = false; // ✅ P1 FIX: Mutex für Race-Condition Prevention
+
+            // ✅ P1 STABILITY: Event System - onChange Callbacks
+            this._eventListeners = new Map();
+            // Structure: Map<eventName, Set<callback>>
+            // Supported events: 'change', 'change:propertyName', 'save', 'load', 'reset'
 
             // ✅ OPTIMIZATION: Session-Cache für Server-Validierungen (verhindert redundante Cloud Function Calls)
             this._sessionCache = {
@@ -1271,26 +1318,20 @@
 
         setPlayerName(name) {
             const sanitized = this.sanitizeString(name);
-            if (sanitized !== this.playerName) {
-                this.playerName = sanitized;
-                this._isDirty = true;
-                this.save();
-            }
+            this.set('playerName', sanitized);
         }
 
         setGameId(gameId) {
             const sanitized = this.sanitizeGameId(gameId);
-            if (sanitized !== this.gameId) {
-                this.gameId = sanitized;
-                this._isDirty = true;
-                this.save();
-            }
+            this.set('gameId', sanitized);
         }
 
         addCategory(category) {
             const sanitized = this.sanitizeValue(category, ['fsk0', 'fsk16', 'fsk18', 'special']);
             if (sanitized && !this.selectedCategories.includes(sanitized)) {
                 this.selectedCategories.push(sanitized);
+                this._emit('change:selectedCategories', this.selectedCategories, [...this.selectedCategories]);
+                this._emit('change', 'selectedCategories', this.selectedCategories);
                 this._isDirty = true;
                 this.save();
             }
@@ -1401,6 +1442,186 @@
         }
 
         // ===========================
+        // ✅ P1 STABILITY: EVENT SYSTEM
+        // Allows components to react to state changes
+        // ===========================
+
+        /**
+         * ✅ P1 STABILITY: Subscribe to state changes
+         * @param {string} event - Event name ('change', 'change:propertyName', 'save', 'load', 'reset')
+         * @param {Function} callback - Callback function
+         * @returns {Function} Unsubscribe function
+         *
+         * @example
+         * const unsubscribe = gameState.on('change:difficulty', (newValue, oldValue) => {
+         *     console.log(`Difficulty changed from ${oldValue} to ${newValue}`);
+         * });
+         *
+         * // Later:
+         * unsubscribe();
+         */
+        on(event, callback) {
+            if (typeof callback !== 'function') {
+                this.log('❌ on() requires a callback function', 'error');
+                return () => {};
+            }
+
+            if (!this._eventListeners.has(event)) {
+                this._eventListeners.set(event, new Set());
+            }
+
+            this._eventListeners.get(event).add(callback);
+
+            // Return unsubscribe function
+            return () => this.off(event, callback);
+        }
+
+        /**
+         * ✅ P1 STABILITY: Unsubscribe from state changes
+         * @param {string} event - Event name
+         * @param {Function} callback - Callback function to remove
+         */
+        off(event, callback) {
+            if (!this._eventListeners.has(event)) {
+                return;
+            }
+
+            if (callback) {
+                this._eventListeners.get(event).delete(callback);
+            } else {
+                // Remove all listeners for this event
+                this._eventListeners.delete(event);
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Emit event to all listeners
+         * @param {string} event - Event name
+         * @param {...any} args - Arguments to pass to callbacks
+         * @private
+         */
+        _emit(event, ...args) {
+            if (!this._eventListeners.has(event)) {
+                return;
+            }
+
+            const listeners = this._eventListeners.get(event);
+
+            for (const callback of listeners) {
+                try {
+                    callback(...args);
+                } catch (error) {
+                    this.log(`❌ Event listener error for ${event}: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Set property with event emission
+         * @param {string} key - Property name
+         * @param {any} value - New value
+         * @param {boolean} [silent=false] - Skip event emission
+         */
+        set(key, value, silent = false) {
+            if (!this.hasOwnProperty(key)) {
+                this.log(`⚠️ Attempting to set unknown property: ${key}`, 'warning');
+                return;
+            }
+
+            const oldValue = this[key];
+
+            // Don't update if value hasn't changed (unless it's an object/array)
+            if (oldValue === value && typeof value !== 'object') {
+                return;
+            }
+
+            this[key] = value;
+            this._isDirty = true;
+            this._lastModified = Date.now();
+
+            // Emit property-specific change event
+            if (!silent) {
+                this._emit(`change:${key}`, value, oldValue);
+                this._emit('change', key, value, oldValue);
+            }
+
+            // Auto-save with debounce
+            this.save();
+        }
+
+        /**
+         * ✅ P1 UI/UX: Reset GameState to initial values
+         * Clears all data and emits 'reset' event
+         *
+         * @example
+         * gameState.reset(); // Clear all game data
+         */
+        reset() {
+            this.log('🔄 Resetting GameState to initial values...');
+
+            // Store old values for event
+            const oldState = this.getState();
+
+            // Clear all properties to defaults
+            this.deviceMode = null;
+            this.selectedCategories = [];
+            this.difficulty = null;
+            this.alcoholMode = true;
+            this.questionCount = 10;
+            this.players = [];
+            this.playerName = '';
+            this.gameId = null;
+            this.playerId = null;
+            this.isHost = false;
+            this.isGuest = false;
+            this.gamePhase = 'lobby';
+            this.timestamp = Date.now();
+
+            // Clear session cache
+            this.clearSessionCache();
+
+            // Clear localStorage
+            try {
+                localStorage.removeItem(this.STORAGE_KEY);
+                this.log('✅ localStorage cleared');
+            } catch (error) {
+                this.log(`⚠️ Failed to clear localStorage: ${error.message}`, 'warning');
+            }
+
+            // Mark as clean (no need to save)
+            this._isDirty = false;
+            this._lastModified = Date.now();
+
+            // Emit reset event
+            this._emit('reset', oldState);
+            this._emit('change', 'reset', null, oldState);
+
+            this.log('✅ GameState reset complete');
+        }
+
+        /**
+         * ✅ P1 UI/UX: Get available properties (for documentation)
+         * @returns {Object} Object with property names and their current types
+         */
+        getAvailableProperties() {
+            return {
+                deviceMode: typeof this.deviceMode,
+                selectedCategories: Array.isArray(this.selectedCategories) ? 'array' : typeof this.selectedCategories,
+                difficulty: typeof this.difficulty,
+                alcoholMode: typeof this.alcoholMode,
+                questionCount: typeof this.questionCount,
+                players: Array.isArray(this.players) ? 'array' : typeof this.players,
+                playerName: typeof this.playerName,
+                gameId: typeof this.gameId,
+                playerId: typeof this.playerId,
+                isHost: typeof this.isHost,
+                isGuest: typeof this.isGuest,
+                gamePhase: typeof this.gamePhase,
+                timestamp: typeof this.timestamp
+            };
+        }
+
+        // ===========================
         // CLEANUP
         // ===========================
 
@@ -1414,6 +1635,9 @@
 
             // ✅ OPTIMIZATION: Clear session cache
             this.clearSessionCache();
+
+            // ✅ P1 STABILITY: Clear all event listeners
+            this._eventListeners.clear();
 
             this.log('✅ Cleanup completed');
         }

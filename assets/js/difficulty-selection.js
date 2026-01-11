@@ -109,9 +109,55 @@
 
         } catch (error) {
             console.error('❌ Initialization error:', error);
-            showNotification('Fehler beim Laden', 'error');
             hideLoading();
+
+            // ✅ P1 STABILITY: User-friendly error handling with retry option
+            const errorMessage = getErrorMessage(error);
+            showNotification(errorMessage, 'error', 5000);
+
+            // ✅ P1 STABILITY: Offer retry or fallback
+            setTimeout(() => {
+                if (confirm('Fehler beim Laden. Erneut versuchen?')) {
+                    window.location.reload();
+                } else {
+                    // Fallback: Go back to category selection
+                    const redirectUrl = gameState?.deviceMode === 'multi'
+                        ? 'multiplayer-category-selection.html'
+                        : 'category-selection.html';
+                    window.location.href = redirectUrl;
+                }
+            }, 2000);
         }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Get user-friendly error message
+     * @param {Error} error - Error object
+     * @returns {string} User-friendly error message
+     */
+    function getErrorMessage(error) {
+        if (!error) return 'Ein unbekannter Fehler ist aufgetreten';
+
+        const errorMessage = error.message || '';
+
+        // Network errors
+        if (errorMessage.includes('network') || errorMessage.includes('offline')) {
+            return '📡 Keine Internetverbindung. Überprüfe deine Verbindung.';
+        }
+        if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+            return '⏱️ Zeitüberschreitung. Server antwortet nicht.';
+        }
+
+        // Firebase errors
+        if (errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('permission')) {
+            return '🔒 Keine Berechtigung. Überprüfe deine Altersverifikation.';
+        }
+        if (errorMessage.includes('UNAVAILABLE') || errorMessage.includes('unavailable')) {
+            return '📡 Server vorübergehend nicht erreichbar.';
+        }
+
+        // Generic fallback
+        return `❌ Fehler: ${errorMessage}`;
     }
 
     // ===========================
@@ -504,8 +550,54 @@
                 }
             } catch (error) {
                 console.error('❌ Error saving difficulty to database:', error);
-                // Continue anyway - nicht blockierend
+
+                // ✅ P1 STABILITY: Offline support - don't block user
+                console.warn('⚠️ Saving difficulty locally only (offline mode)');
+
+                // ✅ P1 STABILITY: Offer retry option for critical multiplayer saves
+                if (deviceMode === 'multi') {
+                    hideLoading();
+
+                    const shouldRetry = confirm(
+                        'Schwierigkeitsgrad konnte nicht synchronisiert werden.\n' +
+                        'Möchtest du es erneut versuchen?\n\n' +
+                        '(Bei "Abbrechen" wird nur lokal gespeichert)'
+                    );
+
+                    if (shouldRetry) {
+                        return proceedToNextStep(); // Recursive retry
+                    } else {
+                        showNotification('⚠️ Offline-Modus: Änderungen nur lokal gespeichert', 'warning', 3000);
+                        showLoading(); // Continue with loading state
+                    }
+                }
             }
+        }
+
+        // ✅ P1 STABILITY: Always save to localStorage as offline fallback
+        // This ensures the page works even without Firebase connection
+        try {
+            const difficultyState = {
+                difficulty: difficulty,
+                alcoholMode: alcoholMode,
+                timestamp: Date.now(),
+                deviceMode: deviceMode,
+                categories: gameState.selectedCategories
+            };
+
+            if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
+                window.NocapUtils.setLocalStorage('nocap_difficulty_selection', difficultyState);
+            } else {
+                localStorage.setItem('nocap_difficulty_selection', JSON.stringify(difficultyState));
+            }
+
+            if (isDevelopment) {
+                console.log('✅ Difficulty saved to localStorage (offline fallback)', difficultyState);
+            }
+        } catch (storageError) {
+            console.error('❌ Failed to save to localStorage:', storageError);
+            // Show warning but continue
+            showNotification('⚠️ Lokale Speicherung fehlgeschlagen', 'warning', 2000);
         }
 
         setTimeout(() => {
@@ -522,7 +614,17 @@
         }, 500);
     }
 
+    /**
+     * ✅ P1 UI/UX: Enhanced back navigation with validation
+     */
     function goBack() {
+        // ✅ P1 UI/UX: Validate we have valid state to go back to
+        if (!gameState || !gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+            console.warn('⚠️ No categories selected, redirecting to home');
+            window.location.href = 'index.html';
+            return;
+        }
+
         showLoading();
 
         setTimeout(() => {
@@ -531,11 +633,75 @@
 
             if (deviceMode === 'multi') {
                 window.location.href = 'multiplayer-category-selection.html';
-            } else {
+            } else if (deviceMode === 'single') {
                 window.location.href = 'category-selection.html';
+            } else {
+                // ✅ P1 UI/UX: Fallback to safe route (never empty page)
+                console.warn('⚠️ Device mode unknown, redirecting to home');
+                window.location.href = 'index.html';
             }
         }, 300);
     }
+
+    /**
+     * ✅ P1 UI/UX: Check if difficulty selection is still valid
+     * Called when returning from other pages or on page visibility change
+     */
+    function validateDifficultySelection() {
+        // Check if selected categories still exist in GameState
+        if (!gameState || !gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+            showNotification(
+                '⚠️ Keine Kategorien ausgewählt. Bitte wähle zuerst Kategorien aus.',
+                'warning',
+                3000
+            );
+
+            setTimeout(() => {
+                const redirectUrl = gameState?.deviceMode === 'multi'
+                    ? 'multiplayer-category-selection.html'
+                    : 'category-selection.html';
+                window.location.href = redirectUrl;
+            }, 2000);
+
+            return false;
+        }
+
+        // ✅ P1 UI/UX: Check for premium difficulty with non-premium categories
+        if (gameState.difficulty === 'premium') {
+            const hasPremiumCategory = gameState.selectedCategories.includes('special');
+
+            if (!hasPremiumCategory) {
+                showNotification(
+                    '⚠️ Premium-Schwierigkeit erfordert die "Special Edition" Kategorie.',
+                    'warning',
+                    3000
+                );
+
+                // Reset to default difficulty
+                gameState.setDifficulty('medium');
+                selectDifficulty(document.querySelector('[data-difficulty="medium"]'));
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * ✅ P1 UI/UX: Listen for page visibility changes
+     * Re-validate when user returns to this page
+     */
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && gameState) {
+            // Page became visible again
+            if (isDevelopment) {
+                console.log('🔄 Page visible again, re-validating...');
+            }
+
+            validateDifficultySelection();
+        }
+    });
 
     // ===========================
     // UTILITY FUNCTIONS (use NocapUtils)

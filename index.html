@@ -17,6 +17,9 @@
     <!-- CSP, X-Frame-Options, X-Content-Type-Options sind in firebase.json konfiguriert -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
 
+    <!-- ✅ P0 SECURITY: MIME-Type-Sicherheit (zusätzlich zu firebase.json HTTP Header) -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="No-Cap - Das ultimative Schätzspiel für unvergessliche Abende">
     <meta property="og:description" content="Das ultimative Multiplayer Schätzspiel! Spiele online mit bis zu 8 Freunden. Schätze, wer was gemacht hat und erlebe peinliche Geständnisse. Jetzt kostenlos spielen!">
@@ -52,6 +55,7 @@
     <meta name="firebase-measurement-id" content="G-BNKNW95HK8">
 
     <!-- ✅ PERFORMANCE: Nur benötigte Font-Weights laden (400, 600, 700) -->
+    <!-- ✅ P1 STABILITY: preconnect für Google Fonts (verhindert DNS-Lookup-Delay) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com">

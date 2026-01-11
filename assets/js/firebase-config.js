@@ -274,23 +274,50 @@
     // ===================================
 
     /**
-     * ✅ P1 STABILITY: Get Firebase configuration with offline fallback
-     * Caches successful configs to IndexedDB for offline use
+     * ✅ P0 SECURITY: Get Firebase configuration with environment variable support
+     * ✅ P1 STABILITY: Caches successful configs to IndexedDB for offline use
+     *
+     * PRIORITY ORDER:
+     * 1. window.FIREBASE_CONFIG (set via build process/environment variables)
+     * 2. Meta tags in HTML
+     * 3. Cached config (IndexedDB - offline fallback)
+     * 4. Default config (development only)
      *
      * PRODUCTION DEPLOYMENT:
      * Set window.FIREBASE_CONFIG before loading this script:
+     *
+     * Option 1: Build-time injection (Vite/Webpack):
      * <script>
      *   window.FIREBASE_CONFIG = {
-     *     apiKey: "YOUR_API_KEY",
-     *     authDomain: "YOUR_AUTH_DOMAIN",
-     *     // ... other config
+     *     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+     *     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+     *     databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+     *     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+     *     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+     *     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+     *     appId: import.meta.env.VITE_FIREBASE_APP_ID,
+     *     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
      *   };
+     *   // Optional: App Check key
+     *   window.FIREBASE_APP_CHECK_KEY = import.meta.env.VITE_FIREBASE_APP_CHECK_KEY;
      * </script>
      *
-     * Or use meta tags:
+     * Option 2: Meta tags (for static hosting without build process):
      * <meta name="firebase-api-key" content="YOUR_API_KEY">
      * <meta name="firebase-auth-domain" content="YOUR_AUTH_DOMAIN">
-     * etc.
+     * <meta name="firebase-database-url" content="YOUR_DATABASE_URL">
+     * <meta name="firebase-project-id" content="YOUR_PROJECT_ID">
+     * <meta name="firebase-storage-bucket" content="YOUR_STORAGE_BUCKET">
+     * <meta name="firebase-messaging-sender-id" content="YOUR_SENDER_ID">
+     * <meta name="firebase-app-id" content="YOUR_APP_ID">
+     * <meta name="firebase-measurement-id" content="YOUR_MEASUREMENT_ID">
+     * <meta name="firebase-app-check-key" content="YOUR_RECAPTCHA_SITE_KEY">
+     *
+     * ⚠️  SECURITY WARNING:
+     * - NEVER include Admin SDK credentials here
+     * - Only use client-side API keys
+     * - Admin operations should be in Cloud Functions
+     * - See README.md for environment variable setup
      */
     async function getFirebaseConfig() {
         // ✅ P0 FIX: Check domain whitelist BEFORE loading config
@@ -321,7 +348,11 @@
 
         // Priority 3: Default config (development only)
         if (!config && isDevelopment) {
-            console.warn('⚠️ Using default Firebase config (development only)');
+            console.warn('%c⚠️ Using default Firebase config (DEVELOPMENT ONLY)',
+                'color: #FF9800; font-weight: bold');
+            console.warn('%c   For production: Set window.FIREBASE_CONFIG or use meta tags',
+                'color: #FF9800; font-style: italic');
+
             config = {
                 apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
                 authDomain: "denkstduwebsite.firebaseapp.com",
@@ -330,7 +361,9 @@
                 storageBucket: "denkstduwebsite.appspot.com",
                 messagingSenderId: "27029260611",
                 appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-                measurementId: "G-BNKNW95HK8"
+                measurementId: "G-BNKNW95HK8",
+                // ✅ Optional: App Check key for development
+                appCheckKey: "6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l"
             };
         }
 
@@ -380,11 +413,16 @@
         }
 
         // Production without config = error
-        throw new Error('Firebase configuration not found. Set window.FIREBASE_CONFIG or use meta tags.');
+        throw new Error(
+            'Firebase configuration not found. ' +
+            'Set window.FIREBASE_CONFIG or use meta tags. ' +
+            'See README.md for setup instructions.'
+        );
     }
 
     /**
-     * Extract Firebase config from meta tags
+     * ✅ P0 SECURITY: Extract Firebase config from meta tags
+     * Supports both firebase-* and app check keys
      */
     function getConfigFromMetaTags() {
         const getMetaContent = (name) => {
@@ -400,12 +438,13 @@
         const messagingSenderId = getMetaContent('messaging-sender-id');
         const appId = getMetaContent('app-id');
         const measurementId = getMetaContent('measurement-id');
+        const appCheckKey = getMetaContent('app-check-key'); // ✅ NEW: App Check key support
 
         if (!apiKey || !authDomain || !projectId) {
             return null;
         }
 
-        return {
+        const config = {
             apiKey,
             authDomain,
             databaseURL,
@@ -415,6 +454,18 @@
             appId,
             measurementId
         };
+
+        // ✅ P0 SECURITY: Add App Check key if present
+        if (appCheckKey) {
+            config.appCheckKey = appCheckKey;
+
+            // Also set global variable for App Check activation
+            if (!window.FIREBASE_APP_CHECK_KEY) {
+                window.FIREBASE_APP_CHECK_KEY = appCheckKey;
+            }
+        }
+
+        return config;
     }
 
     /**
@@ -512,37 +563,63 @@
                     }
 
                     // ===================================
-                    // ⚠️ P0 SECURITY: Firebase App Check (TEMPORÄR DEAKTIVIERT)
+                    // ✅ P0 SECURITY: Firebase App Check with ReCAPTCHA v3
                     // ===================================
-                    // TODO: reCAPTCHA v3 muss in Firebase Console neu konfiguriert werden
-                    // 1. Firebase Console → App Check → reCAPTCHA v3
-                    // 2. Domain registrieren: no-cap.app
-                    // 3. Site Key hier eintragen
-                    // 4. Zeile 519 ändern: if (firebase.appCheck && isProduction && false) → if (firebase.appCheck && isProduction)
 
-                    if (firebase.appCheck && isProduction) {
+                    // ✅ P1 STABILITY: Get App Check key from environment or config
+                    const appCheckKey = window.FIREBASE_APP_CHECK_KEY ||
+                                       firebaseConfig.appCheckKey ||
+                                       '6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l'; // Fallback (production key)
+
+                    if (firebase.appCheck && appCheckKey) {
                         try {
-                            const RECAPTCHA_SITE_KEY = '6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l';
+                            // ✅ P1 STABILITY: Activate App Check with auto-refresh
+                            const appCheck = firebase.appCheck();
 
-                            // ✅ FIX: Activate App Check and handle errors properly
-                            firebase.appCheck().activate(
-                                RECAPTCHA_SITE_KEY,
-                                true // autoRefresh
+                            await appCheck.activate(
+                                appCheckKey,
+                                true // ✅ isTokenAutoRefreshEnabled: true
                             );
 
                             if (isDevelopment) {
-                                console.log('%c✅ App Check activated (Production)',
+                                console.log('%c✅ App Check activated with auto-refresh',
                                     'color: #4CAF50; font-weight: bold');
                             }
+
+                            // ✅ P1 STABILITY: Log to telemetry
+                            if (!isDevelopment && window.NocapUtils && window.NocapUtils.logInfo) {
+                                window.NocapUtils.logInfo('FirebaseConfig', 'App Check activated', {
+                                    autoRefresh: true,
+                                    timestamp: Date.now()
+                                });
+                            }
+
                         } catch (error) {
-                            console.warn('⚠️  App Check activation failed:', error);
-                            // Non-fatal: Continue without App Check
+                            // ✅ P1 STABILITY: Graceful fallback on App Check errors
+                            console.warn('%c⚠️  App Check activation failed (continuing without protection)',
+                                'color: #FF9800; font-weight: bold');
+                            console.warn('   Error details:', error.message);
+
+                            // ✅ P1 STABILITY: Log error to telemetry
+                            if (!isDevelopment && window.NocapUtils && window.NocapUtils.logError) {
+                                window.NocapUtils.logError('FirebaseConfig', error, {
+                                    context: 'App Check activation',
+                                    key: appCheckKey ? 'present' : 'missing'
+                                });
+                            }
+
+                            // ✅ P1 STABILITY: Allow app to continue without App Check
+                            // Firebase will work, but without bot protection
+                            if (isDevelopment) {
+                                console.log('%cℹ️  App will continue without App Check protection',
+                                    'color: #2196F3; font-style: italic');
+                            }
                         }
                     } else if (isDevelopment) {
                         console.log('%c⚠️  App Check disabled (Development mode)',
                             'color: #FF9800');
                     } else {
-                        console.warn('%c⚠️  App Check TEMPORARILY DISABLED (reCAPTCHA misconfigured)',
+                        console.warn('%c⚠️  App Check not available (missing key or SDK)',
                             'color: #FF5722; font-weight: bold');
                     }
                 } else {

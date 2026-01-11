@@ -46,6 +46,11 @@
             // ✅ P1 STABILITY: Timeout for DB operations (10 seconds)
             this.DB_OPERATION_TIMEOUT = 10000;
 
+            // ✅ P1 STABILITY: Retry configuration
+            this.MAX_RETRIES = 3;
+            this.RETRY_DELAY_BASE = 1000; // 1 second
+            this.RETRY_DELAY_MAX = 5000; // 5 seconds max
+
             // ✅ P1 NEW: User meta caching (Premium & Age)
             this._userMeta = {
                 isPremium: false,
@@ -54,10 +59,14 @@
                 uid: null
             };
             this._metaRefreshInterval = 5 * 60 * 1000; // 5 minutes
+
+            // ✅ P1 STABILITY: Active listener tracking for cleanup
+            this._activeListeners = new Map();
+            // Structure: Map<listenerId, { ref, eventType, callback }>
         }
 
         // ===========================
-        // ⏱️ P1 STABILITY: TIMEOUT WRAPPER
+        // ⏱️ P1 STABILITY: TIMEOUT & RETRY WRAPPER
         // ===========================
 
         /**
@@ -78,6 +87,86 @@
                     }, timeout)
                 )
             ]);
+        }
+
+        /**
+         * ✅ P1 STABILITY: Retry operation with exponential backoff
+         * @param {Function} operation - Async operation to retry
+         * @param {number} maxRetries - Maximum retry attempts
+         * @param {string} operationName - Name for logging
+         * @returns {Promise} Operation result
+         *
+         * @example
+         * const result = await this._withRetry(
+         *     () => this.database.ref('test').set({value: 1}),
+         *     3,
+         *     'Set test value'
+         * );
+         */
+        async _withRetry(operation, maxRetries = this.MAX_RETRIES, operationName = 'DB operation') {
+            let lastError;
+
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    // Attempt operation
+                    return await operation();
+
+                } catch (error) {
+                    lastError = error;
+
+                    // Don't retry on permission errors or invalid data
+                    if (error.code === 'PERMISSION_DENIED' ||
+                        error.code === 'INVALID_DATA' ||
+                        error.code === 'DATABASE_UNAVAILABLE') {
+                        throw error;
+                    }
+
+                    // Last attempt failed
+                    if (attempt === maxRetries) {
+                        if (this.isDevelopment) {
+                            console.error(`❌ ${operationName} failed after ${maxRetries + 1} attempts:`, error);
+                        }
+                        throw error;
+                    }
+
+                    // Calculate backoff delay (exponential with jitter)
+                    const baseDelay = Math.min(
+                        this.RETRY_DELAY_BASE * Math.pow(2, attempt),
+                        this.RETRY_DELAY_MAX
+                    );
+                    const jitter = Math.random() * 0.3 * baseDelay; // +/- 30% jitter
+                    const delay = baseDelay + jitter;
+
+                    if (this.isDevelopment) {
+                        console.warn(`⚠️ ${operationName} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${Math.round(delay)}ms...`);
+                    }
+
+                    // Wait before retry
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+
+            throw lastError;
+        }
+
+        /**
+         * ✅ P1 STABILITY: Combine timeout and retry for robust DB operations
+         * @param {Function} operation - Async operation
+         * @param {Object} options - Options
+         * @returns {Promise} Operation result
+         */
+        async _withTimeoutAndRetry(operation, options = {}) {
+            const {
+                timeout = this.DB_OPERATION_TIMEOUT,
+                maxRetries = this.MAX_RETRIES,
+                operationName = 'DB operation'
+            } = options;
+
+            return this._withRetry(
+                async () => this._withTimeout(operation(), timeout, operationName),
+                maxRetries,
+                operationName
+            );
         }
 
         // ===========================
@@ -1584,6 +1673,90 @@
         }
 
         // ===========================
+        // 🔌 P1 STABILITY: LISTENER MANAGEMENT
+        // ===========================
+
+        /**
+         * ✅ P1 STABILITY: Register listener for automatic cleanup
+         * @param {string} listenerId - Unique ID for this listener
+         * @param {Object} ref - Firebase reference
+         * @param {string} eventType - Event type ('value', 'child_added', etc.)
+         * @param {Function} callback - Callback function
+         */
+        _registerListener(listenerId, ref, eventType, callback) {
+            // Remove old listener with same ID if exists
+            if (this._activeListeners.has(listenerId)) {
+                this._removeListener(listenerId);
+            }
+
+            // Register new listener
+            this._activeListeners.set(listenerId, {
+                ref,
+                eventType,
+                callback,
+                registeredAt: Date.now()
+            });
+
+            if (this.isDevelopment) {
+                console.log(`✅ Registered listener: ${listenerId} (${eventType})`);
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Remove specific listener
+         * @param {string} listenerId - Listener ID to remove
+         */
+        _removeListener(listenerId) {
+            const listener = this._activeListeners.get(listenerId);
+
+            if (!listener) {
+                return;
+            }
+
+            try {
+                listener.ref.off(listener.eventType, listener.callback);
+                this._activeListeners.delete(listenerId);
+
+                if (this.isDevelopment) {
+                    console.log(`🗑️ Removed listener: ${listenerId}`);
+                }
+            } catch (error) {
+                console.error(`❌ Error removing listener ${listenerId}:`, error);
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Remove all listeners
+         */
+        _removeAllListeners() {
+            if (this.isDevelopment) {
+                console.log(`🗑️ Removing ${this._activeListeners.size} active listeners...`);
+            }
+
+            for (const [listenerId, listener] of this._activeListeners.entries()) {
+                try {
+                    listener.ref.off(listener.eventType, listener.callback);
+                } catch (error) {
+                    console.error(`❌ Error removing listener ${listenerId}:`, error);
+                }
+            }
+
+            this._activeListeners.clear();
+
+            // Also clear old listener tracking (backward compatibility)
+            this.listeners.forEach(({ ref, listener }, key) => {
+                try {
+                    ref.off('value', listener);
+                } catch (error) {
+                    console.error(`❌ Error removing old listener ${key}:`, error);
+                }
+            });
+
+            this.listeners.clear();
+            this.connectionListeners = [];
+        }
+
+        // ===========================
         // LEAVE & CLEANUP
         // ===========================
 
@@ -1598,6 +1771,9 @@
             // Clear rejoin data
             this.clearRejoinData();
 
+            // ✅ P1 STABILITY: Remove all listeners for this game
+            this._removeAllListeners();
+
             return true;
         }
 
@@ -1611,17 +1787,10 @@
                 this.setPlayerOnline(this.currentGameId, this.currentPlayerId, false);
             }
 
-            // Remove all listeners
-            this.listeners.forEach(({ ref, listener }, key) => {
-                try {
-                    ref.off('value', listener);
-                } catch (error) {
-                    console.error(`❌ Error removing listener ${key}:`, error);
-                }
-            });
+            // ✅ P1 STABILITY: Remove ALL active listeners
+            this._removeAllListeners();
 
-            this.listeners.clear();
-            this.connectionListeners = [];
+            // Clear state
             this.gameRef = null;
             this.currentGameId = null;
             this.currentPlayerId = null;

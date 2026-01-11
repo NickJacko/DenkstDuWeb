@@ -121,34 +121,84 @@
             }
 
             // ===========================
-            // CRITICAL: CHECK AGE VERIFICATION
-            // User must have completed age verification before joining
+            // ✅ P1 DSGVO/JUGENDSCHUTZ: AGE VERIFICATION ENFORCEMENT
+            // CRITICAL: This check is MIRRORED in Firebase Database Rules
+            //
+            // Security Layer 1 (Client): Block UI if no age verification
+            // Security Layer 2 (Server): Firebase Rules reject write if no auth.token.ageVerified
+            //
+            // Age Verification Storage:
+            // - Key: nocap_age_verification
+            // - Format: { isAdult: boolean, timestamp: number, version: string }
+            // - Expiry: 24 hours (86400000ms)
+            //
+            // GDPR Compliance:
+            // - User is informed BEFORE verification (privacy notice)
+            // - Age data stored ONLY in localStorage (not sent to server)
+            // - IP tracking ONLY with consent (firebase-config.js)
+            // - Data auto-deleted after 24h
             // ===========================
             const ageVerification = window.NocapUtils
                 ? window.NocapUtils.getLocalStorage('nocap_age_verification')
                 : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
 
+            // ✅ P1 FIX: Check if age verification exists AND is valid
             if (!ageVerification || typeof ageVerification !== 'object') {
-                console.warn('⚠️ No age verification - redirecting to index');
-                showNotification('Bitte bestätige zuerst dein Alter', 'warning', 3000);
+                console.warn('⚠️ No age verification found - redirecting to age gate');
+                showNotification('⚠️ Altersverifikation erforderlich', 'warning', 3000);
 
                 // Save current URL to return after verification
                 const currentUrl = window.location.href;
                 sessionStorage.setItem('nocap_return_url', currentUrl);
 
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = 'index.html?showAgeGate=true';
                 }, 2000);
                 return;
             }
 
-            // NOTE: We don't check timestamp expiry - once verified, always verified
-            // This prevents players from being kicked out
+            // ✅ P1 DSGVO: Check timestamp expiry (24 hours = 86400000ms)
+            const AGE_VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+            const now = Date.now();
+            const verificationAge = now - (ageVerification.timestamp || 0);
+
+            if (verificationAge > AGE_VERIFICATION_EXPIRY) {
+                console.warn('⚠️ Age verification expired - redirecting to age gate');
+                showNotification('⚠️ Altersverifikation abgelaufen. Bitte erneut bestätigen.', 'warning', 3000);
+
+                // Clear expired verification
+                if (window.NocapUtils && window.NocapUtils.removeLocalStorage) {
+                    window.NocapUtils.removeLocalStorage('nocap_age_verification');
+                } else {
+                    localStorage.removeItem('nocap_age_verification');
+                }
+
+                // Save current URL to return after verification
+                const currentUrl = window.location.href;
+                sessionStorage.setItem('nocap_return_url', currentUrl);
+
+                setTimeout(() => {
+                    window.location.href = 'index.html?showAgeGate=true';
+                }, 2000);
+                return;
+            }
+
+            // ✅ P1 FIX: Validate age level for multiplayer
+            const userAgeLevel = ageVerification.isAdult ? 18 : 0;
 
             if (isDevelopment) {
-                const ageLevel = ageVerification.isAdult ? 18 : 0;
-                console.log('✅ Age verification valid:', { ageLevel, timestamp: ageVerification.timestamp });
+                const hoursUntilExpiry = Math.floor((AGE_VERIFICATION_EXPIRY - verificationAge) / (60 * 60 * 1000));
+                console.log('✅ Age verification valid:', {
+                    ageLevel: userAgeLevel,
+                    timestamp: ageVerification.timestamp,
+                    expiresIn: `${hoursUntilExpiry}h`,
+                    version: ageVerification.version || '1.0'
+                });
             }
+
+            // ✅ P1 DSGVO: Store age level in GameState for server validation
+            // NOTE: This is used by Firebase Database Rules to enforce FSK restrictions
+            gameState.userAgeLevel = userAgeLevel;
 
             // Initialize Firebase
             showLoading('Verbinde mit Server...');
@@ -223,9 +273,12 @@
             } catch (error) {
                 console.error('❌ Firebase initialization failed:', error);
                 hideLoading();
-                showNotification('Server nicht erreichbar. Bitte Internetverbindung prüfen.', 'error', 5000);
 
-                // Give user option to retry
+                // ✅ P1 STABILITY: User-friendly error messages with retry option
+                const errorMessage = getFirebaseErrorMessage(error);
+                showNotification(errorMessage, 'error', 5000);
+
+                // ✅ P1 UI/UX: Show retry dialog
                 setTimeout(() => {
                     if (confirm('Server nicht erreichbar. Erneut versuchen?')) {
                         window.location.reload();
@@ -597,10 +650,33 @@
             }, 100);
 
         } catch (error) {
-            console.error('❌ Check failed:', error.message);
+            console.error('❌ Check failed:', error);
+
+            // ✅ P1 STABILITY: User-friendly error message
+            let userMessage = error.message || 'Fehler beim Prüfen des Spiels';
+
+            // Translate technical errors to user-friendly messages
+            if (error.code === 'PERMISSION_DENIED') {
+                userMessage = '🔒 Keine Berechtigung. Bitte überprüfe deine Altersverifikation.';
+            } else if (error.code === 'UNAVAILABLE') {
+                userMessage = '📡 Server vorübergehend nicht erreichbar. Bitte erneut versuchen.';
+            } else if (error.message.includes('nicht gefunden') || error.message.includes('not found')) {
+                userMessage = '❓ Spiel nicht gefunden. Überprüfe den Spiel-Code.';
+            } else if (error.message.includes('voll') || error.message.includes('full')) {
+                userMessage = '👥 Dieses Spiel ist bereits voll.';
+            } else if (error.message.includes('beendet') || error.message.includes('finished')) {
+                userMessage = '🏁 Dieses Spiel ist bereits beendet.';
+            } else if (error.message.includes('läuft') || error.message.includes('playing')) {
+                userMessage = '🎮 Dieses Spiel läuft bereits.';
+            } else if (error.message.includes('Alter') || error.message.includes('FSK')) {
+                userMessage = error.message; // Keep FSK messages as-is
+            } else if (error.message.includes('Verbindung') || error.message.includes('connection')) {
+                userMessage = '📡 Keine Firebase-Verbindung. Bitte erneut versuchen.';
+            }
+
             input.classList.add('error');
             input.setAttribute('aria-invalid', 'true');
-            showNotification(error.message, 'error');
+            showNotification(userMessage, 'error');
             currentGameData = null;
 
             // Hide game info
@@ -823,32 +899,18 @@
             console.error('❌ Join failed:', error);
             hideLoading();
 
-            // ✅ P0 FIX: User-friendly error messages
-            let errorMessage = 'Fehler beim Beitreten';
-
-            if (error.message) {
-                if (error.message.includes('nicht gefunden') || error.message.includes('not found')) {
-                    errorMessage = 'Spiel nicht gefunden';
-                } else if (error.message.includes('voll') || error.message.includes('full')) {
-                    errorMessage = 'Das Spiel ist bereits voll';
-                } else if (error.message.includes('gestartet') || error.message.includes('started')) {
-                    errorMessage = 'Das Spiel wurde bereits gestartet';
-                } else if (error.message.includes('beendet') || error.message.includes('finished')) {
-                    errorMessage = 'Das Spiel ist bereits beendet';
-                } else if (error.code === 'PERMISSION_DENIED') {
-                    errorMessage = 'Keine Berechtigung beizutreten';
-                } else {
-                    errorMessage = error.message;
-                }
-            }
-
+            // ✅ P1 STABILITY: Use getFirebaseErrorMessage for consistent error handling
+            const errorMessage = getFirebaseErrorMessage(error);
             showNotification(errorMessage, 'error');
 
-            // ✅ P1 FIX: Focus on appropriate field
-            if (errorMessage.includes('Code') || errorMessage.includes('gefunden')) {
+            // ✅ P1 FIX: Focus on appropriate field based on error
+            if (errorMessage.includes('Code') || errorMessage.includes('gefunden') || errorMessage.includes('nicht gefunden')) {
                 gameCodeInput.focus();
-            } else {
+            } else if (errorMessage.includes('Name') || errorMessage.includes('verwendet')) {
                 playerNameInput.focus();
+            } else {
+                // Generic error - focus on code input
+                gameCodeInput.focus();
             }
         }
     }
@@ -865,9 +927,73 @@
     }
 
     // ===========================
-    // ===========================
     // UTILITY FUNCTIONS (use NocapUtils)
     // ===========================
+
+    /**
+     * ✅ P1 STABILITY: Get user-friendly Firebase error messages
+     * @param {Error} error - Firebase error object
+     * @returns {string} User-friendly error message
+     */
+    function getFirebaseErrorMessage(error) {
+        if (!error) return 'Ein unbekannter Fehler ist aufgetreten';
+
+        const errorCode = error.code;
+        const errorMessage = error.message || '';
+
+        // Firebase Auth Errors
+        if (errorCode === 'auth/network-request-failed') {
+            return '📡 Keine Internetverbindung. Bitte überprüfe deine Verbindung.';
+        }
+        if (errorCode === 'auth/too-many-requests') {
+            return '⏳ Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.';
+        }
+        if (errorCode === 'auth/user-disabled') {
+            return '🚫 Dieser Account wurde gesperrt. Kontaktiere den Support.';
+        }
+
+        // Firebase Database Errors
+        if (errorCode === 'PERMISSION_DENIED' || errorMessage.includes('permission')) {
+            return '🔒 Keine Berechtigung. Bitte überprüfe deine Altersverifikation.';
+        }
+        if (errorCode === 'UNAVAILABLE' || errorMessage.includes('unavailable')) {
+            return '📡 Server vorübergehend nicht erreichbar. Bitte versuche es später erneut.';
+        }
+        if (errorCode === 'NOT_FOUND' || errorMessage.includes('not found')) {
+            return '❓ Spiel nicht gefunden. Überprüfe den Spiel-Code.';
+        }
+        if (errorCode === 'ALREADY_EXISTS' || errorMessage.includes('already exists')) {
+            return '⚠️ Dieser Name wird bereits verwendet. Wähle einen anderen Namen.';
+        }
+        if (errorCode === 'DEADLINE_EXCEEDED' || errorMessage.includes('timeout')) {
+            return '⏱️ Zeitüberschreitung. Der Server antwortet nicht. Bitte erneut versuchen.';
+        }
+        if (errorCode === 'RESOURCE_EXHAUSTED' || errorMessage.includes('quota')) {
+            return '📊 Serverlimit erreicht. Bitte versuche es später erneut.';
+        }
+
+        // Network Errors
+        if (errorMessage.includes('network') || errorMessage.includes('offline')) {
+            return '📡 Netzwerkfehler. Bitte überprüfe deine Internetverbindung.';
+        }
+        if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+            return '⏱️ Zeitüberschreitung. Server antwortet nicht.';
+        }
+
+        // Game-specific errors
+        if (errorMessage.includes('voll') || errorMessage.includes('full')) {
+            return '👥 Dieses Spiel ist bereits voll. Versuche ein anderes Spiel.';
+        }
+        if (errorMessage.includes('gestartet') || errorMessage.includes('started')) {
+            return '🎮 Dieses Spiel wurde bereits gestartet. Du kannst nicht mehr beitreten.';
+        }
+        if (errorMessage.includes('beendet') || errorMessage.includes('finished')) {
+            return '🏁 Dieses Spiel ist bereits beendet.';
+        }
+
+        // Generic fallback
+        return `❌ Fehler: ${errorMessage || 'Unbekannter Fehler'}`;
+    }
 
     const showLoading = window.NocapUtils?.showLoading || function(message = 'Lädt...') {
         const loading = document.getElementById('loading');

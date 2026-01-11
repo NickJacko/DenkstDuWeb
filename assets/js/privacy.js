@@ -10,6 +10,52 @@
         window.location.hostname.includes('192.168.');
 
     // ============================================================================
+    // 🛡️ P0 SECURITY: SANITIZATION HELPERS
+    // ============================================================================
+
+    /**
+     * ✅ P0 SECURITY: Sanitize data from localStorage before use
+     * @param {*} value - Value to sanitize
+     * @returns {string} Sanitized string
+     */
+    function sanitizeStorageValue(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        const str = String(value);
+
+        // Use DOMPurify if available
+        if (typeof DOMPurify !== 'undefined') {
+            return DOMPurify.sanitize(str, {
+                ALLOWED_TAGS: [],
+                ALLOWED_ATTR: [],
+                KEEP_CONTENT: true
+            });
+        }
+
+        // Fallback: Basic XSS prevention
+        return str
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;')
+            .trim()
+            .substring(0, 500);
+    }
+
+    /**
+     * ✅ P0 SECURITY: Safe textContent setter
+     * @param {HTMLElement} element - Target element
+     * @param {string} text - Text to set
+     */
+    function setTextContent(element, text) {
+        if (!element) return;
+        element.textContent = sanitizeStorageValue(text);
+    }
+
+    // ============================================================================
     // PRIVACY CONSENT MANAGEMENT
     // ============================================================================
 
@@ -389,6 +435,311 @@
     }
 
     // ============================================================================
+    // 📋 P1 UI/UX: TABLE OF CONTENTS & NAVIGATION
+    // ============================================================================
+
+    /**
+     * ✅ P1 UI/UX: Generate and insert Table of Contents
+     */
+    function generateTableOfContents() {
+        try {
+            // Find main content container
+            const mainContent = document.querySelector('main') || document.querySelector('.privacy-content');
+            if (!mainContent) {
+                if (isDevelopment) {
+                    console.warn('No main content found for TOC generation');
+                }
+                return;
+            }
+
+            // Find all section headings (h2)
+            const headings = mainContent.querySelectorAll('h2');
+            if (headings.length === 0) {
+                if (isDevelopment) {
+                    console.warn('No h2 headings found for TOC');
+                }
+                return;
+            }
+
+            // Create TOC container
+            const tocContainer = document.createElement('nav');
+            tocContainer.id = 'privacy-toc';
+            tocContainer.className = 'privacy-toc';
+            tocContainer.setAttribute('aria-label', 'Inhaltsverzeichnis');
+
+            // TOC Title
+            const tocTitle = document.createElement('h2');
+            tocTitle.className = 'toc-title';
+            tocTitle.textContent = '📋 Inhaltsverzeichnis';
+
+            // TOC List
+            const tocList = document.createElement('ol');
+            tocList.className = 'toc-list';
+
+            // Generate TOC items
+            headings.forEach((heading, index) => {
+                // Create unique ID for heading if not exists
+                if (!heading.id) {
+                    const headingText = heading.textContent.trim();
+                    const id = 'section-' + headingText
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                    heading.id = id || `section-${index}`;
+                }
+
+                // Create TOC item
+                const listItem = document.createElement('li');
+                listItem.className = 'toc-item';
+
+                const link = document.createElement('a');
+                link.href = `#${heading.id}`;
+                link.className = 'toc-link';
+
+                // ✅ P0 SECURITY: Use textContent
+                setTextContent(link, heading.textContent.trim());
+
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    smoothScrollToSection(heading.id);
+
+                    // Update active state
+                    document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                });
+
+                listItem.appendChild(link);
+                tocList.appendChild(listItem);
+            });
+
+            // Assemble TOC
+            tocContainer.appendChild(tocTitle);
+            tocContainer.appendChild(tocList);
+
+            // Insert TOC before first heading or at beginning of main
+            const firstHeading = mainContent.querySelector('h1, h2');
+            if (firstHeading) {
+                mainContent.insertBefore(tocContainer, firstHeading.nextSibling);
+            } else {
+                mainContent.insertBefore(tocContainer, mainContent.firstChild);
+            }
+
+            // Add scroll spy
+            setupScrollSpy(headings);
+
+            if (isDevelopment) {
+                console.log(`✅ TOC generated with ${headings.length} sections`);
+            }
+
+        } catch (error) {
+            console.error('❌ Error generating TOC:', error);
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Smooth scroll to section with accessibility
+     * @param {string} sectionId - ID of target section
+     */
+    function smoothScrollToSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        if (!section) return;
+
+        // Check for reduced motion preference
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        section.scrollIntoView({
+            behavior: prefersReducedMotion ? 'auto' : 'smooth',
+            block: 'start'
+        });
+
+        // Focus section for screen readers
+        section.setAttribute('tabindex', '-1');
+        section.focus();
+
+        // Update URL hash without jumping
+        if (history.pushState) {
+            history.pushState(null, null, `#${sectionId}`);
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Scroll spy for TOC active states
+     * @param {NodeList} headings - Section headings
+     */
+    function setupScrollSpy(headings) {
+        if (!('IntersectionObserver' in window)) {
+            return; // Graceful degradation
+        }
+
+        const observerOptions = {
+            rootMargin: '-20% 0px -70% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+
+                    // Update active TOC link
+                    document.querySelectorAll('.toc-link').forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        headings.forEach(heading => observer.observe(heading));
+
+        if (isDevelopment) {
+            console.log('✅ Scroll spy initialized');
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Make sections collapsible
+     */
+    function makeCollapsibleSections() {
+        try {
+            const mainContent = document.querySelector('main') || document.querySelector('.privacy-content');
+            if (!mainContent) return;
+
+            const sections = mainContent.querySelectorAll('section, .privacy-section');
+
+            sections.forEach((section, index) => {
+                const heading = section.querySelector('h2, h3');
+                if (!heading) return;
+
+                // Skip TOC
+                if (section.id === 'privacy-toc' || section.classList.contains('privacy-toc')) {
+                    return;
+                }
+
+                // Create wrapper for collapsible content
+                const content = document.createElement('div');
+                content.className = 'collapsible-content';
+                content.setAttribute('id', `collapsible-${index}`);
+                content.setAttribute('aria-hidden', 'false');
+
+                // Move all content after heading into wrapper
+                const elementsToMove = [];
+                let sibling = heading.nextElementSibling;
+                while (sibling) {
+                    elementsToMove.push(sibling);
+                    sibling = sibling.nextElementSibling;
+                }
+
+                elementsToMove.forEach(el => {
+                    content.appendChild(el);
+                });
+
+                section.appendChild(content);
+
+                // Make heading clickable
+                heading.classList.add('collapsible-heading');
+                heading.setAttribute('role', 'button');
+                heading.setAttribute('aria-expanded', 'true');
+                heading.setAttribute('aria-controls', `collapsible-${index}`);
+                heading.setAttribute('tabindex', '0');
+
+                // Add toggle icon
+                const icon = document.createElement('span');
+                icon.className = 'collapse-icon';
+                icon.setAttribute('aria-hidden', 'true');
+                icon.textContent = '▼';
+                heading.appendChild(icon);
+
+                // Toggle handler
+                const toggleSection = () => {
+                    const isExpanded = heading.getAttribute('aria-expanded') === 'true';
+
+                    heading.setAttribute('aria-expanded', !isExpanded);
+                    content.setAttribute('aria-hidden', isExpanded);
+
+                    if (isExpanded) {
+                        content.style.maxHeight = '0';
+                        heading.classList.add('collapsed');
+                        icon.textContent = '▶';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        heading.classList.remove('collapsed');
+                        icon.textContent = '▼';
+                    }
+                };
+
+                // Event listeners
+                heading.addEventListener('click', toggleSection);
+                heading.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleSection();
+                    }
+                });
+
+                // Set initial max-height for animation
+                content.style.maxHeight = content.scrollHeight + 'px';
+            });
+
+            if (isDevelopment) {
+                console.log(`✅ Made ${sections.length} sections collapsible`);
+            }
+
+        } catch (error) {
+            console.error('❌ Error making sections collapsible:', error);
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Add "Back to Top" button for long pages
+     */
+    function addBackToTopButton() {
+        // Check if button already exists
+        if (document.getElementById('privacy-back-to-top')) {
+            return;
+        }
+
+        const button = document.createElement('button');
+        button.id = 'privacy-back-to-top';
+        button.className = 'back-to-top hidden';
+        button.setAttribute('aria-label', 'Zurück nach oben');
+        button.innerHTML = '<span aria-hidden="true">↑</span>';
+
+        document.body.appendChild(button);
+
+        // Show/hide on scroll
+        const toggleButton = () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            if (scrollTop > 500) {
+                button.classList.remove('hidden');
+                button.classList.add('visible');
+            } else {
+                button.classList.remove('visible');
+                button.classList.add('hidden');
+            }
+        };
+
+        window.addEventListener('scroll', toggleButton, { passive: true });
+
+        // Scroll to top on click
+        button.addEventListener('click', () => {
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion ? 'auto' : 'smooth'
+            });
+        });
+
+        if (isDevelopment) {
+            console.log('✅ Back-to-top button added');
+        }
+    }
+
+    // ============================================================================
     // DATA MANAGEMENT
     // ============================================================================
 
@@ -497,6 +848,7 @@
     /**
      * P1 FIX: Initialize privacy management
      * ✅ DEAKTIVIERT: Cookie-Banner übernimmt jetzt das Consent-Management
+     * ✅ P1 UI/UX: Initialisiert TOC und Collapsible Sections
      */
     function initPrivacyManagement() {
         try {
@@ -519,8 +871,51 @@
             // ✅ ENTFERNT: Zeige NICHT mehr das alte Privacy-Modal
             // Das Cookie-Banner übernimmt diese Aufgabe
 
+            // ✅ P1 UI/UX: Initialize UI features for privacy page
+            if (window.location.pathname.includes('privacy.html')) {
+                // Wait for DOM to be fully loaded
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        initPrivacyPageUI();
+                    });
+                } else {
+                    initPrivacyPageUI();
+                }
+            }
+
         } catch (error) {
             console.error('❌ Error initializing privacy management:', error);
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Initialize privacy page UI features
+     */
+    function initPrivacyPageUI() {
+        try {
+            // Generate Table of Contents
+            generateTableOfContents();
+
+            // Make sections collapsible
+            makeCollapsibleSections();
+
+            // Add back-to-top button
+            addBackToTopButton();
+
+            // Handle URL hash on load
+            if (window.location.hash) {
+                const hash = window.location.hash.substring(1);
+                setTimeout(() => {
+                    smoothScrollToSection(hash);
+                }, 300);
+            }
+
+            if (isDevelopment) {
+                console.log('✅ Privacy page UI initialized');
+            }
+
+        } catch (error) {
+            console.error('❌ Error initializing privacy page UI:', error);
         }
     }
 
@@ -546,6 +941,12 @@
         // Data management
         clearAllGameData,
         exportUserData,
+
+        // ✅ P1 UI/UX: Navigation & UI
+        generateTableOfContents,
+        makeCollapsibleSections,
+        smoothScrollToSection,
+        addBackToTopButton,
 
         // Initialization
         initPrivacyManagement

@@ -78,39 +78,101 @@
 
     <div class="glass-card">
         <!-- Game Info Section -->
-        <section class="game-info">
+        <section class="game-info" role="region" aria-labelledby="game-info-title">
+            <h2 id="game-info-title" class="sr-only">Spiel-Beitrittsinformationen</h2>
+
             <div class="info-grid">
+                <!-- ✅ P1 UI/UX: Enhanced Game Code Display with Copy Button -->
                 <div class="info-item">
-                    <div class="info-label">Spiel-Code</div>
-                    <div class="info-value game-code" id="game-code-display" aria-live="polite">Lädt...</div>
-                    <button class="copy-code-btn" id="copy-code-btn" type="button" aria-label="Code kopieren">
-                        📋 Kopieren
-                    </button>
+                    <div class="info-label" id="game-code-label">Spiel-Code</div>
+                    <div class="game-code-wrapper">
+                        <!-- ✅ P0 SECURITY: textContent only, no innerHTML -->
+                        <div class="info-value game-code"
+                             id="game-code-display"
+                             aria-live="polite"
+                             aria-labelledby="game-code-label"
+                             role="status">
+                            Lädt...
+                        </div>
+                        <!-- ✅ P1 UI/UX: Copy to Clipboard Button -->
+                        <button class="copy-code-btn"
+                                id="copy-code-btn"
+                                type="button"
+                                aria-label="Spiel-Code in Zwischenablage kopieren"
+                                disabled>
+                            <span class="copy-icon" aria-hidden="true">📋</span>
+                            <span class="copy-text">Kopieren</span>
+                        </button>
+                    </div>
+                    <div class="code-hint" id="code-hint" aria-live="polite">
+                        <small>Teile diesen Code mit deinen Freunden</small>
+                    </div>
                 </div>
+
+                <!-- ✅ P1 UI/UX: Enhanced QR Code with ARIA Labels -->
                 <div class="info-item">
-                    <div class="info-label">QR-Code scannen</div>
-                    <div class="qr-code-container" id="qr-code" aria-label="QR-Code zum Beitreten"></div>
+                    <div class="info-label" id="qr-code-label">QR-Code scannen</div>
+                    <div class="qr-code-wrapper">
+                        <!-- ✅ P1 UI/UX: QR Code Container with proper ARIA -->
+                        <div class="qr-code-container"
+                             id="qr-code"
+                             role="img"
+                             aria-labelledby="qr-code-label qr-code-description">
+                            <div class="qr-loading" aria-hidden="true">
+                                <div class="spinner-small"></div>
+                                <span>Generiere QR-Code...</span>
+                            </div>
+                        </div>
+                        <!-- ✅ P1 UI/UX: QR Code Description for Accessibility -->
+                        <div id="qr-code-description" class="qr-description">
+                            <small>Scannen Sie den QR-Code mit Ihrem Smartphone, um dem Spiel beizutreten</small>
+                        </div>
+                        <!-- ✅ P1 UI/UX: Alternative Text Code Display -->
+                        <div class="qr-text-code" id="qr-text-code" aria-live="polite">
+                            <span class="code-prefix">Code:</span>
+                            <span class="code-value" id="qr-code-text">------</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Game Settings -->
-        <aside class="game-settings" role="region" aria-label="Spieleinstellungen">
-            <h2 class="settings-title">⚙️ Einstellungen</h2>
+        <aside class="game-settings" role="region" aria-labelledby="settings-title">
+            <h2 id="settings-title" class="settings-title">⚙️ Einstellungen</h2>
 
             <div class="setting-row">
                 <div class="setting-header">Schwierigkeit</div>
-                <div class="setting-content" id="difficulty-display">Lädt...</div>
+                <div class="setting-content" id="difficulty-display" aria-live="polite">Lädt...</div>
             </div>
 
+            <!-- ✅ P1 DSGVO: Categories with FSK Badges -->
             <div class="setting-row">
                 <div class="setting-header">Kategorien</div>
-                <div class="categories-tags" id="selected-categories-display">
+                <div class="categories-tags" id="selected-categories-display" role="list" aria-live="polite">
                     <span class="loading-text-muted">Lädt...</span>
                 </div>
             </div>
 
-            <button class="edit-settings-btn host-only" id="edit-settings-btn" type="button">
+            <!-- ✅ P1 DSGVO: Privacy Notice for Players -->
+            <div class="privacy-notice" role="note" aria-labelledby="privacy-notice-title">
+                <div class="privacy-notice-icon" aria-hidden="true">🔒</div>
+                <div class="privacy-notice-content">
+                    <strong id="privacy-notice-title">Datenschutzhinweis</strong>
+                    <p>
+                        Dein Name und deine Antworten werden während des Spiels temporär gespeichert
+                        und nach Beendigung automatisch gelöscht.
+                        <a href="privacy.html" class="privacy-link-inline" target="_blank" rel="noopener">
+                            Mehr erfahren
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <button class="edit-settings-btn host-only"
+                    id="edit-settings-btn"
+                    type="button"
+                    aria-label="Spieleinstellungen bearbeiten">
                 ✏️ Einstellungen ändern
             </button>
         </aside>
@@ -135,15 +197,67 @@
         </aside>
 
         <!-- Controls -->
-        <div class="controls">
-            <button class="btn-ready guest-only" id="ready-btn" type="button">
-                ✅ Bereit
+        <div class="controls" role="group" aria-label="Lobby-Steuerung">
+            <button class="btn-ready guest-only"
+                    id="ready-btn"
+                    type="button"
+                    aria-label="Als bereit markieren">
+                <span aria-hidden="true">✅</span> Bereit
             </button>
-            <button class="btn-start host-only" id="start-btn" type="button" disabled aria-disabled="true">
-                🎮 Spiel starten
+            <button class="btn-start host-only"
+                    id="start-btn"
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    aria-label="Spiel starten (erst wenn alle bereit sind)">
+                <span aria-hidden="true">🎮</span> Spiel starten
             </button>
-            <button class="btn-leave" id="leave-btn" type="button">
-                ❌ Lobby verlassen
+            <button class="btn-leave"
+                    id="leave-btn"
+                    type="button"
+                    aria-label="Lobby verlassen">
+                <span aria-hidden="true">❌</span> Lobby verlassen
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ P1 STABILITY: Leave Confirmation Dialog for Host -->
+<div class="confirmation-dialog"
+     id="leave-confirmation"
+     role="alertdialog"
+     aria-modal="true"
+     aria-labelledby="leave-dialog-title"
+     aria-describedby="leave-dialog-desc"
+     aria-hidden="true"
+     hidden>
+    <div class="dialog-overlay" aria-hidden="true"></div>
+    <div class="dialog-content">
+        <h2 id="leave-dialog-title" class="dialog-title">
+            <span aria-hidden="true">⚠️</span> Lobby verlassen?
+        </h2>
+        <p id="leave-dialog-desc" class="dialog-description">
+            <span id="leave-message-host" class="host-only">
+                <strong>Als Host verlassen:</strong><br>
+                <span id="connected-players-count">0 Spieler</span> sind verbunden.
+                Wenn du die Lobby verlässt, wird das Spiel für alle beendet.
+            </span>
+            <span id="leave-message-guest" class="guest-only">
+                Möchtest du die Lobby wirklich verlassen?
+            </span>
+        </p>
+        <div class="dialog-buttons" role="group" aria-label="Bestätigungsoptionen">
+            <button class="btn-cancel"
+                    id="cancel-leave-btn"
+                    type="button"
+                    aria-label="In der Lobby bleiben">
+                Abbrechen
+            </button>
+            <button class="btn-confirm"
+                    id="confirm-leave-btn"
+                    type="button"
+                    aria-label="Lobby jetzt verlassen">
+                Verlassen
             </button>
         </div>
     </div>
@@ -151,7 +265,21 @@
 
 <!-- Privacy Footer -->
 <div class="privacy-footer">
-    <a href="privacy.html" class="privacy-link">Datenschutz</a>
+    <a href="privacy.html"
+       class="privacy-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Datenschutzerklärung öffnen">
+        Datenschutz
+    </a>
+    <span class="footer-separator" aria-hidden="true">•</span>
+    <a href="imprint.html"
+       class="privacy-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Impressum öffnen">
+        Impressum
+    </a>
 </div>
     <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>

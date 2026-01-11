@@ -1,359 +1,149 @@
 {
   "rules": {
-    ".read": false,
-    ".write": false,
-
+    // ===================================
+    // 🎮 GAMES COLLECTION
+    // ✅ P0 SECURITY: Host-only write access for game settings
+    // ✅ P2 PERFORMANCE: Indexed for queries
+    // ===================================
     "games": {
+      ".read": "auth != null",
+      ".indexOn": ["createdAt", "status", "hostId"],
+
       "$gameId": {
-        // ===================================
-        // READ RULES
-        // ===================================
-        // ✅ SECURITY: Nur authentifizierte User können Spiele lesen
         ".read": "auth != null",
+        ".write": "!data.exists() && auth != null",
 
         // ===================================
-        // WRITE RULES - Rollenbasiert
+        // HOST-ONLY FIELDS
         // ===================================
-        // ✅ SECURITY: Nur Host kann Spiel erstellen/löschen
-        // Guests können nur ihre eigenen Player-Daten und Antworten schreiben
-        ".write": "
-          (auth != null && !data.exists()) ||
-          (auth != null && auth.uid == data.child('hostId').val())
-        ",
-
-        // ===================================
-        // VALIDATION RULES
-        // ===================================
-        "gameId": {
-          ".validate": "newData.isString() && newData.val().length === 6 && newData.val().matches(/^[A-Z0-9]{6}$/)"
-        },
-
         "hostId": {
-          ".validate": "newData.isString()",
-          // ✅ SECURITY: hostId kann nur beim Erstellen gesetzt werden
-          ".write": "!data.exists()"
+          ".write": "!data.exists() && auth != null"
         },
-
-        "hostName": {
-          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 20"
-        },
-
         "status": {
-          ".validate": "newData.isString() && (
-            newData.val() == 'lobby' ||
-            newData.val() == 'waiting' ||
-            newData.val() == 'playing' ||
-            newData.val() == 'finished'
-          )",
-          // ✅ SECURITY: Nur Host kann Status ändern
-          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
+          ".write": "data.parent().child('hostId').val() === auth.uid"
         },
-
-        "gameState": {
-          ".validate": "newData.isString() && (
-            newData.val() == 'waiting' ||
-            newData.val() == 'playing' ||
-            newData.val() == 'finished'
-          )",
-          // ✅ SECURITY: Nur Host kann gameState ändern
-          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
+        "settings": {
+          ".write": "data.parent().child('hostId').val() === auth.uid"
         },
-
-        "createdAt": {
-          ".validate": "newData.isNumber()",
-          // ✅ SECURITY: createdAt kann nur beim Erstellen gesetzt werden
-          ".write": "!data.exists()"
+        "currentQuestion": {
+          ".write": "data.parent().child('hostId').val() === auth.uid"
         },
-
-        "lastActivity": {
-          ".validate": "newData.isNumber()"
-        },
-
-        "lastUpdate": {
-          ".validate": "newData.isNumber()"
+        "roundNumber": {
+          ".write": "data.parent().child('hostId').val() === auth.uid"
         },
 
         // ===================================
-        // PLAYERS - Rollenbasierte Regeln
+        // PLAYERS COLLECTION
+        // ✅ P0 SECURITY: Players can only write their own data
+        // ✅ P2 PERFORMANCE: Indexed for online status queries
         // ===================================
         "players": {
+          ".indexOn": ["isOnline", "joinedAt", "score"],
+
           "$playerId": {
             ".read": "auth != null",
+            ".write": "(
+              // Allow creation if doesn't exist
+              !data.exists() && auth != null
+            ) || (
+              // Allow update only by player themselves
+              auth.uid === $playerId
+            ) || (
+              // Allow host to kick players
+              data.parent().parent().child('hostId').val() === auth.uid && !newData.exists()
+            )",
 
-            // ✅ SECURITY:
-            // - Host kann alle Spieler verwalten
-            // - Guest kann nur eigene Daten ändern (isReady, etc.)
-            // - Jeder authentifizierte User kann sich joinen (neuer Player)
-            // - Maximal 10 Spieler: Wird in Cloud Functions validiert (getAnswerToken)
-            ".write": "
-              (auth != null && !data.exists()) ||
-              (auth != null && auth.uid == data.parent().parent().child('hostId').val()) ||
-              (auth != null && auth.uid == $playerId && data.exists())
-            ",
-
-
-            "id": {
-              ".validate": "newData.isString()"
+            // ===================================
+            // PLAYER-SPECIFIC FIELDS
+            // ===================================
+            "answer": {
+              ".write": "auth.uid === $playerId"
             },
-
-            "name": {
-              ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 20"
+            "guess": {
+              ".write": "auth.uid === $playerId"
             },
-
-            "isHost": {
-              ".validate": "newData.isBoolean()",
-              // ✅ SECURITY: isHost kann nur vom Host gesetzt werden
-              ".write": "auth != null && auth.uid == data.parent().parent().parent().child('hostId').val()"
-            },
-
             "isReady": {
-              ".validate": "newData.isBoolean()"
+              ".write": "auth.uid === $playerId"
             },
-
-            "joinedAt": {
-              ".validate": "newData.isNumber()"
+            "isOnline": {
+              ".write": "auth.uid === $playerId"
             },
-
             "lastSeen": {
-              ".validate": "newData.isNumber()"
+              ".write": "auth.uid === $playerId"
+            },
+            "score": {
+              ".write": "auth.uid === $playerId || data.parent().parent().parent().child('hostId').val() === auth.uid"
             }
           }
         },
 
         // ===================================
-        // SETTINGS - Premium & FSK Validation
-        // ===================================
-        "settings": {
-          // ✅ SECURITY: Nur Host kann Settings ändern
-          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()",
-
-          "categories": {
-            ".validate": "newData.val() != null"
-          },
-
-          "difficulty": {
-            ".validate": "newData.isString() && (
-              newData.val() == 'easy' ||
-              newData.val() == 'medium' ||
-              newData.val() == 'hard'
-            )"
-          },
-
-          "alcoholMode": {
-            ".validate": "newData.isBoolean()"
-          },
-
-          "mode": {
-            ".validate": "newData.isString()"
-          },
-
-          // ✅ PREMIUM: Special-Kategorie nur für Premium-User
-          "special": {
-            ".validate": "
-              newData.val() == false ||
-              (newData.val() == true && auth.token.isPremium == true)
-            "
-          },
-
-          // ✅ FSK: FSK-18 nur für verifizierte User (18+)
-          "fsk18": {
-            ".validate": "
-              newData.val() == false ||
-              (newData.val() == true && auth.token.ageLevel >= 18)
-            "
-          },
-
-          // ✅ FSK: FSK-16 nur für verifizierte User (16+)
-          "fsk16": {
-            ".validate": "
-              newData.val() == false ||
-              (newData.val() == true && auth.token.ageLevel >= 16)
-            "
-          }
-        },
-
-        // ===================================
-        // QUESTIONS & ROUNDS
-        // ===================================
-        "currentQuestion": {
-          ".read": "auth != null",
-          // ✅ SECURITY: Nur Host kann Fragen ändern
-          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
-        },
-
-        "currentRound": {
-          ".validate": "newData.isNumber()",
-          // ✅ SECURITY: Nur Host kann Round ändern
-          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
-        },
-
-        "rounds": {
-          "$roundId": {
-            ".read": "auth != null",
-            // ✅ SECURITY: Nur Host kann Rounds erstellen/ändern
-            ".write": "auth != null && auth.uid == data.parent().parent().child('hostId').val()",
-
-            "question": {
-              ".validate": "newData.val() != null"
-            },
-
-            "answers": {
-              "$playerId": {
-                ".read": "auth != null",
-                // ✅ SECURITY: Nur der jeweilige Spieler kann seine Antwort schreiben
-                ".write": "auth != null && auth.uid == $playerId"
-              }
-            },
-
-            "estimates": {
-              "$playerId": {
-                ".read": "auth != null",
-                // ✅ SECURITY: Nur der jeweilige Spieler kann seine Schätzung schreiben
-                ".write": "auth != null && auth.uid == $playerId"
-              }
-            },
-
-            "startedAt": {
-              ".validate": "newData.isNumber()"
-            },
-
-            "endedAt": {
-              ".validate": "newData.isNumber()"
-            }
-          }
-        },
-
-        // ===================================
-        // ANSWERS - Player-spezifisch
+        // ANSWERS COLLECTION (read-only after submission)
         // ===================================
         "answers": {
+          ".indexOn": ["submittedAt"],
+
           "$playerId": {
             ".read": "auth != null",
-            // ✅ SECURITY: Nur der jeweilige Spieler kann seine Antworten schreiben
-            ".write": "auth != null && auth.uid == $playerId"
+            ".write": "!data.exists() && auth.uid === $playerId"
           }
         },
 
         // ===================================
-        // SCORES & RESULTS
+        // RESULTS (Host-only write)
         // ===================================
-        "scores": {
+        "results": {
           ".read": "auth != null",
-          // ✅ SECURITY: Nur Host kann Scores aktualisieren
-          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
-        },
-
-        "showOverallResults": {
-          ".validate": "newData.isBoolean()",
-          // ✅ SECURITY: Nur Host kann Results zeigen/verstecken
-          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
-        },
-
-        "overallStats": {
-          ".read": "auth != null",
-          // ✅ SECURITY: Nur Host kann Stats updaten
-          ".write": "auth != null && auth.uid == data.parent().child('hostId').val()"
+          ".write": "data.parent().child('hostId').val() === auth.uid"
         }
       }
     },
 
     // ===================================
-    // USER DATA - Nur eigene Daten
+    // 👤 USER METADATA
+    // ✅ P0 SECURITY: Users can only read/write their own data
+    // ✅ P1 STABILITY: Cached premium & age verification
     // ===================================
     "users": {
-      "$userId": {
-        // ✅ SECURITY: User kann nur eigene Daten lesen
-        ".read": "auth != null && auth.uid == $userId",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
 
-        // ✅ SECURITY: User kann nur eigene Daten schreiben
-        ".write": "auth != null && auth.uid == $userId",
-
-        "displayName": {
-          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 20"
+        "profile": {
+          ".validate": "newData.hasChildren(['displayName'])"
         },
 
-        "createdAt": {
-          ".validate": "newData.isNumber()"
-        },
-
-        "lastSeen": {
-          ".validate": "newData.isNumber()"
-        },
-
-        "gamesPlayed": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-
-        "stats": {
-          ".validate": "newData.val() != null"
-        },
-
-        // ✅ PREMIUM: Premium-Status kann nur von Cloud Functions gesetzt werden
-        "isPremium": {
-          ".validate": "newData.isBoolean()",
-          ".write": false
-        },
-
-        // ✅ FSK: Age-Level kann nur von Cloud Functions gesetzt werden
-        "ageLevel": {
-          ".validate": "newData.isNumber() && (newData.val() == 0 || newData.val() == 16 || newData.val() == 18)",
-          ".write": false
-        },
-
-        // ✅ DSGVO: Einwilligung zur IP-Speicherung in Audit-Logs
-        "consentToIpLogging": {
-          ".validate": "newData.isBoolean()"
-        }
-      }
-    },
-
-    // ===================================
-    // RATE LIMITS - Nur eigene Limits lesbar
-    // ===================================
-    "rateLimits": {
-      "$userId": {
-        // ✅ SECURITY: User kann nur eigene Rate-Limit-Daten lesen
-        ".read": "auth != null && auth.uid == $userId",
-        // ✅ SECURITY: Nur Cloud Functions können Rate-Limits schreiben
-        ".write": false
-      }
-    },
-
-    // ===================================
-    // AUDIT LOGS - Nur von Cloud Functions
-    // ===================================
-    "audit_logs": {
-      "$userId": {
-        // ✅ SECURITY: User kann nur eigene Audit-Logs lesen
-        ".read": "auth != null && auth.uid == $userId",
-        // ✅ SECURITY: Nur Cloud Functions können Audit Logs schreiben
-        // ✅ DSGVO: IP-Adressen werden nur mit Einwilligung gespeichert
-        ".write": false,
-
-        "actions": {
-          "$actionId": {
-            "timestamp": {
-              ".validate": "newData.isNumber()"
-            },
-            "action": {
-              ".validate": "newData.isString()"
-            },
-            "details": {
-              ".validate": "newData.val() != null"
-            },
-            // ✅ DSGVO: IP nur wenn User zugestimmt hat
-            "ip": {
-              ".validate": "!newData.exists() || (newData.isString() && root.child('users').child($userId).child('consentToIpLogging').val() == true)"
-            }
+        "meta": {
+          "isPremium": {
+            ".write": false
+          },
+          "ageLevel": {
+            ".write": "auth != null && auth.uid === $uid"
+          },
+          "lastRefresh": {
+            ".write": "auth != null && auth.uid === $uid"
           }
         }
       }
     },
 
     // ===================================
-    // ADMIN FUNCTIONS - Nur via Cloud Functions
+    // 📊 STATISTICS (Optional)
+    // ✅ P2 PERFORMANCE: Indexed for leaderboards
     // ===================================
-    "admin": {
+    "statistics": {
+      ".indexOn": ["score", "gamesPlayed", "wins"],
+
+      "$uid": {
+        ".read": true,
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    // ===================================
+    // 🔐 SECURITY: Deny all other paths
+    // ===================================
+    "$other": {
       ".read": false,
       ".write": false
     }

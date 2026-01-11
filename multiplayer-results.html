@@ -93,19 +93,73 @@
     </header>
 
     <!-- Final Rankings -->
-    <section class="final-rankings">
-        <h2 class="rankings-title">🏆 Endranking</h2>
+    <section class="final-rankings" role="region" aria-labelledby="rankings-title">
+        <h2 id="rankings-title" class="rankings-title">🏆 Endranking</h2>
 
-        <!-- Podium -->
-        <div class="podium" id="podium" role="list">
-            <!-- Dynamically generated -->
-        </div>
+        <!-- ✅ P1 UI/UX: Podium als geordnete Liste -->
+        <ol class="podium" id="podium" role="list" aria-label="Top 3 Spieler">
+            <!-- 2nd Place (Left) -->
+            <li class="podium-item rank-2" role="listitem" data-rank="2">
+                <div class="podium-player" id="podium-player-2">
+                    <!-- ✅ P2 PERFORMANCE: Lazy-load trophy image -->
+                    <img src="/assets/img/trophy-silver.svg"
+                         alt="Silber-Pokal für 2. Platz"
+                         class="trophy-image"
+                         loading="lazy"
+                         width="80"
+                         height="80">
+                    <div class="rank-badge silver">2</div>
+                    <div class="player-name">-</div>
+                    <div class="player-score">0 Punkte</div>
+                </div>
+                <div class="podium-base silver" aria-hidden="true">2</div>
+            </li>
 
-        <!-- All Players List -->
+            <!-- 1st Place (Center) -->
+            <li class="podium-item rank-1" role="listitem" data-rank="1">
+                <div class="podium-player" id="podium-player-1">
+                    <!-- ✅ P2 PERFORMANCE: Lazy-load trophy image -->
+                    <img src="/assets/img/trophy-gold.svg"
+                         alt="Gold-Pokal für 1. Platz"
+                         class="trophy-image"
+                         loading="lazy"
+                         width="120"
+                         height="120">
+                    <div class="rank-badge gold">1</div>
+                    <div class="player-name">-</div>
+                    <div class="player-score">0 Punkte</div>
+                </div>
+                <div class="podium-base gold" aria-hidden="true">1</div>
+            </li>
+
+            <!-- 3rd Place (Right) -->
+            <li class="podium-item rank-3" role="listitem" data-rank="3">
+                <div class="podium-player" id="podium-player-3">
+                    <!-- ✅ P2 PERFORMANCE: Lazy-load trophy image -->
+                    <img src="/assets/img/trophy-bronze.svg"
+                         alt="Bronze-Pokal für 3. Platz"
+                         class="trophy-image"
+                         loading="lazy"
+                         width="60"
+                         height="60">
+                    <div class="rank-badge bronze">3</div>
+                    <div class="player-name">-</div>
+                    <div class="player-score">0 Punkte</div>
+                </div>
+                <div class="podium-base bronze" aria-hidden="true">3</div>
+            </li>
+        </ol>
+
+        <!-- ✅ P1 UI/UX: All Players als geordnete Liste -->
         <div class="all-players">
-            <div class="players-list" id="players-list" role="list">
-                <!-- Dynamically generated -->
-            </div>
+            <h3 class="players-list-title" id="players-list-title">Alle Spieler</h3>
+            <ol class="players-list"
+                id="players-list"
+                role="list"
+                aria-labelledby="players-list-title"
+                start="1">
+                <!-- Dynamically generated via safe DOM -->
+            </ol>
         </div>
     </section>
 
@@ -118,26 +172,161 @@
     </section>
 
     <!-- Share Results -->
-    <section class="share-section">
-        <h3 class="share-title">📤 Ergebnis teilen</h3>
-        <div class="share-buttons">
-            <button type="button" class="share-btn" id="share-whatsapp-btn">💬 WhatsApp</button>
-            <button type="button" class="share-btn" id="share-telegram-btn">✈️ Telegram</button>
-            <button type="button" class="share-btn" id="copy-results-btn">📋 Kopieren</button>
-            <button type="button" class="share-btn" id="save-screenshot-btn">📸 Screenshot</button>
+    <section class="share-section" role="region" aria-labelledby="share-title">
+        <h3 id="share-title" class="share-title">📤 Ergebnis teilen</h3>
+        <div class="share-buttons" role="group" aria-label="Teilen-Optionen">
+            <button type="button"
+                    class="share-btn"
+                    id="share-whatsapp-btn"
+                    aria-label="Ergebnis via WhatsApp teilen">
+                <span class="btn-icon" aria-hidden="true">💬</span>
+                <span class="btn-text">WhatsApp</span>
+            </button>
+            <button type="button"
+                    class="share-btn"
+                    id="share-telegram-btn"
+                    aria-label="Ergebnis via Telegram teilen">
+                <span class="btn-icon" aria-hidden="true">✈️</span>
+                <span class="btn-text">Telegram</span>
+            </button>
+            <button type="button"
+                    class="share-btn"
+                    id="copy-results-btn"
+                    aria-label="Ergebnis-Link in Zwischenablage kopieren">
+                <span class="btn-icon" aria-hidden="true">📋</span>
+                <span class="btn-text">Link kopieren</span>
+            </button>
+            <button type="button"
+                    class="share-btn"
+                    id="save-screenshot-btn"
+                    aria-label="Screenshot der Ergebnisse speichern">
+                <span class="btn-icon" aria-hidden="true">📸</span>
+                <span class="btn-text">Screenshot</span>
+            </button>
+        </div>
+
+        <!-- ✅ P1 UI/UX: Feedback for copy action -->
+        <div class="share-feedback"
+             id="share-feedback"
+             role="status"
+             aria-live="polite"
+             hidden>
+            <span class="feedback-icon" aria-hidden="true">✅</span>
+            <span class="feedback-text">Link kopiert!</span>
+        </div>
+    </section>
+
+    <!-- ✅ P1 UI/UX: Spiel-Bewertung -->
+    <section class="feedback-section" role="region" aria-labelledby="feedback-title">
+        <h3 id="feedback-title" class="feedback-title">⭐ Wie hat dir das Spiel gefallen?</h3>
+        <div class="rating-buttons" role="group" aria-label="Spiel bewerten">
+            <button type="button"
+                    class="rating-btn"
+                    id="rating-great-btn"
+                    aria-label="Sehr gut - 5 Sterne"
+                    data-rating="5">
+                <span class="rating-emoji" aria-hidden="true">😍</span>
+                <span class="rating-text">Sehr gut</span>
+            </button>
+            <button type="button"
+                    class="rating-btn"
+                    id="rating-good-btn"
+                    aria-label="Gut - 4 Sterne"
+                    data-rating="4">
+                <span class="rating-emoji" aria-hidden="true">😊</span>
+                <span class="rating-text">Gut</span>
+            </button>
+            <button type="button"
+                    class="rating-btn"
+                    id="rating-okay-btn"
+                    aria-label="Okay - 3 Sterne"
+                    data-rating="3">
+                <span class="rating-emoji" aria-hidden="true">😐</span>
+                <span class="rating-text">Okay</span>
+            </button>
+            <button type="button"
+                    class="rating-btn"
+                    id="rating-bad-btn"
+                    aria-label="Nicht so gut - 2 Sterne"
+                    data-rating="2">
+                <span class="rating-emoji" aria-hidden="true">😕</span>
+                <span class="rating-text">Nicht so gut</span>
+            </button>
+        </div>
+
+        <div class="rating-feedback"
+             id="rating-feedback"
+             role="status"
+             aria-live="polite"
+             hidden>
+            <span class="feedback-text">Danke für dein Feedback! 🙏</span>
         </div>
     </section>
 
     <!-- Action Buttons -->
-    <div class="action-buttons">
-        <button type="button" class="btn btn-primary" id="play-again-btn">🔄 Nochmal spielen</button>
-        <button type="button" class="btn btn-secondary" id="back-to-menu-btn">🏠 Hauptmenü</button>
+    <div class="action-buttons" role="group" aria-label="Aktionen">
+        <button type="button"
+                class="btn btn-primary"
+                id="play-again-btn"
+                aria-label="Nochmal spielen">
+            <span aria-hidden="true">🔄</span> Nochmal spielen
+        </button>
+        <button type="button"
+                class="btn btn-secondary"
+                id="back-to-menu-btn"
+                aria-label="Zurück zum Hauptmenü">
+            <span aria-hidden="true">🏠</span> Hauptmenü
+        </button>
+    </div>
+</div>
+
+<!-- ✅ P1 STABILITY: Auto-Redirect Warning Dialog -->
+<div class="auto-redirect-dialog"
+     id="auto-redirect-dialog"
+     role="alertdialog"
+     aria-modal="true"
+     aria-labelledby="redirect-title"
+     aria-describedby="redirect-desc"
+     aria-hidden="true"
+     hidden>
+    <div class="dialog-overlay" aria-hidden="true"></div>
+    <div class="dialog-content">
+        <h2 id="redirect-title" class="dialog-title">
+            <span aria-hidden="true">⏱️</span> Automatische Weiterleitung
+        </h2>
+        <p id="redirect-desc" class="dialog-description">
+            Das Spiel wird in <span id="redirect-countdown" class="countdown-value">60</span> Sekunden beendet.
+            <br><br>
+            Du wirst automatisch zum Hauptmenü weitergeleitet, wenn keine Aktion gewählt wird.
+        </p>
+        <div class="dialog-buttons" role="group" aria-label="Optionen">
+            <button class="btn-primary"
+                    id="start-new-game-btn"
+                    type="button"
+                    aria-label="Neues Spiel starten">
+                <span aria-hidden="true">🎮</span> Neues Spiel starten
+            </button>
+            <button class="btn-secondary"
+                    id="stay-on-results-btn"
+                    type="button"
+                    aria-label="Auf dieser Seite bleiben">
+                <span aria-hidden="true">⏸️</span> Hier bleiben
+            </button>
+            <button class="btn-tertiary"
+                    id="go-to-menu-now-btn"
+                    type="button"
+                    aria-label="Jetzt zum Hauptmenü">
+                <span aria-hidden="true">🏠</span> Jetzt zum Menü
+            </button>
+        </div>
     </div>
 </div>
 
 <!-- Privacy Policy Footer Link -->
 <footer class="footer-links">
-    <a href="privacy.html">Datenschutz</a>
+    <a href="privacy.html" target="_blank" rel="noopener">Datenschutz</a>
+    <span class="footer-separator" aria-hidden="true">•</span>
+    <a href="imprint.html" target="_blank" rel="noopener">Impressum</a>
 </footer>
 
     <!-- âœ… ERROR BOUNDARY: Global Error Handling -->

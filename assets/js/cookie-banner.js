@@ -28,11 +28,82 @@
         window.location.hostname.includes('192.168.');
 
     // ===================================
+    // 🛡️ P0 SECURITY: SANITIZATION HELPERS
+    // ===================================
+
+    /**
+     * ✅ P0 SECURITY: Sanitize data from localStorage before DOM insertion
+     * @param {*} value - Value to sanitize
+     * @returns {string} Sanitized string
+     */
+    function sanitizeStorageValue(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        // Convert to string
+        const str = String(value);
+
+        // Use DOMPurify if available
+        if (typeof DOMPurify !== 'undefined') {
+            return DOMPurify.sanitize(str, {
+                ALLOWED_TAGS: [],
+                ALLOWED_ATTR: [],
+                KEEP_CONTENT: true
+            });
+        }
+
+        // Fallback: Basic XSS prevention
+        return str
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;')
+            .trim()
+            .substring(0, 500); // Max length
+    }
+
+    /**
+     * ✅ P0 SECURITY: Validate boolean value from storage
+     * @param {*} value - Value to validate
+     * @returns {boolean} Validated boolean
+     */
+    function validateBoolean(value) {
+        return value === true || value === 'true';
+    }
+
+    /**
+     * ✅ P0 SECURITY: Validate timestamp from storage
+     * @param {*} value - Value to validate
+     * @returns {number|null} Validated timestamp or null
+     */
+    function validateTimestamp(value) {
+        const timestamp = parseInt(value);
+
+        if (isNaN(timestamp)) {
+            return null;
+        }
+
+        // Check reasonable range (2020 - 2040)
+        const minDate = new Date('2020-01-01').getTime();
+        const maxDate = new Date('2040-01-01').getTime();
+
+        if (timestamp < minDate || timestamp > maxDate) {
+            return null;
+        }
+
+        return timestamp;
+    }
+
+    // ===================================
     // 🍪 COOKIE CONSENT MANAGEMENT
     // ===================================
 
     /**
-     * Check if user has already given consent
+     * ✅ P0 SECURITY + P1 DSGVO: Check if user has already given consent
+     * ✅ Validates and sanitizes all data from localStorage
+     * ✅ 6-month expiry (180 days) as per DSGVO requirements
      * @returns {Object|null} Consent object or null
      */
     function getConsent() {
@@ -40,101 +111,248 @@
             const saved = localStorage.getItem(COOKIE_CONSENT_KEY);
             if (!saved) return null;
 
-            const consent = JSON.parse(saved);
+            // ✅ P0 SECURITY: Parse with error handling
+            let consent;
+            try {
+                consent = JSON.parse(saved);
+            } catch (parseError) {
+                console.warn('⚠️ Invalid consent data format, clearing');
+                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                return null;
+            }
 
-            // Check if consent is still valid (not expired)
-            const expiryDate = new Date(consent.timestamp);
-            expiryDate.setDate(expiryDate.getDate() + CONSENT_EXPIRY_DAYS);
+            // ✅ P0 SECURITY: Validate object structure
+            if (!consent || typeof consent !== 'object') {
+                console.warn('⚠️ Invalid consent object, clearing');
+                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                return null;
+            }
+
+            // ✅ P0 SECURITY: Validate timestamp
+            const timestamp = validateTimestamp(consent.timestamp);
+            if (!timestamp) {
+                console.warn('⚠️ Invalid consent timestamp, clearing');
+                localStorage.removeItem(COOKIE_CONSENT_KEY);
+                return null;
+            }
+
+            // ✅ P1 DSGVO: Check if consent is still valid (6 months = 180 days)
+            const expiryDate = new Date(timestamp);
+            expiryDate.setDate(expiryDate.getDate() + 180); // 6 months
 
             if (new Date() > expiryDate) {
-                // Consent expired
+                // Consent expired after 6 months
+                if (isDevelopment) {
+                    console.log('ℹ️ Cookie consent expired (>6 months), asking again');
+                }
                 localStorage.removeItem(COOKIE_CONSENT_KEY);
                 return null;
             }
 
-            // Check if version matches
-            if (consent.version !== COOKIE_CONSENT_VERSION) {
+            // ✅ P0 SECURITY: Validate version string
+            const version = sanitizeStorageValue(consent.version);
+            if (version !== COOKIE_CONSENT_VERSION) {
                 // Version changed, ask again
+                if (isDevelopment) {
+                    console.log('ℹ️ Cookie consent version changed, asking again');
+                }
                 localStorage.removeItem(COOKIE_CONSENT_KEY);
                 return null;
             }
 
-            return consent;
-        } catch (error) {
-            console.error('Error reading cookie consent:', error);
-            return null;
-        }
-    }
-
-    /**
-     * Save user consent
-     * @param {boolean} analytics - Allow analytics cookies
-     * @param {boolean} functional - Allow functional cookies
-     */
-    function saveConsent(analytics, functional) {
-        try {
-            const consent = {
-                version: COOKIE_CONSENT_VERSION,
-                timestamp: Date.now(),
-                analytics: analytics === true,
-                functional: functional === true,
+            // ✅ P0 SECURITY: Validate boolean values
+            return {
+                version: version,
+                timestamp: timestamp,
+                analytics: validateBoolean(consent.analytics),
+                functional: validateBoolean(consent.functional),
                 necessary: true // Always true
             };
 
-            localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent));
-
-            // ✅ FIX: Setze AUCH das alte Privacy-Consent (für Kompatibilität mit privacy.js)
-            localStorage.setItem('nocap_privacy_consent', 'true');
-            localStorage.setItem('nocap_privacy_date', new Date().toISOString());
-
-            // Apply consent
-            applyConsent(consent);
-
-            return consent;
         } catch (error) {
-            console.error('Error saving cookie consent:', error);
+            console.error('❌ Error reading cookie consent:', error);
+            // Clear corrupted data
+            try {
+                localStorage.removeItem(COOKIE_CONSENT_KEY);
+            } catch (e) {
+                // Ignore
+            }
             return null;
         }
     }
 
     /**
-     * Apply consent settings (enable/disable tracking)
-     * @param {Object} consent - Consent object
+     * ✅ P1 STABILITY: Save user consent with separate analytics/functional flags
+     * @param {boolean} analytics - Allow analytics cookies
+     * @param {boolean} functional - Allow functional cookies
+     * @returns {Object|null} Saved consent object or null on error
      */
-    function applyConsent(consent) {
-        // Analytics (Firebase Analytics, Google Analytics, etc.)
-        if (consent.analytics) {
-            enableAnalytics();
-        } else {
-            disableAnalytics();
-        }
+    function saveConsent(analytics, functional) {
+        try {
+            // ✅ P0 SECURITY: Strict boolean validation
+            const analyticsConsent = analytics === true;
+            const functionalConsent = functional === true;
 
-        // Functional cookies (z.B. Firebase Auth persistence)
-        if (!consent.functional) {
-            // Setze Firebase auf session persistence
-            if (window.firebase && window.firebase.auth) {
-                firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION)
-                    .catch(error => console.warn('Could not set session persistence:', error));
+            const consent = {
+                version: COOKIE_CONSENT_VERSION,
+                timestamp: Date.now(),
+                analytics: analyticsConsent,
+                functional: functionalConsent,
+                necessary: true // Always true
+            };
+
+            // ✅ P1 STABILITY: Save to localStorage with error handling
+            try {
+                localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent));
+            } catch (storageError) {
+                console.error('❌ Failed to save consent to localStorage:', storageError);
+
+                // Show user-friendly error
+                if (window.NocapUtils?.showNotification) {
+                    window.NocapUtils.showNotification(
+                        'Cookie-Einstellungen konnten nicht gespeichert werden',
+                        'error'
+                    );
+                }
+
+                return null;
             }
-        }
 
-        // ✅ FIX: Setze Privacy Consent für NocapPrivacy
-        // Rufe die richtige Funktion auf: acceptPrivacy()
-        if (window.NocapPrivacy && window.NocapPrivacy.acceptPrivacy) {
-            window.NocapPrivacy.acceptPrivacy();
-            console.log('✅ Privacy consent granted via Cookie Banner (acceptPrivacy called)');
-        } else {
-            // Fallback: Setze direkt in LocalStorage
+            // ✅ P1 DSGVO: Also set old privacy consent for compatibility
             try {
                 localStorage.setItem('nocap_privacy_consent', 'true');
                 localStorage.setItem('nocap_privacy_date', new Date().toISOString());
-                console.log('✅ Privacy consent set directly in LocalStorage (fallback)');
+            } catch (e) {
+                // Non-fatal
+                if (isDevelopment) {
+                    console.warn('Could not set legacy privacy consent:', e);
+                }
+            }
+
+            // Apply consent immediately
+            applyConsent(consent);
+
+            if (isDevelopment) {
+                console.log('✅ Cookie consent saved:', {
+                    analytics: analyticsConsent,
+                    functional: functionalConsent,
+                    expiresIn: '6 months'
+                });
+            }
+
+            return consent;
+
+        } catch (error) {
+            console.error('❌ Error saving cookie consent:', error);
+            return null;
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Apply consent settings and load optional scripts
+     * ✅ Analytics und functional scripts werden nur nach Zustimmung geladen
+     * @param {Object} consent - Consent object
+     */
+    function applyConsent(consent) {
+        if (!consent) {
+            if (isDevelopment) {
+                console.warn('⚠️ No consent object provided to applyConsent()');
+            }
+            return;
+        }
+
+        // ===================================
+        // ANALYTICS (nur wenn zugestimmt)
+        // ===================================
+        if (consent.analytics) {
+            enableAnalytics();
+
+            if (isDevelopment) {
+                console.log('✅ Analytics enabled (user consent)');
+            }
+        } else {
+            disableAnalytics();
+
+            if (isDevelopment) {
+                console.log('ℹ️ Analytics disabled (no consent)');
+            }
+        }
+
+        // ===================================
+        // FUNCTIONAL COOKIES (nur wenn zugestimmt)
+        // ===================================
+        if (consent.functional) {
+            // Allow persistent auth
+            if (window.firebase?.auth) {
+                firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                    .then(() => {
+                        if (isDevelopment) {
+                            console.log('✅ Firebase persistence set to LOCAL');
+                        }
+                    })
+                    .catch(error => {
+                        console.warn('Could not set local persistence:', error);
+                    });
+            }
+
+            if (isDevelopment) {
+                console.log('✅ Functional cookies enabled (user consent)');
+            }
+        } else {
+            // Session-only persistence
+            if (window.firebase?.auth) {
+                firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION)
+                    .then(() => {
+                        if (isDevelopment) {
+                            console.log('✅ Firebase persistence set to SESSION (no functional consent)');
+                        }
+                    })
+                    .catch(error => {
+                        console.warn('Could not set session persistence:', error);
+                    });
+            }
+
+            if (isDevelopment) {
+                console.log('ℹ️ Functional cookies disabled (no consent)');
+            }
+        }
+
+        // ===================================
+        // PRIVACY CONSENT (für Kompatibilität)
+        // ===================================
+        if (window.NocapPrivacy?.acceptPrivacy) {
+            window.NocapPrivacy.acceptPrivacy();
+            if (isDevelopment) {
+                console.log('✅ Privacy consent granted via NocapPrivacy.acceptPrivacy()');
+            }
+        } else {
+            // Fallback: Direct localStorage
+            try {
+                localStorage.setItem('nocap_privacy_consent', 'true');
+                localStorage.setItem('nocap_privacy_date', new Date().toISOString());
+
+                if (isDevelopment) {
+                    console.log('✅ Privacy consent set directly (fallback)');
+                }
             } catch (e) {
                 console.warn('Could not set privacy consent:', e);
             }
         }
 
-        console.log('✅ Cookie consent applied:', consent);
+        // ===================================
+        // DISPATCH EVENT (für andere Scripts)
+        // ===================================
+        window.dispatchEvent(new CustomEvent('nocap:consentChanged', {
+            detail: {
+                analytics: consent.analytics,
+                functional: consent.functional,
+                necessary: consent.necessary
+            }
+        }));
+
+        if (isDevelopment) {
+            console.log('✅ Cookie consent applied:', consent);
+        }
     }
 
     /**

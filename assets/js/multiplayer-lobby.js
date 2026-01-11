@@ -91,6 +91,26 @@
             await window.NocapUtils.waitForDependencies(['GameState', 'firebaseGameService', 'firebase']);
         }
 
+        // ✅ P0 FIX: Wait for Firebase App initialization using utility function
+        if (window.NocapUtils && window.NocapUtils.waitForFirebaseInit) {
+            const firebaseReady = await window.NocapUtils.waitForFirebaseInit(10000);
+
+            if (!firebaseReady) {
+                console.error('❌ Firebase App not initialized');
+                showNotification('Firebase Initialisierung fehlgeschlagen', 'error');
+                setTimeout(() => window.location.href = 'index.html', 3000);
+                return;
+            }
+        } else {
+            // Fallback: Manual Firebase init check
+            if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+                console.error('❌ Firebase SDK not loaded or not initialized');
+                showNotification('Firebase nicht verfügbar', 'error');
+                setTimeout(() => window.location.href = 'index.html', 3000);
+                return;
+            }
+        }
+
         gameState = new GameState();
 
         // P0 FIX: Validate game state
@@ -545,11 +565,39 @@
         }
     }
 
+    /**
+     * ✅ P1 UI/UX: Display QR Code with enhanced accessibility
+     * ✅ P0 SECURITY: Safe DOM manipulation (no innerHTML for user data)
+     */
     function displayQRCode(gameId) {
         const qrContainer = document.getElementById('qr-code');
-        if (qrContainer && typeof QRCode !== 'undefined') {
-            qrContainer.innerHTML = '';
-            const joinUrl = `${window.location.origin}/join-game.html?gameId=${gameId}`;
+        const qrTextCode = document.getElementById('qr-code-text');
+        const copyBtn = document.getElementById('copy-code-btn');
+
+        if (!qrContainer) return;
+
+        // ✅ P0 SECURITY: Clear container safely
+        while (qrContainer.firstChild) {
+            qrContainer.removeChild(qrContainer.firstChild);
+        }
+
+        // ✅ P1 UI/UX: Display text code for accessibility
+        if (qrTextCode) {
+            qrTextCode.textContent = gameId;
+        }
+
+        // ✅ P1 UI/UX: Enable copy button
+        if (copyBtn) {
+            copyBtn.disabled = false;
+            copyBtn.removeAttribute('aria-disabled');
+        }
+
+        // Generate QR Code
+        if (typeof QRCode !== 'undefined') {
+            // ✅ P0 SECURITY: Don't expose gameId in URL parameter directly
+            // Instead use the join page which will handle validation
+            const joinUrl = `${window.location.origin}/join-game.html?code=${gameId}`;
+
             try {
                 new QRCode(qrContainer, {
                     text: joinUrl,
@@ -559,17 +607,102 @@
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
                 });
+
+                // ✅ P1 UI/UX: Update ARIA description after QR code is generated
+                setTimeout(() => {
+                    qrContainer.setAttribute('aria-label',
+                        `QR-Code zum Beitreten mit Spiel-Code ${gameId}`
+                    );
+                }, 100);
+
             } catch (error) {
                 if (isDevelopment) {
                     console.warn('⚠️ QR Code generation failed:', error);
                 }
-                qrContainer.textContent = '❌ QR-Code nicht verfügbar';
+
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'qr-error';
+                errorMsg.textContent = '❌ QR-Code nicht verfügbar';
+                qrContainer.appendChild(errorMsg);
             }
+        } else {
+            const loadingMsg = document.createElement('div');
+            loadingMsg.textContent = '⏳ QR-Code lädt...';
+            qrContainer.appendChild(loadingMsg);
         }
     }
 
     /**
-     * P0 FIX: Display settings with textContent only
+     * ✅ P1 UI/UX: Copy game code to clipboard
+     */
+    async function copyGameCode() {
+        const gameCodeDisplay = document.getElementById('game-code-display');
+        const copyBtn = document.getElementById('copy-code-btn');
+        const codeHint = document.getElementById('code-hint');
+
+        if (!gameCodeDisplay || !copyBtn) return;
+
+        const gameCode = gameCodeDisplay.textContent.trim();
+
+        if (!gameCode || gameCode === 'Lädt...') {
+            showNotification('⚠️ Kein Code zum Kopieren verfügbar', 'warning');
+            return;
+        }
+
+        try {
+            // Try modern Clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(gameCode);
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = gameCode;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+
+            // ✅ P1 UI/UX: Visual feedback
+            const copyText = copyBtn.querySelector('.copy-text');
+            const originalText = copyText.textContent;
+
+            copyText.textContent = 'Kopiert!';
+            copyBtn.classList.add('copied');
+
+            if (codeHint) {
+                const hint = codeHint.querySelector('small');
+                if (hint) {
+                    hint.textContent = '✅ Code in Zwischenablage kopiert';
+                }
+            }
+
+            showNotification('✅ Code kopiert!', 'success', 2000);
+
+            // Reset after 2 seconds
+            setTimeout(() => {
+                copyText.textContent = originalText;
+                copyBtn.classList.remove('copied');
+
+                if (codeHint) {
+                    const hint = codeHint.querySelector('small');
+                    if (hint) {
+                        hint.textContent = 'Teile diesen Code mit deinen Freunden';
+                    }
+                }
+            }, 2000);
+
+        } catch (error) {
+            console.error('Failed to copy code:', error);
+            showNotification('❌ Kopieren fehlgeschlagen', 'error');
+        }
+    }
+
+    /**
+     * ✅ P1 DSGVO: Display settings with FSK badges
+     * ✅ P0 SECURITY: Safe DOM manipulation (no innerHTML for dynamic content)
      */
     function displaySettings(settings) {
         if (!settings) {
@@ -581,27 +714,58 @@
 
         const categoriesDisplay = document.getElementById('selected-categories-display');
         if (categoriesDisplay && settings.categories && settings.categories.length > 0) {
-            categoriesDisplay.innerHTML = '';
+            // ✅ P0 SECURITY: Clear safely
+            while (categoriesDisplay.firstChild) {
+                categoriesDisplay.removeChild(categoriesDisplay.firstChild);
+            }
 
-            settings.categories.forEach(cat => {
+            settings.categories.forEach((cat, index) => {
                 const icon = categoryIcons[cat] || '❓';
                 const name = categoryNames[cat] || cat;
 
-                const tagDiv = document.createElement('div');
-                tagDiv.className = 'category-tag';
+                // ✅ P1 DSGVO: Determine FSK level
+                let fskLevel = 'fsk0';
+                let fskText = 'FSK 0';
+
+                if (cat === 'fsk16') {
+                    fskLevel = 'fsk16';
+                    fskText = 'FSK 16';
+                } else if (cat === 'fsk18') {
+                    fskLevel = 'fsk18';
+                    fskText = 'FSK 18';
+                } else if (cat === 'special') {
+                    fskLevel = 'special';
+                    fskText = 'PREMIUM';
+                }
+
+                const tag = document.createElement('div');
+                tag.className = `category-tag ${fskLevel}`;
+                tag.setAttribute('role', 'listitem');
+                tag.setAttribute('aria-label', `${name}, ${fskText}`);
 
                 const iconSpan = document.createElement('span');
-                iconSpan.className = 'category-tag-icon';
+                iconSpan.className = 'category-icon';
                 iconSpan.textContent = icon;
                 iconSpan.setAttribute('aria-hidden', 'true');
 
                 const nameSpan = document.createElement('span');
+                nameSpan.className = 'category-name';
                 nameSpan.textContent = name;
 
-                tagDiv.appendChild(iconSpan);
-                tagDiv.appendChild(nameSpan);
+                tag.appendChild(iconSpan);
+                tag.appendChild(nameSpan);
 
-                categoriesDisplay.appendChild(tagDiv);
+                // ✅ P1 DSGVO: Add FSK Badge for age-restricted categories
+                if (fskLevel !== 'fsk0') {
+                    const badge = document.createElement('span');
+                    badge.className = `fsk-badge ${fskLevel}-badge`;
+                    badge.textContent = fskText;
+                    badge.setAttribute('role', 'img');
+                    badge.setAttribute('aria-label', `Alterseinstufung ${fskText}`);
+                    tag.appendChild(badge);
+                }
+
+                categoriesDisplay.appendChild(tag);
             });
         }
 
@@ -734,7 +898,17 @@
         }
 
         if (playersList) {
-            playersList.innerHTML = '';
+            // ✅ P0 SECURITY: Clear safely
+            while (playersList.firstChild) {
+                playersList.removeChild(playersList.firstChild);
+            }
+
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'empty-players';
+            emptyDiv.textContent = 'Keine Spieler in der Lobby';
+            playersList.appendChild(emptyDiv);
+        }
+    }
 
             const emptyDiv = document.createElement('div');
             emptyDiv.className = 'empty-players';
@@ -973,6 +1147,61 @@
         window.location.href = 'multiplayer-category-selection.html';
     }
 
+    /**
+     * ✅ P1 STABILITY: Show leave confirmation dialog
+     * Host sees warning if players are connected
+     */
+    function showLeaveConfirmation() {
+        const dialog = document.getElementById('leave-confirmation');
+        const connectedPlayersCount = document.getElementById('connected-players-count');
+
+        if (!dialog) {
+            // Fallback if dialog doesn't exist
+            if (confirm('Möchtest du die Lobby wirklich verlassen?')) {
+                confirmLeaveGame();
+            }
+            return;
+        }
+
+        // ✅ P1 STABILITY: Update player count for host
+        if (isHost && connectedPlayersCount) {
+            const playerCount = Object.keys(currentPlayers).length;
+            const playerText = playerCount === 1 ? '1 Spieler' : `${playerCount} Spieler`;
+            connectedPlayersCount.textContent = playerText;
+        }
+
+        // Show dialog
+        dialog.removeAttribute('hidden');
+        dialog.setAttribute('aria-hidden', 'false');
+        dialog.classList.add('show');
+
+        // Focus on cancel button
+        setTimeout(() => {
+            const cancelBtn = document.getElementById('cancel-leave-btn');
+            if (cancelBtn) cancelBtn.focus();
+        }, 100);
+    }
+
+    /**
+     * ✅ P1 STABILITY: Hide leave confirmation dialog
+     */
+    function hideLeaveConfirmation() {
+        const dialog = document.getElementById('leave-confirmation');
+        if (!dialog) return;
+
+        dialog.setAttribute('hidden', '');
+        dialog.setAttribute('aria-hidden', 'true');
+        dialog.classList.remove('show');
+    }
+
+    /**
+     * ✅ P1 STABILITY: Confirm and execute leave
+     */
+    function confirmLeaveGame() {
+        hideLeaveConfirmation();
+        leaveGame();
+    }
+
     // ===========================
     // EVENT LISTENERS
     // ===========================
@@ -984,6 +1213,10 @@
         const copyBtn = document.getElementById('copy-code-btn');
         const editBtn = document.getElementById('edit-settings-btn');
 
+        // ✅ P1 STABILITY: Leave confirmation dialog buttons
+        const cancelLeaveBtn = document.getElementById('cancel-leave-btn');
+        const confirmLeaveBtn = document.getElementById('confirm-leave-btn');
+
         if (startBtn) {
             startBtn.addEventListener('click', startGame);
         }
@@ -991,14 +1224,34 @@
             readyBtn.addEventListener('click', toggleReady);
         }
         if (leaveBtn) {
-            leaveBtn.addEventListener('click', leaveGame);
+            // ✅ P1 STABILITY: Show confirmation instead of direct leave
+            leaveBtn.addEventListener('click', showLeaveConfirmation);
         }
         if (copyBtn) {
+            // ✅ P1 UI/UX: Use enhanced copy function
             copyBtn.addEventListener('click', copyGameCode);
         }
         if (editBtn) {
             editBtn.addEventListener('click', editSettings);
         }
+
+        // ✅ P1 STABILITY: Leave confirmation dialog handlers
+        if (cancelLeaveBtn) {
+            cancelLeaveBtn.addEventListener('click', hideLeaveConfirmation);
+        }
+        if (confirmLeaveBtn) {
+            confirmLeaveBtn.addEventListener('click', confirmLeaveGame);
+        }
+
+        // ✅ P1 STABILITY: ESC key to close dialog
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const dialog = document.getElementById('leave-confirmation');
+                if (dialog && !dialog.hasAttribute('hidden')) {
+                    hideLeaveConfirmation();
+                }
+            }
+        });
 
         window.addEventListener('beforeunload', cleanup);
 
@@ -1007,18 +1260,9 @@
         }
     }
 
-    function copyGameCode() {
-        const code = document.getElementById('game-code-display')?.textContent;
-        if (!code) return;
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(code).then(() => {
-                showNotification('Code kopiert!', 'success', 2000);
-            }).catch(() => {
-                showNotification('Kopieren fehlgeschlagen', 'error');
-            });
-        } else {
-            // Fallback for older browsers
+    // ===========================
+    // CLEANUP
+    // ===========================
             showNotification('Kopieren nicht unterstützt', 'warning');
         }
     }

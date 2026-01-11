@@ -33,21 +33,25 @@
         <div class="particle"></div>
     </div>
 
-    <div class="error-container">
+    <div class="error-container" role="main" aria-labelledby="error-title">
         <div class="error-content">
             <div class="error-icon" aria-hidden="true">🧢</div>
-            <h1 class="error-code">404</h1>
-            <h2 class="error-title">Seite nicht gefunden</h2>
-            <p class="error-message">
+            <h1 class="error-code" aria-label="Fehlercode 404">404</h1>
+            <h2 class="error-title" id="error-title">Seite nicht gefunden</h2>
+            <p class="error-message" role="status" aria-live="polite">
                 Die angeforderte Seite existiert nicht oder wurde verschoben.
             </p>
 
-            <!-- ✅ P1 UI/UX: Clear navigation back to safety -->
-            <div class="error-actions">
-                <a href="/index.html" class="btn btn-primary btn-large">
+            <!-- ✅ P1 UI/UX: Clear navigation with ARIA labels and keyboard support -->
+            <div class="error-actions" role="navigation" aria-label="Navigationsoptionen">
+                <a href="/index.html"
+                   class="btn btn-primary btn-large"
+                   aria-label="Zur Startseite zurückkehren">
                     🏠 Zur Startseite
                 </a>
-                <button class="btn btn-secondary btn-large" id="back-button">
+                <button class="btn btn-secondary btn-large"
+                        id="back-button"
+                        aria-label="Zur vorherigen Seite zurückkehren oder zur Startseite (ESC-Taste)">
                     ← Zurück
                 </button>
             </div>

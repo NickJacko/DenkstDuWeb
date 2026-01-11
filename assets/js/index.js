@@ -371,7 +371,8 @@
     }
 
     /**
-     * Load age verification with validation and expiry check
+     * ✅ P0 SECURITY: Load age verification with validation and expiry check
+     * Sanitizes all data from localStorage before use
      * @returns {boolean} True if valid verification found
      */
     function loadVerification() {
@@ -386,8 +387,16 @@
 
             const verification = typeof saved === 'string' ? JSON.parse(saved) : saved;
 
-            // Validate structure
+            // ✅ P0 SECURITY: Validate structure and sanitize all string values
             if (!verification || typeof verification !== 'object') {
+                clearVerification();
+                return false;
+            }
+
+            // ✅ P0 SECURITY: Validate and sanitize timestamp
+            const timestamp = parseInt(verification.timestamp);
+            if (isNaN(timestamp) || timestamp < 0 || timestamp > Date.now()) {
+                Logger.warn('⚠️ Invalid timestamp in age verification');
                 clearVerification();
                 return false;
             }
@@ -396,27 +405,28 @@
             const oneDay = 24 * 60 * 60 * 1000;
 
             // Check if verification is still valid (24 hours)
-            if (verification.timestamp && now - verification.timestamp < oneDay) {
+            if (timestamp && now - timestamp < oneDay) {
+                // ✅ P0 SECURITY: Strict boolean validation
                 ageVerified = verification.ageVerified === true;
                 isAdult = verification.isAdult === true;
                 alcoholMode = verification.alcoholMode === true;
 
                 if (isDevelopment) {
-                    console.log('✅ Age verification loaded from storage');
+                    Logger.debug('✅ Age verification loaded from storage');
                 }
 
                 return true;
             } else {
                 // Expired - clear it
                 if (isDevelopment) {
-                    console.log('ℹ️ Age verification expired (>24h)');
+                    Logger.info('ℹ️ Age verification expired (>24h)');
                 }
                 clearVerification();
                 return false;
             }
 
         } catch (error) {
-            console.error('❌ Could not load age verification:', error);
+            Logger.error('❌ Could not load age verification:', error);
             clearVerification();
             return false;
         }
@@ -662,6 +672,109 @@
         // ===================================
 
         /**
+         * ✅ P1 UI/UX: Setup scroll-to-top button
+         */
+        function setupScrollToTop() {
+            // Check if button already exists
+            let scrollButton = document.getElementById('scroll-to-top');
+
+            if (!scrollButton) {
+                // Create scroll-to-top button
+                scrollButton = document.createElement('button');
+                scrollButton.id = 'scroll-to-top';
+                scrollButton.className = 'scroll-to-top hidden';
+                scrollButton.setAttribute('aria-label', 'Zurück nach oben');
+                scrollButton.setAttribute('title', 'Zurück nach oben');
+                scrollButton.innerHTML = '<span aria-hidden="true">↑</span>';
+
+                document.body.appendChild(scrollButton);
+            }
+
+            // Show/hide button based on scroll position
+            const toggleScrollButton = () => {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+                if (scrollTop > 300) {
+                    scrollButton.classList.remove('hidden');
+                    scrollButton.classList.add('visible');
+                } else {
+                    scrollButton.classList.remove('visible');
+                    scrollButton.classList.add('hidden');
+                }
+            };
+
+            // Scroll to top on click
+            const scrollToTop = () => {
+                // Check for reduced motion preference
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: prefersReducedMotion ? 'auto' : 'smooth'
+                });
+
+                // Focus on main content after scroll
+                const mainContent = document.getElementById('main-content');
+                if (mainContent) {
+                    mainContent.focus();
+                }
+            };
+
+            // Add event listeners
+            addTrackedEventListener(window, 'scroll', toggleScrollButton, { passive: true });
+            addTrackedEventListener(scrollButton, 'click', scrollToTop);
+
+            // Initial check
+            toggleScrollButton();
+
+            if (isDevelopment) {
+                Logger.debug('✅ Scroll-to-top button initialized');
+            }
+        }
+
+        /**
+         * ✅ P1 UI/UX: Lazy load modals and heavy components
+         */
+        function lazyLoadComponents() {
+            // Lazy load age modal content (only when needed)
+            const ageModal = document.getElementById('age-modal');
+
+            if (ageModal && !ageModal.dataset.loaded) {
+                // Mark as loaded
+                ageModal.dataset.loaded = 'true';
+
+                // Add intersection observer for future lazy-loaded images
+                if ('IntersectionObserver' in window) {
+                    const imageObserver = new IntersectionObserver((entries, observer) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const img = entry.target;
+
+                                if (img.dataset.src) {
+                                    img.src = img.dataset.src;
+                                    img.removeAttribute('data-src');
+                                }
+
+                                observer.unobserve(img);
+                            }
+                        });
+                    }, {
+                        rootMargin: '50px' // Load 50px before entering viewport
+                    });
+
+                    // Observe all lazy images
+                    document.querySelectorAll('img[data-src]').forEach(img => {
+                        imageObserver.observe(img);
+                    });
+
+                    if (isDevelopment) {
+                        Logger.debug('✅ Image lazy loading initialized');
+                    }
+                }
+            }
+        }
+
+        /**
          * ✅ AUDIT FIX: Animate mode cards via CSS classes (respects prefers-reduced-motion)
          */
         function animateCards() {
@@ -670,7 +783,7 @@
 
             if (prefersReducedMotion) {
                 if (isDevelopment) {
-                    console.log('ℹ️ Animations disabled (prefers-reduced-motion)');
+                    Logger.info('ℹ️ Animations disabled (prefers-reduced-motion)');
                 }
                 // Make cards visible immediately if animation is disabled
                 const cards = document.querySelectorAll('.mode-card');
@@ -695,7 +808,7 @@
         }
 
         /**
-         * Smooth scroll to section with accessibility support
+         * ✅ P1 UI/UX: Smooth scroll to section with accessibility support
          * @param {string} target - CSS selector for target element
          */
         function smoothScrollTo(target) {
@@ -1055,6 +1168,12 @@
                 // Setup event listeners
                 setupEventListeners();
 
+                // ✅ P1 UI/UX: Setup scroll-to-top button
+                setupScrollToTop();
+
+                // ✅ P1 UI/UX: Initialize lazy loading for heavy components
+                lazyLoadComponents();
+
                 // Initialize Firebase (async, non-blocking)
                 initializeFirebase().catch(error => {
                     console.warn('⚠️ Firebase initialization error:', error);
@@ -1065,7 +1184,7 @@
                 handleDirectJoin();
 
                 if (isDevelopment) {
-                    console.log('%c✅ Index page initialized',
+                    Logger.debug('%c✅ Index page initialized',
                         'color: #4CAF50; font-weight: bold; font-size: 12px');
                 }
 

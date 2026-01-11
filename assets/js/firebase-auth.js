@@ -40,6 +40,17 @@
 
             // Initialization promise (prevent multiple inits)
             this._initPromise = null;
+
+            // ✅ P1 STABILITY: Auth-ready promise (resolves when user is authenticated)
+            this._authReadyPromise = null;
+            this._authReadyResolve = null;
+            this._authReadyReject = null;
+
+            // ✅ P1 STABILITY: Auth state observers (Observer Pattern)
+            this._observers = new Set();
+
+            // ✅ P0 SECURITY: Track auth requirements per page
+            this._authRequired = false;
         }
 
         // ===================================
@@ -48,6 +59,7 @@
 
         /**
          * ✅ P1 FIX: Initialize with FirebaseConfig
+         * ✅ P0 SECURITY: Creates auth-ready promise for required auth flows
          * @returns {Promise<boolean>} Success status
          */
         async initialize() {
@@ -60,6 +72,12 @@
             if (this.initialized) {
                 return Promise.resolve(true);
             }
+
+            // ✅ P1 STABILITY: Create auth-ready promise
+            this._authReadyPromise = new Promise((resolve, reject) => {
+                this._authReadyResolve = resolve;
+                this._authReadyReject = reject;
+            });
 
             // Start initialization
             this._initPromise = (async () => {
@@ -80,9 +98,10 @@
                     const { auth } = window.FirebaseConfig.getFirebaseInstances();
 
                     // ✅ P1 FIX: Setup auth state observer with cleanup tracking
-                    this._authStateUnsubscribe = auth.onAuthStateChanged((user) => {
-                        this._handleAuthStateChange(user);
-                    });
+                    this._authStateUnsubscribe = auth.onAuthStateChanged(
+                        (user) => this._handleAuthStateChange(user),
+                        (error) => this._handleAuthError(error)
+                    );
 
                     this.initialized = true;
 
@@ -95,6 +114,11 @@
                 } catch (error) {
                     console.error('❌ FirebaseAuthService initialization failed:', error);
                     this.initialized = false;
+
+                    // ✅ P1 STABILITY: Reject auth-ready promise
+                    if (this._authReadyReject) {
+                        this._authReadyReject(error);
+                    }
 
                     // User-friendly error
                     if (window.NocapUtils && window.NocapUtils.showNotification) {
@@ -113,12 +137,53 @@
             return this._initPromise;
         }
 
-        // ===================================
+        // ===========================
         // 👤 AUTH STATE MANAGEMENT
-        // ===================================
+        // ✅ P1 STABILITY: Observer Pattern
+        // ===========================
 
         /**
-         * ✅ P1 FIX: Handle auth state changes
+         * ✅ P1 STABILITY: Register observer for auth state changes
+         * @param {Function} callback - Callback function (user, isAnonymous) => void
+         * @returns {Function} Unsubscribe function
+         *
+         * @example
+         * const unsubscribe = authService.onAuthStateChanged((user, isAnonymous) => {
+         *     if (user) {
+         *         console.log('User logged in:', user.uid);
+         *     } else {
+         *         console.log('User logged out');
+         *     }
+         * });
+         *
+         * // Later: unsubscribe()
+         */
+        onAuthStateChanged(callback) {
+            if (typeof callback !== 'function') {
+                console.error('❌ onAuthStateChanged requires a callback function');
+                return () => {};
+            }
+
+            // Add to observers
+            this._observers.add(callback);
+
+            // Call immediately with current state
+            if (this.initialized) {
+                try {
+                    callback(this.currentUser, this.isAnonymous);
+                } catch (error) {
+                    console.error('❌ Observer callback error:', error);
+                }
+            }
+
+            // Return unsubscribe function
+            return () => {
+                this._observers.delete(callback);
+            };
+        }
+
+        /**
+         * ✅ P1 STABILITY: Handle auth state changes and notify observers
          * @private
          * @param {Object|null} user - Firebase user object
          */
@@ -139,7 +204,17 @@
                 // ✅ P0 FIX: Save profile safely
                 this._updateUserProfile(user);
 
-                // Dispatch custom event
+                // ✅ P1 STABILITY: Resolve auth-ready promise
+                if (this._authReadyResolve) {
+                    this._authReadyResolve(user);
+                    this._authReadyResolve = null;
+                    this._authReadyReject = null;
+                }
+
+                // ✅ P1 STABILITY: Notify all observers
+                this._notifyObservers(user, user.isAnonymous);
+
+                // Dispatch custom event (for backward compatibility)
                 window.dispatchEvent(new CustomEvent('nocap:authStateChanged', {
                     detail: { user, isAnonymous: user.isAnonymous }
                 }));
@@ -156,6 +231,29 @@
                 // Clear stored profile
                 this._clearUserProfile();
 
+                // ✅ P0 SECURITY: If auth is required, redirect or sign in anonymously
+                if (this._authRequired) {
+                    if (this._isDevelopment) {
+                        console.log('🔐 Auth required - attempting anonymous sign-in');
+                    }
+                    this.signInAnonymously().catch(error => {
+                        console.error('❌ Auto anonymous sign-in failed:', error);
+                        if (this._authReadyReject) {
+                            this._authReadyReject(error);
+                        }
+                    });
+                } else {
+                    // ✅ P1 STABILITY: Resolve with null if auth not required
+                    if (this._authReadyResolve) {
+                        this._authReadyResolve(null);
+                        this._authReadyResolve = null;
+                        this._authReadyReject = null;
+                    }
+                }
+
+                // ✅ P1 STABILITY: Notify all observers
+                this._notifyObservers(null, false);
+
                 // Dispatch custom event
                 window.dispatchEvent(new CustomEvent('nocap:authStateChanged', {
                     detail: { user: null, isAnonymous: false }
@@ -163,13 +261,190 @@
             }
         }
 
+        /**
+         * ✅ P1 STABILITY: Handle auth errors
+         * @private
+         */
+        _handleAuthError(error) {
+            console.error('❌ Auth state change error:', error);
+
+            // Reject auth-ready promise
+            if (this._authReadyReject) {
+                this._authReadyReject(error);
+                this._authReadyResolve = null;
+                this._authReadyReject = null;
+            }
+
+            // Show user-friendly error
+            if (window.NocapUtils && window.NocapUtils.showNotification) {
+                window.NocapUtils.showNotification(
+                    'Authentifizierungsfehler aufgetreten',
+                    'error'
+                );
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Notify all registered observers
+         * @private
+         */
+        _notifyObservers(user, isAnonymous) {
+            this._observers.forEach(callback => {
+                try {
+                    callback(user, isAnonymous);
+                } catch (error) {
+                    console.error('❌ Observer callback error:', error);
+                }
+            });
+        }
+
         // ===================================
-        // 🔐 AUTHENTICATION METHODS
+        // 🔐 AUTH REQUIREMENTS
+        // ✅ P0 SECURITY: Enforce authentication
         // ===================================
 
         /**
-         * Sign in anonymously
+         * ✅ P0 SECURITY: Require authentication for current page
+         * Ensures user is authenticated (anonymous or real) before proceeding
+         *
+         * @param {Object} options - Options
+         * @param {boolean} options.allowAnonymous - Allow anonymous users (default: true)
+         * @param {string} options.redirectTo - Redirect URL if auth fails (default: 'index.html')
+         * @param {number} options.timeout - Max wait time in ms (default: 10000)
+         * @returns {Promise<Object>} User object
+         *
+         * @example
+         * // In multiplayer-lobby.js
+         * try {
+         *     const user = await authService.requireAuth({
+         *         allowAnonymous: true,
+         *         timeout: 5000
+         *     });
+         *     console.log('User ready:', user.uid);
+         * } catch (error) {
+         *     // User will be redirected or error shown
+         * }
+         */
+        async requireAuth(options = {}) {
+            const {
+                allowAnonymous = true,
+                redirectTo = 'index.html',
+                timeout = 10000
+            } = options;
+
+            this._authRequired = true;
+
+            try {
+                // Initialize if needed
+                if (!this.initialized) {
+                    await this.initialize();
+                }
+
+                // Wait for auth state to be determined
+                const user = await this.waitForAuth(timeout);
+
+                // Check if user exists
+                if (!user) {
+                    throw new Error('NO_USER');
+                }
+
+                // Check if anonymous is allowed
+                if (!allowAnonymous && user.isAnonymous) {
+                    throw new Error('ANONYMOUS_NOT_ALLOWED');
+                }
+
+                if (this._isDevelopment) {
+                    console.log('✅ Auth requirement satisfied:', {
+                        uid: user.uid.substring(0, 8) + '...',
+                        isAnonymous: user.isAnonymous
+                    });
+                }
+
+                return user;
+
+            } catch (error) {
+                console.error('❌ Auth requirement failed:', error);
+
+                // Show error to user
+                if (window.NocapUtils && window.NocapUtils.showNotification) {
+                    let message = 'Anmeldung erforderlich';
+
+                    if (error.message === 'ANONYMOUS_NOT_ALLOWED') {
+                        message = 'Du musst dich mit einem Account anmelden';
+                    } else if (error.message === 'TIMEOUT') {
+                        message = 'Anmeldung fehlgeschlagen - Zeitüberschreitung';
+                    }
+
+                    window.NocapUtils.showNotification(message, 'error', 3000);
+                }
+
+                // Redirect after short delay
+                setTimeout(() => {
+                    window.location.href = redirectTo;
+                }, 1500);
+
+                throw error;
+            }
+        }
+
+        /**
+         * ✅ P0 SECURITY: Wait for user to be authenticated
+         * Returns a promise that resolves when user is authenticated
+         *
+         * @param {number} timeout - Max wait time in ms (default: 10000)
+         * @returns {Promise<Object>} User object or null
+         *
+         * @example
+         * const user = await authService.waitForAuth(5000);
+         * if (user) {
+         *     // User is authenticated
+         * }
+         */
+        async waitForAuth(timeout = 10000) {
+            // Return immediately if already authenticated
+            if (this.isAuthenticated && this.currentUser) {
+                return this.currentUser;
+            }
+
+            // Initialize if needed
+            if (!this.initialized) {
+                await this.initialize();
+            }
+
+            // Wait for auth-ready promise with timeout
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT')), timeout);
+            });
+
+            try {
+                const user = await Promise.race([
+                    this._authReadyPromise,
+                    timeoutPromise
+                ]);
+
+                return user;
+
+            } catch (error) {
+                if (error.message === 'TIMEOUT') {
+                    console.error('❌ Auth timeout after', timeout, 'ms');
+                }
+                throw error;
+            }
+        }
+
+        /**
+         * ✅ P0 SECURITY: Sign in anonymously with comprehensive error handling
          * @returns {Promise<Object>} Result object
+         *
+         * @example
+         * try {
+         *     const result = await authService.signInAnonymously();
+         *     if (result.success) {
+         *         console.log('Signed in:', result.userId);
+         *     }
+         * } catch (error) {
+         *     console.error('Sign-in failed:', error);
+         * }
          */
         async signInAnonymously() {
             try {
@@ -191,7 +466,26 @@
                 }
 
                 const { auth } = window.FirebaseConfig.getFirebaseInstances();
-                const userCredential = await auth.signInAnonymously();
+
+                if (!auth) {
+                    throw new Error('Firebase Auth not available');
+                }
+
+                // ✅ P0 SECURITY: Sign in anonymously with error handling
+                let userCredential;
+                try {
+                    userCredential = await auth.signInAnonymously();
+                } catch (signInError) {
+                    // Handle specific errors
+                    if (signInError.code === 'auth/operation-not-allowed') {
+                        throw new Error('Anonymous authentication is disabled. Please contact support.');
+                    }
+                    throw signInError;
+                }
+
+                if (!userCredential || !userCredential.user) {
+                    throw new Error('Sign-in succeeded but no user returned');
+                }
 
                 if (this._isDevelopment) {
                     console.log('✅ Anonymous sign-in successful:',
@@ -207,15 +501,23 @@
             } catch (error) {
                 console.error('❌ Anonymous sign-in failed:', error);
 
-                // User-friendly error
+                // ✅ P0 SECURITY: User-friendly error handling
+                const errorMessage = this.getErrorMessage(error.code) || error.message;
+
                 if (window.NocapUtils && window.NocapUtils.showNotification) {
-                    const message = this.getErrorMessage(error.code);
-                    window.NocapUtils.showNotification(message, 'error');
+                    window.NocapUtils.showNotification(errorMessage, 'error');
+                }
+
+                // ✅ P1 STABILITY: Reject auth-ready promise if pending
+                if (this._authReadyReject) {
+                    this._authReadyReject(error);
+                    this._authReadyResolve = null;
+                    this._authReadyReject = null;
                 }
 
                 return {
                     success: false,
-                    error: this.getErrorMessage(error.code)
+                    error: errorMessage
                 };
             }
         }
@@ -649,8 +951,112 @@
         }
 
         // ===================================
-        // 💾 USER PROFILE MANAGEMENT
+        // 🔄 P1 STABILITY: TOKEN & CLAIMS REFRESH
         // ===================================
+
+        /**
+         * ✅ P1 STABILITY: Refresh authentication token to get updated custom claims
+         * Call this after server-side claim updates (e.g., premium activation)
+         * @param {boolean} forceRefresh - Force token refresh even if not expired
+         * @returns {Promise<Object>} Result object with updated token
+         */
+        async refreshAuthToken(forceRefresh = true) {
+            try {
+                if (!this.initialized) {
+                    await this.initialize();
+                }
+
+                if (!this.isAuthenticated) {
+                    return {
+                        success: false,
+                        error: 'No user authenticated'
+                    };
+                }
+
+                const { auth } = window.FirebaseConfig.getFirebaseInstances();
+                const user = auth.currentUser;
+
+                if (!user) {
+                    return {
+                        success: false,
+                        error: 'No current user'
+                    };
+                }
+
+                // ✅ P1 STABILITY: Force token refresh to get updated custom claims
+                const token = await user.getIdToken(forceRefresh);
+
+                if (this._isDevelopment) {
+                    console.log('✅ Auth token refreshed');
+
+                    // Decode token to show custom claims (dev only)
+                    try {
+                        const tokenResult = await user.getIdTokenResult(forceRefresh);
+                        console.log('Custom claims:', tokenResult.claims);
+                    } catch (e) {
+                        // Ignore decode errors
+                    }
+                }
+
+                // Dispatch event for components to react to claim updates
+                window.dispatchEvent(new CustomEvent('nocap:tokenRefreshed', {
+                    detail: { userId: user.uid }
+                }));
+
+                return {
+                    success: true,
+                    token: token
+                };
+
+            } catch (error) {
+                console.error('❌ Token refresh failed:', error);
+
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Get current custom claims
+         * @returns {Promise<Object>} Custom claims object
+         */
+        async getCustomClaims() {
+            try {
+                if (!this.initialized) {
+                    await this.initialize();
+                }
+
+                if (!this.isAuthenticated) {
+                    return {};
+                }
+
+                const { auth } = window.FirebaseConfig.getFirebaseInstances();
+                const user = auth.currentUser;
+
+                if (!user) {
+                    return {};
+                }
+
+                const tokenResult = await user.getIdTokenResult();
+                return tokenResult.claims || {};
+
+            } catch (error) {
+                console.error('❌ Failed to get custom claims:', error);
+                return {};
+            }
+        }
+
+        /**
+         * ✅ P1 STABILITY: Check if user has specific claim
+         * @param {string} claimName - Name of the claim to check
+         * @returns {Promise<boolean>} True if claim exists and is truthy
+         */
+        async hasClaim(claimName) {
+            const claims = await this.getCustomClaims();
+            return claims[claimName] === true;
+        }
 
         /**
          * ✅ P0 FIX: Safe user profile update
@@ -1027,12 +1433,18 @@
                 this._authStateUnsubscribe = null;
             }
 
+            // ✅ P1 STABILITY: Clear all observers
+            this._observers.clear();
+
             // Reset state
             this.currentUser = null;
             this.isAnonymous = false;
             this.isAuthenticated = false;
             this.initialized = false;
             this._initPromise = null;
+            this._authReadyPromise = null;
+            this._authReadyResolve = null;
+            this._authReadyReject = null;
 
             if (this._isDevelopment) {
                 console.log('✅ FirebaseAuthService cleanup completed');

@@ -82,128 +82,170 @@
                 </p>
 
                 <div class="category-grid" id="category-grid" role="group" aria-label="Kategorieauswahl">
+                    <!-- ✅ P1 UI/UX: Semantic button elements for keyboard accessibility -->
                     <!-- FSK 0 - Familie & Freunde -->
-                    <article class="category-card fsk0" data-category="fsk0" tabindex="0" role="button" aria-pressed="false">
+                    <button type="button"
+                            class="category-card fsk0"
+                            data-category="fsk0"
+                            aria-pressed="false"
+                            aria-label="Kategorie Familie und Freunde, FSK 0, für alle Altersgruppen">
                         <div class="category-header">
                             <div class="category-icon" aria-hidden="true">👨‍👩‍👧‍👦</div>
-                            <div class="fsk-badge fsk0-badge">FSK 0</div>
+                            <div class="fsk-badge fsk0-badge" role="img" aria-label="FSK Null">FSK 0</div>
                         </div>
                         <h2 class="category-title">Familie & Freunde</h2>
                         <p class="category-description">
                             Harmlose und lustige Fragen für alle Altersgruppen.
                             Perfekt für Familienabende und gemischte Gruppen.
                         </p>
+                        <!-- ✅ P0 SECURITY: Example questions loaded dynamically via JavaScript -->
                         <div class="category-examples">
-                            <div class="example-questions">
-                                <div class="example-question">"Warst du schon mal im Ausland?"</div>
-                                <div class="example-question">"Hast du schon mal ein Buch zu Ende gelesen?"</div>
-                                <div class="example-question">"Warst du schon mal auf einem Konzert?"</div>
+                            <div class="example-questions" data-category-examples="fsk0">
+                                <!-- Examples will be loaded from secure JSON via DOMPurify -->
+                                <span class="loading-dots">Lade Beispiele...</span>
                             </div>
                         </div>
                         <div class="category-footer">
                             <span class="age-range">Ab 0 Jahren</span>
                             <span class="question-count" data-category-count="fsk0">
-                                    <span class="loading-dots">...</span>
-                                </span>
+                                <span class="loading-dots">...</span>
+                            </span>
                         </div>
-                    </article>
+                    </button>
 
                     <!-- FSK 16 - Party Time -->
-                    <article class="category-card fsk16" data-category="fsk16" tabindex="0" role="button" aria-pressed="false">
+                    <button type="button"
+                            class="category-card fsk16"
+                            data-category="fsk16"
+                            aria-pressed="false"
+                            aria-label="Kategorie Party Time, FSK 16, für Jugendliche ab 16 Jahren"
+                            data-fsk-level="16">
                         <div class="category-header">
                             <div class="category-icon" aria-hidden="true">🎉</div>
-                            <div class="fsk-badge fsk16-badge">FSK 16</div>
+                            <div class="fsk-badge fsk16-badge" role="img" aria-label="FSK Sechzehn">FSK 16</div>
                         </div>
                         <h2 class="category-title">Party Time</h2>
                         <p class="category-description">
                             Freche und unterhaltsame Fragen für Jugendliche und junge Erwachsene.
                             Ideal für WG-Partys und Studentenfeiern.
                         </p>
+                        <!-- ✅ P0 SECURITY: Example questions loaded dynamically via JavaScript -->
                         <div class="category-examples">
-                            <div class="example-questions">
-                                <div class="example-question">"Warst du schon mal richtig betrunken?"</div>
-                                <div class="example-question">"Hast du schon mal gelogen, um frei zu bekommen?"</div>
-                                <div class="example-question">"Warst du schon mal heimlich verliebt?"</div>
+                            <div class="example-questions" data-category-examples="fsk16">
+                                <!-- Examples will be loaded from secure JSON via DOMPurify -->
+                                <span class="loading-dots">Lade Beispiele...</span>
                             </div>
                         </div>
                         <div class="category-footer">
                             <span class="age-range">Ab 16 Jahren</span>
                             <span class="question-count" data-category-count="fsk16">
-                                    <span class="loading-dots">...</span>
-                                </span>
+                                <span class="loading-dots">...</span>
+                            </span>
                         </div>
-                        <!-- ✅ CSP FIX: Use CSS class instead of inline style -->
-                        <div class="locked-overlay hidden" id="fsk16-locked" aria-hidden="true">
-                            <div class="lock-icon">🔒</div>
-                            <p class="lock-message">Nur für 16+ Jahre</p>
+                        <!-- ✅ P1 DSGVO/JUGENDSCHUTZ: Lock overlay for age-restricted content -->
+                        <div class="locked-overlay hidden"
+                             id="fsk16-locked"
+                             aria-hidden="true"
+                             role="alert">
+                            <div class="lock-icon" aria-hidden="true">🔒</div>
+                            <p class="lock-message">
+                                <strong>Altersverifikation erforderlich</strong><br>
+                                Nur für Personen ab 16 Jahren
+                            </p>
                         </div>
-                    </article>
+                    </button>
 
                     <!-- FSK 18 - Heiß & Gewagt -->
-                    <article class="category-card fsk18" data-category="fsk18" tabindex="0" role="button" aria-pressed="false">
+                    <button type="button"
+                            class="category-card fsk18"
+                            data-category="fsk18"
+                            aria-pressed="false"
+                            aria-label="Kategorie Heiß und Gewagt, FSK 18, nur für Erwachsene ab 18 Jahren"
+                            data-fsk-level="18">
                         <div class="category-header">
                             <div class="category-icon" aria-hidden="true">🔥</div>
-                            <div class="fsk-badge fsk18-badge">FSK 18</div>
+                            <div class="fsk-badge fsk18-badge" role="img" aria-label="FSK Achtzehn, Erwachseneninhalte">FSK 18</div>
                         </div>
                         <h2 class="category-title">Heiß & Gewagt</h2>
                         <p class="category-description">
                             Pikante und intime Fragen nur für Erwachsene.
                             Perfekt für enge Freundesgruppen und Paar-Abende.
                         </p>
+                        <!-- ✅ P0 SECURITY: Example questions loaded dynamically via JavaScript -->
                         <div class="category-examples">
-                            <div class="example-questions">
-                                <div class="example-question">"Hattest du schon mal einen One-Night-Stand?"</div>
-                                <div class="example-question">"Hast du schon mal etwas Illegales gemacht?"</div>
-                                <div class="example-question">"Warst du schon mal in jemand anderem verliebt?"</div>
+                            <div class="example-questions" data-category-examples="fsk18">
+                                <!-- Examples will be loaded from secure JSON via DOMPurify -->
+                                <span class="loading-dots">Lade Beispiele...</span>
                             </div>
                         </div>
                         <div class="category-footer">
-                            <span class="age-range">Nur Erwachsene</span>
+                            <span class="age-range">Nur Erwachsene (18+)</span>
                             <span class="question-count" data-category-count="fsk18">
-                                    <span class="loading-dots">...</span>
-                                </span>
+                                <span class="loading-dots">...</span>
+                            </span>
                         </div>
-                        <!-- ✅ CSP FIX: Use CSS class instead of inline style -->
-                        <div class="locked-overlay hidden" id="fsk18-locked" aria-hidden="true">
-                            <div class="lock-icon">🔒</div>
-                            <p class="lock-message">Nur für Erwachsene (18+)</p>
+                        <!-- ✅ P1 DSGVO/JUGENDSCHUTZ: Lock overlay for adult content -->
+                        <div class="locked-overlay hidden"
+                             id="fsk18-locked"
+                             aria-hidden="true"
+                             role="alert">
+                            <div class="lock-icon" aria-hidden="true">🔒</div>
+                            <p class="lock-message">
+                                <strong>Altersverifikation erforderlich</strong><br>
+                                <span class="adult-warning">Nur für Erwachsene ab 18 Jahren</span><br>
+                                <small>Enthält pikante und intime Inhalte</small>
+                            </p>
                         </div>
-                    </article>
+                    </button>
 
                     <!-- SPECIAL - Premium Kategorie -->
-                    <article class="category-card special locked" data-category="special" tabindex="0" role="button" aria-pressed="false" aria-disabled="true">
-                        <div class="premium-badge" aria-label="Premium Inhalt">👑 PREMIUM</div>
+                    <button type="button"
+                            class="category-card special locked"
+                            data-category="special"
+                            aria-pressed="false"
+                            aria-disabled="true"
+                            aria-label="Kategorie Special Edition, Premium Inhalt, erfordert Freischaltung">
+                        <div class="premium-badge" role="img" aria-label="Premium Inhalt">👑 PREMIUM</div>
                         <div class="category-header">
                             <div class="category-icon" aria-hidden="true">⭐</div>
-                            <div class="fsk-badge special-badge">SPECIAL</div>
+                            <div class="fsk-badge special-badge" role="img" aria-label="Special Edition">SPECIAL</div>
                         </div>
                         <h2 class="category-title">Special Edition</h2>
                         <p class="category-description">
                             Exklusive und einzigartige Fragen für besondere Momente.
                             Premium-Content mit den besten Community-Fragen.
                         </p>
+                        <!-- ✅ P0 SECURITY: Example questions loaded dynamically via JavaScript -->
                         <div class="category-examples">
-                            <div class="example-questions">
-                                <div class="example-question">"Würdest du für 1 Million € auf Social Media verzichten?"</div>
-                                <div class="example-question">"Hast du schon mal jemanden geghostet?"</div>
-                                <div class="example-question">"Würdest du lieber Zeit- oder Gedankenreisen können?"</div>
+                            <div class="example-questions" data-category-examples="special">
+                                <!-- Examples will be loaded from secure JSON via DOMPurify -->
+                                <span class="loading-dots">Lade Beispiele...</span>
                             </div>
                         </div>
                         <div class="category-footer">
                             <span class="age-range">Premium Only</span>
                             <span class="question-count" data-category-count="special">
-                                    <span class="loading-dots">...</span>
-                                </span>
+                                <span class="loading-dots">...</span>
+                            </span>
                         </div>
-                        <!-- P0 FIX: Locked Overlay -->
-                        <div class="locked-overlay" id="special-locked" aria-hidden="false">
-                            <div class="lock-icon">🔒</div>
-                            <p class="lock-message">Premium Inhalt</p>
-                            <button class="unlock-btn" id="unlock-special-btn" type="button">
+                        <!-- ✅ P1 UI/UX: Locked Overlay für Premium-Inhalte -->
+                        <div class="locked-overlay"
+                             id="special-locked"
+                             aria-hidden="false"
+                             role="alert">
+                            <div class="lock-icon" aria-hidden="true">🔒</div>
+                            <p class="lock-message">
+                                <strong>Premium Inhalt</strong><br>
+                                <span class="premium-info">Einmalige Freischaltung für 2,99 €</span>
+                            </p>
+                            <button class="unlock-btn"
+                                    id="unlock-special-btn"
+                                    type="button"
+                                    aria-label="Premium Special Edition freischalten für 2,99 Euro">
                                 💎 Freischalten
                             </button>
                         </div>
-                    </article>
+                    </button>
                 </div>
 
                 <!-- ✅ CSP FIX: Selection Summary with CSS class instead of inline style -->

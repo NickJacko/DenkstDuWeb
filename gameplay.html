@@ -88,23 +88,50 @@
         </article>
 
         <!-- Current Player -->
-        <div class="current-player-card fadeInUp" role="status" aria-live="polite">
+        <div class="current-player-card fadeInUp" role="status" aria-live="polite" aria-atomic="true">
             <div class="player-avatar" id="current-avatar" aria-hidden="true">M</div>
             <div class="player-info">
                 <div class="player-name" id="current-player-name">Max</div>
-                <div class="player-status">Du bist dran! <span id="player-progress">(1/4)</span></div>
+                <div class="player-status">
+                    Du bist dran!
+                    <span id="player-progress" aria-live="polite" aria-label="Spieler Fortschritt">(1/4)</span>
+                </div>
+                <!-- ✅ P1 UI/UX: Punktestand mit ARIA live -->
+                <div class="player-score" id="player-score" role="status" aria-live="polite" aria-label="Aktueller Punktestand">
+                    Punkte: <span id="score-value">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✅ P1 UI/UX: Timer mit ARIA live region -->
+        <div class="timer-section hidden" id="timer-section" role="timer" aria-live="assertive" aria-atomic="true">
+            <div class="timer-icon" aria-hidden="true">⏱️</div>
+            <div class="timer-display">
+                <span id="timer-value" aria-label="Verbleibende Zeit">30</span>
+                <span class="timer-label">Sekunden</span>
             </div>
         </div>
 
         <!-- Answer Section -->
         <section class="answer-section fadeInUp" id="answer-section" aria-labelledby="answer-title">
             <h2 class="answer-title" id="answer-title">🤔 Deine Antwort</h2>
-            <div class="answer-buttons" role="group" aria-label="Antwortoptionen">
-                <button class="answer-btn yes" id="yes-btn" type="button" aria-pressed="false">
+            <!-- ✅ P1 UI/UX: Radio-group Semantik für Single-Selection -->
+            <div class="answer-buttons" role="radiogroup" aria-labelledby="answer-title" aria-required="true">
+                <button class="answer-btn yes"
+                        id="yes-btn"
+                        type="button"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Ja, ich habe das schon gemacht">
                     <div class="answer-emoji" aria-hidden="true">✅</div>
                     <div>Ja, habe ich</div>
                 </button>
-                <button class="answer-btn no" id="no-btn" type="button" aria-pressed="false">
+                <button class="answer-btn no"
+                        id="no-btn"
+                        type="button"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Nein, ich habe das noch nie gemacht">
                     <div class="answer-emoji" aria-hidden="true">❌</div>
                     <div>Nein, noch nie</div>
                 </button>
@@ -129,24 +156,35 @@
 
         <!-- Submit Button -->
         <div class="submit-section fadeInUp" id="submit-section">
-            <button class="submit-btn" id="submit-btn" type="button" disabled aria-disabled="true">
+            <button class="submit-btn"
+                    id="submit-btn"
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    aria-label="Antwort und Schätzung bestätigen">
                 📤 Antwort bestätigen
             </button>
         </div>
 
         <!-- Results Section -->
-        <section class="results-section hidden" id="results-section" aria-labelledby="results-summary">
+        <section class="results-section hidden" id="results-section" aria-labelledby="results-summary" aria-live="polite">
             <div class="results-header">
-                <h2 class="results-summary" id="results-summary"></h2>
+                <h2 class="results-summary" id="results-summary" role="status"></h2>
             </div>
 
             <div class="results-grid" id="results-grid" role="list" aria-label="Spielergebnisse"></div>
 
             <div class="results-navigation">
-                <button class="nav-btn primary" type="button">
+                <button class="nav-btn primary"
+                        id="next-question-btn"
+                        type="button"
+                        aria-label="Nächste Frage laden">
                     ➡️ Nächste Frage
                 </button>
-                <button class="nav-btn secondary" type="button">
+                <button class="nav-btn secondary"
+                        id="end-game-btn"
+                        type="button"
+                        aria-label="Spiel beenden">
                     🚪 Beenden
                 </button>
             </div>
@@ -175,22 +213,59 @@
 </div>
 
 <!-- Player Change Popup -->
-<div class="player-change-popup" id="player-change-popup" role="dialog" aria-modal="true" aria-hidden="true">
+<!-- ✅ P1 UI/UX: Tastatur-navigierbarer Spielerwechsel-Dialog -->
+<div class="player-change-popup"
+     id="player-change-popup"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="popup-name"
+     aria-describedby="popup-message"
+     aria-hidden="true"
+     tabindex="-1">
     <div class="popup-content">
         <div class="popup-avatar" id="popup-avatar" aria-hidden="true">M</div>
         <div class="popup-name" id="popup-name">Max</div>
-        <p class="popup-message">ist dran!</p>
+        <p class="popup-message" id="popup-message">ist dran!</p>
+        <!-- ✅ P1 UI/UX: Tastatur-Bestätigung für Spielerwechsel -->
+        <button class="popup-confirm-btn"
+                id="popup-confirm-btn"
+                type="button"
+                aria-label="Bereit zum Spielen">
+            ✅ Bereit!
+        </button>
+        <p class="popup-hint" aria-live="polite">
+            <small>Drücke Enter oder klicke "Bereit" um fortzufahren</small>
+        </p>
     </div>
 </div>
 
 <!-- Exit Confirmation -->
-<div class="exit-confirmation" id="exit-confirmation" role="dialog" aria-modal="true" aria-labelledby="exit-title" aria-hidden="true">
+<div class="exit-confirmation"
+     id="exit-confirmation"
+     role="alertdialog"
+     aria-modal="true"
+     aria-labelledby="exit-title"
+     aria-describedby="exit-message"
+     aria-hidden="true"
+     tabindex="-1">
     <div class="exit-content">
         <h2 class="exit-title" id="exit-title">🚪 Spiel verlassen?</h2>
-        <p class="exit-message">Möchtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.</p>
-        <div class="exit-buttons">
-            <button class="exit-btn cancel" type="button">Nein, weiterspielen</button>
-            <button class="exit-btn confirm" type="button">Ja, beenden</button>
+        <p class="exit-message" id="exit-message">
+            Möchtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.
+        </p>
+        <div class="exit-buttons" role="group" aria-label="Bestätigungsoptionen">
+            <button class="exit-btn cancel"
+                    id="exit-cancel-btn"
+                    type="button"
+                    aria-label="Nein, weiterspielen">
+                Nein, weiterspielen
+            </button>
+            <button class="exit-btn confirm"
+                    id="exit-confirm-btn"
+                    type="button"
+                    aria-label="Ja, Spiel beenden">
+                Ja, beenden
+            </button>
         </div>
     </div>
 </div>

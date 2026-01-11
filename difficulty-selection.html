@@ -59,13 +59,8 @@
     <div class="particle"></div>
 </div>
 
-<!-- Back Button -->
-<button class="back-button" id="back-btn" type="button" aria-label="Zurück zur Kategorieauswahl">
-    ← Zurück
-</button>
-
-<!-- Loading Spinner -->
-<div class="loading" id="loading" role="status" aria-live="polite" aria-label="Lädt">
+<!-- Main Content -->
+<div class="content-wrapper">
     <div class="spinner" aria-hidden="true"></div>
     <span class="sr-only">Lädt...</span>
 </div>
@@ -81,15 +76,22 @@
                 <small id="description-subtitle">Bestimmt die Konsequenz bei falschen Schätzungen</small>
             </p>
 
-            <div class="difficulty-grid" role="group" aria-label="Schwierigkeitsgrad auswählen">
+            <div class="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad auswählen" aria-required="true">
+                <!-- ✅ P1 UI/UX: Semantic button elements with radio group behavior -->
+
                 <!-- Easy -->
-                <article class="difficulty-card easy" data-difficulty="easy" tabindex="0" role="button" aria-pressed="false">
+                <button type="button"
+                        class="difficulty-card easy"
+                        data-difficulty="easy"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Entspannt, Leicht, 1 Grundpunkt bei falscher Antwort, perfekt für entspannte Runden">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
                             <div class="sips-indicator" id="easy-icon" aria-hidden="true">💧</div>
                             <div class="difficulty-info">
                                 <h2>Entspannt</h2>
-                                <div class="difficulty-badge easy-badge">LEICHT</div>
+                                <div class="difficulty-badge easy-badge" role="img" aria-label="Leichter Schwierigkeitsgrad">LEICHT</div>
                             </div>
                         </div>
                     </div>
@@ -106,16 +108,21 @@
                         Für gemütliche Runden mit Familie und Freunden.
                         Weniger Bestrafung, mehr Spaß am Raten und Kennenlernen.
                     </div>
-                </article>
+                </button>
 
                 <!-- Medium -->
-                <article class="difficulty-card medium" data-difficulty="medium" tabindex="0" role="button" aria-pressed="false">
+                <button type="button"
+                        class="difficulty-card medium"
+                        data-difficulty="medium"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Normal, Mittel, Abweichung gleich Punkte, der Standard für lustige Partyabende">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
                             <div class="sips-indicator" id="medium-icon" aria-hidden="true">🎉</div>
                             <div class="difficulty-info">
                                 <h2>Normal</h2>
-                                <div class="difficulty-badge medium-badge">MITTEL</div>
+                                <div class="difficulty-badge medium-badge" role="img" aria-label="Mittlerer Schwierigkeitsgrad">MITTEL</div>
                             </div>
                         </div>
                     </div>
@@ -132,16 +139,21 @@
                         Die perfekte Balance zwischen Spaß und Herausforderung.
                         Ideal für die meisten Partys und Spieleabende.
                     </div>
-                </article>
+                </button>
 
                 <!-- Hard -->
-                <article class="difficulty-card hard" data-difficulty="hard" tabindex="0" role="button" aria-pressed="false">
+                <button type="button"
+                        class="difficulty-card hard"
+                        data-difficulty="hard"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Hardcore, Schwer, doppelte Abweichung, nur für erfahrene Spieler, kann FSK 18 Inhalte mit Alkohol-Modus enthalten">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
                             <div class="sips-indicator" id="hard-icon" aria-hidden="true">🔥</div>
                             <div class="difficulty-info">
                                 <h2>Hardcore</h2>
-                                <div class="difficulty-badge hard-badge">SCHWER</div>
+                                <div class="difficulty-badge hard-badge" role="img" aria-label="Schwerer Schwierigkeitsgrad">SCHWER</div>
                             </div>
                         </div>
                     </div>
@@ -158,11 +170,96 @@
                         Für Profis und mutige Gruppen. Hohe Strafen machen jede
                         falsche Schätzung richtig teuer - seid ihr bereit?
                     </div>
-                </article>
+                </button>
+            </div>
+
+            <!-- ✅ P1 DSGVO/JUGENDSCHUTZ: Alkohol-Modus Option mit Age-Gate -->
+            <div class="alcohol-mode-section" id="alcohol-section">
+                <div class="alcohol-toggle-card">
+                    <div class="alcohol-header">
+                        <h3>🍺 Alkohol-Modus</h3>
+                        <label class="toggle-switch" aria-label="Alkohol-Modus aktivieren oder deaktivieren">
+                            <input type="checkbox"
+                                   id="alcohol-toggle"
+                                   aria-describedby="alcohol-description"
+                                   aria-label="Alkohol-Modus">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <p class="alcohol-description" id="alcohol-description">
+                        Aktiviere den Alkohol-Modus für zusätzliche Trink-Challenges und alkoholbezogene Strafen.
+                    </p>
+
+                    <!-- ✅ P1 DSGVO: Alkohol-Warnung wird nur angezeigt, wenn Toggle aktiv ist -->
+                    <div class="alcohol-warning hidden"
+                         id="alcohol-warning"
+                         role="alert"
+                         aria-live="polite">
+                        <div class="warning-icon" aria-hidden="true">⚠️</div>
+                        <div class="warning-content">
+                            <strong>Wichtiger Hinweis: Verantwortungsvoller Umgang mit Alkohol</strong>
+                            <p>
+                                Der Alkohol-Modus ist <strong>nur für Personen ab 18 Jahren</strong> bestimmt.
+                                Bitte konsumiere Alkohol verantwortungsvoll und kenne deine Grenzen.
+                            </p>
+                            <ul>
+                                <li>✅ Trinke niemals, wenn du Auto fahren musst</li>
+                                <li>✅ Respektiere die Grenzen anderer Spieler</li>
+                                <li>✅ Stelle immer Wasser bereit</li>
+                                <li>✅ Bei Schwangerschaft oder gesundheitlichen Problemen: Kein Alkohol!</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ✅ P1 DSGVO: FSK-18 Strafen Warnung -->
+            <div class="fsk-penalty-info">
+                <h3>📋 Über die Strafen</h3>
+                <div class="penalty-explanation">
+                    <p>
+                        Die Strafen-Icons (💧 🎉 🔥) repräsentieren die <strong>Intensität der Konsequenzen</strong>
+                        bei falschen Schätzungen, nicht zwingend Alkoholkonsum.
+                    </p>
+                    <div class="penalty-details">
+                        <div class="penalty-item">
+                            <span class="penalty-icon">💧</span>
+                            <div>
+                                <strong>Leicht:</strong> Minimale Strafen, geeignet für <strong>alle Altersgruppen (FSK 0)</strong>
+                            </div>
+                        </div>
+                        <div class="penalty-item">
+                            <span class="penalty-icon">🎉</span>
+                            <div>
+                                <strong>Mittel:</strong> Moderate Strafen, empfohlen ab <strong>12 Jahren</strong>
+                            </div>
+                        </div>
+                        <div class="penalty-item">
+                            <span class="penalty-icon">🔥</span>
+                            <div>
+                                <strong>Schwer:</strong> Intensive Strafen, kann alkoholbezogene Aufgaben enthalten -
+                                <strong class="fsk-warning">nur mit Alkohol-Modus ab 18 Jahren (FSK 18)</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="penalty-note">
+                        <em>Alternative Strafen:</em> Ohne Alkohol-Modus können Strafen auch Push-Ups,
+                        Wahrheit-oder-Pflicht, oder andere lustige Challenges sein.
+                    </p>
+                </div>
             </div>
 
             <div class="controls">
-                <button class="btn btn-primary" id="continue-btn" type="button" disabled aria-disabled="true">
+                <!-- ✅ P1 UI/UX: Button deaktiviert bis Schwierigkeit gewählt -->
+                <button class="btn btn-outline" id="back-btn" type="button" aria-label="Zurück zur Kategorieauswahl">
+                    ← Zurück
+                </button>
+                <button class="btn btn-primary"
+                        id="continue-btn"
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        aria-label="Weiter zum Spiel (erst nach Schwierigkeitsauswahl aktiviert)">
                     Schwierigkeitsgrad wählen
                 </button>
             </div>

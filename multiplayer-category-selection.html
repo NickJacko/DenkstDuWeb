@@ -136,6 +136,44 @@
                 </div>
             </aside>
 
+            <!-- ✅ P1 DSGVO: FSK Restriction Options -->
+            <section class="fsk-options" id="fsk-options" role="region" aria-labelledby="fsk-options-title">
+                <h2 id="fsk-options-title" class="options-title">🔒 Jugendschutz-Optionen</h2>
+                <div class="option-item">
+                    <label class="option-label">
+                        <input type="checkbox"
+                               id="enforce-fsk-restrictions"
+                               class="option-checkbox"
+                               role="switch"
+                               aria-checked="false">
+                        <span class="option-text">
+                            <strong>FSK-Einschränkungen aktivieren</strong>
+                            <small>Spieler unter 18 Jahren können FSK18-Kategorien nicht spielen</small>
+                        </span>
+                    </label>
+                </div>
+                <div class="fsk-warning" id="fsk-warning" role="alert" aria-live="polite" hidden>
+                    <span class="warning-icon" aria-hidden="true">⚠️</span>
+                    <span class="warning-text">Einige Spieler können ausgewählte Kategorien nicht spielen</span>
+                </div>
+            </section>
+
+            <!-- ✅ P1 UI/UX: Participating Players List (Host-only) -->
+            <section class="players-list-section host-only" id="players-list-section" role="region" aria-labelledby="players-title">
+                <h2 id="players-title" class="players-title">👥 Teilnehmende Spieler</h2>
+                <div class="players-count" id="players-count" aria-live="polite">
+                    Warte auf Spieler...
+                </div>
+                <div class="players-grid" id="players-grid" role="list">
+                    <div class="empty-players">
+                        Noch keine Spieler beigetreten
+                    </div>
+                </div>
+                <div class="players-hint">
+                    <small>🔴 = Spieler kann Kategorie nicht spielen (Alterseinschränkung)</small>
+                </div>
+            </section>
+
             <!-- Proceed Button -->
             <button class="proceed-button" id="proceed-button" type="button" disabled aria-disabled="true">
                 Weiter zur Schwierigkeitsauswahl →
@@ -143,7 +181,42 @@
         </div>
     </div>
 </div>
-    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+
+<!-- ✅ P1 STABILITY: Lobby Timeout Warning Dialog -->
+<div class="timeout-dialog"
+     id="timeout-dialog"
+     role="alertdialog"
+     aria-modal="true"
+     aria-labelledby="timeout-title"
+     aria-describedby="timeout-desc"
+     aria-hidden="true"
+     hidden>
+    <div class="dialog-overlay" aria-hidden="true"></div>
+    <div class="dialog-content">
+        <h2 id="timeout-title" class="dialog-title">
+            <span aria-hidden="true">⏰</span> Lobby-Timeout
+        </h2>
+        <p id="timeout-desc" class="dialog-description">
+            Die Kategorieauswahl dauert zu lange. Die Lobby wird in <span id="timeout-countdown">60</span> Sekunden geschlossen.
+        </p>
+        <div class="dialog-buttons" role="group">
+            <button class="btn-primary"
+                    id="extend-timeout-btn"
+                    type="button"
+                    aria-label="Zeit verlängern">
+                ⏱️ Zeit verlängern
+            </button>
+            <button class="btn-secondary"
+                    id="cancel-timeout-btn"
+                    type="button"
+                    aria-label="Lobby schließen">
+                Lobby schließen
+            </button>
+        </div>
+    </div>
+</div>
+
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>
