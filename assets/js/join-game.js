@@ -745,14 +745,6 @@
         if (isDevelopment) {
             console.log('✅ Game info displayed and player name field shown');
         }
-            lobby: 'Lobby',
-            playing: 'Läuft',
-            finished: 'Beendet'
-        };
-        setTextSafe('info-status', statusNames[gameData.gameState] || 'Lobby');
-
-        // ✅ P1 FIX: Show with animation
-        infoDiv.classList.add('show');
     }
 
     // ===========================

@@ -5,12 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Enhance accessibility and security across HTML files with ARIA roles, improved error handling, and age verification features">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/difficulty-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/player-setup.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -131,15 +126,7 @@
       <workItem from="1767609144829" duration="68000" />
       <workItem from="1767771199341" duration="31527000" />
       <workItem from="1767865110916" duration="17234000" />
-      <workItem from="1767952682710" duration="23055000" />
-    </task>
-    <task id="LOCAL-00048" summary="Change from html to js &amp; html">
-      <option name="closed" value="true" />
-      <created>1763037575930</created>
-      <option name="number" value="00048" />
-      <option name="presentableId" value="LOCAL-00048" />
-      <option name="project" value="LOCAL" />
-      <updated>1763037575930</updated>
+      <workItem from="1767952682710" duration="23366000" />
     </task>
     <task id="LOCAL-00049" summary="Change from html to js &amp; html">
       <option name="closed" value="true" />
@@ -525,7 +512,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768144997551</updated>
     </task>
-    <option name="localTasksCounter" value="97" />
+    <task id="LOCAL-00097" summary="Enhance accessibility and security across HTML files with ARIA roles, improved error handling, and age verification features">
+      <option name="closed" value="true" />
+      <created>1768147013817</created>
+      <option name="number" value="00097" />
+      <option name="presentableId" value="LOCAL-00097" />
+      <option name="project" value="LOCAL" />
+      <updated>1768147013817</updated>
+    </task>
+    <option name="localTasksCounter" value="98" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
