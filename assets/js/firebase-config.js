@@ -1191,22 +1191,19 @@
             // ✅ P1 PERFORMANCE: Setup telemetry heartbeat (180s interval)
             setupTelemetryHeartbeat();
 
-            // Auto sign-in if privacy consent is given
-            const hasPrivacyConsent = localStorage.getItem('nocap_privacy_consent') === 'true';
-
-            if (hasPrivacyConsent) {
-                // Sign in after a short delay to ensure everything is ready
-                setTimeout(async () => {
-                    try {
-                        await signInAnonymously();
-                    } catch (error) {
-                        console.warn('⚠️ Auto sign-in failed:', error.message);
-                        // Non-fatal: user can manually trigger auth later
+            // ✅ FIX: Always sign in anonymously (required for Database access)
+            // Privacy consent is separate from authentication
+            setTimeout(async () => {
+                try {
+                    await signInAnonymously();
+                    if (isDevelopment) {
+                        console.log('✅ Auto sign-in successful');
                     }
-                }, 500);
-            } else if (isDevelopment) {
-                console.log('ℹ️ Skipping auto sign-in (no privacy consent)');
-            }
+                } catch (error) {
+                    console.warn('⚠️ Auto sign-in failed:', error.message);
+                    // Non-fatal: user can manually trigger auth later
+                }
+            }, 500);
 
         } catch (error) {
             console.error('❌ Firebase auto-initialization failed:', error);

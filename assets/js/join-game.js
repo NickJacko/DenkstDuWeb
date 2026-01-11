@@ -209,8 +209,8 @@
                     throw new Error('Firebase not initialized');
                 }
 
-                // Get FirebaseService instance
-                firebaseService = window.FirebaseService.getInstance();
+                // ✅ FIX: Use FirebaseService directly (it's already an instance, not a class)
+                firebaseService = window.FirebaseService;
 
                 if (isDevelopment) {
                     console.log('✅ Firebase Service ready');

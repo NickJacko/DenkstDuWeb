@@ -1,6 +1,37 @@
 {
   "rules": {
     // ===================================
+    // 📚 QUESTIONS COLLECTION
+    // ✅ P0 SECURITY: Read-only access for authenticated users
+    // ✅ P2 PERFORMANCE: Indexed for category and difficulty queries
+    // ===================================
+    "questions": {
+      ".read": "auth != null",
+      ".write": false,
+
+      "fsk0": {
+        ".read": "auth != null",
+        ".write": false,
+        ".indexOn": ["category", "difficulty", "type"]
+      },
+      "fsk16": {
+        ".read": "auth != null",
+        ".write": false,
+        ".indexOn": ["category", "difficulty", "type"]
+      },
+      "fsk18": {
+        ".read": "auth != null",
+        ".write": false,
+        ".indexOn": ["category", "difficulty", "type"]
+      },
+      "special": {
+        ".read": "auth != null",
+        ".write": false,
+        ".indexOn": ["category", "difficulty", "type"]
+      }
+    },
+
+    // ===================================
     // 🎮 GAMES COLLECTION
     // ✅ P0 SECURITY: Host-only write access for game settings
     // ✅ P2 PERFORMANCE: Indexed for queries
@@ -138,14 +169,6 @@
         ".read": true,
         ".write": "auth != null && auth.uid === $uid"
       }
-    },
-
-    // ===================================
-    // 🔐 SECURITY: Deny all other paths
-    // ===================================
-    "$other": {
-      ".read": false,
-      ".write": false
     }
   }
 }
