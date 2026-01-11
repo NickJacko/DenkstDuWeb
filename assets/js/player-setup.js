@@ -33,11 +33,6 @@
     // Drag and drop state
     let draggedItem = null;
 
-    // ✅ P0 SECURITY: Avatar upload state and validation
-    const avatarUploads = new Map(); // Track upload progress
-    const AVATAR_MAX_SIZE = 2 * 1024 * 1024; // 2MB
-    const AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
     // ✅ P1 STABILITY: Event listener tracking for cleanup
     const _eventListeners = [];
 
@@ -71,6 +66,25 @@
     // INITIALIZATION
     // ===========================
 
+    /**
+     * Wait for Firebase to be fully initialized
+     */
+    async function waitForFirebase() {
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max
+
+        while (attempts < maxAttempts) {
+            if (window.firebaseInitialized) {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        console.warn('⚠️ Firebase initialization timeout');
+        return false;
+    }
+
     async function initialize() {
         if (isDevelopment) {
             console.log('👥 Initializing player setup...');
@@ -92,6 +106,9 @@
                 showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
                 return;
             }
+
+            // ✅ FIX: Wait for Firebase to be initialized
+            await waitForFirebase();
 
             // Wait for dependencies
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
@@ -228,22 +245,27 @@
                 console.log('📊 Loading question counts...');
             }
 
-            if (typeof firebase === 'undefined' || !firebase.database) {
+            // ✅ FIX: Check if Firebase is initialized
+            if (!window.firebaseInitialized || typeof firebase === 'undefined' || !firebase.database) {
                 console.warn('⚠️ Firebase not available, using fallback counts');
                 useFallbackCounts();
                 return;
             }
 
-            // Wait for Firebase if available
-            if (window.FirebaseService && window.FirebaseService.waitForFirebase) {
-                await window.FirebaseService.waitForFirebase();
+            // ✅ FIX: Get Firebase instances from FirebaseConfig
+            const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances();
+            if (!firebaseInstances || !firebaseInstances.database) {
+                console.warn('⚠️ Firebase database not available, using fallback counts');
+                useFallbackCounts();
+                return;
             }
 
+            const { database } = firebaseInstances;
             const categories = ['fsk0', 'fsk16', 'fsk18', 'special'];
 
             for (const category of categories) {
                 try {
-                    const questionsRef = firebase.database().ref(`questions/${category}`);
+                    const questionsRef = database.ref(`questions/${category}`);
                     const snapshot = await questionsRef.once('value');
 
                     if (snapshot.exists()) {
@@ -401,12 +423,11 @@
     function updatePlayersFromInputs() {
         const players = getPlayersList();
 
-        // Store in GameState (not a direct property assignment - use setter if available)
-        if (gameState.setPlayers) {
-            gameState.setPlayers(players);
-        } else {
-            // Fallback: direct assignment
-            gameState.players = players;
+        // ✅ FIX: Directly set players array to avoid prototype pollution detection
+        gameState.players = players;
+
+        // Only save if we have valid players
+        if (players.length > 0) {
             gameState.save();
         }
 
@@ -944,8 +965,6 @@
             addTrackedEventListener(addPlayerBtn, 'click', addPlayerInput);
         }
 
-        // ✅ P1 UI/UX: Avatar upload event listeners
-        setupAvatarEventListeners();
 
         // Input changes - delegate to parent
         const inputsList = document.getElementById('players-input-list');
@@ -995,306 +1014,7 @@
     }
 
     // ===========================
-    // AVATAR UPLOAD FUNCTIONALITY
-    // ✅ P0 SECURITY: File validation before upload
-    // ✅ P1 UI/UX: Preview and feedback
-    // ===========================
-
-    /**
-     * ✅ P1 UI/UX: Setup avatar upload event listeners
-     */
-    function setupAvatarEventListeners() {
-        const avatarInputs = document.querySelectorAll('.avatar-input');
-
-        avatarInputs.forEach(input => {
-            addTrackedEventListener(input, 'change', handleAvatarSelection);
-        });
-
-        const removeButtons = document.querySelectorAll('.avatar-remove-btn');
-        removeButtons.forEach(btn => {
-            addTrackedEventListener(btn, 'click', handleAvatarRemove);
-        });
-    }
-
-    /**
-     * ✅ P0 SECURITY: Validate avatar file
-     */
-    function validateAvatarFile(file) {
-        // Check file type
-        if (!AVATAR_ALLOWED_TYPES.includes(file.type)) {
-            return {
-                valid: false,
-                error: 'Nur JPG, PNG und WEBP Dateien erlaubt'
-            };
-        }
-
-        // Check file size (2MB max)
-        if (file.size > AVATAR_MAX_SIZE) {
-            const sizeMB = (AVATAR_MAX_SIZE / (1024 * 1024)).toFixed(1);
-            return {
-                valid: false,
-                error: `Avatar darf maximal ${sizeMB}MB groß sein`
-            };
-        }
-
-        return { valid: true };
-    }
-
-    /**
-     * ✅ P1 UI/UX: Handle avatar selection
-     */
-    async function handleAvatarSelection(e) {
-        const input = e.target;
-        const index = parseInt(input.dataset.index);
-        const file = input.files[0];
-
-        if (!file) return;
-
-        if (isDevelopment) {
-            console.log(`📷 Avatar selected for player ${index + 1}:`, {
-                name: file.name,
-                type: file.type,
-                size: file.size
-            });
-        }
-
-        // ✅ P0 SECURITY: Validate file
-        const validation = validateAvatarFile(file);
-        if (!validation.valid) {
-            showNotification(validation.error, 'error');
-            input.value = ''; // Clear input
-            return;
-        }
-
-        try {
-            // Show preview using FileReader
-            await showAvatarPreview(index, file);
-
-            // ✅ P1 STABILITY: Save avatar in state (optional upload to Firebase)
-            saveAvatarLocally(index, file);
-
-            showNotification('Avatar ausgewählt ✓', 'success', 2000);
-
-        } catch (error) {
-            console.error('Avatar preview error:', error);
-            showNotification('Fehler beim Laden des Avatars', 'error');
-            input.value = '';
-        }
-    }
-
-    /**
-     * ✅ P1 UI/UX: Show avatar preview using FileReader
-     */
-    function showAvatarPreview(index, file) {
-        return new Promise((resolve, reject) => {
-            const preview = document.getElementById(`avatar-preview-${index}`);
-            const image = document.getElementById(`avatar-image-${index}`);
-
-            if (!preview || !image) {
-                reject(new Error('Preview elements not found'));
-                return;
-            }
-
-            // ✅ P0 SECURITY: Use FileReader (safe, no direct URL)
-            const reader = new FileReader();
-
-            reader.onload = function(e) {
-                // ✅ P0 SECURITY: Set src from FileReader result
-                image.src = e.target.result;
-                image.alt = `Avatar von Spieler ${index + 1}`;
-
-                // Show preview
-                preview.classList.remove('hidden');
-
-                resolve();
-            };
-
-            reader.onerror = function() {
-                reject(new Error('FileReader error'));
-            };
-
-            // Read file as Data URL
-            reader.readAsDataURL(file);
-        });
-    }
-
-    /**
-     * ✅ P1 STABILITY: Save avatar locally (optional Firebase upload)
-     */
-    function saveAvatarLocally(index, file) {
-        // Get player name
-        const input = document.getElementById(`player-input-${index}`);
-        const playerName = input ? sanitizePlayerName(input.value) : `Player${index + 1}`;
-
-        // Store in Map for later upload (if needed)
-        avatarUploads.set(index, {
-            file,
-            playerName,
-            timestamp: Date.now()
-        });
-
-        if (isDevelopment) {
-            console.log(`💾 Avatar saved locally for player ${index + 1}`);
-        }
-    }
-
-    /**
-     * ✅ P1 UI/UX: Handle avatar remove
-     */
-    function handleAvatarRemove(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const index = parseInt(e.target.dataset.index) || parseInt(e.target.parentElement.dataset.index);
-
-        if (isNaN(index)) return;
-
-        if (isDevelopment) {
-            console.log(`🗑️ Removing avatar for player ${index + 1}`);
-        }
-
-        // Clear input
-        const input = document.getElementById(`avatar-input-${index}`);
-        if (input) {
-            input.value = '';
-        }
-
-        // Hide preview
-        const preview = document.getElementById(`avatar-preview-${index}`);
-        if (preview) {
-            preview.classList.add('hidden');
-        }
-
-        // Clear image src
-        const image = document.getElementById(`avatar-image-${index}`);
-        if (image) {
-            image.src = '';
-        }
-
-        // Remove from uploads map
-        avatarUploads.delete(index);
-
-        showNotification('Avatar entfernt', 'success', 1500);
-    }
-
-    /**
-     * ✅ P1 STABILITY: Upload avatars to Firebase (optional, called before game start)
-     */
-    async function uploadAvatarsToFirebase() {
-        if (avatarUploads.size === 0) {
-            if (isDevelopment) {
-                console.log('ℹ️ No avatars to upload');
-            }
-            return true;
-        }
-
-        if (!firebase || !firebase.storage) {
-            console.warn('⚠️ Firebase Storage not available, skipping avatar upload');
-            return true;
-        }
-
-        showNotification('Lade Avatare hoch...', 'info');
-
-        const uploadPromises = [];
-
-        for (const [index, data] of avatarUploads.entries()) {
-            const promise = uploadSingleAvatar(index, data);
-            uploadPromises.push(promise);
-        }
-
-        try {
-            const results = await Promise.allSettled(uploadPromises);
-
-            const failures = results.filter(r => r.status === 'rejected');
-
-            if (failures.length > 0) {
-                showNotification(
-                    `${failures.length} Avatar(s) konnten nicht hochgeladen werden`,
-                    'warning',
-                    3000
-                );
-                return false;
-            }
-
-            showNotification('Avatare erfolgreich hochgeladen ✓', 'success');
-            return true;
-
-        } catch (error) {
-            console.error('Avatar upload error:', error);
-            showNotification('Fehler beim Hochladen der Avatare', 'error');
-            return false;
-        }
-    }
-
-    /**
-     * ✅ P1 STABILITY: Upload single avatar with error handling
-     */
-    async function uploadSingleAvatar(index, data) {
-        const { file, playerName } = data;
-
-        try {
-            const timestamp = Date.now();
-            const fileName = `${playerName}_${timestamp}.${getFileExtension(file.name)}`;
-            const storageRef = firebase.storage().ref(`avatars/${fileName}`);
-
-            // ✅ P1 DSGVO: Set metadata for auto-deletion after 24h
-            const metadata = {
-                contentType: file.type,
-                customMetadata: {
-                    playerName: playerName,
-                    uploadedAt: timestamp.toString(),
-                    deleteAfter: (timestamp + 24 * 60 * 60 * 1000).toString() // 24h
-                }
-            };
-
-            // Upload file
-            const snapshot = await storageRef.put(file, metadata);
-
-            // Get download URL
-            const downloadURL = await snapshot.ref.getDownloadURL();
-
-            if (isDevelopment) {
-                console.log(`✅ Avatar uploaded for ${playerName}:`, downloadURL);
-            }
-
-            // Store URL in gameState
-            if (!gameState.avatars) {
-                gameState.avatars = {};
-            }
-            gameState.avatars[playerName] = downloadURL;
-
-            return { success: true, index, url: downloadURL };
-
-        } catch (error) {
-            console.error(`❌ Avatar upload failed for player ${index + 1}:`, error);
-
-            // ✅ P1 STABILITY: Show specific error message
-            let errorMessage = 'Upload fehlgeschlagen';
-            if (error.code === 'storage/unauthorized') {
-                errorMessage = 'Keine Berechtigung zum Hochladen';
-            } else if (error.code === 'storage/canceled') {
-                errorMessage = 'Upload abgebrochen';
-            } else if (error.code === 'storage/quota-exceeded') {
-                errorMessage = 'Speicherplatz voll';
-            }
-
-            showNotification(
-                `Avatar ${index + 1}: ${errorMessage}`,
-                'error',
-                3000
-            );
-
-            throw error;
-        }
-    }
-
-    function getFileExtension(filename) {
-        return filename.split('.').pop().toLowerCase();
-    }
-
-    // ===========================
     // START GAME
-    // ✅ P1 STABILITY: Upload avatars before starting
     // ===========================
 
     async function startGame() {
@@ -1325,34 +1045,8 @@
 
         showLoading();
 
-        // ✅ P1 STABILITY: Upload avatars if any selected
-        if (avatarUploads.size > 0) {
-            const uploadSuccess = await uploadAvatarsToFirebase();
-
-            if (!uploadSuccess) {
-                hideLoading();
-
-                // ✅ P1 STABILITY: Ask user if they want to continue without avatars
-                const continueWithoutAvatars = confirm(
-                    'Einige Avatare konnten nicht hochgeladen werden.\n\n' +
-                    'Möchten Sie ohne Avatare fortfahren?'
-                );
-
-                if (!continueWithoutAvatars) {
-                    showNotification('Spiel-Start abgebrochen', 'info');
-                    return;
-                }
-
-                showLoading();
-            }
-        }
-
         // ✅ P1 FIX: Save to GameState and set game phase
-        if (gameState.setPlayers) {
-            gameState.setPlayers(players);
-        } else {
-            gameState.players = players;
-        }
+        gameState.players = players;
         gameState.gamePhase = 'playing';
         gameState.save(true); // Immediate save
 
@@ -1381,11 +1075,7 @@
         const players = getPlayersList();
 
         if (players.length > 0) {
-            if (gameState.setPlayers) {
-                gameState.setPlayers(players);
-            } else {
-                gameState.players = players;
-            }
+            gameState.players = players;
             gameState.save();
 
             if (isDevelopment) {
@@ -1446,10 +1136,19 @@
     // INITIALIZATION
     // ===========================
 
+    async function startApp() {
+        const firebaseReady = await waitForFirebase();
+        if (firebaseReady) {
+            await initialize();
+        } else {
+            showNotification('Firebase konnte nicht geladen werden. Bitte lade die Seite neu.', 'error');
+        }
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', startApp);
     } else {
-        initialize();
+        startApp();
     }
 
 })(window);

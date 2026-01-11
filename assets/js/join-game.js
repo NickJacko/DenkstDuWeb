@@ -203,67 +203,27 @@
             // Initialize Firebase
             showLoading('Verbinde mit Server...');
 
-            // ✅ FIX: Ensure anonymous auth BEFORE initializing Firebase Service
-            if (typeof firebase !== 'undefined' && firebase.auth) {
-                try {
-                    await new Promise((resolve, reject) => {
-                        const unsubscribe = firebase.auth().onAuthStateChanged(async (user) => {
-                            unsubscribe();
-
-                            if (user) {
-                                if (isDevelopment) {
-                                    console.log('✅ User already authenticated:', user.uid);
-                                }
-                                resolve(user);
-                            } else {
-                                if (isDevelopment) {
-                                    console.log('⚠️ No user - signing in anonymously...');
-                                }
-
-                                try {
-                                    const result = await firebase.auth().signInAnonymously();
-                                    if (isDevelopment) {
-                                        console.log('✅ Anonymous sign-in successful:', result.user.uid);
-                                    }
-                                    resolve(result.user);
-                                } catch (signInError) {
-                                    console.error('❌ Anonymous sign-in failed:', signInError);
-                                    // Don't reject - continue without auth
-                                    console.warn('⚠️ Continuing without auth');
-                                    resolve(null);
-                                }
-                            }
-                        }, (error) => {
-                            console.error('❌ Auth state change error:', error);
-                            // Don't reject - continue without auth
-                            console.warn('⚠️ Continuing without auth');
-                            resolve(null);
-                        });
-
-                        // Longer timeout - 20 seconds instead of 5
-                        setTimeout(() => {
-                            console.warn('⚠️ Auth timeout - continuing without auth');
-                            resolve(null);
-                        }, 20000);
-                    });
-                } catch (authError) {
-                    console.error('❌ Auth error:', authError);
-                    console.warn('⚠️ Continuing without auth');
-                    // Continue anyway - don't block the user
-                }
-            }
-
             try {
-                // ✅ P1 FIX: Initialize Firebase with longer timeout
-                const initialized = await Promise.race([
-                    firebaseService.initialize(),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Firebase Timeout')), 20000)
-                    )
-                ]);
+                // ✅ P1 FIX: Wait for Firebase initialization
+                if (!window.firebaseInitialized) {
+                    throw new Error('Firebase not initialized');
+                }
 
-                if (!initialized) {
-                    throw new Error('Firebase-Verbindung fehlgeschlagen');
+                // Get FirebaseService instance
+                firebaseService = window.FirebaseService.getInstance();
+
+                if (isDevelopment) {
+                    console.log('✅ Firebase Service ready');
+                }
+
+                // Get current user (should already be authenticated from firebase-config.js)
+                const currentUser = firebaseService.getCurrentUser();
+                if (currentUser) {
+                    if (isDevelopment) {
+                        console.log('✅ User authenticated:', currentUser.uid);
+                    }
+                } else {
+                    console.warn('⚠️ No authenticated user - some features may not work');
                 }
 
                 if (isDevelopment) {
@@ -450,9 +410,17 @@
         // Reset UI
         input.classList.remove('valid', 'error');
         const gameInfo = document.getElementById('game-info');
+        const playerNameStep = document.getElementById('step-player-name');
+
         if (gameInfo) {
             gameInfo.classList.remove('show');
+            gameInfo.classList.add('hidden');
         }
+
+        if (playerNameStep) {
+            playerNameStep.classList.add('hidden');
+        }
+
         currentGameData = null;
 
         // ✅ P1 FIX: Update ARIA
@@ -679,10 +647,17 @@
             showNotification(userMessage, 'error');
             currentGameData = null;
 
-            // Hide game info
+            // Hide game info and player name step
             const gameInfo = document.getElementById('game-info');
+            const playerNameStep = document.getElementById('step-player-name');
+
             if (gameInfo) {
                 gameInfo.classList.remove('show');
+                gameInfo.classList.add('hidden');
+            }
+
+            if (playerNameStep) {
+                playerNameStep.classList.add('hidden');
             }
         } finally {
             input.setAttribute('aria-busy', 'false');
@@ -700,10 +675,12 @@
      */
     function displayGameInfo(gameData) {
         const infoDiv = document.getElementById('game-info');
+        const playerNameStep = document.getElementById('step-player-name');
+
         if (!infoDiv) return;
 
         if (isDevelopment) {
-            console.log('📊 Displaying game info');
+            console.log('📊 Displaying game info:', gameData);
         }
 
         // ✅ P0 FIX: Safe text setter
@@ -714,31 +691,60 @@
             }
         };
 
-        // Host
+        // Host - Korrigierte ID
         const hostPlayer = Object.values(gameData.players || {}).find(p => p.isHost);
         const hostName = hostPlayer ? hostPlayer.name : 'Unbekannt';
-        setTextSafe('info-host', hostName);
+        setTextSafe('game-host-name', hostName);
 
-        // Difficulty
-        const difficulty = gameData.settings?.difficulty || gameData.difficulty || 'medium';
-        const difficultyText = difficultyNames[difficulty] || 'Standard';
-        setTextSafe('info-difficulty', difficultyText);
-
-        // Players
+        // Players - Korrigierte ID
         const playerCount = gameData.players ? Object.keys(gameData.players).length : 0;
         const maxPlayers = gameData.settings?.maxPlayers || 8;
-        setTextSafe('info-players', `${playerCount}/${maxPlayers}`);
+        setTextSafe('game-player-count', `${playerCount}/${maxPlayers}`);
 
-        // Categories
+        // Categories - Korrigierte ID
         const categoriesArray = gameData.settings?.categories || gameData.selectedCategories || [];
-        const categories = categoriesArray
-            .map(cat => categoryData[cat]?.icon || '❓')
-            .join(' ');
-        setTextSafe('info-categories', categories || '-');
+        const categoryNames = categoriesArray
+            .map(cat => {
+                const categoryInfo = categoryData[cat];
+                return categoryInfo ? `${categoryInfo.icon} ${categoryInfo.name}` : cat;
+            })
+            .join(', ');
+        setTextSafe('game-categories', categoryNames || 'Keine Kategorien');
 
-        // Status
-        const statusNames = {
-            waiting: 'Wartet',
+        // Difficulty - Korrigierte ID
+        const difficulty = gameData.settings?.difficulty || gameData.difficulty || 'medium';
+        const difficultyText = difficultyNames[difficulty] || 'Standard';
+        setTextSafe('game-difficulty', difficultyText);
+
+        // FSK Rating - Korrigierte ID
+        const hasFSK18 = categoriesArray.some(cat => cat === 'fsk18' || cat.includes('18'));
+        const hasFSK16 = categoriesArray.some(cat => cat === 'fsk16' || cat.includes('16'));
+
+        const fskElem = document.getElementById('game-fsk-rating');
+        if (fskElem) {
+            if (hasFSK18) {
+                fskElem.innerHTML = '<strong>⚠️ FSK 18+</strong><span class="fsk-hint">Nur für Erwachsene</span>';
+                fskElem.classList.add('fsk-warning');
+            } else if (hasFSK16) {
+                fskElem.innerHTML = '<strong>⚠️ FSK 16+</strong><span class="fsk-hint">Jugendschutz aktiv</span>';
+                fskElem.classList.add('fsk-warning');
+            } else {
+                fskElem.innerHTML = '<strong>✅ FSK 0</strong><span class="fsk-hint">Für alle Altersgruppen</span>';
+                fskElem.classList.remove('fsk-warning');
+            }
+        }
+
+        // ✅ P1 UI/UX: Zeige Game Info und Namensfeld an
+        infoDiv.classList.remove('hidden');
+        infoDiv.classList.add('show');
+
+        if (playerNameStep) {
+            playerNameStep.classList.remove('hidden');
+        }
+
+        if (isDevelopment) {
+            console.log('✅ Game info displayed and player name field shown');
+        }
             lobby: 'Lobby',
             playing: 'Läuft',
             finished: 'Beendet'
@@ -1035,10 +1041,36 @@
     // INITIALIZATION
     // ===========================
 
+    async function waitForFirebase() {
+        // Wait for Firebase to be loaded and initialized
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max
+
+        while (attempts < maxAttempts) {
+            if (window.firebaseInitialized && window.FirebaseService) {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        console.error('❌ Firebase initialization timeout');
+        return false;
+    }
+
+    async function startApp() {
+        const firebaseReady = await waitForFirebase();
+        if (firebaseReady) {
+            await initialize();
+        } else {
+            showError('Firebase konnte nicht geladen werden. Bitte lade die Seite neu.');
+        }
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', startApp);
     } else {
-        initialize();
+        startApp();
     }
 
 })(window);

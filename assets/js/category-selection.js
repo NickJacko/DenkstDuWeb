@@ -93,6 +93,25 @@
     // INITIALIZATION
     // ===========================
 
+    /**
+     * Wait for Firebase to be fully initialized
+     */
+    async function waitForFirebase() {
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max
+
+        while (attempts < maxAttempts) {
+            if (window.firebaseInitialized) {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        Logger.warn('⚠️ Firebase initialization timeout');
+        return false;
+    }
+
     async function initialize() {
         Logger.debug('🎯 Initializing category selection (single device)...');
 
@@ -112,6 +131,9 @@
                 showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
                 return;
             }
+
+            // ✅ FIX: Wait for Firebase to be initialized
+            await waitForFirebase();
 
             // Wait for utils if available
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
@@ -367,30 +389,25 @@
 
     async function loadQuestionCounts() {
         try {
-            if (typeof firebase === 'undefined' || !firebase.database) {
+            // ✅ FIX: Check if Firebase is initialized
+            if (!window.firebaseInitialized || typeof firebase === 'undefined' || !firebase.database) {
                 Logger.warn('⚠️ Firebase not available, using fallback counts');
                 useFallbackCounts();
                 return;
             }
 
-            // Wait for Firebase if available
-            if (window.FirebaseService && window.FirebaseService.waitForFirebase) {
-                await window.FirebaseService.waitForFirebase();
+            // ✅ FIX: Get Firebase instances from FirebaseConfig
+            const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances();
+            if (!firebaseInstances || !firebaseInstances.database) {
+                Logger.warn('⚠️ Firebase database not available, using fallback counts');
+                useFallbackCounts();
+                return;
             }
 
-            // ✅ FIX: Ensure user is authenticated (anonymous auth if needed)
-            if (firebase.auth && !firebase.auth().currentUser) {
-                try {
-                    await firebase.auth().signInAnonymously();
-                    Logger.debug('✅ Signed in anonymously for question counts');
-                } catch (authError) {
-                    Logger.warn('⚠️ Anonymous auth failed, using fallback counts:', authError);
-                    useFallbackCounts();
-                    return;
-                }
-            }
+            const { database } = firebaseInstances;
 
-            const questionsRef = firebase.database().ref('questions');
+            // ✅ FIX: Use database reference from initialized instance
+            const questionsRef = database.ref('questions');
             const snapshot = await questionsRef.once('value');
 
             if (snapshot.exists()) {
@@ -930,10 +947,19 @@
     // INITIALIZATION
     // ===========================
 
+    async function startApp() {
+        const firebaseReady = await waitForFirebase();
+        if (firebaseReady) {
+            await initialize();
+        } else {
+            showNotification('Firebase konnte nicht geladen werden. Bitte lade die Seite neu.', 'error');
+        }
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', startApp);
     } else {
-        initialize();
+        startApp();
     }
 
 })(window);
