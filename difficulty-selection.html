@@ -29,8 +29,8 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
 
     <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
-    <!-- ✅ P1 PERFORMANCE: Consolidated CSS to reduce HTTP requests -->
     <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/difficulty-selection.css">
 
     <!-- ✅ SECURITY: DOMPurify lokal gehostet -->
     <script src="/assets/lib/purify.min.js"></script>
@@ -59,24 +59,28 @@
     <div class="particle"></div>
 </div>
 
-<!-- Main Content -->
-<div class="content-wrapper">
+<!-- Back Button -->
+<button class="back-button" id="back-btn" type="button" aria-label="Zurück zur Kategorieauswahl">
+    ← Zurück
+</button>
+
+<!-- Loading Spinner -->
+<div class="loading" id="loading" role="status" aria-live="polite">
     <div class="spinner" aria-hidden="true"></div>
-    <span class="sr-only">Lädt...</span>
+    <p class="loading-text">Lädt...</p>
 </div>
 
 <!-- App Container -->
 <div class="app-container">
-    <div class="screen active">
-        <div class="content-area">
-            <h1 class="screen-title">⚡ Schwierigkeitsgrad</h1>
+    <div class="glass-card">
+        <h1 class="screen-title">⚡ Schwierigkeitsgrad</h1>
 
-            <p class="selection-description">
-                Wie hart soll es werden?<br>
-                <small id="description-subtitle">Bestimmt die Konsequenz bei falschen Schätzungen</small>
-            </p>
+        <p class="selection-description">
+            Wie hart soll es werden?<br>
+            <small id="description-subtitle">Bestimmt die Konsequenz bei falschen Schätzungen</small>
+        </p>
 
-            <div class="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad auswählen" aria-required="true">
+        <div class="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad auswählen" aria-required="true">
                 <!-- ✅ P1 UI/UX: Semantic button elements with radio group behavior -->
 
                 <!-- Easy -->
@@ -250,10 +254,6 @@
             </div>
 
             <div class="controls">
-                <!-- ✅ P1 UI/UX: Button deaktiviert bis Schwierigkeit gewählt -->
-                <button class="btn btn-outline" id="back-btn" type="button" aria-label="Zurück zur Kategorieauswahl">
-                    ← Zurück
-                </button>
                 <button class="btn btn-primary"
                         id="continue-btn"
                         type="button"
@@ -263,7 +263,6 @@
                     Schwierigkeitsgrad wählen
                 </button>
             </div>
-        </div>
     </div>
 </div>
     <!-- âœ… ERROR BOUNDARY: Global Error Handling -->

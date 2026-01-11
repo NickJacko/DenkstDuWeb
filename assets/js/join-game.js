@@ -1036,17 +1036,39 @@
     async function waitForFirebase() {
         // Wait for Firebase to be loaded and initialized
         let attempts = 0;
-        const maxAttempts = 50; // 5 seconds max
+        const maxAttempts = 150; // 15 seconds max (increased from 10s)
+
+        console.log('⏳ Waiting for Firebase initialization...');
 
         while (attempts < maxAttempts) {
-            if (window.firebaseInitialized && window.FirebaseService) {
+            // Check multiple conditions
+            const hasFirebaseInitialized = window.firebaseInitialized === true;
+            const hasFirebaseService = typeof window.FirebaseService !== 'undefined';
+            const hasFirebaseGlobal = typeof firebase !== 'undefined';
+
+            if (isDevelopment && attempts % 10 === 0) {
+                console.log(`Firebase check attempt ${attempts}:`, {
+                    firebaseInitialized: hasFirebaseInitialized,
+                    FirebaseService: hasFirebaseService,
+                    firebaseGlobal: hasFirebaseGlobal
+                });
+            }
+
+            if (hasFirebaseInitialized && hasFirebaseService && hasFirebaseGlobal) {
+                console.log('✅ Firebase ready after', attempts * 100, 'ms');
                 return true;
             }
+
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
         }
 
-        console.error('❌ Firebase initialization timeout');
+        console.error('❌ Firebase initialization timeout after 15 seconds');
+        console.error('Final state:', {
+            firebaseInitialized: window.firebaseInitialized,
+            FirebaseService: typeof window.FirebaseService,
+            firebase: typeof firebase
+        });
         return false;
     }
 
@@ -1055,7 +1077,16 @@
         if (firebaseReady) {
             await initialize();
         } else {
-            showError('Firebase konnte nicht geladen werden. Bitte lade die Seite neu.');
+            // ✅ FIX: Use showNotification instead of showError
+            hideLoading();
+            showNotification('Firebase konnte nicht geladen werden. Bitte lade die Seite neu.', 'error');
+
+            // ✅ FIX: Offer reload option
+            setTimeout(() => {
+                if (confirm('Firebase konnte nicht geladen werden.\n\nSeite neu laden?')) {
+                    window.location.reload();
+                }
+            }, 2000);
         }
     }
 
