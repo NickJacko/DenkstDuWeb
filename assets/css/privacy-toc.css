@@ -1,0 +1,265 @@
+/* ============================================================================
+   PRIVACY PAGE - TABLE OF CONTENTS & COLLAPSIBLE SECTIONS
+   ============================================================================ */
+
+/* 📋 Table of Contents */
+.privacy-toc {
+    background: var(--background-secondary, #f8f9fa);
+    border: 2px solid var(--primary-color, #673AB7);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0 3rem 0;
+    max-width: 800px;
+}
+
+.toc-title {
+    margin: 0 0 1.5rem 0;
+    color: var(--primary-color, #673AB7);
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: toc-counter;
+}
+
+.toc-item {
+    margin: 0;
+    padding: 0;
+    counter-increment: toc-counter;
+}
+
+.toc-link {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--text-color, #333);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+    padding-left: 2.5rem;
+}
+
+.toc-link::before {
+    content: counter(toc-counter) ". ";
+    position: absolute;
+    left: 1rem;
+    font-weight: bold;
+    color: var(--primary-color, #673AB7);
+}
+
+.toc-link:hover {
+    background: var(--primary-color-light, rgba(103, 58, 183, 0.1));
+    transform: translateX(4px);
+}
+
+.toc-link:focus {
+    outline: 2px solid var(--primary-color, #673AB7);
+    outline-offset: 2px;
+}
+
+.toc-link.active {
+    background: var(--primary-color, #673AB7);
+    color: white;
+    font-weight: bold;
+}
+
+.toc-link.active::before {
+    color: white;
+}
+
+/* 📂 Collapsible Sections */
+.collapsible-heading {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 2.5rem;
+    transition: color 0.2s ease;
+}
+
+.collapsible-heading:hover {
+    color: var(--primary-color, #673AB7);
+}
+
+.collapsible-heading:focus {
+    outline: 2px solid var(--primary-color, #673AB7);
+    outline-offset: 4px;
+}
+
+.collapse-icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+    color: var(--primary-color, #673AB7);
+}
+
+.collapsible-heading.collapsed .collapse-icon {
+    transform: translateY(-50%) rotate(-90deg);
+}
+
+.collapsible-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.collapsible-content[aria-hidden="true"] {
+    max-height: 0 !important;
+}
+
+/* ↑ Back to Top Button */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: var(--primary-color, #673AB7);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.back-to-top:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.back-to-top:focus {
+    outline: 2px solid var(--primary-color-light, #9575CD);
+    outline-offset: 2px;
+}
+
+.back-to-top:active {
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .privacy-toc {
+        padding: 1.5rem;
+        margin: 1.5rem 0 2rem 0;
+    }
+
+    .toc-title {
+        font-size: 1.25rem;
+    }
+
+    .toc-link {
+        padding: 0.5rem 0.75rem;
+        padding-left: 2rem;
+        font-size: 0.95rem;
+    }
+
+    .toc-link::before {
+        left: 0.75rem;
+    }
+
+    .back-to-top {
+        width: 3rem;
+        height: 3rem;
+        bottom: 1rem;
+        right: 1rem;
+        font-size: 1.25rem;
+    }
+
+    .collapsible-heading {
+        font-size: 1.25rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .privacy-toc {
+        background: var(--background-secondary-dark, #2a2a2a);
+        border-color: var(--primary-color-light, #9575CD);
+    }
+
+    .toc-link {
+        color: var(--text-color-dark, #e0e0e0);
+    }
+
+    .toc-link:hover {
+        background: rgba(149, 117, 205, 0.2);
+    }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .toc-link,
+    .back-to-top,
+    .collapsible-content,
+    .collapse-icon {
+        transition: none;
+    }
+
+    .toc-link:hover {
+        transform: none;
+    }
+
+    .back-to-top:hover {
+        transform: none;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .privacy-toc {
+        border: 1px solid #000;
+        background: white;
+    }
+
+    .back-to-top {
+        display: none;
+    }
+
+    .collapsible-heading {
+        cursor: default;
+    }
+
+    .collapse-icon {
+        display: none;
+    }
+
+    .collapsible-content {
+        max-height: none !important;
+    }
+
+    .collapsible-content[aria-hidden="true"] {
+        max-height: none !important;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .privacy-toc {
+        border-width: 3px;
+    }
+
+    .toc-link:focus,
+    .collapsible-heading:focus,
+    .back-to-top:focus {
+        outline-width: 3px;
+    }
+}
+

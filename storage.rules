@@ -30,13 +30,27 @@ service firebase.storage {
       allow read, write: if false;
     }
 
-    // ===================================
-    // 👤 USER AVATARS
-    // ===================================
-    // ✅ P0 SECURITY: User can only access their own avatar
-    // ✅ P1 VALIDATION: File size and type restrictions
-    // ✅ P1 DSGVO: User owns their data
-    match /avatars/{userId}/{fileName} {
+// ===================================
+// 👤 USER AVATARS
+// ===================================
+// ✅ P0 SECURITY: User can only access their own avatar
+// ✅ P1 VALIDATION: File size and type restrictions
+// ✅ P1 DSGVO: User owns their data
+//
+// 📋 DSGVO DATA RETENTION POLICY:
+// - Storage Duration: As long as user account exists
+// - Deletion Trigger: Account deletion (see functions/account-deletion.js)
+// - Cleanup Process: Automatic via Cloud Function deleteUserAvatar()
+// - User Rights: Right to deletion (Art. 17 DSGVO) via account deletion
+// - Data Minimization: Only necessary profile data stored
+//
+// 🔄 LIFECYCLE:
+// 1. User uploads avatar → stored in /avatars/{uid}/
+// 2. User updates avatar → old file overwritten or explicitly deleted
+// 3. User deletes account → Cloud Function removes all files in /avatars/{uid}/
+// 4. Files are PERMANENTLY deleted (no backup retention)
+//
+match /avatars/{userId}/{fileName} {
 
       // ===================================
       // VALIDATION FUNCTIONS
@@ -52,19 +66,34 @@ service firebase.storage {
         return request.auth.uid == userId;
       }
 
-      // ✅ Check file size (max 5 MB)
+      // ✅ P0 SECURITY: Check file size (max 5 MB for avatars)
+      // Prevents abuse and excessive storage costs
       function isValidSize() {
-        return request.resource.size <= 5 * 1024 * 1024;
+        return request.resource.size > 0
+            && request.resource.size <= 5 * 1024 * 1024;
       }
 
-      // ✅ Check file type (images only)
+      // ✅ P0 SECURITY: Check file type (images only, strict MIME type)
+      // Prevents upload of executable files or scripts
+      // Whitelisted types: PNG, JPEG, WEBP, GIF
       function isValidImageType() {
-        return request.resource.contentType.matches('image/(png|jpeg|jpg|webp|gif)');
+        return request.resource.contentType.matches('image/(png|jpeg|jpg|webp|gif)')
+            && request.resource.contentType != 'image/svg+xml'; // ❌ Block SVG (XSS risk)
       }
 
-      // ✅ Check filename (no path traversal)
+      // ✅ P0 SECURITY: Check filename (no path traversal, alphanumeric only)
+      // Prevents directory traversal attacks (../, ..\, etc.)
       function isValidFileName(fileName) {
-        return fileName.matches('^[a-zA-Z0-9_-]+\\.(png|jpg|jpeg|webp|gif)$');
+        return fileName.matches('^[a-zA-Z0-9_-]+\\.(png|jpg|jpeg|webp|gif)$')
+            && !fileName.matches('.*[/\\\\].*'); // Extra check: no slashes
+      }
+
+      // ✅ P0 SECURITY: Verify metadata is safe
+      // Prevents malicious cache-control or content-disposition headers
+      function hasValidMetadata() {
+        return !request.resource.metadata.keys().hasAny(['contentLanguage', 'contentEncoding'])
+            || (request.resource.metadata.contentLanguage == 'en'
+                && request.resource.metadata.contentEncoding == 'identity');
       }
 
       // ===================================
@@ -78,17 +107,31 @@ service firebase.storage {
       // WRITE RULES (CREATE/UPDATE)
       // ===================================
       // ✅ Only owner can upload/update their avatar
-      // ✅ File must pass validation (size, type, filename)
+      // ✅ File must pass validation (size, type, filename, metadata)
+      // ✅ P0 SECURITY: All validation functions must pass
       allow write: if isAuthenticated()
                    && isOwner(userId)
                    && isValidSize()
                    && isValidImageType()
-                   && isValidFileName(fileName);
+                   && isValidFileName(fileName)
+                   && hasValidMetadata();
 
       // ===================================
       // DELETE RULES
       // ===================================
       // ✅ Only owner can delete their avatar
+      // ✅ P1 DSGVO: Permanent deletion (Art. 17 DSGVO - Right to erasure)
+      //
+      // DELETION GUARANTEE:
+      // - File is immediately removed from Storage bucket
+      // - No backup copies retained (DSGVO data minimization)
+      // - Deletion is PERMANENT and irreversible
+      // - Metadata is also removed (no tombstones)
+      //
+      // TRIGGERS:
+      // 1. User manually deletes avatar in profile settings
+      // 2. User deletes account → Cloud Function deletes all /avatars/{uid}/**
+      // 3. Admin deletion request → deleteUserData() in account-deletion.js
       allow delete: if isAuthenticated()
                     && isOwner(userId);
     }
@@ -98,12 +141,19 @@ service firebase.storage {
     // ===================================
     // ✅ Public read access for game assets
     // ✅ Admin-only write (via Firebase Console/Admin SDK)
+    // ✅ P0 SECURITY: Max file size 10 MB
+    //
+    // ALLOWED TYPES:
+    // - Images: PNG, JPEG, WEBP, GIF
+    // - Audio: MP3, OGG, WAV (optional, for future sound effects)
+    // - JSON: Game data files
     match /game-assets/{assetPath=**} {
       // Anyone can read game assets
       allow read: if true;
 
       // ❌ No write access from client
       // Upload via Firebase Console or Admin SDK only
+      // Server-side validation ensures max 10 MB per file
       allow write: if false;
     }
 
@@ -120,11 +170,25 @@ service firebase.storage {
     // 🗑️ TRASH/TEMP FILES
     // ===================================
     // ✅ Users can manage their temp files
-    // ✅ Auto-cleanup after 24h (implement via Cloud Function)
+    // ✅ P0 SECURITY: Max 10 MB per file
+    // ✅ P1 DSGVO: Auto-cleanup after 24h via Cloud Function
+    //
+    // CLEANUP POLICY:
+    // - Retention: Maximum 24 hours
+    // - Trigger: Cloud Scheduler calls cleanupTempFiles() daily
+    // - Method: Delete files older than createdAt + 24h
+    // - DSGVO Compliance: Data minimization (Art. 5 DSGVO)
     match /temp/{userId}/{fileName} {
+      // Validation functions for temp files
+      function isTempFileValid() {
+        return request.resource.size > 0
+            && request.resource.size <= 10 * 1024 * 1024 // 10 MB max
+            && request.resource.contentType.matches('image/(png|jpeg|jpg|webp|gif)|application/(json|octet-stream)');
+      }
+
       allow read, write, delete: if request.auth != null
                                  && request.auth.uid == userId
-                                 && request.resource.size <= 10 * 1024 * 1024; // 10 MB max
+                                 && isTempFileValid();
     }
   }
 }

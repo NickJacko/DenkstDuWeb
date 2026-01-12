@@ -1,0 +1,81 @@
+name: Firebase Functions CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'functions/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'functions/**'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: functions/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./functions
+      run: npm ci
+
+    - name: Run linter
+      working-directory: ./functions
+      run: npm run lint --if-present
+
+    - name: Run tests
+      working-directory: ./functions
+      run: npm test
+
+    - name: Security audit
+      working-directory: ./functions
+      run: npm audit --audit-level=moderate
+      continue-on-error: true
+
+  deploy:
+    name: Deploy to Firebase
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+
+    - name: Install Firebase CLI
+      run: npm install -g firebase-tools
+
+    - name: Install dependencies
+      working-directory: ./functions
+      run: npm ci
+
+    - name: Deploy to Firebase
+      working-directory: ./functions
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      run: firebase deploy --only functions --token "$FIREBASE_TOKEN"
+
+    - name: Notify deployment
+      if: success()
+      run: echo "✅ Functions deployed successfully!"
+

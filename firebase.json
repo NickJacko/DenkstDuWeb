@@ -182,7 +182,7 @@
           },
           {
             "key": "Set-Cookie",
-            "value": "SameSite=Lax; Secure"
+            "value": "__session=*; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800"
           }
         ]
       },
@@ -207,11 +207,11 @@
           },
           {
             "key": "Referrer-Policy",
-            "value": "strict-origin-when-cross-origin"
+            "value": "no-referrer"
           },
           {
             "key": "Permissions-Policy",
-            "value": "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), interest-cohort=()"
+            "value": "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), interest-cohort=(), browsing-topics=()"
           },
           {
             "key": "Cross-Origin-Opener-Policy",
@@ -220,6 +220,10 @@
           {
             "key": "Cross-Origin-Resource-Policy",
             "value": "same-origin"
+          },
+          {
+            "key": "Cross-Origin-Embedder-Policy",
+            "value": "require-corp"
           }
         ]
       }

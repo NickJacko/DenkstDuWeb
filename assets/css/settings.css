@@ -1,0 +1,535 @@
+/* ===================================
+   Settings Modal & User Menu Styles
+   =================================== */
+
+/* User Menu Container (Top Right) */
+.user-menu-container {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 900;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.user-display-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color, #333);
+}
+
+/* FSK Badges */
+.fsk-badges {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.fsk-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.fsk-badge.fsk-0 {
+    background: #4caf50;
+    color: white;
+}
+
+.fsk-badge.fsk-16 {
+    background: #ff9800;
+    color: white;
+}
+
+.fsk-badge.fsk-18 {
+    background: #f44336;
+    color: white;
+}
+
+/* Settings Button */
+.settings-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.settings-btn:hover {
+    transform: scale(1.1) rotate(45deg);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.settings-btn:active {
+    transform: scale(0.95);
+}
+
+/* Settings Modal */
+.settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.settings-modal-content {
+    background: white;
+    border-radius: 20px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+/* Settings Header */
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 2px solid #f0f0f0;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+.settings-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.settings-close-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.settings-close-btn:hover {
+    background: #e0e0e0;
+    transform: rotate(90deg);
+}
+
+/* Settings Body */
+.settings-body {
+    padding: 1.5rem;
+}
+
+.settings-section {
+    margin-bottom: 2rem;
+}
+
+.settings-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-item {
+    margin-bottom: 1.5rem;
+}
+
+.settings-item label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.settings-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.settings-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-group .settings-input {
+    flex: 1;
+}
+
+/* Buttons */
+.btn-save,
+.btn-export,
+.btn-danger {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+    min-height: 48px;
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-export {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    width: 100%;
+}
+
+.btn-export:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: white;
+    width: 100%;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+}
+
+.btn-save:active,
+.btn-export:active,
+.btn-danger:active {
+    transform: translateY(0);
+}
+
+/* Settings Info */
+.settings-info {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.settings-hint {
+    font-size: 0.85rem;
+    color: #999;
+    margin-top: 0.25rem;
+}
+
+/* FSK Status */
+.fsk-status {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Danger Zone */
+.settings-danger-zone {
+    border-top: 2px solid #f44336;
+    padding-top: 1.5rem;
+}
+
+.settings-danger-zone h3 {
+    color: #f44336;
+}
+
+/* Deletion Info Box */
+.deletion-info-box {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.deletion-info-box p {
+    margin: 0.5rem 0;
+    color: #856404;
+}
+
+.deletion-info-box strong {
+    color: #d32f2f;
+}
+
+#cancel-deletion-container {
+    border: 2px solid #ffc107;
+    border-radius: 10px;
+    padding: 1rem;
+    background: #fffbf0;
+}
+
+/* Settings Links */
+.settings-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.settings-links a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.settings-links a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
+/* FSK Warning Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal .modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    text-align: center;
+}
+
+.modal h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #f44336;
+}
+
+.modal p {
+    margin-bottom: 1.5rem;
+    color: #666;
+    line-height: 1.6;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+    min-height: 48px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-secondary {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover {
+    transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .user-menu-container {
+        top: 0.5rem;
+        right: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .user-display-name {
+        display: none;
+    }
+
+    .settings-modal-content {
+        max-height: 95vh;
+    }
+
+    .settings-header {
+        padding: 1rem;
+    }
+
+    .settings-body {
+        padding: 1rem;
+    }
+
+    .input-group {
+        flex-direction: column;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .settings-modal-content,
+    .modal .modal-content {
+        background: #1e1e1e;
+        color: #fff;
+    }
+
+    .settings-header {
+        border-bottom-color: #333;
+        background: #1e1e1e;
+    }
+
+    .settings-header h2,
+    .settings-item label {
+        color: #fff;
+    }
+
+    .settings-input {
+        background: #2a2a2a;
+        border-color: #444;
+        color: #fff;
+    }
+
+    .settings-close-btn {
+        background: #2a2a2a;
+        color: #fff;
+    }
+
+    .settings-close-btn:hover {
+        background: #333;
+    }
+
+    .user-display-name {
+        color: #fff;
+    }
+
+    .btn-secondary {
+        background: #2a2a2a;
+        color: #fff;
+    }
+}
+
+/* Loading State */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Success/Error States */
+.btn-success {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%) !important;
+}
+
+.btn-error {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%) !important;
+}
+

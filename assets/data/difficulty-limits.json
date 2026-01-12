@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-01-11T00:00:00Z",
+  "description": "Offline-Fallback für Schwierigkeitsgrad-Limits pro Kategorie. Wird verwendet wenn Firebase nicht verfügbar ist.",
+  "counts": {
+    "fsk0": {
+      "name": "Familie & Freunde",
+      "ageRating": "FSK 0",
+      "easy": 50,
+      "medium": 100,
+      "hard": 150
+    },
+    "fsk16": {
+      "name": "Party Time",
+      "ageRating": "FSK 16",
+      "easy": 50,
+      "medium": 120,
+      "hard": 180
+    },
+    "fsk18": {
+      "name": "Heiß & Gewagt",
+      "ageRating": "FSK 18",
+      "easy": 40,
+      "medium": 100,
+      "hard": 150
+    },
+    "special": {
+      "name": "Special Edition",
+      "ageRating": "FSK 0",
+      "easy": 30,
+      "medium": 50,
+      "hard": 80
+    }
+  },
+  "metadata": {
+    "minQuestionsPerDifficulty": 20,
+    "recommendedQuestions": {
+      "easy": 50,
+      "medium": 100,
+      "hard": 150
+    }
+  }
+}
+

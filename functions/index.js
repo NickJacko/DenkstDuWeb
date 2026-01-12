@@ -125,19 +125,98 @@ exports.cleanupOldGames = functions.pubsub
     });
 
 /**
+ * ✅ P1 DSGVO: Auto-delete temp files older than 24h
+ * Runs daily at 2 AM (Europe/Berlin time)
+ * DSGVO Compliance: Data minimization (Art. 5 DSGVO)
+ */
+exports.cleanupTempFiles = functions.pubsub
+    .schedule('every day 02:00')
+    .timeZone('Europe/Berlin')
+    .onRun(async (context) => {
+        const bucket = admin.storage().bucket();
+        const now = Date.now();
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+        try {
+            logger.info('cleanupTempFiles', '🗑️ Starting temp files cleanup...');
+
+            // Get all files in temp/ folder
+            const [files] = await bucket.getFiles({ prefix: 'temp/' });
+
+            if (!files || files.length === 0) {
+                logger.info('cleanupTempFiles', '✅ No temp files to clean up');
+                return null;
+            }
+
+            const deletePromises = [];
+            let deletedCount = 0;
+
+            for (const file of files) {
+                const metadata = file.metadata;
+                const created = new Date(metadata.timeCreated).getTime();
+                const fileAge = now - created;
+
+                // Delete if older than 24h
+                if (fileAge > maxAge) {
+                    logger.info('cleanupTempFiles', `Deleting old temp file: ${file.name}`, {
+                        age: `${Math.round(fileAge / (60 * 60 * 1000))}h`,
+                        created: metadata.timeCreated
+                    });
+
+                    deletePromises.push(file.delete());
+                    deletedCount++;
+                }
+            }
+
+            if (deletePromises.length > 0) {
+                await Promise.all(deletePromises);
+                logger.info('cleanupTempFiles', `✅ Deleted ${deletedCount} temp files`);
+            } else {
+                logger.info('cleanupTempFiles', '✅ No expired temp files found');
+            }
+
+            return null;
+
+        } catch (error) {
+            logger.error('cleanupTempFiles', '❌ Error during temp files cleanup', error);
+            throw error;
+        }
+    });
+
+/**
  * ✅ P1 DSGVO: Delete user data on account deletion
+ * Includes Realtime Database, Storage (avatars), and game participations
  */
 exports.cleanupUserData = functions.auth.user().onDelete(async (user) => {
     const uid = user.uid;
     const db = admin.database();
+    const bucket = admin.storage().bucket();
 
     try {
         logger.info('cleanupUserData', `🗑️ Cleaning up data for deleted user: ${uid}`);
 
-        // Delete user data
+        // 1. Delete user profile from Realtime Database
         await db.ref(`users/${uid}`).remove();
+        logger.info('cleanupUserData', 'User profile deleted from database', { uid });
 
-        // Remove user from all games
+        // 2. Delete user avatars from Storage
+        try {
+            const prefix = `avatars/${uid}/`;
+            const [files] = await bucket.getFiles({ prefix });
+
+            if (files && files.length > 0) {
+                const deletePromises = files.map(file => file.delete());
+                await Promise.all(deletePromises);
+                logger.info('cleanupUserData', `Deleted ${files.length} avatar file(s)`, { uid });
+            } else {
+                logger.info('cleanupUserData', 'No avatar files to delete', { uid });
+            }
+        } catch (storageError) {
+            logger.error('cleanupUserData', 'Error deleting avatars (non-fatal)', storageError, { uid });
+            // Don't fail the whole cleanup if storage deletion fails
+        }
+
+        // 3. Remove user from all games
         const gamesSnapshot = await db.ref('games').once('value');
         const games = gamesSnapshot.val();
 
@@ -160,14 +239,14 @@ exports.cleanupUserData = functions.auth.user().onDelete(async (user) => {
 
             if (Object.keys(updates).length > 0) {
                 await db.ref().update(updates);
-                logger.info('cleanupUserData', `✅ Removed user from ${Object.keys(updates).length} game(s)`);
+                logger.info('cleanupUserData', `✅ Removed user from ${Object.keys(updates).length} game(s)`, { uid });
             }
         }
 
-        logger.info('cleanupUserData', '✅ User data cleanup completed');
+        logger.info('cleanupUserData', '✅ User data cleanup completed', { uid });
 
     } catch (error) {
-        logger.error('cleanupUserData', '❌ Error during user data cleanup', error);
+        logger.error('cleanupUserData', '❌ Error during user data cleanup', error, { uid });
         throw error;
     }
 });
@@ -371,6 +450,7 @@ exports.deleteMyAccount = functions
         }
 
         const db = admin.database();
+        const bucket = admin.storage().bucket();
 
         try {
             logger.info(functionName, `Starting account deletion for user: ${uid}`);
@@ -379,7 +459,24 @@ exports.deleteMyAccount = functions
             await db.ref(`users/${uid}`).remove();
             logger.info(functionName, 'User profile deleted', { uid });
 
-            // 2. Remove user from all games
+            // 2. Delete user avatars from Storage
+            try {
+                const prefix = `avatars/${uid}/`;
+                const [files] = await bucket.getFiles({ prefix });
+
+                if (files && files.length > 0) {
+                    const deletePromises = files.map(file => file.delete());
+                    await Promise.all(deletePromises);
+                    logger.info(functionName, `Deleted ${files.length} avatar file(s)`, { uid });
+                } else {
+                    logger.info(functionName, 'No avatar files to delete', { uid });
+                }
+            } catch (storageError) {
+                logger.error(functionName, 'Error deleting avatars (non-fatal)', storageError, { uid });
+                // Continue with deletion even if storage cleanup fails
+            }
+
+            // 3. Remove user from all games
             const gamesSnapshot = await db.ref('games').once('value');
             const games = gamesSnapshot.val();
 
@@ -408,7 +505,7 @@ exports.deleteMyAccount = functions
                 }
             }
 
-            // 3. Delete Firebase Auth user
+            // 4. Delete Firebase Auth user
             try {
                 await admin.auth().deleteUser(uid);
                 logger.info(functionName, 'Firebase Auth user deleted', { uid });
