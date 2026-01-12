@@ -1,15 +1,18 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Spiel beitreten</title>
 
-    <!-- ✅ SECURITY: Security Headers -->
+    <!-- ? SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
 
-    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+
+    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
     <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
     <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
     <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
@@ -27,21 +30,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
 
-    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/join-game.css">
 
-    <!-- ✅ SECURITY: DOMPurify lokal gehostet (no SRI needed for local files) -->
+    <!-- ? SECURITY: DOMPurify lokal gehostet (no SRI needed for local files) -->
     <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
-    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
@@ -51,39 +54,39 @@
 
 </head>
 <body>
-<!-- ✅ P1 DSGVO: Age-Gate Modal für Jugendschutz -->
+<!-- ? P1 DSGVO: Age-Gate Modal f�r Jugendschutz -->
 <div class="age-gate-modal hidden" id="age-gate-modal" role="dialog" aria-labelledby="age-gate-title" aria-modal="true">
     <div class="age-gate-backdrop"></div>
     <div class="age-gate-content">
         <div class="age-gate-header">
-            <h2 class="age-gate-title" id="age-gate-title">🔞 Altersverifikation erforderlich</h2>
+            <h2 class="age-gate-title" id="age-gate-title">?? Altersverifikation erforderlich</h2>
         </div>
         <div class="age-gate-body">
             <p class="age-gate-message">
-                Das Spiel enthält Fragen mit einer FSK-Einstufung von <strong id="fsk-rating">16</strong> Jahren.
+                Das Spiel enth�lt Fragen mit einer FSK-Einstufung von <strong id="fsk-rating">16</strong> Jahren.
             </p>
             <p class="age-gate-confirmation">
-                Bitte bestätige, dass du das Mindestalter erreicht hast:
+                Bitte best�tige, dass du das Mindestalter erreicht hast:
             </p>
             <div class="age-options">
                 <label class="age-option">
                     <input type="radio" name="age-confirmation" value="16" id="age-16">
-                    <span class="age-label">Ich bin 16 Jahre oder älter</span>
+                    <span class="age-label">Ich bin 16 Jahre oder �lter</span>
                 </label>
                 <label class="age-option">
                     <input type="radio" name="age-confirmation" value="18" id="age-18">
-                    <span class="age-label">Ich bin 18 Jahre oder älter</span>
+                    <span class="age-label">Ich bin 18 Jahre oder �lter</span>
                 </label>
             </div>
             <div class="age-gate-warning">
-                <p><strong>⚠️ Hinweis:</strong></p>
-                <p>Durch die Bestätigung versicherst du, dass deine Angaben der Wahrheit entsprechen.
-                   Falsche Angaben können zum Ausschluss aus dem Spiel führen.</p>
+                <p><strong>?? Hinweis:</strong></p>
+                <p>Durch die Best�tigung versicherst du, dass deine Angaben der Wahrheit entsprechen.
+                   Falsche Angaben k�nnen zum Ausschluss aus dem Spiel f�hren.</p>
             </div>
         </div>
         <div class="age-gate-footer">
             <button class="age-btn secondary" id="age-decline" type="button">Abbrechen</button>
-            <button class="age-btn primary" id="age-confirm" type="button" disabled>Bestätigen</button>
+            <button class="age-btn primary" id="age-confirm" type="button" disabled>Best�tigen</button>
         </div>
     </div>
 </div>
@@ -104,29 +107,29 @@
     <div class="glass-card">
         <!-- Header -->
         <header class="header" role="banner">
-            <h1 id="page-title">🔗 Spiel beitreten</h1>
+            <h1 id="page-title">?? Spiel beitreten</h1>
             <p>Gib den Spiel-Code und deinen Namen ein</p>
         </header>
 
-        <!-- ✅ P1 DSGVO: Datenschutzhinweis -->
+        <!-- ? P1 DSGVO: Datenschutzhinweis -->
         <div class="privacy-notice" role="region" aria-labelledby="privacy-heading">
-            <h2 id="privacy-heading" class="privacy-heading">🔒 Datenschutzhinweis</h2>
+            <h2 id="privacy-heading" class="privacy-heading">?? Datenschutzhinweis</h2>
             <p class="privacy-text">
                 Beim Beitreten werden <strong>Name</strong>, <strong>Alter</strong> und <strong>IP-Adresse</strong>
-                temporär für das Multiplayer-Spiel gespeichert. Daten werden nach Spielende automatisch gelöscht.
+                tempor�r f�r das Multiplayer-Spiel gespeichert. Daten werden nach Spielende automatisch gel�scht.
                 <a href="/privacy.html" class="privacy-link" target="_blank" rel="noopener">Mehr erfahren</a>
             </p>
         </div>
 
-        <!-- ✅ P0 SECURITY: Fehlermeldungen Container -->
+        <!-- ? P0 SECURITY: Fehlermeldungen Container -->
         <div class="error-messages hidden" id="error-container" role="alert" aria-live="assertive" aria-atomic="true">
-            <!-- Fehler werden hier dynamisch eingefügt (via textContent, NICHT innerHTML) -->
+            <!-- Fehler werden hier dynamisch eingef�gt (via textContent, NICHT innerHTML) -->
         </div>
 
-        <!-- ✅ P1 STABILITY: Offline-Warnung -->
+        <!-- ? P1 STABILITY: Offline-Warnung -->
         <div class="offline-warning hidden" id="offline-warning" role="alert" aria-live="polite">
-            <strong>📡 Verbindung verloren</strong>
-            <p>Überprüfe deine Internetverbindung und versuche es erneut.</p>
+            <strong>?? Verbindung verloren</strong>
+            <p>�berpr�fe deine Internetverbindung und versuche es erneut.</p>
         </div>
 
         <!-- Form Section -->
@@ -147,26 +150,26 @@
                             aria-required="true"
                             aria-invalid="false"
                     >
-                    <!-- ✅ P1 UI/UX: Live-Validierung Icon -->
-                    <span class="validation-icon hidden" id="code-validation-icon" aria-hidden="true">✔️</span>
+                    <!-- ? P1 UI/UX: Live-Validierung Icon -->
+                    <span class="validation-icon hidden" id="code-validation-icon" aria-hidden="true">??</span>
                 </div>
                 <span class="input-hint" id="code-hint">Vom Host mitgeteilt (z.B. ABC123)</span>
 
-                <!-- ✅ P1 UI/UX: Fehlermeldung für ungültigen Code -->
+                <!-- ? P1 UI/UX: Fehlermeldung f�r ung�ltigen Code -->
                 <span class="input-error hidden" id="code-error" role="alert">
-                    <!-- Fehlertext wird dynamisch eingefügt -->
+                    <!-- Fehlertext wird dynamisch eingef�gt -->
                 </span>
 
-                <!-- ✅ P0 Sicherheit: Rate-Limit Warnung -->
+                <!-- ? P0 Sicherheit: Rate-Limit Warnung -->
                 <div class="rate-limit-warning hidden" id="rate-limit-warning" role="alert" aria-live="polite">
-                    <strong>⏳ Zu viele Versuche</strong>
+                    <strong>? Zu viele Versuche</strong>
                     <p>Bitte warte <span id="rate-limit-countdown" aria-live="polite">30</span> Sekunden bevor du es erneut versuchst.</p>
                 </div>
             </fieldset>
 
             <!-- Game Info Preview -->
             <aside class="game-info-preview hidden" id="game-info" role="region" aria-label="Spiel-Informationen" aria-live="polite">
-                <h3 class="game-info-title">📋 Spiel-Details</h3>
+                <h3 class="game-info-title">?? Spiel-Details</h3>
                 <dl class="game-info-list">
                     <dt>Host:</dt>
                     <dd id="game-host-name">Wird geladen...</dd>
@@ -180,11 +183,11 @@
                     <dt>Schwierigkeit:</dt>
                     <dd id="game-difficulty">Wird geladen...</dd>
 
-                    <!-- ✅ P1 DSGVO/Jugendschutz: FSK-Warnung -->
+                    <!-- ? P1 DSGVO/Jugendschutz: FSK-Warnung -->
                     <dt>FSK-Einstufung:</dt>
                     <dd id="game-fsk-rating" class="fsk-warning" role="status">
-                        <strong>⚠️ FSK 16+</strong>
-                        <span class="fsk-hint">Altersprüfung erforderlich</span>
+                        <strong>?? FSK 16+</strong>
+                        <span class="fsk-hint">Alterspr�fung erforderlich</span>
                     </dd>
                 </dl>
             </aside>
@@ -206,30 +209,30 @@
                             aria-required="true"
                             aria-invalid="false"
                     >
-                    <!-- ✅ P1 UI/UX: Live-Validierung Icon -->
-                    <span class="validation-icon hidden" id="name-validation-icon" aria-hidden="true">✔️</span>
+                    <!-- ? P1 UI/UX: Live-Validierung Icon -->
+                    <span class="validation-icon hidden" id="name-validation-icon" aria-hidden="true">??</span>
                 </div>
                 <span class="input-hint" id="name-hint">2-20 Zeichen, nur Buchstaben und Zahlen</span>
 
-                <!-- ✅ P1 UI/UX: Fehlermeldung für ungültigen Namen -->
+                <!-- ? P1 UI/UX: Fehlermeldung f�r ung�ltigen Namen -->
                 <span class="input-error hidden" id="name-error" role="alert">
-                    <!-- Fehlertext wird dynamisch eingefügt -->
+                    <!-- Fehlertext wird dynamisch eingef�gt -->
                 </span>
             </fieldset>
         </form>
 
         <!-- Controls -->
         <div class="controls" role="navigation" aria-label="Formular-Navigation">
-            <button class="btn btn-outline" id="back-btn" type="button" aria-label="Zurück zur Startseite">
-                ← Zurück
+            <button class="btn btn-outline" id="back-btn" type="button" aria-label="Zur�ck zur Startseite">
+                ? Zur�ck
             </button>
             <button class="btn btn-primary" id="join-btn" type="button" disabled aria-disabled="true" aria-label="Spiel beitreten">
-                🚀 Beitreten
+                ?? Beitreten
             </button>
         </div>
     </div>
 </div>
-    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>

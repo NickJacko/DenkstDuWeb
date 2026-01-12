@@ -1,23 +1,111 @@
 /**
  * No-Cap - Join Game Page
- * Version 4.0 - FirebaseService v6.0 Integration & Full Audit Fix
+ * Version 5.0 - JavaScript-Kern Hardening
  * Handles joining existing multiplayer games
  *
- * ✅ P0 FIX: FirebaseService v6.0 integration
- * ✅ P0 FIX: Complete input sanitization
- * ✅ P0 FIX: Strict validation with textContent
- * ✅ P1 FIX: Enhanced A11y with ARIA
- * ✅ P1 FIX: Live validation feedback
- * ✅ P1 FIX: GameState integration
+ * ✅ P0: Module Pattern - no global variables (XSS prevention)
+ * ✅ P0: Event-Listener cleanup on beforeunload
+ * ✅ P0: JoinGameModule.firebaseService v6.0 integration
+ * ✅ P0: Complete input sanitization
+ * ✅ P0: Strict validation with textContent
+ * ✅ P1: Enhanced A11y with ARIA
+ * ✅ P1: Live validation feedback
+ * ✅ P1: JoinGameModule.gameState integration
  *
  * CRITICAL: This page is the "Source of Truth" for Multiplayer Guest Mode
  * - Sets deviceMode = 'multi'
  * - Sets isGuest = true, isHost = false
- * - Uses FirebaseService.joinGame() method
+ * - Uses JoinGameModule.firebaseService.joinGame() method
  */
 
 (function(window) {
     'use strict';
+
+    // Get Logger from utils
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
+
+    // ===========================
+    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
+    // ===========================
+
+    const JoinGameModule = {
+        state: {
+            gameState: null,
+            firebaseService: null,
+            currentGameData: null,
+            checkTimeout: null,
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('192.168.')
+        },
+
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get firebaseService() { return this.state.firebaseService; },
+        set firebaseService(val) { this.state.firebaseService = val; },
+
+        get currentGameData() { return this.state.currentGameData; },
+        set currentGameData(val) { this.state.currentGameData = val; },
+
+        get checkTimeout() { return this.state.checkTimeout; },
+        set checkTimeout(val) { this.state.checkTimeout = val; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    Object.seal(JoinGameModule.state);
+
+    // ===========================
+    // 🛠️ PERFORMANCE UTILITIES
+    // ===========================
+
+    function throttle(func, wait = 100) {
+        let timeout = null;
+        let previous = 0;
+        return function executedFunction(...args) {
+            const now = Date.now();
+            const remaining = wait - (now - previous);
+            if (remaining <= 0 || remaining > wait) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                previous = now;
+                func.apply(this, args);
+            } else if (!timeout) {
+                timeout = setTimeout(() => {
+                    previous = Date.now();
+                    timeout = null;
+                    func.apply(this, args);
+                }, remaining);
+            }
+        };
+    }
+
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function addTrackedEventListener(element, event, handler, options = {}) {
+        if (!element) return;
+        element.addEventListener(event, handler, options);
+        JoinGameModule.state.eventListenerCleanup.push({element, event, handler, options});
+    }
 
     // ===========================
     // CONSTANTS
@@ -33,17 +121,7 @@
     const GAME_CODE_REGEX = /^[A-Z0-9]{6}$/;
     const GAME_CODE_CHAR_REGEX = /[^A-Z0-9]/g;
 
-    // ===========================
-    // GLOBAL STATE
-    // ===========================
-    let gameState = null;
-    let firebaseService = null;
-    let currentGameData = null;
-    let checkTimeout = null;
-
-    const isDevelopment = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.includes('192.168.');
+    // (All state moved to JoinGameModule)
 
     const categoryData = {
         fsk0: { name: 'Familie & Freunde', icon: '👨‍👩‍👧‍👦' },
@@ -66,7 +144,7 @@
      * ✅ P0 FIX: Enhanced initialization with proper dependency checks
      */
     async function initialize() {
-        if (isDevelopment) {
+        if (JoinGameModule.isDevelopment) {
             console.log('🔗 Join Game v4.0 - Initialisierung...');
         }
 
@@ -80,43 +158,43 @@
 
             // ✅ P0 FIX: Check required dependencies
             if (typeof GameState === 'undefined') {
-                console.error('❌ GameState not loaded!');
+                console.error('❌ JoinGameModule.gameState not loaded!');
                 showNotification('Fehler: Spieldaten nicht geladen', 'error');
                 return;
             }
 
-            if (typeof window.FirebaseService === 'undefined') {
-                console.error('❌ FirebaseService not loaded!');
+            if (typeof window.JoinGameModule.firebaseService === 'undefined') {
+                console.error('❌ JoinGameModule.firebaseService not loaded!');
                 showNotification('Fehler: Firebase-Service nicht geladen', 'error');
                 return;
             }
 
             // ✅ P1 FIX: Wait for dependencies
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-                await window.NocapUtils.waitForDependencies(['GameState', 'FirebaseService']);
+                await window.NocapUtils.waitForDependencies(['JoinGameModule.gameState', 'JoinGameModule.firebaseService']);
             }
 
             // Initialize services
-            gameState = new GameState();
-            firebaseService = window.FirebaseService;
+            JoinGameModule.gameState = new GameState();
+            JoinGameModule.firebaseService = window.JoinGameModule.firebaseService;
 
             // ===========================
             // CRITICAL: DEVICE MODE ENFORCEMENT
             // This page is ONLY for multiplayer guest mode
             // ===========================
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 console.log('🎮 Enforcing multiplayer guest mode...');
             }
 
-            gameState.setDeviceMode('multi');
-            gameState.isHost = false;
-            gameState.isGuest = true;
+            JoinGameModule.gameState.setDeviceMode('multi');
+            JoinGameModule.gameState.isHost = false;
+            JoinGameModule.gameState.isGuest = true;
 
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 console.log('✅ Device mode set:', {
-                    deviceMode: gameState.deviceMode,
-                    isHost: gameState.isHost,
-                    isGuest: gameState.isGuest
+                    deviceMode: JoinGameModule.gameState.deviceMode,
+                    isHost: JoinGameModule.gameState.isHost,
+                    isGuest: JoinGameModule.gameState.isGuest
                 });
             }
 
@@ -186,7 +264,7 @@
             // ✅ P1 FIX: Validate age level for multiplayer
             const userAgeLevel = ageVerification.isAdult ? 18 : 0;
 
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 const hoursUntilExpiry = Math.floor((AGE_VERIFICATION_EXPIRY - verificationAge) / (60 * 60 * 1000));
                 console.log('✅ Age verification valid:', {
                     ageLevel: userAgeLevel,
@@ -196,9 +274,9 @@
                 });
             }
 
-            // ✅ P1 DSGVO: Store age level in GameState for server validation
+            // ✅ P1 DSGVO: Store age level in JoinGameModule.gameState for server validation
             // NOTE: This is used by Firebase Database Rules to enforce FSK restrictions
-            gameState.userAgeLevel = userAgeLevel;
+            JoinGameModule.gameState.userAgeLevel = userAgeLevel;
 
             // Initialize Firebase
             showLoading('Verbinde mit Server...');
@@ -209,25 +287,25 @@
                     throw new Error('Firebase not initialized');
                 }
 
-                // ✅ FIX: Use FirebaseService directly (it's already an instance, not a class)
-                firebaseService = window.FirebaseService;
+                // ✅ FIX: Use JoinGameModule.firebaseService directly (it's already an instance, not a class)
+                JoinGameModule.firebaseService = window.JoinGameModule.firebaseService;
 
-                if (isDevelopment) {
+                if (JoinGameModule.isDevelopment) {
                     console.log('✅ Firebase Service ready');
                 }
 
                 // Get current user (should already be authenticated from firebase-config.js)
-                const currentUser = firebaseService.getCurrentUser();
+                const currentUser = JoinGameModule.firebaseService.getCurrentUser();
                 if (currentUser) {
-                    if (isDevelopment) {
+                    if (JoinGameModule.isDevelopment) {
                         console.log('✅ User authenticated:', currentUser.uid);
                     }
                 } else {
                     console.warn('⚠️ No authenticated user - some features may not work');
                 }
 
-                if (isDevelopment) {
-                    console.log('✅ Firebase ready:', firebaseService.getStatus());
+                if (JoinGameModule.isDevelopment) {
+                    console.log('✅ Firebase ready:', JoinGameModule.firebaseService.getStatus());
                 }
 
             } catch (error) {
@@ -260,7 +338,7 @@
             // Initial validation
             validateForm();
 
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 console.log('✅ Join Game bereit!');
             }
 
@@ -289,7 +367,7 @@
         const sanitized = sanitizeGameCode(gameId);
 
         if (sanitized && sanitized.length === MAX_GAME_CODE_LENGTH) {
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 console.log(`📋 URL-Parameter: ${sanitized}`);
             }
 
@@ -373,7 +451,7 @@
             }
         });
 
-        if (isDevelopment) {
+        if (JoinGameModule.isDevelopment) {
             console.log('✅ Event listeners setup');
         }
     }
@@ -397,14 +475,14 @@
         if (sanitized !== rawValue) {
             input.value = sanitized;
 
-            if (isDevelopment && sanitized !== rawValue) {
+            if (JoinGameModule.isDevelopment && sanitized !== rawValue) {
                 console.log(`🛡️ Sanitized: "${rawValue}" → "${sanitized}"`);
             }
         }
 
         // Clear previous timeout
-        if (checkTimeout) {
-            clearTimeout(checkTimeout);
+        if (JoinGameModule.checkTimeout) {
+            clearTimeout(JoinGameModule.checkTimeout);
         }
 
         // Reset UI
@@ -421,7 +499,7 @@
             playerNameStep.classList.add('hidden');
         }
 
-        currentGameData = null;
+        JoinGameModule.currentGameData = null;
 
         // ✅ P1 FIX: Update ARIA
         input.setAttribute('aria-invalid', 'false');
@@ -431,7 +509,7 @@
             input.setAttribute('aria-busy', 'true');
 
             // ✅ P1 STABILITY: Debounced server check (300ms)
-            checkTimeout = setTimeout(() => {
+            JoinGameModule.checkTimeout = setTimeout(() => {
                 checkGameExists(sanitized);
             }, CHECK_DEBOUNCE_MS);
         }
@@ -506,7 +584,7 @@
         sanitized = sanitized.replace(GAME_CODE_CHAR_REGEX, '');
 
         // Log if invalid characters were removed (dev only)
-        if (isDevelopment && before !== sanitized) {
+        if (JoinGameModule.isDevelopment && before !== sanitized) {
             const removed = before.split('').filter((c, i) => sanitized[i] !== c);
             console.log(`🛡️ Blocked invalid characters: ${removed.join(', ')}`);
         }
@@ -524,14 +602,14 @@
     // ===========================
 
     /**
-     * ✅ P0 FIX: Check if game exists using FirebaseService v6.0
+     * ✅ P0 FIX: Check if game exists using JoinGameModule.firebaseService v6.0
      */
     async function checkGameExists(gameCode) {
         const input = document.getElementById('game-code');
         if (!input) return;
 
         try {
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 console.log(`🔍 Checking game: ${gameCode}`);
             }
 
@@ -541,12 +619,12 @@
             }
 
             // ✅ P0 FIX: Check Firebase connection
-            if (!firebaseService || !firebaseService.isReady) {
+            if (!JoinGameModule.firebaseService || !JoinGameModule.firebaseService.isReady) {
                 throw new Error('Keine Firebase-Verbindung');
             }
 
             // ✅ P0 FIX: Use Firebase database reference
-            const gameRef = firebaseService.database.ref(`games/${gameCode}`);
+            const gameRef = JoinGameModule.firebaseService.database.ref(`games/${gameCode}`);
             const snapshot = await gameRef.once('value');
 
             if (!snapshot.exists()) {
@@ -555,8 +633,8 @@
 
             const gameData = snapshot.val();
 
-            // ✅ P0 FIX: Validate game state (check both 'status' and 'gameState')
-            const gameStatus = gameData.status || gameData.gameState;
+            // ✅ P0 FIX: Validate game state (check both 'status' and 'JoinGameModule.gameState')
+            const gameStatus = gameData.status || gameData.JoinGameModule.gameState;
 
             if (gameStatus === 'finished') {
                 throw new Error('Spiel bereits beendet');
@@ -567,7 +645,7 @@
                 throw new Error('Spiel läuft bereits');
             }
 
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 console.log('✅ Game status OK for joining:', gameStatus);
             }
 
@@ -599,7 +677,7 @@
             }
 
             // Success
-            currentGameData = gameData;
+            JoinGameModule.currentGameData = gameData;
             displayGameInfo(gameData);
             input.classList.add('valid');
             input.setAttribute('aria-invalid', 'false');
@@ -611,7 +689,7 @@
                 if (playerNameInput && !playerNameInput.value.trim()) {
                     playerNameInput.focus();
 
-                    if (isDevelopment) {
+                    if (JoinGameModule.isDevelopment) {
                         console.log('✅ Auto-focused on player name input');
                     }
                 }
@@ -645,7 +723,7 @@
             input.classList.add('error');
             input.setAttribute('aria-invalid', 'true');
             showNotification(userMessage, 'error');
-            currentGameData = null;
+            JoinGameModule.currentGameData = null;
 
             // Hide game info and player name step
             const gameInfo = document.getElementById('game-info');
@@ -679,7 +757,7 @@
 
         if (!infoDiv) return;
 
-        if (isDevelopment) {
+        if (JoinGameModule.isDevelopment) {
             console.log('📊 Displaying game info:', gameData);
         }
 
@@ -742,7 +820,7 @@
             playerNameStep.classList.remove('hidden');
         }
 
-        if (isDevelopment) {
+        if (JoinGameModule.isDevelopment) {
             console.log('✅ Game info displayed and player name field shown');
         }
     }
@@ -769,8 +847,8 @@
         const isPlayerNameValid =
             playerName.length >= MIN_PLAYER_NAME_LENGTH &&
             playerName.length <= MAX_PLAYER_NAME_LENGTH;
-        const hasGameData = currentGameData !== null;
-        const isFirebaseReady = firebaseService && firebaseService.isReady;
+        const hasGameData = JoinGameModule.currentGameData !== null;
+        const isFirebaseReady = JoinGameModule.firebaseService && JoinGameModule.firebaseService.isReady;
 
         const isValid = isGameCodeValid && isPlayerNameValid && hasGameData && isFirebaseReady;
 
@@ -797,7 +875,7 @@
     // ===========================
 
     /**
-     * ✅ P0 FIX: Join game using FirebaseService v6.0
+     * ✅ P0 FIX: Join game using JoinGameModule.firebaseService v6.0
      */
     async function joinGame() {
         const gameCodeInput = document.getElementById('game-code');
@@ -809,7 +887,7 @@
         const playerName = playerNameInput.value.trim();
 
         // ✅ P0 FIX: Pre-validation
-        if (!currentGameData) {
+        if (!JoinGameModule.currentGameData) {
             showNotification('Spiel-Code ungültig', 'error');
             gameCodeInput.focus();
             return;
@@ -828,38 +906,38 @@
             return;
         }
 
-        if (!firebaseService || !firebaseService.isReady) {
+        if (!JoinGameModule.firebaseService || !JoinGameModule.firebaseService.isReady) {
             showNotification('Firebase nicht verbunden', 'error');
             return;
         }
 
-        if (isDevelopment) {
+        if (JoinGameModule.isDevelopment) {
             console.log(`🔗 Joining: ${gameCode} as ${playerName}`);
         }
 
         showLoading('Trete Spiel bei...');
 
         try {
-            // ✅ P0 FIX: Use FirebaseService.joinGame() from v6.0
-            const result = await firebaseService.joinGame(gameCode, {
+            // ✅ P0 FIX: Use JoinGameModule.firebaseService.joinGame() from v6.0
+            const result = await JoinGameModule.firebaseService.joinGame(gameCode, {
                 name: playerName
             });
 
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 console.log('✅ Join successful:', result);
             }
 
             // ===========================
-            // CRITICAL: Setup GameState with enforced device mode
+            // CRITICAL: Setup JoinGameModule.gameState with enforced device mode
             // ===========================
-            gameState.gameId = gameCode;
-            gameState.playerId = result.playerId;
-            gameState.setPlayerName(playerName);
+            JoinGameModule.gameState.gameId = gameCode;
+            JoinGameModule.gameState.playerId = result.playerId;
+            JoinGameModule.gameState.setPlayerName(playerName);
 
             // ENFORCE MULTIPLAYER GUEST MODE
-            gameState.setDeviceMode('multi');
-            gameState.isHost = false;
-            gameState.isGuest = true;
+            JoinGameModule.gameState.setDeviceMode('multi');
+            JoinGameModule.gameState.isHost = false;
+            JoinGameModule.gameState.isGuest = true;
 
             // Store game settings
             const settings = result.gameData.settings || {};
@@ -867,21 +945,21 @@
 
             // Add categories using the correct method
             categories.forEach(cat => {
-                gameState.addCategory(cat);
+                JoinGameModule.gameState.addCategory(cat);
             });
 
-            gameState.setDifficulty(settings.difficulty || 'medium');
+            JoinGameModule.gameState.setDifficulty(settings.difficulty || 'medium');
 
-            if (isDevelopment) {
+            if (JoinGameModule.isDevelopment) {
                 console.log('✅ Game state configured:', {
-                    gameId: gameState.gameId,
-                    playerId: gameState.playerId,
-                    playerName: gameState.playerName,
-                    deviceMode: gameState.deviceMode,
-                    isHost: gameState.isHost,
-                    isGuest: gameState.isGuest,
-                    categories: gameState.selectedCategories,
-                    difficulty: gameState.difficulty
+                    gameId: JoinGameModule.gameState.gameId,
+                    playerId: JoinGameModule.gameState.playerId,
+                    playerName: JoinGameModule.gameState.playerName,
+                    deviceMode: JoinGameModule.gameState.deviceMode,
+                    isHost: JoinGameModule.gameState.isHost,
+                    isGuest: JoinGameModule.gameState.isGuest,
+                    categories: JoinGameModule.gameState.selectedCategories,
+                    difficulty: JoinGameModule.gameState.difficulty
                 });
             }
 
@@ -1016,15 +1094,30 @@
     // ===========================
 
     function cleanup() {
-        if (checkTimeout) {
-            clearTimeout(checkTimeout);
+        // Clear timeout
+        if (JoinGameModule.checkTimeout) {
+            clearTimeout(JoinGameModule.checkTimeout);
+            JoinGameModule.checkTimeout = null;
         }
 
+        // Remove tracked event listeners
+        JoinGameModule.state.eventListenerCleanup.forEach(({element, event, handler, options}) => {
+            try {
+                element.removeEventListener(event, handler, options);
+            } catch (error) {
+                // Element may have been removed from DOM
+            }
+        });
+        JoinGameModule.state.eventListenerCleanup = [];
+
+        // Cleanup NocapUtils event listeners
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();
         }
 
-        Logger.debug('✅ Join game cleanup completed');
+        if (JoinGameModule.isDevelopment) {
+            Logger.debug('✅ Join game cleanup completed');
+        }
     }
 
     window.addEventListener('beforeunload', cleanup);
@@ -1043,13 +1136,13 @@
         while (attempts < maxAttempts) {
             // Check multiple conditions
             const hasFirebaseInitialized = window.firebaseInitialized === true;
-            const hasFirebaseService = typeof window.FirebaseService !== 'undefined';
+            const hasFirebaseService = typeof window.JoinGameModule.firebaseService !== 'undefined';
             const hasFirebaseGlobal = typeof firebase !== 'undefined';
 
-            if (isDevelopment && attempts % 10 === 0) {
+            if (JoinGameModule.isDevelopment && attempts % 10 === 0) {
                 console.log(`Firebase check attempt ${attempts}:`, {
                     firebaseInitialized: hasFirebaseInitialized,
-                    FirebaseService: hasFirebaseService,
+                    firebaseService: hasFirebaseService,
                     firebaseGlobal: hasFirebaseGlobal
                 });
             }
@@ -1066,7 +1159,7 @@
         console.error('❌ Firebase initialization timeout after 15 seconds');
         console.error('Final state:', {
             firebaseInitialized: window.firebaseInitialized,
-            FirebaseService: typeof window.FirebaseService,
+            firebaseService: typeof window.JoinGameModule.firebaseService,
             firebase: typeof firebase
         });
         return false;

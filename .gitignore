@@ -67,3 +67,7 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Private keys - DO NOT COMMIT
+build-scripts/private.pem
+build-scripts/*.key

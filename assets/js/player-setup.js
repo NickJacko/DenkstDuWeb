@@ -1,70 +1,120 @@
 /**
  * No-Cap Player Setup (Single Device Mode)
- * Version 4.0 - Production Ready (Full Audit Fix)
+ * Version 5.0 - JavaScript-Kern Hardening
  *
- * ✅ P1 FIX: Device mode validation
- * ✅ P0 FIX: Input sanitization with DOMPurify
- * ✅ P1 FIX: Players stored in GameState
- * ✅ P1 FIX: Keyboard navigation improved
- * ✅ P2 FIX: Drag & drop with accessibility
+ * ✅ P0: Module Pattern - no global variables (XSS prevention)
+ * ✅ P0: Event-Listener cleanup on beforeunload
+ * ✅ P1: Device mode validation
+ * ✅ P0: Input sanitization with DOMPurify
+ * ✅ P1: Players stored in PlayerSetupModule.gameState
+ * ✅ P1: Keyboard navigation improved
+ * ✅ P2: Drag & drop with accessibility
  */
 
 (function(window) {
     'use strict';
+
+    // Get Logger from utils
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
+
+    // ===========================
+    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
+    // ===========================
+
+    const PlayerSetupModule = {
+        state: {
+            gameState: null,
+            alcoholMode: false,
+            questionCounts: {
+                fsk0: 0,
+                fsk16: 0,
+                fsk18: 0,
+                special: 0
+            },
+            draggedItem: null,
+            undoStack: [],
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('192.168.')
+        },
+
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get alcoholMode() { return this.state.alcoholMode; },
+        set alcoholMode(val) { this.state.alcoholMode = !!val; },
+
+        get questionCounts() { return this.state.questionCounts; },
+
+        get draggedItem() { return this.state.draggedItem; },
+        set draggedItem(val) { this.state.draggedItem = val; },
+
+        get undoStack() { return this.state.undoStack; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    Object.seal(PlayerSetupModule.state);
+
+    // ===========================
+    // 🛠️ PERFORMANCE UTILITIES
+    // ===========================
+
+    function throttle(func, wait = 100) {
+        let timeout = null;
+        let previous = 0;
+        return function executedFunction(...args) {
+            const now = Date.now();
+            const remaining = wait - (now - previous);
+            if (remaining <= 0 || remaining > wait) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                previous = now;
+                func.apply(this, args);
+            } else if (!timeout) {
+                timeout = setTimeout(() => {
+                    previous = Date.now();
+                    timeout = null;
+                    func.apply(this, args);
+                }, remaining);
+            }
+        };
+    }
+
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function addTrackedEventListener(element, event, handler, options = {}) {
+        if (!element) return;
+        element.addEventListener(event, handler, options);
+        PlayerSetupModule.state.eventListenerCleanup.push({element, event, handler, options});
+    }
 
     // ===========================
     // CONSTANTS
     // ===========================
     const MAX_PLAYERS = 10; // ✅ P1 Stabilität: Maximum 10 Spieler (serverseitig via joinGame validiert)
     const MIN_PLAYERS = 2;
-
-    // ===========================
-    // GLOBAL STATE
-    // ===========================
-    let gameState = null;
-    let alcoholMode = false;
-    let questionCounts = {
-        fsk0: 0,
-        fsk16: 0,
-        fsk18: 0,
-        special: 0
-    };
-
-    // Drag and drop state
-    let draggedItem = null;
-
-    // ✅ P1 STABILITY: Undo functionality
-    let undoStack = [];
     const MAX_UNDO_STACK = 10;
 
-    // ✅ P1 STABILITY: Event listener tracking for cleanup
-    const _eventListeners = [];
-
-    const isDevelopment = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.includes('192.168.');
-
-    // ===========================
-    // ✅ P1 STABILITY: EVENT LISTENER HELPER
-    // ===========================
-
-    /**
-     * Add event listener with automatic tracking for cleanup
-     * @param {Element} element - DOM element
-     * @param {string} event - Event name
-     * @param {Function} handler - Event handler
-     * @param {Object} options - Event options
-     */
-    function addTrackedEventListener(element, event, handler, options) {
-        if (!element) return;
-
-        element.addEventListener(event, handler, options);
-        _eventListeners.push({ element, event, handler, options });
-
-        if (isDevelopment) {
-            console.log(`📌 Tracked event: ${event} on`, element);
-        }
-    }
+    // (All state moved to PlayerSetupModule)
 
     // ===========================
     // INITIALIZATION
@@ -90,7 +140,7 @@
     }
 
     async function initialize() {
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log('👥 Initializing player setup...');
         }
 
@@ -106,7 +156,7 @@
 
             // Check for required dependencies
             if (typeof GameState === 'undefined') {
-                console.error('❌ GameState not found');
+                console.error('❌ PlayerSetupModule.gameState not found');
                 showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
                 return;
             }
@@ -116,11 +166,11 @@
 
             // Wait for dependencies
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-                await window.NocapUtils.waitForDependencies(['GameState']);
+                await window.NocapUtils.waitForDependencies(['PlayerSetupModule.gameState']);
             }
 
-            // Use central GameState
-            gameState = new GameState();
+            // Use central PlayerSetupModule.gameState
+            PlayerSetupModule.gameState = new GameState();
 
             // ✅ P1 FIX: Validate device mode
             if (!validateDeviceMode()) {
@@ -138,7 +188,7 @@
             // Load question counts
             await loadQuestionCounts();
 
-            // Load players from GameState
+            // Load players from PlayerSetupModule.gameState
             initializePlayerInputs();
 
             // Update UI
@@ -150,9 +200,9 @@
 
             hideLoading();
 
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log('✅ Player setup initialized');
-                console.log('Game State:', gameState.getDebugInfo());
+                console.log('Game State:', PlayerSetupModule.gameState.getDebugInfo());
             }
 
         } catch (error) {
@@ -170,7 +220,7 @@
      * ✅ P1 FIX: Validate device mode
      */
     function validateDeviceMode() {
-        const deviceMode = gameState.deviceMode;
+        const deviceMode = PlayerSetupModule.gameState.deviceMode;
 
         if (!deviceMode) {
             console.error('❌ No device mode set');
@@ -186,7 +236,7 @@
             return false;
         }
 
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log('✅ Device mode validated: single');
         }
 
@@ -194,20 +244,20 @@
     }
 
     function validatePrerequisites() {
-        if (!gameState.checkValidity()) {
+        if (!PlayerSetupModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
-        if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+        if (!PlayerSetupModule.gameState.selectedCategories || PlayerSetupModule.gameState.selectedCategories.length === 0) {
             console.error('❌ No categories selected');
             showNotification('Keine Kategorien ausgewählt!', 'error');
             setTimeout(() => window.location.href = 'category-selection.html', 2000);
             return false;
         }
 
-        if (!gameState.difficulty) {
+        if (!PlayerSetupModule.gameState.difficulty) {
             console.error('❌ No difficulty selected');
             showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
             setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
@@ -223,19 +273,19 @@
 
     function checkAlcoholMode() {
         try {
-            alcoholMode = gameState.alcoholMode === true;
+            PlayerSetupModule.alcoholMode = PlayerSetupModule.gameState.PlayerSetupModule.alcoholMode === true;
 
             const difficultyIcon = document.getElementById('difficulty-icon');
             if (difficultyIcon) {
-                difficultyIcon.textContent = alcoholMode ? '🍺' : '💧';
+                difficultyIcon.textContent = PlayerSetupModule.alcoholMode ? '🍺' : '💧';
             }
 
-            if (isDevelopment) {
-                console.log(`🍺 Alcohol mode: ${alcoholMode}`);
+            if (PlayerSetupModule.isDevelopment) {
+                console.log(`🍺 Alcohol mode: ${PlayerSetupModule.alcoholMode}`);
             }
         } catch (error) {
             console.error('Error checking alcohol mode:', error);
-            alcoholMode = false;
+            PlayerSetupModule.alcoholMode = false;
         }
     }
 
@@ -245,7 +295,7 @@
 
     async function loadQuestionCounts() {
         try {
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log('📊 Loading question counts...');
             }
 
@@ -276,21 +326,21 @@
 
                     if (snapshot.exists()) {
                         const questions = snapshot.val();
-                        questionCounts[category] = Object.keys(questions).length;
+                        PlayerSetupModule.questionCounts[category] = Object.keys(questions).length;
                     } else {
-                        questionCounts[category] = getFallbackCount(category);
+                        PlayerSetupModule.questionCounts[category] = getFallbackCount(category);
                     }
                 } catch (error) {
                     console.warn(`Error loading ${category}:`, error);
-                    questionCounts[category] = getFallbackCount(category);
+                    PlayerSetupModule.questionCounts[category] = getFallbackCount(category);
                 }
             }
 
             hideOfflineMode();
             updateTotalQuestions();
 
-            if (isDevelopment) {
-                console.log('✅ Question counts loaded:', questionCounts);
+            if (PlayerSetupModule.isDevelopment) {
+                console.log('✅ Question counts loaded:', PlayerSetupModule.questionCounts);
             }
 
         } catch (error) {
@@ -308,11 +358,11 @@
             const response = await fetch('/assets/data/questions-backup.json');
             if (response.ok) {
                 const backup = await response.json();
-                questionCounts = backup.counts || useFallbackCounts();
+                PlayerSetupModule.questionCounts = backup.counts || useFallbackCounts();
                 updateTotalQuestions();
 
-                if (isDevelopment) {
-                    console.log('✅ Loaded local backup:', questionCounts);
+                if (PlayerSetupModule.isDevelopment) {
+                    console.log('✅ Loaded local backup:', PlayerSetupModule.questionCounts);
                 }
             } else {
                 throw new Error('Backup file not found');
@@ -344,7 +394,7 @@
     }
 
     function useFallbackCounts() {
-        questionCounts = {
+        PlayerSetupModule.questionCounts = {
             fsk0: 200,
             fsk16: 300,
             fsk18: 250,
@@ -362,13 +412,13 @@
         const totalQuestionsEl = document.getElementById('questions-total');
         if (!totalQuestionsEl) return;
 
-        if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+        if (!PlayerSetupModule.gameState.selectedCategories || PlayerSetupModule.gameState.selectedCategories.length === 0) {
             totalQuestionsEl.textContent = '0 Fragen';
             return;
         }
 
-        const total = gameState.selectedCategories.reduce((sum, category) => {
-            return sum + (questionCounts[category] || 0);
+        const total = PlayerSetupModule.gameState.selectedCategories.reduce((sum, category) => {
+            return sum + (PlayerSetupModule.questionCounts[category] || 0);
         }, 0);
 
         totalQuestionsEl.textContent = `${total} Fragen`;
@@ -415,14 +465,14 @@
     // ===========================
 
     /**
-     * Initialize player inputs from GameState
+     * Initialize player inputs from PlayerSetupModule.gameState
      */
     function initializePlayerInputs() {
-        // Check if players exist in GameState
-        const savedPlayers = gameState.get('players');
+        // Check if players exist in PlayerSetupModule.gameState
+        const savedPlayers = PlayerSetupModule.gameState.get('players');
 
         if (savedPlayers && Array.isArray(savedPlayers) && savedPlayers.length > 0) {
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log('🔄 Loading previous players from GameState:', savedPlayers);
             }
 
@@ -469,20 +519,20 @@
     }
 
     /**
-     * ✅ P1 FIX: Update players in GameState from inputs
+     * ✅ P1 FIX: Update players in PlayerSetupModule.gameState from inputs
      */
     function updatePlayersFromInputs() {
         const players = getPlayersList();
 
         // ✅ FIX: Directly set players array to avoid prototype pollution detection
-        gameState.players = players;
+        PlayerSetupModule.gameState.players = players;
 
         // Only save if we have valid players
         if (players.length > 0) {
-            gameState.save();
+            PlayerSetupModule.gameState.save();
         }
 
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log('📝 Players updated in GameState:', players);
         }
     }
@@ -555,7 +605,7 @@
 
         input.focus();
 
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log(`➕ Added player input #${newIndex + 1}`);
         }
     }
@@ -626,7 +676,7 @@
         updateUI();
         updateAddButton();
 
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log(`➖ Removed player input #${index + 1}`);
         }
     }
@@ -640,15 +690,15 @@
      * Add action to undo stack
      */
     function addToUndoStack(action) {
-        undoStack.push(action);
+        PlayerSetupModule.undoStack.push(action);
 
         // Limit stack size
-        if (undoStack.length > MAX_UNDO_STACK) {
-            undoStack.shift();
+        if (PlayerSetupModule.undoStack.length > MAX_UNDO_STACK) {
+            PlayerSetupModule.undoStack.shift();
         }
 
-        if (isDevelopment) {
-            console.log('📚 Undo stack:', undoStack);
+        if (PlayerSetupModule.isDevelopment) {
+            console.log('📚 Undo stack:', PlayerSetupModule.undoStack);
         }
     }
 
@@ -656,12 +706,12 @@
      * Undo last action
      */
     function undoLastAction() {
-        if (undoStack.length === 0) {
+        if (PlayerSetupModule.undoStack.length === 0) {
             showNotification('Nichts zum Rückgängigmachen', 'info');
             return;
         }
 
-        const lastAction = undoStack.pop();
+        const lastAction = PlayerSetupModule.undoStack.pop();
 
         if (lastAction.action === 'remove') {
             // Re-add the player
@@ -685,7 +735,7 @@
 
             showNotification('Rückgängig gemacht', 'success', 1500);
 
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log(`↩️ Undid removal of "${lastAction.playerName}"`);
             }
         }
@@ -735,12 +785,12 @@
                 input.value = '';
             });
 
-            // Clear GameState
-            gameState.players = [];
-            gameState.save();
+            // Clear PlayerSetupModule.gameState
+            PlayerSetupModule.gameState.players = [];
+            PlayerSetupModule.gameState.save();
 
             // Clear undo stack
-            undoStack = [];
+            PlayerSetupModule.undoStack = [];
 
             // Clear any avatar data from localStorage
             for (let i = 0; i < localStorage.length; i++) {
@@ -755,7 +805,7 @@
 
             showNotification('✅ Alle Spielerdaten gelöscht', 'success', 3000);
 
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log('🗑️ All player data deleted');
             }
         } catch (error) {
@@ -899,7 +949,7 @@
             players.splice(index - 1, 0, movedPlayer);
             moved = true;
 
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log(`⬆️ Moved player ${index + 1} up`);
             }
         } else if (e.key === 'ArrowDown' && index < players.length - 1) {
@@ -909,7 +959,7 @@
             players.splice(index + 1, 0, movedPlayer);
             moved = true;
 
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log(`⬇️ Moved player ${index + 1} down`);
             }
         }
@@ -923,7 +973,7 @@
                 }
             });
 
-            // Update GameState and UI
+            // Update PlayerSetupModule.gameState and UI
             updatePlayersFromInputs();
             updateUI();
 
@@ -941,7 +991,7 @@
     }
 
     function handleDragStart(e) {
-        draggedItem = this;
+        PlayerSetupModule.draggedItem = this;
         this.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', this.dataset.index);
@@ -949,7 +999,7 @@
         // ✅ AUDIT FIX: Accessibility attributes
         this.setAttribute('aria-grabbed', 'true');
 
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log(`🎯 Started dragging player ${parseInt(this.dataset.index) + 1}`);
         }
     }
@@ -972,7 +1022,7 @@
         }
         e.dataTransfer.dropEffect = 'move';
 
-        if (this !== draggedItem) {
+        if (this !== PlayerSetupModule.draggedItem) {
             this.classList.add('drag-over');
 
             // ✅ AUDIT FIX: Accessibility dropeffect
@@ -994,8 +1044,8 @@
             e.stopPropagation();
         }
 
-        if (draggedItem !== this) {
-            const fromIndex = parseInt(draggedItem.dataset.index);
+        if (PlayerSetupModule.draggedItem !== this) {
+            const fromIndex = parseInt(PlayerSetupModule.draggedItem.dataset.index);
             const toIndex = parseInt(this.dataset.index);
 
             // Get current players
@@ -1013,13 +1063,13 @@
                 }
             });
 
-            // Update GameState
+            // Update PlayerSetupModule.gameState
             updatePlayersFromInputs();
             updateUI();
 
             showNotification('Reihenfolge aktualisiert!', 'success', 2000);
 
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log(`🔄 Reordered: ${fromIndex + 1} → ${toIndex + 1}`);
             }
         }
@@ -1088,8 +1138,8 @@
         // Use textContent
         const categoriesSummary = document.getElementById('categories-summary');
         if (categoriesSummary) {
-            if (gameState.selectedCategories && gameState.selectedCategories.length > 0) {
-                const categoryList = gameState.selectedCategories
+            if (PlayerSetupModule.gameState.selectedCategories && PlayerSetupModule.gameState.selectedCategories.length > 0) {
+                const categoryList = PlayerSetupModule.gameState.selectedCategories
                     .map(cat => categoryNames[cat] || cat)
                     .join(', ');
                 categoriesSummary.textContent = categoryList;
@@ -1100,7 +1150,7 @@
 
         const difficultySummary = document.getElementById('difficulty-summary');
         if (difficultySummary) {
-            difficultySummary.textContent = difficultyNames[gameState.difficulty] || gameState.difficulty || 'Nicht ausgewählt';
+            difficultySummary.textContent = difficultyNames[PlayerSetupModule.gameState.difficulty] || PlayerSetupModule.gameState.difficulty || 'Nicht ausgewählt';
         }
     }
 
@@ -1208,8 +1258,8 @@
         };
         addTrackedEventListener(document, 'keypress', keypressHandler);
 
-        if (isDevelopment) {
-            console.log(`✅ Setup ${_eventListeners.length} tracked event listeners`);
+        if (PlayerSetupModule.isDevelopment) {
+            console.log(`✅ Setup ${PlayerSetupModule.state.eventListenerCleanup.length} tracked event listeners`);
         }
     }
 
@@ -1221,8 +1271,8 @@
      * ✅ P1 DSGVO/Jugendschutz: Check FSK rating before starting
      */
     function checkFSKRating() {
-        const difficulty = gameState.difficulty;
-        const categories = gameState.selectedCategories || [];
+        const difficulty = PlayerSetupModule.gameState.difficulty;
+        const categories = PlayerSetupModule.gameState.selectedCategories || [];
 
         let requiredAge = 0;
         let warning = '';
@@ -1263,7 +1313,7 @@
     }
 
     async function startGame() {
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log('🚀 Starting game...');
         }
 
@@ -1278,12 +1328,12 @@
             return;
         }
 
-        if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+        if (!PlayerSetupModule.gameState.selectedCategories || PlayerSetupModule.gameState.selectedCategories.length === 0) {
             showNotification('Keine Kategorien ausgewählt!', 'error');
             return;
         }
 
-        if (!gameState.difficulty) {
+        if (!PlayerSetupModule.gameState.difficulty) {
             showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
             return;
         }
@@ -1295,15 +1345,15 @@
 
         showLoading();
 
-        // ✅ P1 FIX: Save to GameState and set game phase
-        gameState.players = players;
-        gameState.gamePhase = 'playing';
-        gameState.save(true); // Immediate save
+        // ✅ P1 FIX: Save to PlayerSetupModule.gameState and set game phase
+        PlayerSetupModule.gameState.players = players;
+        PlayerSetupModule.gameState.gamePhase = 'playing';
+        PlayerSetupModule.gameState.save(true); // Immediate save
 
         showNotification('Spiel wird gestartet...', 'success', 1500);
 
-        if (isDevelopment) {
-            console.log('Game starting with state:', gameState.getDebugInfo());
+        if (PlayerSetupModule.isDevelopment) {
+            console.log('Game starting with state:', PlayerSetupModule.gameState.getDebugInfo());
         }
 
         setTimeout(() => {
@@ -1317,7 +1367,7 @@
     // ===========================
 
     function goBack() {
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log('⬅️ Going back to difficulty selection...');
         }
 
@@ -1325,10 +1375,10 @@
         const players = getPlayersList();
 
         if (players.length > 0) {
-            gameState.players = players;
-            gameState.save();
+            PlayerSetupModule.gameState.players = players;
+            PlayerSetupModule.gameState.save();
 
-            if (isDevelopment) {
+            if (PlayerSetupModule.isDevelopment) {
                 console.log('💾 Saved current players:', players);
             }
         }
@@ -1366,16 +1416,16 @@
 
     function cleanup() {
         // Remove all tracked event listeners
-        _eventListeners.forEach(({ element, event, handler, options }) => {
+        PlayerSetupModule.state.eventListenerCleanup.forEach(({ element, event, handler, options }) => {
             if (element && element.removeEventListener) {
                 element.removeEventListener(event, handler, options);
             }
         });
 
         // Clear the array
-        _eventListeners.length = 0;
+        PlayerSetupModule.state.eventListenerCleanup.length = 0;
 
-        if (isDevelopment) {
+        if (PlayerSetupModule.isDevelopment) {
             console.log('✅ Player setup cleanup completed - all event listeners removed');
         }
     }

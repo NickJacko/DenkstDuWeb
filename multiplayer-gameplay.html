@@ -1,14 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Multiplayer Gameplay</title>
 
-    <!-- ✅ SECURITY: Security Headers -->
+    <!-- ? SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
     <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
     <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
     <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
@@ -26,21 +29,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
 
-    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/multiplayer-gameplay.css">
 
-    <!-- ✅ SECURITY: DOMPurify lokal gehostet -->
+    <!-- ? SECURITY: DOMPurify lokal gehostet -->
     <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
-    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
@@ -51,12 +54,12 @@
 
 </head>
 <body>
-<!-- ✅ P1 Stabilität: Error Modal für Verbindungsabbrüche und Fehlerfälle -->
+<!-- ? P1 Stabilit�t: Error Modal f�r Verbindungsabbr�che und Fehlerf�lle -->
 <div class="error-modal hidden" id="error-modal" role="dialog" aria-labelledby="error-title" aria-modal="true">
     <div class="error-modal-backdrop" id="error-backdrop"></div>
     <div class="error-modal-content">
         <div class="error-modal-header">
-            <h2 class="error-modal-title" id="error-title">⚠️ Fehler aufgetreten</h2>
+            <h2 class="error-modal-title" id="error-title">?? Fehler aufgetreten</h2>
         </div>
         <div class="error-modal-body">
             <p class="error-modal-message" id="error-message">Ein unerwarteter Fehler ist aufgetreten.</p>
@@ -83,11 +86,11 @@
     <p class="loading-text">Lade Spiel...</p>
 </div>
 
-<!-- ✅ P1 UI/UX: Loading Overlay für Zustandswechsel -->
+<!-- ? P1 UI/UX: Loading Overlay f�r Zustandswechsel -->
 <div class="loading-overlay hidden" id="loading-overlay" role="status" aria-live="polite">
     <div class="loading-content">
         <div class="spinner" aria-hidden="true"></div>
-        <p class="loading-text" id="loading-text">Lädt...</p>
+        <p class="loading-text" id="loading-text">L�dt...</p>
     </div>
 </div>
 
@@ -96,7 +99,7 @@
     <!-- Game Info Top -->
     <header class="game-info-top">
         <span class="info-text">Runde <span id="current-round" aria-live="polite">1</span></span>
-        <span class="info-separator" aria-hidden="true">•</span>
+        <span class="info-separator" aria-hidden="true">�</span>
         <span class="info-text"><span id="players-count" aria-live="polite">0 Spieler</span></span>
     </header>
 
@@ -106,9 +109,9 @@
         <article class="question-card">
             <div class="question-category-wrapper">
                 <div class="question-category" id="question-category" aria-live="polite">
-                    🎮 Loading...
+                    ?? Loading...
                 </div>
-                <!-- ✅ P1 DSGVO: FSK-Badge für Jugendschutz -->
+                <!-- ? P1 DSGVO: FSK-Badge f�r Jugendschutz -->
                 <div class="fsk-badge hidden" id="fsk-badge" role="status" aria-label="FSK Einstufung">
                     <span class="fsk-text" id="fsk-text">ab 16</span>
                 </div>
@@ -120,14 +123,14 @@
 
         <!-- Answer Section -->
         <div class="answer-section">
-            <h2 class="answer-title">🤔 Deine Antwort</h2>
-            <div class="answer-buttons" role="radiogroup" aria-label="Antwort auswählen">
+            <h2 class="answer-title">?? Deine Antwort</h2>
+            <div class="answer-buttons" role="radiogroup" aria-label="Antwort ausw�hlen">
                 <button class="answer-btn yes" id="yes-btn" type="button" role="radio" aria-checked="false">
-                    <div class="answer-emoji" aria-hidden="true">✅</div>
+                    <div class="answer-emoji" aria-hidden="true">?</div>
                     <div>Ja, habe ich</div>
                 </button>
                 <button class="answer-btn no" id="no-btn" type="button" role="radio" aria-checked="false">
-                    <div class="answer-emoji" aria-hidden="true">❌</div>
+                    <div class="answer-emoji" aria-hidden="true">?</div>
                     <div>Nein, noch nie</div>
                 </button>
             </div>
@@ -135,10 +138,10 @@
 
         <!-- Estimation Section -->
         <div class="estimation-section">
-            <h2 class="estimation-title">🎯 Wie viele antworten mit "Ja"?</h2>
+            <h2 class="estimation-title">?? Wie viele antworten mit "Ja"?</h2>
 
             <!-- Number Grid -->
-            <div class="number-grid" id="number-grid" role="radiogroup" aria-label="Anzahl schätzen">
+            <div class="number-grid" id="number-grid" role="radiogroup" aria-label="Anzahl sch�tzen">
                 <!-- Numbers generated dynamically -->
             </div>
 
@@ -154,7 +157,7 @@
         <!-- Submit Button -->
         <div class="submit-section">
             <button class="submit-btn" id="submit-btn" type="button" disabled aria-disabled="true">
-                📤 Antworten absenden
+                ?? Antworten absenden
             </button>
         </div>
     </section>
@@ -163,7 +166,7 @@
     <section class="game-phase" id="waiting-phase" role="region" aria-label="Warten auf andere Spieler">
         <div class="waiting-screen">
             <div class="waiting-spinner" aria-hidden="true"></div>
-            <h2 class="waiting-title">⏳ Warten auf andere Spieler</h2>
+            <h2 class="waiting-title">? Warten auf andere Spieler</h2>
             <p class="waiting-description">
                 Deine Antworten wurden gesendet.<br>
                 Warte, bis alle anderen geantwortet haben.
@@ -187,10 +190,10 @@
 
             <!-- Personal Result Box -->
             <aside class="personal-result-box hidden" id="personal-result">
-                <h3 class="personal-result-title">🎯 Dein Ergebnis</h3>
+                <h3 class="personal-result-title">?? Dein Ergebnis</h3>
                 <div class="personal-result-content">
                     <div class="personal-result-item">
-                        <span class="personal-label">Deine Schätzung:</span>
+                        <span class="personal-label">Deine Sch�tzung:</span>
                         <span class="personal-value" id="personal-estimation">-</span>
                     </div>
                     <div class="personal-result-item">
@@ -211,21 +214,21 @@
             <!-- Host Controls -->
             <div class="host-controls host-only" id="host-controls">
                 <h3 class="host-title">
-                    👑 Host-Kontrollen
+                    ?? Host-Kontrollen
                 </h3>
                 <div class="nav-buttons">
                     <button class="nav-btn primary" id="next-question-btn" type="button">
-                        ➡️ Nächste Frage
+                        ?? N�chste Frage
                     </button>
                     <button class="nav-btn secondary" id="show-overall-btn" type="button">
-                        📊 Gesamtergebnisse
+                        ?? Gesamtergebnisse
                     </button>
                 </div>
             </div>
 
             <!-- Player Controls -->
             <div class="player-waiting guest-only" id="player-controls">
-                <p class="waiting-host-text">⏳ Warten auf Host...</p>
+                <p class="waiting-host-text">? Warten auf Host...</p>
             </div>
         </div>
     </section>
@@ -234,7 +237,7 @@
     <section class="game-phase" id="overall-results-phase" role="region" aria-label="Gesamtergebnisse">
         <div class="overall-results-screen">
             <header class="overall-header">
-                <h2 class="overall-title">🏆 Gesamtergebnisse</h2>
+                <h2 class="overall-title">?? Gesamtergebnisse</h2>
                 <p class="overall-subtitle">Alle Runden abgeschlossen</p>
             </header>
 
@@ -250,7 +253,7 @@
             </div>
 
             <div class="overall-leaderboard">
-                <h3 class="leaderboard-title">🏅 Bestenliste</h3>
+                <h3 class="leaderboard-title">?? Bestenliste</h3>
                 <div id="overall-leaderboard-list" role="list">
                     <!-- Leaderboard populated by JS -->
                 </div>
@@ -258,20 +261,20 @@
 
             <!-- Host Controls -->
             <div class="host-controls host-only" id="overall-host-controls">
-                <h3 class="host-title">👑 Host-Kontrollen</h3>
+                <h3 class="host-title">?? Host-Kontrollen</h3>
                 <div class="nav-buttons">
                     <button class="nav-btn primary" id="continue-game-btn" type="button">
-                        ▶️ Spiel fortfahren
+                        ?? Spiel fortfahren
                     </button>
                     <button class="nav-btn danger" id="end-game-btn" type="button">
-                        🛑 Spiel beenden
+                        ?? Spiel beenden
                     </button>
                 </div>
             </div>
 
             <!-- Player Waiting -->
             <div class="player-waiting guest-only" id="overall-player-controls">
-                <p class="waiting-host-text">⏳ Warten auf Host...</p>
+                <p class="waiting-host-text">? Warten auf Host...</p>
             </div>
         </div>
     </section>
@@ -281,7 +284,7 @@
 <div class="privacy-footer">
     <a href="privacy.html" class="privacy-link">Datenschutz</a>
 </div>
-    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>

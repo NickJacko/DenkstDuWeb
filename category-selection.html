@@ -1,14 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No-Cap - Kategorien wählen</title>
+    <title>No-Cap - Kategorien w�hlen</title>
 
     <!-- Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- âœ… P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
     <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
     <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
     <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
@@ -26,21 +29,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
 
-    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css?v=2.0">
     <link rel="stylesheet" href="/assets/css/category-selection.css?v=2.0">
 
-    <!-- ✅ SECURITY: DOMPurify FIRST (must be available immediately) -->
+    <!-- ? SECURITY: DOMPurify FIRST (must be available immediately) -->
     <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
-    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
@@ -60,12 +63,12 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button" id="back-btn" type="button" aria-label="Zurück zur Startseite">
-    ← Zurück
+<button class="back-button" id="back-btn" type="button" aria-label="Zur�ck zur Startseite">
+    ? Zur�ck
 </button>
 
 <!-- Loading Spinner -->
-<div class="loading" id="loading" role="status" aria-live="polite" aria-label="Lädt">
+<div class="loading" id="loading" role="status" aria-live="polite" aria-label="L�dt">
     <div class="spinner" aria-hidden="true"></div>
     <p class="loading-text">Lade Fragen...</p>
 </div>
@@ -73,30 +76,30 @@
 <!-- App Container -->
 <div class="app-container">
     <div class="glass-card">
-        <h1 class="screen-title">🎯 Kategorien wählen</h1>
+        <h1 class="screen-title">?? Kategorien w�hlen</h1>
 
         <p class="selection-description">
-            Wähle eine oder mehrere Kategorien aus
+            W�hle eine oder mehrere Kategorien aus
         </p>
 
         <div class="category-grid" id="category-grid" role="group" aria-label="Kategorieauswahl">
-                    <!-- ✅ P1 UI/UX: Semantic button elements for keyboard accessibility -->
+                    <!-- ? P1 UI/UX: Semantic button elements for keyboard accessibility -->
                     <!-- FSK 0 - Familie & Freunde -->
                     <button type="button"
                             class="category-card fsk0"
                             data-category="fsk0"
                             aria-pressed="false"
-                            aria-label="Kategorie Familie und Freunde, FSK 0, für alle Altersgruppen">
+                            aria-label="Kategorie Familie und Freunde, FSK 0, f�r alle Altersgruppen">
                         <div class="category-header">
-                            <div class="category-icon" aria-hidden="true">👨‍👩‍👧‍👦</div>
+                            <div class="category-icon" aria-hidden="true">???????????</div>
                             <div class="fsk-badge fsk0-badge" role="img" aria-label="FSK Null">FSK 0</div>
                         </div>
                         <h2 class="category-title">Familie & Freunde</h2>
                         <p class="category-description">
-                            Harmlose und lustige Fragen für alle Altersgruppen.
-                            Perfekt für Familienabende und gemischte Gruppen.
+                            Harmlose und lustige Fragen f�r alle Altersgruppen.
+                            Perfekt f�r Familienabende und gemischte Gruppen.
                         </p>
-                        <!-- ✅ P0 SECURITY: Example questions loaded dynamically via JavaScript -->
+                        <!-- ? P0 SECURITY: Example questions loaded dynamically via JavaScript -->
                         <div class="category-examples">
                             <div class="example-questions" data-category-examples="fsk0">
                                 <!-- Examples will be loaded from secure JSON via DOMPurify -->
@@ -116,18 +119,18 @@
                             class="category-card fsk16"
                             data-category="fsk16"
                             aria-pressed="false"
-                            aria-label="Kategorie Party Time, FSK 16, für Jugendliche ab 16 Jahren"
+                            aria-label="Kategorie Party Time, FSK 16, f�r Jugendliche ab 16 Jahren"
                             data-fsk-level="16">
                         <div class="category-header">
-                            <div class="category-icon" aria-hidden="true">🎉</div>
+                            <div class="category-icon" aria-hidden="true">??</div>
                             <div class="fsk-badge fsk16-badge" role="img" aria-label="FSK Sechzehn">FSK 16</div>
                         </div>
                         <h2 class="category-title">Party Time</h2>
                         <p class="category-description">
-                            Freche und unterhaltsame Fragen für Jugendliche und junge Erwachsene.
-                            Ideal für WG-Partys und Studentenfeiern.
+                            Freche und unterhaltsame Fragen f�r Jugendliche und junge Erwachsene.
+                            Ideal f�r WG-Partys und Studentenfeiern.
                         </p>
-                        <!-- ✅ P0 SECURITY: Example questions loaded dynamically via JavaScript -->
+                        <!-- ? P0 SECURITY: Example questions loaded dynamically via JavaScript -->
                         <div class="category-examples">
                             <div class="example-questions" data-category-examples="fsk16">
                                 <!-- Examples will be loaded from secure JSON via DOMPurify -->
@@ -140,36 +143,36 @@
                                 <span class="loading-dots">...</span>
                             </span>
                         </div>
-                        <!-- ✅ P1 DSGVO/JUGENDSCHUTZ: Lock overlay for age-restricted content -->
+                        <!-- ? P1 DSGVO/JUGENDSCHUTZ: Lock overlay for age-restricted content -->
                         <div class="locked-overlay hidden"
                              id="fsk16-locked"
                              aria-hidden="true"
                              role="alert">
-                            <div class="lock-icon" aria-hidden="true">🔒</div>
+                            <div class="lock-icon" aria-hidden="true">??</div>
                             <p class="lock-message">
                                 <strong>Altersverifikation erforderlich</strong><br>
-                                Nur für Personen ab 16 Jahren
+                                Nur f�r Personen ab 16 Jahren
                             </p>
                         </div>
                     </button>
 
-                    <!-- FSK 18 - Heiß & Gewagt -->
+                    <!-- FSK 18 - Hei� & Gewagt -->
                     <button type="button"
                             class="category-card fsk18"
                             data-category="fsk18"
                             aria-pressed="false"
-                            aria-label="Kategorie Heiß und Gewagt, FSK 18, nur für Erwachsene ab 18 Jahren"
+                            aria-label="Kategorie Hei� und Gewagt, FSK 18, nur f�r Erwachsene ab 18 Jahren"
                             data-fsk-level="18">
                         <div class="category-header">
-                            <div class="category-icon" aria-hidden="true">🔥</div>
+                            <div class="category-icon" aria-hidden="true">??</div>
                             <div class="fsk-badge fsk18-badge" role="img" aria-label="FSK Achtzehn, Erwachseneninhalte">FSK 18</div>
                         </div>
-                        <h2 class="category-title">Heiß & Gewagt</h2>
+                        <h2 class="category-title">Hei� & Gewagt</h2>
                         <p class="category-description">
-                            Pikante und intime Fragen nur für Erwachsene.
-                            Perfekt für enge Freundesgruppen und Paar-Abende.
+                            Pikante und intime Fragen nur f�r Erwachsene.
+                            Perfekt f�r enge Freundesgruppen und Paar-Abende.
                         </p>
-                        <!-- ✅ P0 SECURITY: Example questions loaded dynamically via JavaScript -->
+                        <!-- ? P0 SECURITY: Example questions loaded dynamically via JavaScript -->
                         <div class="category-examples">
                             <div class="example-questions" data-category-examples="fsk18">
                                 <!-- Examples will be loaded from secure JSON via DOMPurify -->
@@ -182,16 +185,16 @@
                                 <span class="loading-dots">...</span>
                             </span>
                         </div>
-                        <!-- ✅ P1 DSGVO/JUGENDSCHUTZ: Lock overlay for adult content -->
+                        <!-- ? P1 DSGVO/JUGENDSCHUTZ: Lock overlay for adult content -->
                         <div class="locked-overlay hidden"
                              id="fsk18-locked"
                              aria-hidden="true"
                              role="alert">
-                            <div class="lock-icon" aria-hidden="true">🔒</div>
+                            <div class="lock-icon" aria-hidden="true">??</div>
                             <p class="lock-message">
                                 <strong>Altersverifikation erforderlich</strong><br>
-                                <span class="adult-warning">Nur für Erwachsene ab 18 Jahren</span><br>
-                                <small>Enthält pikante und intime Inhalte</small>
+                                <span class="adult-warning">Nur f�r Erwachsene ab 18 Jahren</span><br>
+                                <small>Enth�lt pikante und intime Inhalte</small>
                             </p>
                         </div>
                     </button>
@@ -203,17 +206,17 @@
                             aria-pressed="false"
                             aria-disabled="true"
                             aria-label="Kategorie Special Edition, Premium Inhalt, erfordert Freischaltung">
-                        <div class="premium-badge" role="img" aria-label="Premium Inhalt">👑 PREMIUM</div>
+                        <div class="premium-badge" role="img" aria-label="Premium Inhalt">?? PREMIUM</div>
                         <div class="category-header">
-                            <div class="category-icon" aria-hidden="true">⭐</div>
+                            <div class="category-icon" aria-hidden="true">?</div>
                             <div class="fsk-badge special-badge" role="img" aria-label="Special Edition">SPECIAL</div>
                         </div>
                         <h2 class="category-title">Special Edition</h2>
                         <p class="category-description">
-                            Exklusive und einzigartige Fragen für besondere Momente.
+                            Exklusive und einzigartige Fragen f�r besondere Momente.
                             Premium-Content mit den besten Community-Fragen.
                         </p>
-                        <!-- ✅ P0 SECURITY: Example questions loaded dynamically via JavaScript -->
+                        <!-- ? P0 SECURITY: Example questions loaded dynamically via JavaScript -->
                         <div class="category-examples">
                             <div class="example-questions" data-category-examples="special">
                                 <!-- Examples will be loaded from secure JSON via DOMPurify -->
@@ -226,34 +229,34 @@
                                 <span class="loading-dots">...</span>
                             </span>
                         </div>
-                        <!-- ✅ P1 UI/UX: Locked Overlay für Premium-Inhalte -->
+                        <!-- ? P1 UI/UX: Locked Overlay f�r Premium-Inhalte -->
                         <div class="locked-overlay"
                              id="special-locked"
                              aria-hidden="false"
                              role="alert">
-                            <div class="lock-icon" aria-hidden="true">🔒</div>
+                            <div class="lock-icon" aria-hidden="true">??</div>
                             <p class="lock-message">
                                 <strong>Premium Inhalt</strong><br>
-                                <span class="premium-info">Einmalige Freischaltung für 2,99 €</span>
+                                <span class="premium-info">Einmalige Freischaltung f�r 2,99 �</span>
                             </p>
                             <button class="unlock-btn"
                                     id="unlock-special-btn"
                                     type="button"
-                                    aria-label="Premium Special Edition freischalten für 2,99 Euro">
-                                💎 Freischalten
+                                    aria-label="Premium Special Edition freischalten f�r 2,99 Euro">
+                                ?? Freischalten
                             </button>
                         </div>
                     </button>
                 </div>
 
-                <!-- ✅ CSP FIX: Selection Summary with CSS class instead of inline style -->
+                <!-- ? CSP FIX: Selection Summary with CSS class instead of inline style -->
                 <div class="selection-summary hidden" id="selection-summary">
                     <div class="summary-header">
-                        <h3>✅ Ausgewählte Kategorien</h3>
+                        <h3>? Ausgew�hlte Kategorien</h3>
                     </div>
                     <div class="selected-categories" id="selected-categories-list" aria-live="polite"></div>
                     <div class="total-questions">
-                        Gesamt: <span id="total-questions">0</span> Fragen verfügbar
+                        Gesamt: <span id="total-questions">0</span> Fragen verf�gbar
                     </div>
                 </div>
 
@@ -262,7 +265,7 @@
                     <button class="btn btn-primary btn-large" id="continue-btn" type="button" disabled aria-disabled="true">
                         Weiter zur Schwierigkeitsauswahl
                     </button>
-                    <p class="continue-hint" id="continue-hint" aria-live="polite">Wähle mindestens eine Kategorie aus</p>
+                    <p class="continue-hint" id="continue-hint" aria-live="polite">W�hle mindestens eine Kategorie aus</p>
                 </div>
             </div>
         </div>
@@ -272,35 +275,35 @@
 <div class="modal" id="premium-modal" role="dialog" aria-labelledby="premium-modal-title" aria-modal="true" aria-hidden="true">
     <div class="modal-content premium-modal-content">
         <div class="modal-header premium-header">
-            <h3 id="premium-modal-title">👑 Premium Special Edition</h3>
-            <button class="close-btn" id="close-premium-modal" type="button" aria-label="Modal schließen">×</button>
+            <h3 id="premium-modal-title">?? Premium Special Edition</h3>
+            <button class="close-btn" id="close-premium-modal" type="button" aria-label="Modal schlie�en">�</button>
         </div>
         <div class="modal-body">
             <div class="premium-features">
-                <h4>✨ Was du bekommst:</h4>
+                <h4>? Was du bekommst:</h4>
                 <ul>
-                    <li>🎯 <span id="special-question-count">150+</span> exklusive Fragen</li>
-                    <li>⭐ Community-Highlights & Best-Of</li>
-                    <li>🔥 Regelmäßige Updates mit neuen Fragen</li>
-                    <li>💎 Lebenslanger Zugriff</li>
+                    <li>?? <span id="special-question-count">150+</span> exklusive Fragen</li>
+                    <li>? Community-Highlights & Best-Of</li>
+                    <li>?? Regelm��ige Updates mit neuen Fragen</li>
+                    <li>?? Lebenslanger Zugriff</li>
                 </ul>
             </div>
             <div class="premium-price">
                 <div class="price-tag">
-                    <span class="price-amount">2,99 €</span>
+                    <span class="price-amount">2,99 �</span>
                     <span class="price-period">Einmalig</span>
                 </div>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-outline" id="close-premium-later" type="button">Später</button>
+            <button class="btn btn-outline" id="close-premium-later" type="button">Sp�ter</button>
             <button class="btn btn-premium" id="purchase-premium-btn" type="button">
-                💎 Jetzt kaufen
+                ?? Jetzt kaufen
             </button>
         </div>
     </div>
 </div>
-    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>

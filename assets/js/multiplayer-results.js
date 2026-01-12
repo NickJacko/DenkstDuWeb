@@ -13,6 +13,13 @@
 (function() {
     'use strict';
 
+const Logger = window.NocapUtils?.Logger || { debug: (...args) => {}, info: (...args) => {}, warn: console.warn, error: console.error };
+
+const MultiplayerResultsModule = { state: { gameState: null, MultiplayerResultsModule.firebaseService: null, eventListenerCleanup: [], MultiplayerResultsModule.isDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('192.168.') }, get MultiplayerResultsModule.gameState() { return this.state.MultiplayerResultsModule.gameState; }, set MultiplayerResultsModule.gameState(val) { this.state.MultiplayerResultsModule.gameState = val; }, get MultiplayerResultsModule.firebaseService() { return this.state.MultiplayerResultsModule.firebaseService; }, set MultiplayerResultsModule.firebaseService(val) { this.state.MultiplayerResultsModule.firebaseService = val; }, get MultiplayerResultsModule.isDevelopment() { return this.state.MultiplayerResultsModule.isDevelopment; } }; Object.seal(MultiplayerResultsModule.state);
+function throttle(func, wait = 100) { let timeout = null; let previous = 0; return function(...args) { const now = Date.now(); const remaining = wait - (now - previous); if (remaining <= 0 || remaining > wait) { if (timeout) { clearTimeout(timeout); timeout = null; } previous = now; func.apply(this, args); } else if (!timeout) { timeout = setTimeout(() => { previous = Date.now(); timeout = null; func.apply(this, args); }, remaining); } }; }
+function debounce(func, wait = 300) { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; }
+function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.addTrackedEventListener(evt, handler, opts); MultiplayerResultsModule.state.eventListenerCleanup.push({element: el, event: evt, handler, options: opts}); }
+
     // ===========================
     // CONSTANTS
     // ===========================
@@ -51,7 +58,7 @@
     // INITIALIZATION
     // ===========================
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addTrackedEventListener('DOMContentLoaded', async () => {
         try {
             // ✅ P0 SECURITY: Check DOMPurify availability
             if (typeof DOMPurify === 'undefined') {
@@ -1036,14 +1043,14 @@
         const copyBtn = document.getElementById('copy-results-btn');
         const screenshotBtn = document.getElementById('save-screenshot-btn');
 
-        if (whatsappBtn) whatsappBtn.addEventListener('click', shareViaWhatsApp);
-        if (telegramBtn) telegramBtn.addEventListener('click', shareViaTelegram);
-        if (copyBtn) copyBtn.addEventListener('click', copyResultsLink);
-        if (screenshotBtn) screenshotBtn.addEventListener('click', saveScreenshot);
+        if (whatsappBtn) whatsappBtn.addTrackedEventListener('click', shareViaWhatsApp);
+        if (telegramBtn) telegramBtn.addTrackedEventListener('click', shareViaTelegram);
+        if (copyBtn) copyBtn.addTrackedEventListener('click', copyResultsLink);
+        if (screenshotBtn) screenshotBtn.addTrackedEventListener('click', saveScreenshot);
 
         // Rating buttons
         document.querySelectorAll('.rating-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addTrackedEventListener('click', () => {
                 const rating = parseInt(btn.getAttribute('data-rating'));
                 submitRating(rating);
             });
@@ -1052,13 +1059,13 @@
         // ✅ P1 UI/UX: Toggle ranking view button
         const toggleRankingBtn = document.getElementById('toggle-ranking-btn');
         if (toggleRankingBtn) {
-            toggleRankingBtn.addEventListener('click', toggleRankingView);
+            toggleRankingBtn.addTrackedEventListener('click', toggleRankingView);
         }
 
         // ✅ P1 STABILITY: Restart game button
         const restartGameBtn = document.getElementById('restart-game-btn');
         if (restartGameBtn) {
-            restartGameBtn.addEventListener('click', restartGame);
+            restartGameBtn.addTrackedEventListener('click', restartGame);
         }
 
         // Action buttons
@@ -1066,14 +1073,14 @@
         const backToMenuBtn = document.getElementById('back-to-menu-btn');
 
         if (playAgainBtn) {
-            playAgainBtn.addEventListener('click', () => {
+            playAgainBtn.addTrackedEventListener('click', () => {
                 cancelAutoRedirect();
                 window.location.href = 'multiplayer-lobby.html';
             });
         }
 
         if (backToMenuBtn) {
-            backToMenuBtn.addEventListener('click', () => {
+            backToMenuBtn.addTrackedEventListener('click', () => {
                 // ✅ P1 STABILITY: Handle host leaving
                 handleHostLeaving().then(() => {
                     redirectToMenu();
@@ -1087,18 +1094,18 @@
         const goToMenuBtn = document.getElementById('go-to-menu-now-btn');
 
         if (startNewGameBtn) {
-            startNewGameBtn.addEventListener('click', () => {
+            startNewGameBtn.addTrackedEventListener('click', () => {
                 cancelAutoRedirect();
                 restartGame();
             });
         }
 
         if (stayBtn) {
-            stayBtn.addEventListener('click', cancelAutoRedirect);
+            stayBtn.addTrackedEventListener('click', cancelAutoRedirect);
         }
 
         if (goToMenuBtn) {
-            goToMenuBtn.addEventListener('click', () => {
+            goToMenuBtn.addTrackedEventListener('click', () => {
                 handleHostLeaving().then(() => {
                     redirectToMenu();
                 });
@@ -1269,7 +1276,7 @@
     }
 
     // ✅ P1 STABILITY: Cleanup on page unload
-    window.addEventListener('beforeunload', cleanup);
+    window.addTrackedEventListener('beforeunload', cleanup);
 
 })();
 

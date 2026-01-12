@@ -1,14 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Spielen</title>
 
-    <!-- ✅ SECURITY: Security Headers -->
+    <!-- ? SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
     <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
     <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
     <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
@@ -26,21 +29,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
 
-    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/gameplay.css">
 
-    <!-- ✅ SECURITY: DOMPurify lokal gehostet -->
+    <!-- ? SECURITY: DOMPurify lokal gehostet -->
     <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
-    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
@@ -51,8 +54,8 @@
 
 </head>
 <body>
-<!-- ✅ P1 UI/UX: Loading Spinner für Fragen und Submissions -->
-<div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite" aria-label="Lädt">
+<!-- ? P1 UI/UX: Loading Spinner f�r Fragen und Submissions -->
+<div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite" aria-label="L�dt">
     <div class="loading-content">
         <div class="spinner" aria-hidden="true"></div>
         <p class="loading-text" id="loading-text">Lade Frage...</p>
@@ -75,9 +78,9 @@
         <article class="question-card fadeInUp">
             <div class="question-category-wrapper">
                 <div class="question-category" id="question-category" role="status">
-                    🎮 Loading...
+                    ?? Loading...
                 </div>
-                <!-- ✅ P1 DSGVO: FSK-Badge für Jugendschutz -->
+                <!-- ? P1 DSGVO: FSK-Badge f�r Jugendschutz -->
                 <div class="fsk-badge hidden" id="fsk-badge" role="status" aria-label="FSK Einstufung">
                     <span class="fsk-text" id="fsk-text">ab 16</span>
                 </div>
@@ -96,16 +99,16 @@
                     Du bist dran!
                     <span id="player-progress" aria-live="polite" aria-label="Spieler Fortschritt">(1/4)</span>
                 </div>
-                <!-- ✅ P1 UI/UX: Punktestand mit ARIA live -->
+                <!-- ? P1 UI/UX: Punktestand mit ARIA live -->
                 <div class="player-score" id="player-score" role="status" aria-live="polite" aria-label="Aktueller Punktestand">
                     Punkte: <span id="score-value">0</span>
                 </div>
             </div>
         </div>
 
-        <!-- ✅ P1 UI/UX: Timer mit ARIA live region -->
+        <!-- ? P1 UI/UX: Timer mit ARIA live region -->
         <div class="timer-section hidden" id="timer-section" role="timer" aria-live="assertive" aria-atomic="true">
-            <div class="timer-icon" aria-hidden="true">⏱️</div>
+            <div class="timer-icon" aria-hidden="true">??</div>
             <div class="timer-display">
                 <span id="timer-value" aria-label="Verbleibende Zeit">30</span>
                 <span class="timer-label">Sekunden</span>
@@ -114,8 +117,8 @@
 
         <!-- Answer Section -->
         <section class="answer-section fadeInUp" id="answer-section" aria-labelledby="answer-title">
-            <h2 class="answer-title" id="answer-title">🤔 Deine Antwort</h2>
-            <!-- ✅ P1 UI/UX: Radio-group Semantik für Single-Selection -->
+            <h2 class="answer-title" id="answer-title">?? Deine Antwort</h2>
+            <!-- ? P1 UI/UX: Radio-group Semantik f�r Single-Selection -->
             <div class="answer-buttons" role="radiogroup" aria-labelledby="answer-title" aria-required="true">
                 <button class="answer-btn yes"
                         id="yes-btn"
@@ -123,7 +126,7 @@
                         role="radio"
                         aria-checked="false"
                         aria-label="Ja, ich habe das schon gemacht">
-                    <div class="answer-emoji" aria-hidden="true">✅</div>
+                    <div class="answer-emoji" aria-hidden="true">?</div>
                     <div>Ja, habe ich</div>
                 </button>
                 <button class="answer-btn no"
@@ -132,7 +135,7 @@
                         role="radio"
                         aria-checked="false"
                         aria-label="Nein, ich habe das noch nie gemacht">
-                    <div class="answer-emoji" aria-hidden="true">❌</div>
+                    <div class="answer-emoji" aria-hidden="true">?</div>
                     <div>Nein, noch nie</div>
                 </button>
             </div>
@@ -140,12 +143,12 @@
 
         <!-- Estimation Section -->
         <section class="estimation-section fadeInUp" id="estimation-section" aria-labelledby="estimation-title">
-            <h2 class="estimation-title" id="estimation-title">🎯 Wie viele antworten mit "Ja"?</h2>
+            <h2 class="estimation-title" id="estimation-title">?? Wie viele antworten mit "Ja"?</h2>
 
             <!-- Current Selection Display -->
             <div class="current-selection" id="current-selection" role="status" aria-live="polite">
                 <div class="selection-display">
-                    <div class="selection-number" id="selected-number" aria-label="Ausgewählte Anzahl">-</div>
+                    <div class="selection-number" id="selected-number" aria-label="Ausgew�hlte Anzahl">-</div>
                     <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
                 </div>
             </div>
@@ -161,8 +164,8 @@
                     type="button"
                     disabled
                     aria-disabled="true"
-                    aria-label="Antwort und Schätzung bestätigen">
-                📤 Antwort bestätigen
+                    aria-label="Antwort und Sch�tzung best�tigen">
+                ?? Antwort best�tigen
             </button>
         </div>
 
@@ -178,14 +181,14 @@
                 <button class="nav-btn primary"
                         id="next-question-btn"
                         type="button"
-                        aria-label="Nächste Frage laden">
-                    ➡️ Nächste Frage
+                        aria-label="N�chste Frage laden">
+                    ?? N�chste Frage
                 </button>
                 <button class="nav-btn secondary"
                         id="end-game-btn"
                         type="button"
                         aria-label="Spiel beenden">
-                    🚪 Beenden
+                    ?? Beenden
                 </button>
             </div>
         </section>
@@ -193,19 +196,19 @@
         <!-- Final Results Section -->
         <section class="final-results-section hidden" id="final-results-section" aria-labelledby="final-title">
             <div class="final-header">
-                <h2 class="final-title" id="final-title">🏆 Spiel beendet!</h2>
+                <h2 class="final-title" id="final-title">?? Spiel beendet!</h2>
                 <p class="final-subtitle">Hier sind die finalen Ergebnisse</p>
             </div>
 
             <div class="leaderboard">
-                <h3 class="leaderboard-title">🏅 Rangliste</h3>
-                <p class="leaderboard-subtitle">Sortiert nach wenigsten Schlücken</p>
+                <h3 class="leaderboard-title">?? Rangliste</h3>
+                <p class="leaderboard-subtitle">Sortiert nach wenigsten Schl�cken</p>
                 <div id="leaderboard-list" role="list" aria-label="Rangliste"></div>
             </div>
 
             <div class="final-navigation">
                 <button class="nav-btn primary large" type="button">
-                    🏠 Spiel beenden
+                    ?? Spiel beenden
                 </button>
             </div>
         </section>
@@ -213,7 +216,7 @@
 </div>
 
 <!-- Player Change Popup -->
-<!-- ✅ P1 UI/UX: Tastatur-navigierbarer Spielerwechsel-Dialog -->
+<!-- ? P1 UI/UX: Tastatur-navigierbarer Spielerwechsel-Dialog -->
 <div class="player-change-popup"
      id="player-change-popup"
      role="dialog"
@@ -226,15 +229,15 @@
         <div class="popup-avatar" id="popup-avatar" aria-hidden="true">M</div>
         <div class="popup-name" id="popup-name">Max</div>
         <p class="popup-message" id="popup-message">ist dran!</p>
-        <!-- ✅ P1 UI/UX: Tastatur-Bestätigung für Spielerwechsel -->
+        <!-- ? P1 UI/UX: Tastatur-Best�tigung f�r Spielerwechsel -->
         <button class="popup-confirm-btn"
                 id="popup-confirm-btn"
                 type="button"
                 aria-label="Bereit zum Spielen">
-            ✅ Bereit!
+            ? Bereit!
         </button>
         <p class="popup-hint" aria-live="polite">
-            <small>Drücke Enter oder klicke "Bereit" um fortzufahren</small>
+            <small>Dr�cke Enter oder klicke "Bereit" um fortzufahren</small>
         </p>
     </div>
 </div>
@@ -249,11 +252,11 @@
      aria-hidden="true"
      tabindex="-1">
     <div class="exit-content">
-        <h2 class="exit-title" id="exit-title">🚪 Spiel verlassen?</h2>
+        <h2 class="exit-title" id="exit-title">?? Spiel verlassen?</h2>
         <p class="exit-message" id="exit-message">
-            Möchtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.
+            M�chtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.
         </p>
-        <div class="exit-buttons" role="group" aria-label="Bestätigungsoptionen">
+        <div class="exit-buttons" role="group" aria-label="Best�tigungsoptionen">
             <button class="exit-btn cancel"
                     id="exit-cancel-btn"
                     type="button"
@@ -269,7 +272,7 @@
         </div>
     </div>
 </div>
-    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>

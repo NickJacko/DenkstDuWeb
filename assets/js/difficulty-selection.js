@@ -1,15 +1,101 @@
-/**
+na/**
  * No-Cap Difficulty Selection (Single Device Mode)
- * Version 5.0 - P0 Security Fixes Applied
+ * Version 6.0 - JavaScript-Kern Hardening
  *
- * ✅ P1 FIX: Validates device mode (should be "single" or "multi")
- * ✅ P0 FIX: MANDATORY server-side FSK validation for categories
- * ✅ P0 FIX: Safe DOM manipulation (no innerHTML)
- * ✅ P1 FIX: Proper routing based on device mode
+ * ✅ P0: Module Pattern - no global variables (XSS prevention)
+ * ✅ P0: Event-Listener cleanup on beforeunload
+ * ✅ P1: Validates device mode (should be "single" or "multi")
+ * ✅ P0: MANDATORY server-side FSK validation for categories
+ * ✅ P0: Safe DOM manipulation (no innerHTML)
+ * ✅ P1: Proper routing based on device mode
  */
 
 (function(window) {
     'use strict';
+
+    // Get Logger from utils
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
+
+    // ===========================
+    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
+    // ===========================
+    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
+    // ===========================
+
+    const DifficultySelectionModule = {
+        state: {
+            gameState: null,
+            alcoholMode: false,
+            questionCountsCache: null,
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('192.168.')
+        },
+
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get alcoholMode() { return this.state.alcoholMode; },
+        set alcoholMode(val) { this.state.alcoholMode = !!val; },
+
+        get questionCountsCache() { return this.state.questionCountsCache; },
+        set questionCountsCache(val) { this.state.questionCountsCache = val; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    Object.seal(DifficultySelectionModule.state);
+
+    // ===========================
+    // 🛠️ PERFORMANCE UTILITIES
+    // ===========================
+
+    function throttle(func, wait = 100) {
+        let timeout = null;
+        let previous = 0;
+        return function executedFunction(...args) {
+            const now = Date.now();
+            const remaining = wait - (now - previous);
+            if (remaining <= 0 || remaining > wait) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                previous = now;
+                func.apply(this, args);
+            } else if (!timeout) {
+                timeout = setTimeout(() => {
+                    previous = Date.now();
+                    timeout = null;
+                    func.apply(this, args);
+                }, remaining);
+            }
+        };
+    }
+
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function addTrackedEventListener(element, event, handler, options = {}) {
+        if (!element) return;
+        element.addEventListener(event, handler, options);
+        DifficultySelectionModule.state.eventListenerCleanup.push({element, event, handler, options});
+    }
 
     // ===========================
     // DIFFICULTY DATA
@@ -35,24 +121,14 @@
     };
 
     // ✅ P1 STABILITY: Question counts cache
-    let questionCountsCache = null;
-
-    // ===========================
-    // GLOBAL STATE
-    // ===========================
-    let gameState = null;
-    let alcoholMode = false;
-
-    const isDevelopment = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.includes('192.168.');
+    // (moved to DifficultySelectionModule.state)
 
     // ===========================
     // INITIALIZATION
     // ===========================
 
     function initialize() {
-        if (isDevelopment) {
+        if (DifficultySelectionModule.isDevelopment) {
             console.log('⚡ Initializing difficulty selection...');
         }
 
@@ -66,15 +142,15 @@
         }
 
         // Check dependencies
-        if (typeof GameState === 'undefined') {
-            console.error('❌ GameState not found');
+        if (typeof DifficultySelectionModule.gameState === 'undefined') {
+            console.error('❌ DifficultySelectionModule.gameState not found');
             showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
             return;
         }
 
         // Wait for utils if available
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            window.NocapUtils.waitForDependencies(['GameState']).then(() => {
+            window.NocapUtils.waitForDependencies(['DifficultySelectionModule.gameState']).then(() => {
                 initializeGame();
             }).catch(() => {
                 initializeGame();
@@ -89,7 +165,7 @@
      */
     async function initializeGame() {
         try {
-            gameState = new GameState();
+            DifficultySelectionModule.gameState = new DifficultySelectionModule.gameState();
 
             // ✅ P1 FIX: Validate device mode FIRST
             if (!validateDeviceMode()) {
@@ -108,7 +184,7 @@
             // ✅ P1 STABILITY: Load question counts with fallback
             await loadQuestionCounts();
 
-            // Load difficulty from GameState
+            // Load difficulty from DifficultySelectionModule.gameState
             initializeSelection();
 
             // Setup event listeners
@@ -116,9 +192,9 @@
 
             hideLoading();
 
-            if (isDevelopment) {
+            if (DifficultySelectionModule.isDevelopment) {
                 console.log('✅ Difficulty selection initialized');
-                console.log('Game State:', gameState.getDebugInfo());
+                console.log('Game State:', DifficultySelectionModule.gameState.getDebugInfo());
             }
 
         } catch (error) {
@@ -135,7 +211,7 @@
                     window.location.reload();
                 } else {
                     // Fallback: Go back to category selection
-                    const redirectUrl = gameState?.deviceMode === 'multi'
+                    const redirectUrl = DifficultySelectionModule.gameState?.deviceMode === 'multi'
                         ? 'multiplayer-category-selection.html'
                         : 'category-selection.html';
                     window.location.href = redirectUrl;
@@ -182,7 +258,7 @@
      * ✅ P1 FIX: Validate device mode
      */
     function validateDeviceMode() {
-        const deviceMode = gameState.deviceMode;
+        const deviceMode = DifficultySelectionModule.gameState.deviceMode;
 
         // Check if device mode is set
         if (!deviceMode) {
@@ -201,7 +277,7 @@
             return false;
         }
 
-        if (isDevelopment) {
+        if (DifficultySelectionModule.isDevelopment) {
             console.log(`✅ Device mode validated: ${deviceMode}`);
         }
 
@@ -213,18 +289,18 @@
      * @returns {Promise<boolean>} True if valid
      */
     async function validateGameState() {
-        if (!gameState.checkValidity()) {
+        if (!DifficultySelectionModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
-        if (!gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+        if (!DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
             console.warn('⚠️ No categories selected');
             showNotification('Keine Kategorien ausgewählt!', 'warning');
 
             // Redirect based on device mode
-            const redirectUrl = gameState.deviceMode === 'multi'
+            const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
                 ? 'multiplayer-category-selection.html'
                 : 'category-selection.html';
 
@@ -234,19 +310,19 @@
 
         // ✅ P0 FIX: MANDATORY server-side FSK validation for each category
         try {
-            for (const category of gameState.selectedCategories) {
+            for (const category of DifficultySelectionModule.gameState.selectedCategories) {
                 // Skip FSK0 - always allowed
                 if (category === 'fsk0') continue;
 
                 // ✅ P0 FIX: Server-side validation via Cloud Function
-                const hasAccess = await gameState.canAccessFSK(category);
+                const hasAccess = await DifficultySelectionModule.gameState.canAccessFSK(category);
 
                 if (!hasAccess) {
                     console.error(`❌ Server denied access to category: ${category}`);
                     showNotification(`Keine Berechtigung für ${category.toUpperCase()}!`, 'error');
 
                     // Redirect to category selection to choose valid categories
-                    const redirectUrl = gameState.deviceMode === 'multi'
+                    const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
                         ? 'multiplayer-category-selection.html'
                         : 'category-selection.html';
 
@@ -255,7 +331,7 @@
                 }
             }
 
-            if (isDevelopment) {
+            if (DifficultySelectionModule.isDevelopment) {
                 console.log('✅ All categories validated (server-side)');
             }
 
@@ -263,7 +339,7 @@
             console.error('❌ Server-side FSK validation failed:', error);
             showNotification('FSK-Validierung fehlgeschlagen. Bitte erneut versuchen.', 'error');
 
-            const redirectUrl = gameState.deviceMode === 'multi'
+            const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
                 ? 'multiplayer-category-selection.html'
                 : 'category-selection.html';
 
@@ -290,11 +366,11 @@
 
                 if (firebaseInstances && firebaseInstances.database) {
                     // Try loading from Firebase
-                    questionCountsCache = await loadCountsFromFirebase(firebaseInstances.database);
+                    DifficultySelectionModule.questionCountsCache = await loadCountsFromFirebase(firebaseInstances.database);
 
-                    if (questionCountsCache) {
-                        if (isDevelopment) {
-                            console.log('✅ Question counts loaded from Firebase:', questionCountsCache);
+                    if (DifficultySelectionModule.questionCountsCache) {
+                        if (DifficultySelectionModule.isDevelopment) {
+                            console.log('✅ Question counts loaded from Firebase:', DifficultySelectionModule.questionCountsCache);
                         }
                         updateDifficultyCardsWithCounts();
                         return;
@@ -318,7 +394,7 @@
     async function loadCountsFromFirebase(database) {
         try {
             const counts = {};
-            const categories = gameState.selectedCategories || [];
+            const categories = DifficultySelectionModule.gameState.selectedCategories || [];
 
             for (const category of categories) {
                 const snapshot = await database.ref(`questions/${category}`).once('value');
@@ -347,17 +423,17 @@
 
             if (response.ok) {
                 const data = await response.json();
-                questionCountsCache = data.counts || FALLBACK_DIFFICULTY_LIMITS;
+                DifficultySelectionModule.questionCountsCache = data.counts || FALLBACK_DIFFICULTY_LIMITS;
 
-                if (isDevelopment) {
-                    console.log('✅ Question counts loaded from local file:', questionCountsCache);
+                if (DifficultySelectionModule.isDevelopment) {
+                    console.log('✅ Question counts loaded from local file:', DifficultySelectionModule.questionCountsCache);
                 }
             } else {
                 throw new Error('Local file not found');
             }
         } catch (error) {
             console.warn('⚠️ Could not load local file, using hardcoded fallback');
-            questionCountsCache = FALLBACK_DIFFICULTY_LIMITS;
+            DifficultySelectionModule.questionCountsCache = FALLBACK_DIFFICULTY_LIMITS;
         }
 
         updateDifficultyCardsWithCounts();
@@ -367,9 +443,9 @@
      * ✅ P1 UI/UX: Update difficulty cards with question counts
      */
     function updateDifficultyCardsWithCounts() {
-        if (!questionCountsCache) return;
+        if (!DifficultySelectionModule.questionCountsCache) return;
 
-        const categories = gameState.selectedCategories || [];
+        const categories = DifficultySelectionModule.gameState.selectedCategories || [];
 
         ['easy', 'medium', 'hard'].forEach(difficulty => {
             const card = document.querySelector(`[data-difficulty="${difficulty}"]`);
@@ -380,7 +456,7 @@
             let hasInsufficientQuestions = false;
 
             categories.forEach(category => {
-                const categoryLimits = questionCountsCache[category];
+                const categoryLimits = DifficultySelectionModule.questionCountsCache[category];
                 if (categoryLimits) {
                     const count = typeof categoryLimits === 'object'
                         ? categoryLimits[difficulty]
@@ -419,17 +495,17 @@
 
     function checkAlcoholMode() {
         try {
-            alcoholMode = gameState.alcoholMode === true;
+            DifficultySelectionModule.alcoholMode = DifficultySelectionModule.gameState.DifficultySelectionModule.alcoholMode === true;
 
             // ✅ AUDIT FIX: Serverseitige FSK18-Validierung für Alkohol-Mode
-            if (alcoholMode) {
+            if (DifficultySelectionModule.alcoholMode) {
                 // Prüfe ob User 18+ ist (aus Custom Claims oder LocalStorage)
                 const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
 
                 if (ageLevel < 18) {
                     console.warn('⚠️ Alcohol mode disabled: User under 18');
-                    alcoholMode = false;
-                    gameState.setAlcoholMode(false);
+                    DifficultySelectionModule.alcoholMode = false;
+                    DifficultySelectionModule.gameState.setAlcoholMode(false);
 
                     showNotification(
                         'Alkohol-Modus nur für 18+',
@@ -439,14 +515,14 @@
                 }
             }
 
-            if (isDevelopment) {
-                console.log(`🍺 Alcohol mode: ${alcoholMode}`);
+            if (DifficultySelectionModule.isDevelopment) {
+                console.log(`🍺 Alcohol mode: ${DifficultySelectionModule.alcoholMode}`);
             }
 
             updateUIForAlcoholMode();
         } catch (error) {
             console.error('❌ Error checking alcohol mode:', error);
-            alcoholMode = false;
+            DifficultySelectionModule.alcoholMode = false;
             updateUIForAlcoholMode();
         }
     }
@@ -457,7 +533,7 @@
     function updateUIForAlcoholMode() {
         const descriptionSubtitle = document.getElementById('description-subtitle');
 
-        if (alcoholMode) {
+        if (DifficultySelectionModule.alcoholMode) {
             if (descriptionSubtitle) {
                 descriptionSubtitle.textContent = 'Bestimmt die Anzahl der Schlücke bei falschen Schätzungen';
             }
@@ -551,11 +627,11 @@
     // ===========================
 
     /**
-     * Initialize selection from GameState
+     * Initialize selection from DifficultySelectionModule.gameState
      */
     function initializeSelection() {
-        if (gameState.difficulty) {
-            const card = document.querySelector(`[data-difficulty="${gameState.difficulty}"]`);
+        if (DifficultySelectionModule.gameState.difficulty) {
+            const card = document.querySelector(`[data-difficulty="${DifficultySelectionModule.gameState.difficulty}"]`);
             if (card) {
                 card.classList.add('selected');
                 card.setAttribute('aria-pressed', 'true');
@@ -587,14 +663,14 @@
         element.classList.add('selected');
         element.setAttribute('aria-pressed', 'true');
 
-        // Save directly to GameState
-        gameState.setDifficulty(difficulty);
+        // Save directly to DifficultySelectionModule.gameState
+        DifficultySelectionModule.gameState.setDifficulty(difficulty);
 
         updateContinueButton();
 
         showNotification(`${difficultyNames[difficulty]} Modus gewählt!`, 'success', 2000);
 
-        if (isDevelopment) {
+        if (DifficultySelectionModule.isDevelopment) {
             console.log(`Selected difficulty: ${difficulty}`);
         }
     }
@@ -603,7 +679,7 @@
         const continueBtn = document.getElementById('continue-btn');
         if (!continueBtn) return;
 
-        const difficulty = gameState.difficulty;
+        const difficulty = DifficultySelectionModule.gameState.difficulty;
 
         if (difficulty) {
             continueBtn.disabled = false;
@@ -624,26 +700,26 @@
         // Back button
         const backBtn = document.getElementById('back-btn');
         if (backBtn) {
-            backBtn.addEventListener('click', goBack);
+            addTrackedEventListener(backBtn, 'click', goBack);
         }
 
         // Continue button
         const continueBtn = document.getElementById('continue-btn');
         if (continueBtn) {
-            continueBtn.addEventListener('click', proceedToNextStep);
+            addTrackedEventListener(continueBtn, 'click', proceedToNextStep);
         }
 
         // Difficulty cards with keyboard support
         const difficultyCards = document.querySelectorAll('.difficulty-card');
         difficultyCards.forEach((card, index) => {
-            card.addEventListener('click', function() {
+            addTrackedEventListener(card, 'click', function() {
                 if (!this.classList.contains('disabled')) {
                     selectDifficulty(this);
                 }
             });
 
             // ✅ P1 UI/UX: Enhanced keyboard support
-            card.addEventListener('keydown', function(e) {
+            addTrackedEventListener(card, 'keydown', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     if (!this.classList.contains('disabled')) {
@@ -660,8 +736,8 @@
         });
 
         // Global keyboard navigation
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && gameState.difficulty && !e.target.closest('.difficulty-card')) {
+        addTrackedEventListener(document, 'keydown', function(e) {
+            if (e.key === 'Enter' && DifficultySelectionModule.gameState.difficulty && !e.target.closest('.difficulty-card')) {
                 proceedToNextStep();
             }
         });
@@ -709,38 +785,38 @@
      * ✅ AUDIT FIX: Route based on device mode & save to database
      */
     async function proceedToNextStep() {
-        const difficulty = gameState.difficulty;
+        const difficulty = DifficultySelectionModule.gameState.difficulty;
 
         if (!difficulty) {
             showNotification('Bitte wähle einen Schwierigkeitsgrad aus', 'warning');
             return;
         }
 
-        if (isDevelopment) {
+        if (DifficultySelectionModule.isDevelopment) {
             console.log(`🚀 Proceeding with difficulty: ${difficulty}`);
         }
 
         showLoading();
 
         // ✅ AUDIT FIX: Save difficulty to database for multiplayer sync
-        const deviceMode = gameState.deviceMode;
+        const deviceMode = DifficultySelectionModule.gameState.deviceMode;
 
         if (deviceMode === 'multi') {
             try {
                 // Prüfe ob Firebase verfügbar
                 if (typeof firebase !== 'undefined' && firebase.database) {
-                    const gameId = gameState.gameId;
+                    const gameId = DifficultySelectionModule.gameState.gameId;
 
                     if (gameId) {
                         await firebase.database()
                             .ref(`games/${gameId}/settings`)
                             .update({
                                 difficulty: difficulty,
-                                alcoholMode: alcoholMode,
+                                alcoholMode: DifficultySelectionModule.alcoholMode,
                                 updatedAt: firebase.database.ServerValue.TIMESTAMP
                             });
 
-                        if (isDevelopment) {
+                        if (DifficultySelectionModule.isDevelopment) {
                             console.log('✅ Difficulty saved to database');
                         }
                     }
@@ -778,10 +854,10 @@
         try {
             const difficultyState = {
                 difficulty: difficulty,
-                alcoholMode: alcoholMode,
+                alcoholMode: DifficultySelectionModule.alcoholMode,
                 timestamp: Date.now(),
                 deviceMode: deviceMode,
-                categories: gameState.selectedCategories
+                categories: DifficultySelectionModule.gameState.selectedCategories
             };
 
             if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
@@ -790,7 +866,7 @@
                 localStorage.setItem('nocap_difficulty_selection', JSON.stringify(difficultyState));
             }
 
-            if (isDevelopment) {
+            if (DifficultySelectionModule.isDevelopment) {
                 console.log('✅ Difficulty saved to localStorage (offline fallback)', difficultyState);
             }
         } catch (storageError) {
@@ -818,7 +894,7 @@
      */
     function goBack() {
         // ✅ P1 UI/UX: Validate we have valid state to go back to
-        if (!gameState || !gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+        if (!DifficultySelectionModule.gameState || !DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
             console.warn('⚠️ No categories selected, redirecting to home');
             window.location.href = 'index.html';
             return;
@@ -828,7 +904,7 @@
 
         setTimeout(() => {
             // ✅ P1 FIX: Route back based on device mode
-            const deviceMode = gameState.deviceMode;
+            const deviceMode = DifficultySelectionModule.gameState.deviceMode;
 
             if (deviceMode === 'multi') {
                 window.location.href = 'multiplayer-category-selection.html';
@@ -847,8 +923,8 @@
      * Called when returning from other pages or on page visibility change
      */
     function validateDifficultySelection() {
-        // Check if selected categories still exist in GameState
-        if (!gameState || !gameState.selectedCategories || gameState.selectedCategories.length === 0) {
+        // Check if selected categories still exist in DifficultySelectionModule.gameState
+        if (!DifficultySelectionModule.gameState || !DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
             showNotification(
                 '⚠️ Keine Kategorien ausgewählt. Bitte wähle zuerst Kategorien aus.',
                 'warning',
@@ -856,7 +932,7 @@
             );
 
             setTimeout(() => {
-                const redirectUrl = gameState?.deviceMode === 'multi'
+                const redirectUrl = DifficultySelectionModule.gameState?.deviceMode === 'multi'
                     ? 'multiplayer-category-selection.html'
                     : 'category-selection.html';
                 window.location.href = redirectUrl;
@@ -866,8 +942,8 @@
         }
 
         // ✅ P1 UI/UX: Check for premium difficulty with non-premium categories
-        if (gameState.difficulty === 'premium') {
-            const hasPremiumCategory = gameState.selectedCategories.includes('special');
+        if (DifficultySelectionModule.gameState.difficulty === 'premium') {
+            const hasPremiumCategory = DifficultySelectionModule.gameState.selectedCategories.includes('special');
 
             if (!hasPremiumCategory) {
                 showNotification(
@@ -877,7 +953,7 @@
                 );
 
                 // Reset to default difficulty
-                gameState.setDifficulty('medium');
+                DifficultySelectionModule.gameState.setDifficulty('medium');
                 selectDifficulty(document.querySelector('[data-difficulty="medium"]'));
 
                 return false;
@@ -891,10 +967,10 @@
      * ✅ P1 UI/UX: Listen for page visibility changes
      * Re-validate when user returns to this page
      */
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && gameState) {
+    addTrackedEventListener(document, 'visibilitychange', () => {
+        if (!document.hidden && DifficultySelectionModule.gameState) {
             // Page became visible again
-            if (isDevelopment) {
+            if (DifficultySelectionModule.isDevelopment) {
                 console.log('🔄 Page visible again, re-validating...');
             }
 
@@ -923,13 +999,26 @@
     // ===========================
     // CLEANUP
     // ===========================
+    // CLEANUP
+    // ===========================
 
     function cleanup() {
+        // Remove tracked event listeners
+        DifficultySelectionModule.state.eventListenerCleanup.forEach(({element, event, handler, options}) => {
+            try {
+                element.removeEventListener(event, handler, options);
+            } catch (error) {
+                // Element may have been removed from DOM
+            }
+        });
+        DifficultySelectionModule.state.eventListenerCleanup = [];
+
+        // Cleanup NocapUtils event listeners
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();
         }
 
-        if (isDevelopment) {
+        if (DifficultySelectionModule.isDevelopment) {
             console.log('✅ Difficulty selection cleanup completed');
         }
     }

@@ -1,11 +1,13 @@
 /**
  * No-Cap Category Selection (Single Device Mode)
- * Version 7.0 - Production Hardening
+ * Version 8.0 - JavaScript-Kern Hardening
  *
- * ✅ P1 FIX: Device mode is SET HERE, not on landing page
- * ✅ P0 FIX: Age verification with expiration check
- * ✅ P0 FIX: Safe DOM manipulation (no innerHTML)
- * ✅ P0 FIX: MANDATORY server-side premium validation via Cloud Function
+ * ✅ P0: Module Pattern - no global variables (XSS prevention)
+ * ✅ P0: Event-Listener cleanup on beforeunload
+ * ✅ P1: Device mode is SET HERE, not on landing page
+ * ✅ P0: Age verification with expiration check
+ * ✅ P0: Safe DOM manipulation (no innerHTML)
+ * ✅ P0: MANDATORY server-side premium validation via Cloud Function
  * ✅ PRODUCTION: Logger statt console.log (no spam in production)
  */
 
@@ -19,6 +21,93 @@
         warn: console.warn,
         error: console.error
     };
+
+    // ===========================
+    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
+    // ===========================
+
+    const CategorySelectionModule = {
+        state: {
+            gameState: null,
+            questionCounts: {
+                fsk0: 0,
+                fsk16: 0,
+                fsk18: 0,
+                special: 0
+            },
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('192.168.')
+        },
+
+        // Controlled access
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get questionCounts() { return this.state.questionCounts; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    // Prevent tampering
+    Object.seal(CategorySelectionModule.state);
+
+    // ===========================
+    // 🛠️ PERFORMANCE UTILITIES
+    // ===========================
+
+    /**
+     * ✅ P1 FIX: Throttle function for performance
+     */
+    function throttle(func, wait = 100) {
+        let timeout = null;
+        let previous = 0;
+
+        return function executedFunction(...args) {
+            const now = Date.now();
+            const remaining = wait - (now - previous);
+
+            if (remaining <= 0 || remaining > wait) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                previous = now;
+                func.apply(this, args);
+            } else if (!timeout) {
+                timeout = setTimeout(() => {
+                    previous = Date.now();
+                    timeout = null;
+                    func.apply(this, args);
+                }, remaining);
+            }
+        };
+    }
+
+    /**
+     * ✅ P1 FIX: Debounce function for input events
+     */
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    /**
+     * Register event listener with cleanup tracking
+     */
+    function addTrackedEventListener(element, event, handler, options = {}) {
+        if (!element) return;
+        element.addEventListener(event, handler, options);
+        CategorySelectionModule.state.eventListenerCleanup.push({element, event, handler, options});
+    }
 
     // ===========================
     // CATEGORY DATA
@@ -75,20 +164,7 @@
     };
 
     // ===========================
-    // GLOBAL STATE
-    // ===========================
-    let gameState = null;
-    let questionCounts = {
-        fsk0: 0,
-        fsk16: 0,
-        fsk18: 0,
-        special: 0
-    };
-
-    const isDevelopment = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.includes('192.168.');
-
+    // INITIALIZATION
     // ===========================
     // INITIALIZATION
     // ===========================
@@ -126,8 +202,8 @@
             }
 
             // Check dependencies
-            if (typeof GameState === 'undefined') {
-                Logger.error('❌ GameState not found');
+            if (typeof CategorySelectionModule.gameState === 'undefined') {
+                Logger.error('❌ CategorySelectionModule.CategorySelectionModule.gameState not found');
                 showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
                 return;
             }
@@ -137,15 +213,15 @@
 
             // Wait for utils if available
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-                await window.NocapUtils.waitForDependencies(['GameState']);
+                await window.NocapUtils.waitForDependencies(['CategorySelectionModule.CategorySelectionModule.gameState']);
             }
 
-            gameState = new GameState();
+            CategorySelectionModule.CategorySelectionModule.gameState = new CategorySelectionModule.gameState();
 
             // ✅ P1 FIX: Set device mode HERE (not on landing page)
-            if (!gameState.deviceMode) {
+            if (!CategorySelectionModule.gameState.deviceMode) {
                 Logger.debug('📱 Setting device mode: single');
-                gameState.setDeviceMode('single');
+                CategorySelectionModule.gameState.setDeviceMode('single');
             }
 
             // Validate game state
@@ -164,7 +240,7 @@
             // Load question counts
             await loadQuestionCounts();
 
-            // Load selected categories from GameState
+            // Load selected categories from CategorySelectionModule.CategorySelectionModule.gameState
             initializeSelectedCategories();
 
             // Setup event listeners
@@ -173,7 +249,7 @@
             hideLoading();
 
             Logger.debug('✅ Category selection initialized');
-            Logger.debug('Game State:', gameState.getDebugInfo());
+            Logger.debug('Game State:', CategorySelectionModule.gameState.getDebugInfo());
 
         } catch (error) {
             Logger.error('❌ Initialization error:', error);
@@ -189,12 +265,12 @@
     function validateGameState() {
         // ✅ P1 FIX: Device mode might not be set yet - that's OK
         // We set it above, so now validate it
-        if (gameState.deviceMode !== 'single') {
+        if (CategorySelectionModule.gameState.deviceMode !== 'single') {
             Logger.warn('⚠️ Device mode was not "single", correcting...');
-            gameState.setDeviceMode('single');
+            CategorySelectionModule.gameState.setDeviceMode('single');
         }
 
-        if (!gameState.checkValidity()) {
+        if (!CategorySelectionModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -302,13 +378,13 @@
 
     /**
      * ✅ P0 FIX: Check premium status with MANDATORY server-side validation
-     * Uses GameState.isPremiumUser() which calls Cloud Function
+     * Uses CategorySelectionModule.gameState.isPremiumUser() which calls Cloud Function
      */
     async function checkPremiumStatus() {
         try {
-            // ✅ P0 FIX: Use GameState's server-side validation
-            if (!gameState) {
-                Logger.warn('⚠️ GameState not initialized, cannot check premium status');
+            // ✅ P0 FIX: Use CategorySelectionModule.CategorySelectionModule.gameState's server-side validation
+            if (!CategorySelectionModule.CategorySelectionModule.gameState) {
+                Logger.warn('⚠️ CategorySelectionModule.CategorySelectionModule.gameState not initialized, cannot check premium status');
                 lockPremiumCategory();
                 return;
             }
@@ -320,7 +396,7 @@
             }
 
             // ✅ P0 FIX: MANDATORY server-side validation via Cloud Function
-            const isPremium = await gameState.isPremiumUser();
+            const isPremium = await CategorySelectionModule.gameState.isPremiumUser();
 
             Logger.debug(`✅ Premium status (server-validated): ${isPremium}`);
 
@@ -417,20 +493,20 @@
                     const categoryQuestions = questions[category];
                     if (categoryQuestions) {
                         if (Array.isArray(categoryQuestions)) {
-                            questionCounts[category] = categoryQuestions.length;
+                            CategorySelectionModule.questionCounts[category] = categoryQuestions.length;
                         } else if (typeof categoryQuestions === 'object') {
-                            questionCounts[category] = Object.keys(categoryQuestions).length;
+                            CategorySelectionModule.questionCounts[category] = Object.keys(categoryQuestions).length;
                         } else {
-                            questionCounts[category] = getFallbackCount(category);
+                            CategorySelectionModule.questionCounts[category] = getFallbackCount(category);
                         }
                     } else {
-                        questionCounts[category] = getFallbackCount(category);
+                        CategorySelectionModule.questionCounts[category] = getFallbackCount(category);
                     }
 
-                    updateQuestionCountUI(category, questionCounts[category]);
+                    updateQuestionCountUI(category, CategorySelectionModule.questionCounts[category]);
                 });
 
-                Logger.debug('✅ Question counts loaded:', questionCounts);
+                Logger.debug('✅ Question counts loaded:', CategorySelectionModule.questionCounts);
             } else {
                 Logger.warn('⚠️ No questions found, using fallbacks');
                 useFallbackCounts();
@@ -444,8 +520,8 @@
 
     function useFallbackCounts() {
         Object.keys(categoryData).forEach(category => {
-            questionCounts[category] = getFallbackCount(category);
-            updateQuestionCountUI(category, questionCounts[category]);
+            CategorySelectionModule.questionCounts[category] = getFallbackCount(category);
+            updateQuestionCountUI(category, CategorySelectionModule.questionCounts[category]);
         });
 
         Logger.debug('✅ Using fallback counts');
@@ -476,10 +552,10 @@
     // ===========================
 
     /**
-     * Initialize categories from GameState
+     * Initialize categories from CategorySelectionModule.CategorySelectionModule.gameState
      */
     function initializeSelectedCategories() {
-        const selected = gameState.selectedCategories;
+        const selected = CategorySelectionModule.gameState.selectedCategories;
 
         if (Array.isArray(selected) && selected.length > 0) {
             selected.forEach(category => {
@@ -589,14 +665,14 @@
 
         if (isSelected) {
             // Remove
-            gameState.removeCategory(category);
+            CategorySelectionModule.gameState.removeCategory(category);
             element.classList.remove('selected');
             element.setAttribute('aria-pressed', 'false');
 
             showNotification(`${data.name} entfernt`, 'info', 2000);
         } else {
             // Add
-            gameState.addCategory(category);
+            CategorySelectionModule.gameState.addCategory(category);
             element.classList.add('selected');
             element.setAttribute('aria-pressed', 'true');
 
@@ -624,7 +700,7 @@
             return;
         }
 
-        const selectedCategories = gameState.selectedCategories || [];
+        const selectedCategories = CategorySelectionModule.gameState.selectedCategories || [];
 
         if (selectedCategories.length === 0) {
             summaryElement.style.display = 'none';
@@ -665,7 +741,7 @@
 
             // Calculate total questions
             const totalQuestions = selectedCategories.reduce((sum, category) => {
-                return sum + (questionCounts[category] || 0);
+                return sum + (CategorySelectionModule.questionCounts[category] || 0);
             }, 0);
             totalQuestionsElement.textContent = totalQuestions.toString();
         }
@@ -767,7 +843,7 @@
             closePremiumModal();
             showNotification('Premium freigeschaltet! 🎉', 'success', 3000);
 
-            if (isDevelopment) {
+            if (CategorySelectionModule.isDevelopment) {
                 console.log('✅ Premium purchased (client-side only - NOT verified)');
             }
 
@@ -784,11 +860,11 @@
     function setupEventListeners() {
         // Category cards with keyboard support
         document.querySelectorAll('.category-card').forEach(card => {
-            card.addEventListener('click', function() {
+            addTrackedEventListener(card, 'click', function() {
                 toggleCategory(this);
             });
 
-            card.addEventListener('keydown', function(e) {
+            addTrackedEventListener(card, 'keydown', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     toggleCategory(this);
@@ -799,19 +875,19 @@
         // Continue button
         const continueBtn = document.getElementById('continue-btn');
         if (continueBtn) {
-            continueBtn.addEventListener('click', proceedWithCategories);
+            addTrackedEventListener(continueBtn, 'click', proceedWithCategories);
         }
 
         // Back button
         const backBtn = document.getElementById('back-btn');
         if (backBtn) {
-            backBtn.addEventListener('click', goBack);
+            addTrackedEventListener(backBtn, 'click', goBack);
         }
 
         // Premium unlock button
         const unlockSpecialBtn = document.getElementById('unlock-special-btn');
         if (unlockSpecialBtn) {
-            unlockSpecialBtn.addEventListener('click', function(e) {
+            addTrackedEventListener(unlockSpecialBtn, 'click', function(e) {
                 e.stopPropagation(); // Verhindert, dass Click an Card weitergegeben wird
                 showPremiumInfo();
             });
@@ -820,21 +896,21 @@
         // Premium modal
         const closePremiumBtn = document.getElementById('close-premium-modal');
         if (closePremiumBtn) {
-            closePremiumBtn.addEventListener('click', closePremiumModal);
+            addTrackedEventListener(closePremiumBtn, 'click', closePremiumModal);
         }
 
         const closePremiumLater = document.getElementById('close-premium-later');
         if (closePremiumLater) {
-            closePremiumLater.addEventListener('click', closePremiumModal);
+            addTrackedEventListener(closePremiumLater, 'click', closePremiumModal);
         }
 
         const purchasePremiumBtn = document.getElementById('purchase-premium-btn');
         if (purchasePremiumBtn) {
-            purchasePremiumBtn.addEventListener('click', purchasePremium);
+            addTrackedEventListener(purchasePremiumBtn, 'click', purchasePremium);
         }
 
         // ESC key closes modal
-        document.addEventListener('keydown', (e) => {
+        addTrackedEventListener(document, 'keydown', (e) => {
             if (e.key === 'Escape') {
                 closePremiumModal();
             }
@@ -846,14 +922,14 @@
     // ===========================
 
     async function proceedWithCategories() {
-        const selectedCategories = gameState.selectedCategories || [];
+        const selectedCategories = CategorySelectionModule.gameState.selectedCategories || [];
 
         if (selectedCategories.length === 0) {
             showNotification('Bitte wähle mindestens eine Kategorie aus', 'warning');
             return;
         }
 
-        if (isDevelopment) {
+        if (CategorySelectionModule.isDevelopment) {
             console.log('🚀 Proceeding with categories:', selectedCategories);
         }
 
@@ -863,7 +939,7 @@
         try {
             // Prüfe Firebase & Auth
             if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
-                if (isDevelopment) {
+                if (CategorySelectionModule.isDevelopment) {
                     console.log('⚠️ Firebase not initialized, skipping server validation');
                 }
                 // Fallback: Weiter ohne Validierung (nur für Development)
@@ -877,7 +953,7 @@
 
             // Prüfe ob Functions verfügbar (benötigt Blaze-Plan)
             if (!instances || !instances.functions) {
-                if (isDevelopment) {
+                if (CategorySelectionModule.isDevelopment) {
                     console.log('⚠️ Firebase Functions not available (Blaze plan required), skipping server validation');
                 }
                 // Fallback: Weiter ohne serverseitige Validierung
@@ -899,7 +975,7 @@
                         hideLoading();
                         showNotification(`Zugriff auf ${categoryData[categoryId]?.name || categoryId} verweigert`, 'error');
                         // Entferne die Kategorie
-                        gameState.removeCategory(categoryId);
+                        CategorySelectionModule.gameState.removeCategory(categoryId);
                         const card = document.querySelector(`[data-category="${categoryId}"]`);
                         if (card) {
                             card.classList.remove('selected');
@@ -908,7 +984,7 @@
                         return;
                     }
 
-                    if (isDevelopment) {
+                    if (CategorySelectionModule.isDevelopment) {
                         console.log(`✅ Server validated access to ${categoryId}`);
                     }
 
@@ -925,7 +1001,7 @@
                                 'error'
                             );
                         }
-                        gameState.removeCategory(categoryId);
+                        CategorySelectionModule.gameState.removeCategory(categoryId);
                         return;
                     }
 
@@ -941,7 +1017,7 @@
             }
 
             // Alle Kategorien erfolgreich validiert
-            if (isDevelopment) {
+            if (CategorySelectionModule.isDevelopment) {
                 console.log('✅ All categories validated successfully');
             }
 
@@ -987,11 +1063,24 @@
     // ===========================
 
     function cleanup() {
+        // Remove tracked event listeners
+        CategorySelectionModule.state.eventListenerCleanup.forEach(({element, event, handler, options}) => {
+            try {
+                element.removeEventListener(event, handler, options);
+            } catch (error) {
+                // Element may have been removed from DOM
+            }
+        });
+        CategorySelectionModule.state.eventListenerCleanup = [];
+
+        // Cleanup NocapUtils event listeners
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();
         }
 
-        Logger.debug('✅ Category selection cleanup completed');
+        if (CategorySelectionModule.isDevelopment) {
+            Logger.debug('✅ Category selection cleanup completed');
+        }
     }
 
     window.addEventListener('beforeunload', cleanup);

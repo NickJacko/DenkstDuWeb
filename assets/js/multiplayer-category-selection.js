@@ -1,17 +1,107 @@
 /**
  * No-Cap Multiplayer Category Selection
- * Version 4.0 - P0 Security Fixes Applied
+ * Version 5.0 - JavaScript-Kern Hardening
  *
  * CRITICAL: This page is the "Source of Truth" for Multiplayer Host Mode
  * - Sets deviceMode = 'multi'
- * - Sets isHost = true, isGuest = false
+ * - Sets MultiplayerCategoryModule.isHost = true, isGuest = false
  * - Creates/manages Firebase game
  *
- * ✅ P0 FIX: MANDATORY server-side premium validation
+ * ✅ P0: Module Pattern - no global variables (XSS prevention)
+ * ✅ P0: Event-Listener cleanup on beforeunload
+ * ✅ P0: MANDATORY server-side premium validation
  */
 
 (function(window) {
     'use strict';
+
+    // Get Logger from utils
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
+
+    // ===========================
+    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
+    // ===========================
+
+    const MultiplayerCategoryModule = {
+        state: {
+            gameState: null,
+            firebaseService: null,
+            questionCounts: { fsk0: 200, fsk16: 300, fsk18: 250, special: 150 },
+            playerNameConfirmed: false,
+            isHost: true,
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1'
+        },
+
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get firebaseService() { return this.state.firebaseService; },
+        set firebaseService(val) { this.state.firebaseService = val; },
+
+        get questionCounts() { return this.state.questionCounts; },
+
+        get playerNameConfirmed() { return this.state.playerNameConfirmed; },
+        set playerNameConfirmed(val) { this.state.playerNameConfirmed = !!val; },
+
+        get isHost() { return this.state.isHost; },
+        set isHost(val) { this.state.isHost = !!val; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    Object.seal(MultiplayerCategoryModule.state);
+
+    // ===========================
+    // 🛠️ PERFORMANCE UTILITIES
+    // ===========================
+
+    function throttle(func, wait = 100) {
+        let timeout = null;
+        let previous = 0;
+        return function executedFunction(...args) {
+            const now = Date.now();
+            const remaining = wait - (now - previous);
+            if (remaining <= 0 || remaining > wait) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                previous = now;
+                func.apply(this, args);
+            } else if (!timeout) {
+                timeout = setTimeout(() => {
+                    previous = Date.now();
+                    timeout = null;
+                    func.apply(this, args);
+                }, remaining);
+            }
+        };
+    }
+
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function addEventListener(element, event, handler, options = {}) {
+        if (!element) return;
+        element.addTrackedEventListener(event, handler, options);
+        MultiplayerCategoryModule.state.eventListenerCleanup.push({element, event, handler, options});
+    }
 
     // ===========================
     // CONSTANTS
@@ -55,24 +145,14 @@
         }
     };
 
-    // ===========================
-    // GLOBAL STATE
-    // ===========================
-    let gameState = null;
-    let firebaseService = null;
-    let questionCounts = { fsk0: 200, fsk16: 300, fsk18: 250, special: 150 };
-    let playerNameConfirmed = false; // Track if name is set
-    let isHost = true; // ✅ P1 UI/UX: Track if user is host or guest
-
-    const isDevelopment = window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1';
+    // (All state moved to MultiplayerCategoryModule)
 
     // ===========================
     // INITIALIZATION
     // ===========================
 
     async function initialize() {
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('🌐 Initializing multiplayer category selection...');
         }
 
@@ -91,52 +171,52 @@
 
         // P1 FIX: Wait for dependencies
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            await window.NocapUtils.waitForDependencies(['GameState', 'firebaseGameService']);
+            await window.NocapUtils.waitForDependencies(['MultiplayerCategoryModule.gameState', 'firebaseGameService']);
         }
 
-        gameState = new GameState();
+        MultiplayerCategoryModule.gameState = new GameState();
 
         // ===========================
         // CRITICAL: DEVICE MODE ENFORCEMENT
         // This page is ONLY for multiplayer host mode
         // ✅ P1 UI/UX: But guests might navigate here - detect and handle
         // ===========================
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('🎮 Checking user role...');
         }
 
         // Check if user is guest (has gameId but isGuest flag)
-        if (gameState.isGuest === true || (gameState.gameId && !gameState.isHost)) {
-            isHost = false;
-            gameState.isHost = false;
-            gameState.isGuest = true;
+        if (MultiplayerCategoryModule.gameState.isGuest === true || (MultiplayerCategoryModule.gameState.gameId && !MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost)) {
+            MultiplayerCategoryModule.isHost = false;
+            MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost = false;
+            MultiplayerCategoryModule.gameState.isGuest = true;
 
-            if (isDevelopment) {
+            if (MultiplayerCategoryModule.isDevelopment) {
                 console.log('👤 User is GUEST - showing read-only view');
             }
         } else {
             // Force host mode
-            isHost = true;
-            gameState.deviceMode = 'multi';
-            gameState.isHost = true;
-            gameState.isGuest = false;
+            MultiplayerCategoryModule.isHost = true;
+            MultiplayerCategoryModule.gameState.deviceMode = 'multi';
+            MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost = true;
+            MultiplayerCategoryModule.gameState.isGuest = false;
 
-            if (isDevelopment) {
+            if (MultiplayerCategoryModule.isDevelopment) {
                 console.log('👑 User is HOST - showing editable view');
             }
         }
 
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('✅ User role set:', {
-                deviceMode: gameState.deviceMode,
-                isHost: isHost,
-                isGuest: gameState.isGuest
+                deviceMode: MultiplayerCategoryModule.gameState.deviceMode,
+                isHost: MultiplayerCategoryModule.isHost,
+                isGuest: MultiplayerCategoryModule.gameState.isGuest
             });
         }
 
         // P0 FIX: Use global firebaseGameService
-        if (typeof window.FirebaseService !== 'undefined') {
-            firebaseService = window.FirebaseService;
+        if (typeof window.MultiplayerCategoryModule.firebaseService !== 'undefined') {
+            MultiplayerCategoryModule.firebaseService = window.MultiplayerCategoryModule.firebaseService;
         } else {
             console.error('❌ Firebase service not available');
             showNotification('Firebase nicht verfügbar', 'error');
@@ -158,8 +238,8 @@
         updateHeaderInfo();
 
         // Check if player name already set (from previous navigation)
-        if (gameState.playerName && gameState.playerName.trim()) {
-            playerNameConfirmed = true;
+        if (MultiplayerCategoryModule.gameState.playerName && MultiplayerCategoryModule.gameState.playerName.trim()) {
+            MultiplayerCategoryModule.playerNameConfirmed = true;
             showCategorySelection();
         } else {
             showPlayerNameInput();
@@ -175,17 +255,17 @@
         // Setup event listeners
         setupEventListeners();
 
-        // P1 FIX: Load from GameState
-        if (playerNameConfirmed) {
+        // P1 FIX: Load from MultiplayerCategoryModule.gameState
+        if (MultiplayerCategoryModule.playerNameConfirmed) {
             initializeSelectedCategories();
 
             // ✅ P1 STABILITY: Mark guest as ready when they view categories
-            if (!isHost) {
+            if (!MultiplayerCategoryModule.isHost) {
                 setTimeout(() => markPlayerReady(), 1000);
             }
         }
 
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('✅ Multiplayer category selection initialized');
         }
     }
@@ -251,10 +331,10 @@
         }
 
         // ✅ FIX: Use setPlayerName() to save persistently
-        gameState.setPlayerName(playerName);
-        playerNameConfirmed = true;
+        MultiplayerCategoryModule.gameState.setPlayerName(playerName);
+        MultiplayerCategoryModule.playerNameConfirmed = true;
 
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('✅ Player name set and saved:', playerName);
         }
 
@@ -271,27 +351,27 @@
     // ===========================
 
     function validateGameState() {
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('🔍 Validating game state...');
         }
 
         // P0 FIX: Strict device mode check
-        if (!gameState || gameState.deviceMode !== 'multi') {
-            console.error('❌ Wrong device mode:', gameState?.deviceMode);
+        if (!MultiplayerCategoryModule.gameState || MultiplayerCategoryModule.gameState.deviceMode !== 'multi') {
+            console.error('❌ Wrong device mode:', MultiplayerCategoryModule.gameState?.deviceMode);
             showNotification('Falscher Spielmodus', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
         // P0 FIX: Verify host status
-        if (!gameState.isHost) {
+        if (!MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost) {
             console.error('❌ Not host');
             showNotification('Du bist nicht der Host', 'error');
             setTimeout(() => window.location.href = 'multiplayer-lobby.html', 2000);
             return false;
         }
 
-        if (!gameState.checkValidity()) {
+        if (!MultiplayerCategoryModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -300,7 +380,7 @@
         // ✅ FIX: playerName wird erst später in der Lobby gesetzt, nicht hier prüfen
         // Im Multiplayer-Flow: Index → Category → Difficulty → Lobby (dort wird Name eingegeben)
 
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('✅ Game state valid');
         }
         return true;
@@ -338,7 +418,7 @@
                 return false;
             }
 
-            if (isDevelopment) {
+            if (MultiplayerCategoryModule.isDevelopment) {
                 const ageLevel = verification.isAdult ? 18 : 0;
                 console.log(`✅ Age verification: ${ageLevel}+`);
             }
@@ -358,14 +438,14 @@
 
     /**
      * ✅ P0 FIX: Check premium status with server-side validation
-     * Already uses async gameState.isPremiumUser()
+     * Already uses async MultiplayerCategoryModule.gameState.isPremiumUser()
      */
     async function checkPremiumStatus() {
         try {
-            // ✅ Already using server-side validation via GameState
-            const isPremium = await gameState.isPremiumUser();
+            // ✅ Already using server-side validation via MultiplayerCategoryModule.gameState
+            const isPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
 
-            if (isDevelopment) {
+            if (MultiplayerCategoryModule.isDevelopment) {
                 console.log(`${isPremium ? '✅' : '🔒'} Premium status (server-validated): ${isPremium}`);
             }
 
@@ -403,8 +483,8 @@
 
     async function loadQuestionCounts() {
         try {
-            if (!firebaseService || typeof firebase === 'undefined') {
-                if (isDevelopment) {
+            if (!MultiplayerCategoryModule.firebaseService || typeof firebase === 'undefined') {
+                if (MultiplayerCategoryModule.isDevelopment) {
                     console.warn('⚠️ Firebase not available, using defaults');
                 }
                 return;
@@ -418,18 +498,18 @@
                 Object.keys(categoryData).forEach(key => {
                     if (questions[key]) {
                         if (Array.isArray(questions[key])) {
-                            questionCounts[key] = questions[key].length;
+                            MultiplayerCategoryModule.questionCounts[key] = questions[key].length;
                         } else if (typeof questions[key] === 'object') {
-                            questionCounts[key] = Object.keys(questions[key]).length;
+                            MultiplayerCategoryModule.questionCounts[key] = Object.keys(questions[key]).length;
                         }
                     }
                 });
-                if (isDevelopment) {
-                    console.log('✅ Question counts loaded:', questionCounts);
+                if (MultiplayerCategoryModule.isDevelopment) {
+                    console.log('✅ Question counts loaded:', MultiplayerCategoryModule.questionCounts);
                 }
             }
         } catch (error) {
-            if (isDevelopment) {
+            if (MultiplayerCategoryModule.isDevelopment) {
                 console.warn('⚠️ Question counts error:', error);
             }
         }
@@ -443,14 +523,14 @@
         const hostNameEl = document.getElementById('host-name');
         const gameIdEl = document.getElementById('game-id-display');
 
-        if (hostNameEl && gameState.playerName) {
-            hostNameEl.textContent = gameState.playerName;
+        if (hostNameEl && MultiplayerCategoryModule.gameState.playerName) {
+            hostNameEl.textContent = MultiplayerCategoryModule.gameState.playerName;
         }
 
         // Game-ID wird erst in der Lobby erstellt, nicht hier
         if (gameIdEl) {
-            if (gameState.gameId) {
-                gameIdEl.textContent = gameState.gameId;
+            if (MultiplayerCategoryModule.gameState.gameId) {
+                gameIdEl.textContent = MultiplayerCategoryModule.gameState.gameId;
             } else {
                 gameIdEl.textContent = 'Wird in Lobby erstellt...';
             }
@@ -468,31 +548,31 @@
         const confirmNameBtn = document.getElementById('confirm-name-btn');
 
         if (backBtn) {
-            backBtn.addEventListener('click', goBack);
+            backBtn.addTrackedEventListener('click', goBack);
         }
         if (proceedBtn) {
-            proceedBtn.addEventListener('click', proceed);
+            proceedBtn.addTrackedEventListener('click', proceed);
         }
 
         // Player name input listeners
         if (nameInput) {
-            nameInput.addEventListener('input', handleNameInput);
-            nameInput.addEventListener('keypress', (e) => {
+            nameInput.addTrackedEventListener('input', handleNameInput);
+            nameInput.addTrackedEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !confirmNameBtn.disabled) {
                     confirmPlayerName();
                 }
             });
             // Auto-focus
-            if (!playerNameConfirmed) {
+            if (!MultiplayerCategoryModule.playerNameConfirmed) {
                 setTimeout(() => nameInput.focus(), 100);
             }
         }
 
         if (confirmNameBtn) {
-            confirmNameBtn.addEventListener('click', confirmPlayerName);
+            confirmNameBtn.addTrackedEventListener('click', confirmPlayerName);
         }
 
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('✅ Event listeners setup');
         }
     }
@@ -502,14 +582,14 @@
     // ===========================
 
     /**
-     * P1 FIX: Initialize selected categories from GameState
+     * P1 FIX: Initialize selected categories from MultiplayerCategoryModule.gameState
      */
     function initializeSelectedCategories() {
-        if (gameState.selectedCategories && Array.isArray(gameState.selectedCategories)) {
-            gameState.selectedCategories.forEach(key => {
+        if (MultiplayerCategoryModule.gameState.selectedCategories && Array.isArray(MultiplayerCategoryModule.gameState.selectedCategories)) {
+            MultiplayerCategoryModule.gameState.selectedCategories.forEach(key => {
                 // P0 FIX: Validate category exists
                 if (!categoryData[key]) {
-                    if (isDevelopment) {
+                    if (MultiplayerCategoryModule.isDevelopment) {
                         console.warn(`⚠️ Invalid category: ${key}`);
                     }
                     return;
@@ -546,7 +626,7 @@
             ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
         }
 
-        const hasPremium = await gameState.isPremiumUser();
+        const hasPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
 
         Object.entries(categoryData).forEach(([key, cat]) => {
             const card = document.createElement('div');
@@ -557,7 +637,7 @@
             card.setAttribute('aria-label', `${cat.name} auswählen`);
 
             // ✅ P1 UI/UX: Guests see all cards as disabled
-            const isGuest = !isHost;
+            const isGuest = !MultiplayerCategoryModule.isHost;
             const locked = isGuest || // ✅ Guest cannot select
                 (key === 'fsk18' && ageLevel < 18) ||
                 (key === 'fsk16' && ageLevel < 16) ||
@@ -579,8 +659,8 @@
 
             // Event listeners
             if (!locked && !isGuest) {
-                card.addEventListener('click', () => toggleCategory(key));
-                card.addEventListener('keypress', (e) => {
+                card.addTrackedEventListener('click', () => toggleCategory(key));
+                card.addTrackedEventListener('keypress', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         toggleCategory(key);
@@ -588,15 +668,15 @@
                 });
             } else if (isGuest) {
                 // ✅ P1 UI/UX: Show message when guest tries to click
-                card.addEventListener('click', () => {
+                card.addTrackedEventListener('click', () => {
                     showNotification('Nur der Host kann Kategorien auswählen', 'info');
                 });
             } else if (key === 'fsk18' && ageLevel < 18) {
-                card.addEventListener('click', () => showNotification('Du musst 18+ sein', 'warning'));
+                card.addTrackedEventListener('click', () => showNotification('Du musst 18+ sein', 'warning'));
             } else if (key === 'fsk16' && ageLevel < 16) {
-                card.addEventListener('click', () => showNotification('Du musst 16+ sein', 'warning'));
+                card.addTrackedEventListener('click', () => showNotification('Du musst 16+ sein', 'warning'));
             } else if (key === 'special') {
-                card.addEventListener('click', (e) => {
+                card.addTrackedEventListener('click', (e) => {
                     if (e.target.closest('.unlock-btn')) {
                         e.stopPropagation();
                         showPremiumInfo();
@@ -607,8 +687,8 @@
             grid.appendChild(card);
         });
 
-        if (isDevelopment) {
-            console.log(`✅ Cards rendered (${isHost ? 'Host' : 'Guest'} mode)`);
+        if (MultiplayerCategoryModule.isDevelopment) {
+            console.log(`✅ Cards rendered (${MultiplayerCategoryModule.isHost ? 'Host' : 'Guest'} mode)`);
         }
     }
 
@@ -721,7 +801,7 @@
 
         const questionCount = document.createElement('span');
         questionCount.className = 'question-count';
-        questionCount.textContent = `~${questionCounts[key]} Fragen`;
+        questionCount.textContent = `~${MultiplayerCategoryModule.questionCounts[key]} Fragen`;
 
         footer.appendChild(ageRange);
         footer.appendChild(questionCount);
@@ -755,13 +835,13 @@
 
         if (selectedCategories.includes(key)) {
             // ✅ FIX: Use removeCategory() for persistent storage
-            gameState.removeCategory(key);
+            MultiplayerCategoryModule.gameState.removeCategory(key);
             card.classList.remove('selected');
             card.classList.remove(key);
             card.setAttribute('aria-pressed', 'false');
         } else {
             // ✅ FIX: Use addCategory() for persistent storage
-            gameState.addCategory(key);
+            MultiplayerCategoryModule.gameState.addCategory(key);
             card.classList.add('selected');
             card.classList.add(key);
             card.setAttribute('aria-pressed', 'true');
@@ -772,10 +852,10 @@
     }
 
     /**
-     * Get selected categories from GameState
+     * Get selected categories from MultiplayerCategoryModule.gameState
      */
     function getSelectedCategories() {
-        return gameState.selectedCategories || [];
+        return MultiplayerCategoryModule.gameState.selectedCategories || [];
     }
 
     /**
@@ -827,7 +907,7 @@
             }
 
             if (total) {
-                const totalQ = selectedCategories.reduce((sum, c) => sum + (questionCounts[c] || 0), 0);
+                const totalQ = selectedCategories.reduce((sum, c) => sum + (MultiplayerCategoryModule.questionCounts[c] || 0), 0);
                 total.textContent = totalQ;
             }
         } else {
@@ -841,13 +921,13 @@
     }
 
     async function syncWithFirebase() {
-        if (!firebaseService || !gameState.gameId) return;
+        if (!MultiplayerCategoryModule.firebaseService || !MultiplayerCategoryModule.gameState.gameId) return;
 
         try {
-            const gameRef = firebase.database().ref(`games/${gameState.gameId}/settings/categories`);
-            await gameRef.set(gameState.selectedCategories);
+            const gameRef = firebase.database().ref(`games/${MultiplayerCategoryModule.gameState.gameId}/settings/categories`);
+            await gameRef.set(MultiplayerCategoryModule.gameState.selectedCategories);
         } catch (error) {
-            if (isDevelopment) {
+            if (MultiplayerCategoryModule.isDevelopment) {
                 console.error('❌ Sync error:', error);
             }
         }
@@ -858,20 +938,20 @@
      * Server-side validation via Firebase
      */
     async function checkAllPlayersReady() {
-        if (!gameState.gameId) {
+        if (!MultiplayerCategoryModule.gameState.gameId) {
             // No multiplayer game yet - proceed
             return true;
         }
 
         try {
             if (typeof firebase === 'undefined' || !firebase.database) {
-                if (isDevelopment) {
+                if (MultiplayerCategoryModule.isDevelopment) {
                     console.warn('⚠️ Firebase not available for ready check');
                 }
                 return true; // Fallback: allow proceed
             }
 
-            const gameRef = firebase.database().ref(`games/${gameState.gameId}/players`);
+            const gameRef = firebase.database().ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players`);
             const snapshot = await gameRef.once('value');
 
             if (!snapshot.exists()) {
@@ -884,12 +964,12 @@
 
             // Check if all non-host players have categoryReady flag
             const allReady = playerList.every(player => {
-                if (player.isHost) return true; // Host is always ready
+                if (player.MultiplayerCategoryModule.isHost) return true; // Host is always ready
                 return player.categoryReady === true;
             });
 
-            if (isDevelopment) {
-                const readyCount = playerList.filter(p => p.categoryReady || p.isHost).length;
+            if (MultiplayerCategoryModule.isDevelopment) {
+                const readyCount = playerList.filter(p => p.categoryReady || p.MultiplayerCategoryModule.isHost).length;
                 console.log(`✅ Ready check: ${readyCount}/${playerList.length} players ready`);
             }
 
@@ -908,7 +988,7 @@
      * Called when guest has viewed the category selection
      */
     async function markPlayerReady() {
-        if (!gameState.gameId || isHost) return;
+        if (!MultiplayerCategoryModule.gameState.gameId || MultiplayerCategoryModule.isHost) return;
 
         try {
             if (typeof firebase === 'undefined' || !firebase.database) return;
@@ -916,10 +996,10 @@
             const userId = firebase.auth()?.currentUser?.uid;
             if (!userId) return;
 
-            const playerRef = firebase.database().ref(`games/${gameState.gameId}/players/${userId}/categoryReady`);
+            const playerRef = firebase.database().ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players/${userId}/categoryReady`);
             await playerRef.set(true);
 
-            if (isDevelopment) {
+            if (MultiplayerCategoryModule.isDevelopment) {
                 console.log('✅ Player marked as ready for category selection');
             }
 
@@ -946,7 +1026,7 @@
         }
 
         // ✅ P1 STABILITY: Check if all players are ready (for multiplayer)
-        if (isHost && gameState.gameId) {
+        if (MultiplayerCategoryModule.isHost && MultiplayerCategoryModule.gameState.gameId) {
             const allReady = await checkAllPlayersReady();
             if (!allReady) {
                 showNotification(
@@ -957,7 +1037,7 @@
             }
         }
 
-        // Already saved in GameState
+        // Already saved in MultiplayerCategoryModule.gameState
         showNotification('Kategorien gespeichert!', 'success', 500);
         setTimeout(() => {
             window.location.href = 'multiplayer-difficulty-selection.html';
@@ -965,18 +1045,18 @@
     }
 
     function goBack() {
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('🔙 Navigating back to index...');
         }
 
         // ✅ FIX: Reset game state when going back
-        if (gameState) {
-            gameState.deviceMode = null;
-            gameState.isHost = false;
-            gameState.isGuest = false;
-            gameState.selectedCategories = [];
-            gameState.playerName = '';
-            gameState.gameId = null;
+        if (MultiplayerCategoryModule.gameState) {
+            MultiplayerCategoryModule.gameState.deviceMode = null;
+            MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost = false;
+            MultiplayerCategoryModule.gameState.isGuest = false;
+            MultiplayerCategoryModule.gameState.selectedCategories = [];
+            MultiplayerCategoryModule.gameState.playerName = '';
+            MultiplayerCategoryModule.gameState.gameId = null;
 
             // Clear from localStorage
             if (window.NocapUtils && window.NocapUtils.removeLocalStorage) {
@@ -984,7 +1064,7 @@
                 window.NocapUtils.removeLocalStorage('nocap_game_id');
             }
 
-            gameState.save();
+            MultiplayerCategoryModule.gameState.save();
         }
 
         // Navigate back to index
@@ -1033,19 +1113,19 @@
             window.NocapUtils.cleanupEventListeners();
         }
 
-        if (isDevelopment) {
+        if (MultiplayerCategoryModule.isDevelopment) {
             console.log('✅ Multiplayer category selection cleanup completed');
         }
     }
 
-    window.addEventListener('beforeunload', cleanup);
+    window.addTrackedEventListener('beforeunload', cleanup);
 
     // ===========================
     // INITIALIZATION
     // ===========================
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
+        document.addTrackedEventListener('DOMContentLoaded', initialize);
     } else {
         initialize();
     }

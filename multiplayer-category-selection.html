@@ -1,14 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No-Cap - Multiplayer Kategorien wählen</title>
+    <title>No-Cap - Multiplayer Kategorien w�hlen</title>
 
-    <!-- ✅ SECURITY: Security Headers -->
+    <!-- ? SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
     <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
     <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
     <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
@@ -26,21 +29,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
 
-    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/multiplayer-category-selection.css">
 
-    <!-- ✅ SECURITY: DOMPurify lokal gehostet -->
+    <!-- ? SECURITY: DOMPurify lokal gehostet -->
     <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
-    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
@@ -67,19 +70,19 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button" id="back-button" type="button" aria-label="Zurück">
-    ← Zurück
+<button class="back-button" id="back-button" type="button" aria-label="Zur�ck">
+    ? Zur�ck
 </button>
 
 <!-- App Container -->
 <div class="app-container">
-    <h1 class="screen-title">🌐 Multiplayer Kategorien</h1>
+    <h1 class="screen-title">?? Multiplayer Kategorien</h1>
 
     <div class="glass-card">
         <!-- Player Name Input (First Step) -->
         <section class="player-name-section" id="player-name-section">
-            <h2 class="section-title">👤 Dein Spielername</h2>
-            <p class="section-description">Gib deinen Namen ein, bevor du die Kategorien wählst</p>
+            <h2 class="section-title">?? Dein Spielername</h2>
+            <p class="section-description">Gib deinen Namen ein, bevor du die Kategorien w�hlst</p>
 
             <div class="name-input-container">
                 <input
@@ -99,7 +102,7 @@
                     disabled
                     aria-disabled="true"
                 >
-                    ✓ Name bestätigen
+                    ? Name best�tigen
                 </button>
             </div>
         </section>
@@ -109,7 +112,7 @@
             <div class="host-info">
                 <div class="host-details">
                     <div class="host-name" id="host-name">Host Name</div>
-                    <div class="host-indicator">👑 Du bist der Host</div>
+                    <div class="host-indicator">?? Du bist der Host</div>
                 </div>
                 <div class="game-id-section">
                     <div class="game-id-label">Spiel-Code:</div>
@@ -121,24 +124,24 @@
         <!-- Category Selection (Hidden until name confirmed) -->
         <div class="category-selection-container hidden" id="category-selection-container">
             <p class="selection-description">
-                Wähle die Kategorien für euer Multiplayer-Spiel
+                W�hle die Kategorien f�r euer Multiplayer-Spiel
             </p>
 
             <!-- Category Grid -->
             <div class="category-grid" id="categories-grid" role="group" aria-label="Kategorie-Auswahl"></div>
 
             <!-- Selection Summary -->
-            <aside class="selection-summary" id="selection-summary" role="region" aria-label="Ausgewählte Kategorien">
-                <h2 class="summary-title" id="summary-title">0 Kategorien ausgewählt</h2>
+            <aside class="selection-summary" id="selection-summary" role="region" aria-label="Ausgew�hlte Kategorien">
+                <h2 class="summary-title" id="summary-title">0 Kategorien ausgew�hlt</h2>
                 <div class="selected-categories" id="selected-categories"></div>
                 <div class="total-questions">
-                    Insgesamt <span id="total-questions">0</span> verfügbare Fragen
+                    Insgesamt <span id="total-questions">0</span> verf�gbare Fragen
                 </div>
             </aside>
 
-            <!-- ✅ P1 DSGVO: FSK Restriction Options -->
+            <!-- ? P1 DSGVO: FSK Restriction Options -->
             <section class="fsk-options" id="fsk-options" role="region" aria-labelledby="fsk-options-title">
-                <h2 id="fsk-options-title" class="options-title">🔒 Jugendschutz-Optionen</h2>
+                <h2 id="fsk-options-title" class="options-title">?? Jugendschutz-Optionen</h2>
                 <div class="option-item">
                     <label class="option-label">
                         <input type="checkbox"
@@ -147,20 +150,20 @@
                                role="switch"
                                aria-checked="false">
                         <span class="option-text">
-                            <strong>FSK-Einschränkungen aktivieren</strong>
-                            <small>Spieler unter 18 Jahren können FSK18-Kategorien nicht spielen</small>
+                            <strong>FSK-Einschr�nkungen aktivieren</strong>
+                            <small>Spieler unter 18 Jahren k�nnen FSK18-Kategorien nicht spielen</small>
                         </span>
                     </label>
                 </div>
                 <div class="fsk-warning" id="fsk-warning" role="alert" aria-live="polite" hidden>
-                    <span class="warning-icon" aria-hidden="true">⚠️</span>
-                    <span class="warning-text">Einige Spieler können ausgewählte Kategorien nicht spielen</span>
+                    <span class="warning-icon" aria-hidden="true">??</span>
+                    <span class="warning-text">Einige Spieler k�nnen ausgew�hlte Kategorien nicht spielen</span>
                 </div>
             </section>
 
-            <!-- ✅ P1 UI/UX: Participating Players List (Host-only) -->
+            <!-- ? P1 UI/UX: Participating Players List (Host-only) -->
             <section class="players-list-section host-only" id="players-list-section" role="region" aria-labelledby="players-title">
-                <h2 id="players-title" class="players-title">👥 Teilnehmende Spieler</h2>
+                <h2 id="players-title" class="players-title">?? Teilnehmende Spieler</h2>
                 <div class="players-count" id="players-count" aria-live="polite">
                     Warte auf Spieler...
                 </div>
@@ -170,19 +173,19 @@
                     </div>
                 </div>
                 <div class="players-hint">
-                    <small>🔴 = Spieler kann Kategorie nicht spielen (Alterseinschränkung)</small>
+                    <small>?? = Spieler kann Kategorie nicht spielen (Alterseinschr�nkung)</small>
                 </div>
             </section>
 
             <!-- Proceed Button -->
             <button class="proceed-button" id="proceed-button" type="button" disabled aria-disabled="true">
-                Weiter zur Schwierigkeitsauswahl →
+                Weiter zur Schwierigkeitsauswahl ?
             </button>
         </div>
     </div>
 </div>
 
-<!-- ✅ P1 STABILITY: Lobby Timeout Warning Dialog -->
+<!-- ? P1 STABILITY: Lobby Timeout Warning Dialog -->
 <div class="timeout-dialog"
      id="timeout-dialog"
      role="alertdialog"
@@ -194,7 +197,7 @@
     <div class="dialog-overlay" aria-hidden="true"></div>
     <div class="dialog-content">
         <h2 id="timeout-title" class="dialog-title">
-            <span aria-hidden="true">⏰</span> Lobby-Timeout
+            <span aria-hidden="true">?</span> Lobby-Timeout
         </h2>
         <p id="timeout-desc" class="dialog-description">
             Die Kategorieauswahl dauert zu lange. Die Lobby wird in <span id="timeout-countdown">60</span> Sekunden geschlossen.
@@ -203,20 +206,20 @@
             <button class="btn-primary"
                     id="extend-timeout-btn"
                     type="button"
-                    aria-label="Zeit verlängern">
-                ⏱️ Zeit verlängern
+                    aria-label="Zeit verl�ngern">
+                ?? Zeit verl�ngern
             </button>
             <button class="btn-secondary"
                     id="cancel-timeout-btn"
                     type="button"
-                    aria-label="Lobby schließen">
-                Lobby schließen
+                    aria-label="Lobby schlie�en">
+                Lobby schlie�en
             </button>
         </div>
     </div>
 </div>
 
-    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
+    <!-- ? ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>

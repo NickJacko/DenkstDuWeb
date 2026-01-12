@@ -1,14 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No-Cap - Schwierigkeit wählen</title>
+    <title>No-Cap - Schwierigkeit w�hlen</title>
 
-    <!-- ✅ Security Headers -->
+    <!-- ? Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
     <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
     <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
     <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
@@ -26,21 +29,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
 
-    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css?v=2.0">
     <link rel="stylesheet" href="/assets/css/difficulty-selection.css?v=2.0">
 
-    <!-- ✅ SECURITY: DOMPurify lokal gehostet -->
+    <!-- ? SECURITY: DOMPurify lokal gehostet -->
     <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
-    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
@@ -60,28 +63,28 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button" id="back-btn" type="button" aria-label="Zurück zur Kategorieauswahl">
-    ← Zurück
+<button class="back-button" id="back-btn" type="button" aria-label="Zur�ck zur Kategorieauswahl">
+    ? Zur�ck
 </button>
 
 <!-- Loading Spinner -->
 <div class="loading" id="loading" role="status" aria-live="polite">
     <div class="spinner" aria-hidden="true"></div>
-    <p class="loading-text">Lädt...</p>
+    <p class="loading-text">L�dt...</p>
 </div>
 
 <!-- App Container -->
 <div class="app-container">
     <div class="glass-card">
-        <h1 class="screen-title">⚡ Schwierigkeitsgrad</h1>
+        <h1 class="screen-title">? Schwierigkeitsgrad</h1>
 
         <p class="selection-description">
             Wie hart soll es werden?<br>
-            <small id="description-subtitle">Bestimmt die Konsequenz bei falschen Schätzungen</small>
+            <small id="description-subtitle">Bestimmt die Konsequenz bei falschen Sch�tzungen</small>
         </p>
 
-        <div class="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad auswählen" aria-required="true">
-                <!-- ✅ P1 UI/UX: Semantic button elements with radio group behavior -->
+        <div class="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad ausw�hlen" aria-required="true">
+                <!-- ? P1 UI/UX: Semantic button elements with radio group behavior -->
 
                 <!-- Easy -->
                 <button type="button"
@@ -89,10 +92,10 @@
                         data-difficulty="easy"
                         role="radio"
                         aria-checked="false"
-                        aria-label="Entspannt, Leicht, 1 Grundpunkt bei falscher Antwort, perfekt für entspannte Runden">
+                        aria-label="Entspannt, Leicht, 1 Grundpunkt bei falscher Antwort, perfekt f�r entspannte Runden">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
-                            <div class="sips-indicator" id="easy-icon" aria-hidden="true">💧</div>
+                            <div class="sips-indicator" id="easy-icon" aria-hidden="true">??</div>
                             <div class="difficulty-info">
                                 <h2>Entspannt</h2>
                                 <div class="difficulty-badge easy-badge" role="img" aria-label="Leichter Schwierigkeitsgrad">LEICHT</div>
@@ -103,14 +106,14 @@
                     <div class="sips-explanation">
                         <div class="base-sips" id="easy-base">1 Grundpunkt bei falscher Antwort</div>
                         <div class="sips-formula" id="easy-formula">
-                            <div>Punkte = Abweichung der Schätzung</div>
-                            <div>Perfekt für entspannte Runden</div>
+                            <div>Punkte = Abweichung der Sch�tzung</div>
+                            <div>Perfekt f�r entspannte Runden</div>
                         </div>
                     </div>
 
                     <div class="difficulty-description">
-                        Für gemütliche Runden mit Familie und Freunden.
-                        Weniger Bestrafung, mehr Spaß am Raten und Kennenlernen.
+                        F�r gem�tliche Runden mit Familie und Freunden.
+                        Weniger Bestrafung, mehr Spa� am Raten und Kennenlernen.
                     </div>
                 </button>
 
@@ -120,10 +123,10 @@
                         data-difficulty="medium"
                         role="radio"
                         aria-checked="false"
-                        aria-label="Normal, Mittel, Abweichung gleich Punkte, der Standard für lustige Partyabende">
+                        aria-label="Normal, Mittel, Abweichung gleich Punkte, der Standard f�r lustige Partyabende">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
-                            <div class="sips-indicator" id="medium-icon" aria-hidden="true">🎉</div>
+                            <div class="sips-indicator" id="medium-icon" aria-hidden="true">??</div>
                             <div class="difficulty-info">
                                 <h2>Normal</h2>
                                 <div class="difficulty-badge medium-badge" role="img" aria-label="Mittlerer Schwierigkeitsgrad">MITTEL</div>
@@ -134,14 +137,14 @@
                     <div class="sips-explanation">
                         <div class="base-sips" id="medium-base">Abweichung = Punkte</div>
                         <div class="sips-formula" id="medium-formula">
-                            <div>Punkte = Abweichung der Schätzung</div>
-                            <div>Der Standard für lustige Partyabende</div>
+                            <div>Punkte = Abweichung der Sch�tzung</div>
+                            <div>Der Standard f�r lustige Partyabende</div>
                         </div>
                     </div>
 
                     <div class="difficulty-description">
-                        Die perfekte Balance zwischen Spaß und Herausforderung.
-                        Ideal für die meisten Partys und Spieleabende.
+                        Die perfekte Balance zwischen Spa� und Herausforderung.
+                        Ideal f�r die meisten Partys und Spieleabende.
                     </div>
                 </button>
 
@@ -151,10 +154,10 @@
                         data-difficulty="hard"
                         role="radio"
                         aria-checked="false"
-                        aria-label="Hardcore, Schwer, doppelte Abweichung, nur für erfahrene Spieler, kann FSK 18 Inhalte mit Alkohol-Modus enthalten">
+                        aria-label="Hardcore, Schwer, doppelte Abweichung, nur f�r erfahrene Spieler, kann FSK 18 Inhalte mit Alkohol-Modus enthalten">
                     <div class="difficulty-header">
                         <div class="difficulty-left">
-                            <div class="sips-indicator" id="hard-icon" aria-hidden="true">🔥</div>
+                            <div class="sips-indicator" id="hard-icon" aria-hidden="true">??</div>
                             <div class="difficulty-info">
                                 <h2>Hardcore</h2>
                                 <div class="difficulty-badge hard-badge" role="img" aria-label="Schwerer Schwierigkeitsgrad">SCHWER</div>
@@ -165,23 +168,23 @@
                     <div class="sips-explanation">
                         <div class="base-sips" id="hard-base">Doppelte Abweichung!</div>
                         <div class="sips-formula" id="hard-formula">
-                            <div>Punkte = Abweichung × 2</div>
-                            <div>Nur für erfahrene Spieler!</div>
+                            <div>Punkte = Abweichung � 2</div>
+                            <div>Nur f�r erfahrene Spieler!</div>
                         </div>
                     </div>
 
                     <div class="difficulty-description">
-                        Für Profis und mutige Gruppen. Hohe Strafen machen jede
-                        falsche Schätzung richtig teuer - seid ihr bereit?
+                        F�r Profis und mutige Gruppen. Hohe Strafen machen jede
+                        falsche Sch�tzung richtig teuer - seid ihr bereit?
                     </div>
                 </button>
             </div>
 
-            <!-- ✅ P1 DSGVO/JUGENDSCHUTZ: Alkohol-Modus Option mit Age-Gate -->
+            <!-- ? P1 DSGVO/JUGENDSCHUTZ: Alkohol-Modus Option mit Age-Gate -->
             <div class="alcohol-mode-section" id="alcohol-section">
                 <div class="alcohol-toggle-card">
                     <div class="alcohol-header">
-                        <h3>🍺 Alkohol-Modus</h3>
+                        <h3>?? Alkohol-Modus</h3>
                         <label class="toggle-switch" aria-label="Alkohol-Modus aktivieren oder deaktivieren">
                             <input type="checkbox"
                                    id="alcohol-toggle"
@@ -191,55 +194,55 @@
                         </label>
                     </div>
                     <p class="alcohol-description" id="alcohol-description">
-                        Aktiviere den Alkohol-Modus für zusätzliche Trink-Challenges und alkoholbezogene Strafen.
+                        Aktiviere den Alkohol-Modus f�r zus�tzliche Trink-Challenges und alkoholbezogene Strafen.
                     </p>
 
-                    <!-- ✅ P1 DSGVO: Alkohol-Warnung wird nur angezeigt, wenn Toggle aktiv ist -->
+                    <!-- ? P1 DSGVO: Alkohol-Warnung wird nur angezeigt, wenn Toggle aktiv ist -->
                     <div class="alcohol-warning hidden"
                          id="alcohol-warning"
                          role="alert"
                          aria-live="polite">
-                        <div class="warning-icon" aria-hidden="true">⚠️</div>
+                        <div class="warning-icon" aria-hidden="true">??</div>
                         <div class="warning-content">
                             <strong>Wichtiger Hinweis: Verantwortungsvoller Umgang mit Alkohol</strong>
                             <p>
-                                Der Alkohol-Modus ist <strong>nur für Personen ab 18 Jahren</strong> bestimmt.
+                                Der Alkohol-Modus ist <strong>nur f�r Personen ab 18 Jahren</strong> bestimmt.
                                 Bitte konsumiere Alkohol verantwortungsvoll und kenne deine Grenzen.
                             </p>
                             <ul>
-                                <li>✅ Trinke niemals, wenn du Auto fahren musst</li>
-                                <li>✅ Respektiere die Grenzen anderer Spieler</li>
-                                <li>✅ Stelle immer Wasser bereit</li>
-                                <li>✅ Bei Schwangerschaft oder gesundheitlichen Problemen: Kein Alkohol!</li>
+                                <li>? Trinke niemals, wenn du Auto fahren musst</li>
+                                <li>? Respektiere die Grenzen anderer Spieler</li>
+                                <li>? Stelle immer Wasser bereit</li>
+                                <li>? Bei Schwangerschaft oder gesundheitlichen Problemen: Kein Alkohol!</li>
                             </ul>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ✅ P1 DSGVO: FSK-18 Strafen Warnung -->
+            <!-- ? P1 DSGVO: FSK-18 Strafen Warnung -->
             <div class="fsk-penalty-info">
-                <h3>📋 Über die Strafen</h3>
+                <h3>?? �ber die Strafen</h3>
                 <div class="penalty-explanation">
                     <p>
-                        Die Strafen-Icons (💧 🎉 🔥) repräsentieren die <strong>Intensität der Konsequenzen</strong>
-                        bei falschen Schätzungen, nicht zwingend Alkoholkonsum.
+                        Die Strafen-Icons (?? ?? ??) repr�sentieren die <strong>Intensit�t der Konsequenzen</strong>
+                        bei falschen Sch�tzungen, nicht zwingend Alkoholkonsum.
                     </p>
                     <div class="penalty-details">
                         <div class="penalty-item">
-                            <span class="penalty-icon">💧</span>
+                            <span class="penalty-icon">??</span>
                             <div>
-                                <strong>Leicht:</strong> Minimale Strafen, geeignet für <strong>alle Altersgruppen (FSK 0)</strong>
+                                <strong>Leicht:</strong> Minimale Strafen, geeignet f�r <strong>alle Altersgruppen (FSK 0)</strong>
                             </div>
                         </div>
                         <div class="penalty-item">
-                            <span class="penalty-icon">🎉</span>
+                            <span class="penalty-icon">??</span>
                             <div>
                                 <strong>Mittel:</strong> Moderate Strafen, empfohlen ab <strong>12 Jahren</strong>
                             </div>
                         </div>
                         <div class="penalty-item">
-                            <span class="penalty-icon">🔥</span>
+                            <span class="penalty-icon">??</span>
                             <div>
                                 <strong>Schwer:</strong> Intensive Strafen, kann alkoholbezogene Aufgaben enthalten -
                                 <strong class="fsk-warning">nur mit Alkohol-Modus ab 18 Jahren (FSK 18)</strong>
@@ -247,7 +250,7 @@
                         </div>
                     </div>
                     <p class="penalty-note">
-                        <em>Alternative Strafen:</em> Ohne Alkohol-Modus können Strafen auch Push-Ups,
+                        <em>Alternative Strafen:</em> Ohne Alkohol-Modus k�nnen Strafen auch Push-Ups,
                         Wahrheit-oder-Pflicht, oder andere lustige Challenges sein.
                     </p>
                 </div>
@@ -260,12 +263,12 @@
                         disabled
                         aria-disabled="true"
                         aria-label="Weiter zum Spiel (erst nach Schwierigkeitsauswahl aktiviert)">
-                    Schwierigkeitsgrad wählen
+                    Schwierigkeitsgrad w�hlen
                 </button>
             </div>
     </div>
 </div>
-    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>

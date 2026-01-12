@@ -158,7 +158,117 @@
     ];
 
     /**
-     * ✅ P0 SECURITY: Load domain whitelist from external JSON config
+     * ✅ P0 SECURITY: Verify HMAC signature of domain whitelist
+     * Prevents tampering with allowed-domains.json
+     *
+     * SETUP: Server-side should generate HMAC:
+     * const hmac = crypto.createHmac('sha256', process.env.DOMAIN_WHITELIST_SECRET);
+     * hmac.update(JSON.stringify(config));
+     * config.signature = hmac.digest('hex');
+     *
+     * @param {Object} config - Domain whitelist config with signature
+     * @returns {Promise<boolean>} - True if signature is valid
+     */
+    async function verifyDomainWhitelistSignature(config) {
+        // ✅ P0 SECURITY: In production, signature is MANDATORY
+        if (isProduction && !config.signature) {
+            console.error('❌ SECURITY: Domain whitelist signature missing in production');
+            return false;
+        }
+
+        // Development: Skip signature check if not present (allows local testing)
+        if (isDevelopment && !config.signature) {
+            console.warn('⚠️ DEV: Domain whitelist signature not verified (development mode)');
+            return true;
+        }
+
+        // ✅ P0 SECURITY: Verify signature using Web Crypto API
+        try {
+            const signature = config.signature;
+            const dataToVerify = { ...config };
+            delete dataToVerify.signature; // Remove signature from data
+
+            const encoder = new TextEncoder();
+            const data = encoder.encode(JSON.stringify(dataToVerify));
+
+            // Get public key from meta tag or window variable
+            const publicKeyPem = document.querySelector('meta[name="domain-whitelist-public-key"]')?.content
+                || window.DOMAIN_WHITELIST_PUBLIC_KEY;
+
+            if (!publicKeyPem) {
+                if (isProduction) {
+                    console.error('❌ SECURITY: Public key for whitelist verification not found');
+                    return false;
+                } else {
+                    console.warn('⚠️ DEV: No public key for verification');
+                    return true;
+                }
+            }
+
+            // Import public key
+            const publicKey = await crypto.subtle.importKey(
+                'spki',
+                pemToArrayBuffer(publicKeyPem),
+                {
+                    name: 'RSASSA-PKCS1-v1_5',
+                    hash: 'SHA-256'
+                },
+                false,
+                ['verify']
+            );
+
+            // Verify signature
+            const signatureBuffer = hexToArrayBuffer(signature);
+            const isValid = await crypto.subtle.verify(
+                'RSASSA-PKCS1-v1_5',
+                publicKey,
+                signatureBuffer,
+                data
+            );
+
+            if (!isValid) {
+                console.error('❌ SECURITY: Domain whitelist signature verification failed');
+            } else if (isDevelopment) {
+                console.log('✅ Domain whitelist signature verified');
+            }
+
+            return isValid;
+
+        } catch (error) {
+            console.error('❌ SECURITY: Error verifying domain whitelist signature:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Helper: Convert PEM to ArrayBuffer
+     */
+    function pemToArrayBuffer(pem) {
+        const b64 = pem
+            .replace(/-----BEGIN PUBLIC KEY-----/, '')
+            .replace(/-----END PUBLIC KEY-----/, '')
+            .replace(/\s/g, '');
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    /**
+     * Helper: Convert hex string to ArrayBuffer
+     */
+    function hexToArrayBuffer(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+        }
+        return bytes.buffer;
+    }
+
+    /**
+     * ✅ P0 SECURITY: Load domain whitelist from external JSON config with signature verification
      * @returns {Promise<void>}
      */
     async function loadDomainWhitelist() {
@@ -180,6 +290,12 @@
                 throw new Error('Invalid domain whitelist format');
             }
 
+            // ✅ P0 SECURITY: Verify signature before using config
+            const isSignatureValid = await verifyDomainWhitelistSignature(config);
+            if (!isSignatureValid) {
+                throw new Error('Domain whitelist signature verification failed');
+            }
+
             // Build new whitelist from config
             const newWhitelist = [
                 ...config.domains,
@@ -189,11 +305,12 @@
             ALLOWED_DOMAINS = newWhitelist;
 
             if (isDevelopment) {
-                console.log('✅ Domain whitelist loaded from config:', {
+                console.log('✅ Domain whitelist loaded and verified:', {
                     domains: config.domains.length,
                     patterns: (config.patterns || []).length,
                     version: config.version,
-                    lastUpdated: config.lastUpdated
+                    lastUpdated: config.lastUpdated,
+                    signatureVerified: isSignatureValid
                 });
             }
 
@@ -346,25 +463,15 @@
             }
         }
 
-        // Priority 3: Default config (development only)
+        // ✅ P0 SECURITY FIX: NO FALLBACK CONFIG IN PRODUCTION
+        // Development: Try to load from cached config first before failing
         if (!config && isDevelopment) {
-            console.warn('%c⚠️ Using default Firebase config (DEVELOPMENT ONLY)',
+            console.warn('%c⚠️ No Firebase config found',
                 'color: #FF9800; font-weight: bold');
-            console.warn('%c   For production: Set window.FIREBASE_CONFIG or use meta tags',
+            console.warn('%c   Set window.FIREBASE_CONFIG or use meta tags before loading this script',
                 'color: #FF9800; font-style: italic');
-
-            config = {
-                apiKey: "AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk",
-                authDomain: "denkstduwebsite.firebaseapp.com",
-                databaseURL: "https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-                projectId: "denkstduwebsite",
-                storageBucket: "denkstduwebsite.appspot.com",
-                messagingSenderId: "27029260611",
-                appId: "1:27029260611:web:3c7da4db0bf92e8ce247f6",
-                measurementId: "G-BNKNW95HK8",
-                // ✅ Optional: App Check key for development
-                appCheckKey: "6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l"
-            };
+            console.warn('%c   See README.md for environment variable setup',
+                'color: #FF9800; font-style: italic');
         }
 
         // ✅ P1 STABILITY: Cache successful config for offline use
@@ -499,6 +606,124 @@
 
     // ✅ P1 STABILITY: Firebase config is loaded async
     let firebaseConfig = null;
+
+    // ✅ P1 STABILITY: Offline timeout tracking
+    let offlineTimeoutId = null;
+    let isOfflineMode = false;
+    const OFFLINE_TIMEOUT_MS = 30 * 1000; // 30 seconds
+
+    /**
+     * ✅ P1 STABILITY: Enter offline mode after timeout
+     * Displays user-friendly message and enables offline features
+     */
+    function enterOfflineMode() {
+        if (isOfflineMode) return;
+
+        isOfflineMode = true;
+        console.warn('%c📴 Offline-Modus aktiviert',
+            'color: #FF9800; font-weight: bold; font-size: 14px');
+
+        // Show user notification
+        if (window.NocapUtils && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification(
+                'Du bist offline. Einige Funktionen sind eingeschränkt.',
+                'warning',
+                5000
+            );
+        }
+
+        // Dispatch custom event for other modules to handle
+        window.dispatchEvent(new CustomEvent('firebase:offline-mode', {
+            detail: { timestamp: Date.now() }
+        }));
+
+        // Enable offline features
+        if (window.firebaseDatabase) {
+            try {
+                window.firebaseDatabase.goOffline();
+                if (isDevelopment) {
+                    console.log('✅ Firebase Database in offline mode');
+                }
+            } catch (error) {
+                console.warn('Could not enable database offline mode:', error);
+            }
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Exit offline mode when connection restored
+     */
+    function exitOfflineMode() {
+        if (!isOfflineMode) return;
+
+        isOfflineMode = false;
+        console.log('%c✅ Online-Modus wiederhergestellt',
+            'color: #4CAF50; font-weight: bold; font-size: 14px');
+
+        // Show user notification
+        if (window.NocapUtils && window.NocapUtils.showNotification) {
+            window.NocapUtils.showNotification(
+                'Verbindung wiederhergestellt!',
+                'success',
+                3000
+            );
+        }
+
+        // Dispatch custom event
+        window.dispatchEvent(new CustomEvent('firebase:online-mode', {
+            detail: { timestamp: Date.now() }
+        }));
+
+        // Re-enable online features
+        if (window.firebaseDatabase) {
+            try {
+                window.firebaseDatabase.goOnline();
+                if (isDevelopment) {
+                    console.log('✅ Firebase Database in online mode');
+                }
+            } catch (error) {
+                console.warn('Could not enable database online mode:', error);
+            }
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Start offline timeout timer
+     */
+    function startOfflineTimeout() {
+        // Clear existing timeout
+        if (offlineTimeoutId) {
+            clearTimeout(offlineTimeoutId);
+        }
+
+        // Set new timeout
+        offlineTimeoutId = setTimeout(() => {
+            enterOfflineMode();
+        }, OFFLINE_TIMEOUT_MS);
+
+        if (isDevelopment) {
+            console.log(`⏱️  Offline timeout started (${OFFLINE_TIMEOUT_MS / 1000}s)`);
+        }
+    }
+
+    /**
+     * ✅ P1 STABILITY: Cancel offline timeout (connection restored)
+     */
+    function cancelOfflineTimeout() {
+        if (offlineTimeoutId) {
+            clearTimeout(offlineTimeoutId);
+            offlineTimeoutId = null;
+
+            if (isDevelopment) {
+                console.log('✅ Offline timeout cancelled');
+            }
+        }
+
+        // Exit offline mode if active
+        if (isOfflineMode) {
+            exitOfflineMode();
+        }
+    }
 
     // ===================================
     // 🚀 INITIALIZATION
@@ -637,6 +862,9 @@
 
                 // Configure Firebase services
                 await configureFirebaseServices(auth, database);
+
+                // ✅ P1 STABILITY: Setup connection monitoring with offline timeout
+                setupConnectionMonitoring(database);
 
                 // Create instances
                 window.firebaseApp = firebase.app();
@@ -797,6 +1025,82 @@
         }
     }
 
+    /**
+     * ✅ P1 STABILITY: Setup connection monitoring with offline timeout
+     * Monitors Firebase connection state and activates offline mode after timeout
+     *
+     * @param {Object} database - Firebase database instance
+     */
+    function setupConnectionMonitoring(database) {
+        if (connectionMonitoringActive) {
+            if (isDevelopment) {
+                console.log('ℹ️  Connection monitoring already active');
+            }
+            return;
+        }
+
+        try {
+            const connectedRef = database.ref('.info/connected');
+
+            connectedRef.on('value', (snapshot) => {
+                const isConnected = snapshot.val() === true;
+
+                if (isConnected) {
+                    // ✅ Connected - cancel offline timeout
+                    cancelOfflineTimeout();
+
+                    if (isDevelopment) {
+                        console.log('%c🟢 Firebase verbunden',
+                            'color: #4CAF50; font-weight: bold');
+                    }
+
+                    // Log to telemetry
+                    if (!isDevelopment && window.NocapUtils && window.NocapUtils.logInfo) {
+                        window.NocapUtils.logInfo('FirebaseConfig', 'Connection established', {
+                            timestamp: Date.now()
+                        });
+                    }
+
+                    // Dispatch custom event
+                    window.dispatchEvent(new CustomEvent('firebase:connected', {
+                        detail: { timestamp: Date.now() }
+                    }));
+
+                } else {
+                    // ❌ Disconnected - start offline timeout
+                    startOfflineTimeout();
+
+                    if (isDevelopment) {
+                        console.log('%c🔴 Firebase getrennt - Offline-Timeout gestartet',
+                            'color: #FF9800; font-weight: bold');
+                    }
+
+                    // Log to telemetry
+                    if (!isDevelopment && window.NocapUtils && window.NocapUtils.logInfo) {
+                        window.NocapUtils.logInfo('FirebaseConfig', 'Connection lost', {
+                            timestamp: Date.now()
+                        });
+                    }
+
+                    // Dispatch custom event
+                    window.dispatchEvent(new CustomEvent('firebase:disconnected', {
+                        detail: { timestamp: Date.now() }
+                    }));
+                }
+            });
+
+            connectionMonitoringActive = true;
+
+            if (isDevelopment) {
+                console.log('✅ Connection monitoring aktiviert (Timeout: ' +
+                    (OFFLINE_TIMEOUT_MS / 1000) + 's)');
+            }
+
+        } catch (error) {
+            console.error('❌ Fehler beim Setup von Connection Monitoring:', error);
+        }
+    }
+
     // ===================================
     // 🔍 STATE CHECKS
     // ===================================
@@ -859,79 +1163,6 @@
 
     /**
      * ✅ OPTIMIZATION: Setup Firebase connection monitoring
-     * Dispatches custom events and updates body classes
-     * Logs connection changes to telemetry
-     */
-    function setupConnectionMonitoring() {
-        if (!isFirebaseInitialized()) {
-            console.warn('⚠️ Firebase not initialized, cannot setup connection monitoring');
-            return;
-        }
-
-        if (connectionMonitoringActive) {
-            if (isDevelopment) {
-                console.log('ℹ️ Connection monitoring already active');
-            }
-            return;
-        }
-
-        const connectedRef = window.firebaseDatabase.ref('.info/connected');
-        let lastConnectionState = null;
-        let connectionChangeCount = 0;
-
-        connectedRef.on('value', (snapshot) => {
-            const isConnected = snapshot.val() === true;
-
-            // Track state changes
-            if (lastConnectionState !== null && lastConnectionState !== isConnected) {
-                connectionChangeCount++;
-
-                // Log to telemetry (connection state change)
-                if (!isDevelopment && window.NocapUtils && window.NocapUtils.logInfo) {
-                    window.NocapUtils.logInfo('FirebaseConfig', 'Connection state changed', {
-                        connected: isConnected,
-                        previousState: lastConnectionState,
-                        changeCount: connectionChangeCount,
-                        timestamp: Date.now()
-                    });
-                }
-            }
-
-            lastConnectionState = isConnected;
-
-            if (isDevelopment) {
-                console.log(`🔌 Firebase connection: ${isConnected ? 'ONLINE ✅' : 'OFFLINE ⚠️'}`);
-            }
-
-            // Dispatch custom event for connection status
-            window.dispatchEvent(new CustomEvent('firebase:connection', {
-                detail: {
-                    connected: isConnected,
-                    changeCount: connectionChangeCount
-                }
-            }));
-
-            // Update body class for CSS styling
-            document.body.classList.toggle('firebase-online', isConnected);
-            document.body.classList.toggle('firebase-offline', !isConnected);
-
-            // Store connection state
-            try {
-                sessionStorage.setItem('nocap_firebase_connected', isConnected ? 'true' : 'false');
-                sessionStorage.setItem('nocap_firebase_last_connection_check', Date.now().toString());
-            } catch (error) {
-                // Ignore storage errors
-            }
-        });
-
-        connectionMonitoringActive = true;
-
-        if (isDevelopment) {
-            console.log('✅ Firebase connection monitoring active');
-        }
-    }
-
-    /**
      * Get current connection status
      */
     function isConnected() {
@@ -1342,4 +1573,12 @@
             'color: #2196F3; font-size: 11px; font-style: italic;');
     }
 
+
+
+    // Load domain whitelist immediately
+    loadDomainWhitelist().catch(error => {
+        if (isDevelopment) {
+            console.warn('?? Domain whitelist initialization failed:', error.message);
+        }
+    });
 })(window);

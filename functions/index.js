@@ -536,3 +536,19 @@ exports.processScheduledDeletions = accountDeletion.processScheduledDeletions;
 exports.deleteUserAccount = accountDeletion.deleteUserAccount; // Legacy/deprecated
 // Note: cleanupOldGames is already defined above, so we don't re-export it
 
+// ===================================
+// IMPORT REALTIME SECURITY FUNCTIONS
+// ===================================
+
+/**
+ * ✅ Import all exports from realtime-security.js
+ * Real-time protection against score manipulation and FSK violations
+ */
+const realtimeSecurity = require('./realtime-security');
+
+// Re-export all security triggers
+exports.validateGameUpdate = realtimeSecurity.validateGameUpdate;
+exports.detectRapidUpdates = realtimeSecurity.detectRapidUpdates;
+exports.monitorGameDeletion = realtimeSecurity.monitorGameDeletion;
+exports.cleanupOldViolations = realtimeSecurity.cleanupOldViolations;
+

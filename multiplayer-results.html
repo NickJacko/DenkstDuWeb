@@ -1,14 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Spielergebnis</title>
 
-    <!-- ✅ SECURITY: Security Headers -->
+    <!-- ? SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
     <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
     <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
     <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
@@ -26,21 +29,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧢</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
 
-    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/multiplayer-results.css">
 
-    <!-- ✅ SECURITY: DOMPurify lokal gehostet -->
+    <!-- ? SECURITY: DOMPurify lokal gehostet -->
     <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
-    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/firebase-config.js"></script>
     <script defer src="/assets/js/firebase-auth.js"></script>
     <script defer src="/assets/js/firebase-service.js"></script>
@@ -68,7 +71,7 @@
 <div class="app-container">
     <!-- Game Complete Header -->
     <header class="game-complete-header">
-        <div class="completion-emoji" aria-hidden="true">🎉</div>
+        <div class="completion-emoji" aria-hidden="true">??</div>
         <h1 class="completion-title">Spiel beendet!</h1>
         <p class="completion-subtitle" id="completion-subtitle">Ihr habt alle Runden gemeistert</p>
 
@@ -94,16 +97,16 @@
 
     <!-- Final Rankings -->
     <section class="final-rankings" role="region" aria-labelledby="rankings-title">
-        <h2 id="rankings-title" class="rankings-title">🏆 Endranking</h2>
+        <h2 id="rankings-title" class="rankings-title">?? Endranking</h2>
 
-        <!-- ✅ P1 UI/UX: Podium als geordnete Liste -->
+        <!-- ? P1 UI/UX: Podium als geordnete Liste -->
         <ol class="podium" id="podium" role="list" aria-label="Top 3 Spieler">
             <!-- 2nd Place (Left) -->
             <li class="podium-item rank-2" role="listitem" data-rank="2">
                 <div class="podium-player" id="podium-player-2">
-                    <!-- ✅ P2 PERFORMANCE: Lazy-load trophy image -->
+                    <!-- ? P2 PERFORMANCE: Lazy-load trophy image -->
                     <img src="/assets/img/trophy-silver.svg"
-                         alt="Silber-Pokal für 2. Platz"
+                         alt="Silber-Pokal f�r 2. Platz"
                          class="trophy-image"
                          loading="lazy"
                          width="80"
@@ -118,9 +121,9 @@
             <!-- 1st Place (Center) -->
             <li class="podium-item rank-1" role="listitem" data-rank="1">
                 <div class="podium-player" id="podium-player-1">
-                    <!-- ✅ P2 PERFORMANCE: Lazy-load trophy image -->
+                    <!-- ? P2 PERFORMANCE: Lazy-load trophy image -->
                     <img src="/assets/img/trophy-gold.svg"
-                         alt="Gold-Pokal für 1. Platz"
+                         alt="Gold-Pokal f�r 1. Platz"
                          class="trophy-image"
                          loading="lazy"
                          width="120"
@@ -135,9 +138,9 @@
             <!-- 3rd Place (Right) -->
             <li class="podium-item rank-3" role="listitem" data-rank="3">
                 <div class="podium-player" id="podium-player-3">
-                    <!-- ✅ P2 PERFORMANCE: Lazy-load trophy image -->
+                    <!-- ? P2 PERFORMANCE: Lazy-load trophy image -->
                     <img src="/assets/img/trophy-bronze.svg"
-                         alt="Bronze-Pokal für 3. Platz"
+                         alt="Bronze-Pokal f�r 3. Platz"
                          class="trophy-image"
                          loading="lazy"
                          width="60"
@@ -150,7 +153,7 @@
             </li>
         </ol>
 
-        <!-- ✅ P1 UI/UX: All Players als geordnete Liste -->
+        <!-- ? P1 UI/UX: All Players als geordnete Liste -->
         <div class="all-players">
             <h3 class="players-list-title" id="players-list-title">Alle Spieler</h3>
             <ol class="players-list"
@@ -165,7 +168,7 @@
 
     <!-- Fun Facts -->
     <section class="fun-facts">
-        <h2 class="fun-facts-title">📊 Interessante Fakten</h2>
+        <h2 class="fun-facts-title">?? Interessante Fakten</h2>
         <div class="facts-grid" id="facts-grid" role="list">
             <!-- Dynamically generated -->
         </div>
@@ -173,59 +176,59 @@
 
     <!-- Share Results -->
     <section class="share-section" role="region" aria-labelledby="share-title">
-        <h3 id="share-title" class="share-title">📤 Ergebnis teilen</h3>
+        <h3 id="share-title" class="share-title">?? Ergebnis teilen</h3>
         <div class="share-buttons" role="group" aria-label="Teilen-Optionen">
             <button type="button"
                     class="share-btn"
                     id="share-whatsapp-btn"
                     aria-label="Ergebnis via WhatsApp teilen">
-                <span class="btn-icon" aria-hidden="true">💬</span>
+                <span class="btn-icon" aria-hidden="true">??</span>
                 <span class="btn-text">WhatsApp</span>
             </button>
             <button type="button"
                     class="share-btn"
                     id="share-telegram-btn"
                     aria-label="Ergebnis via Telegram teilen">
-                <span class="btn-icon" aria-hidden="true">✈️</span>
+                <span class="btn-icon" aria-hidden="true">??</span>
                 <span class="btn-text">Telegram</span>
             </button>
             <button type="button"
                     class="share-btn"
                     id="copy-results-btn"
                     aria-label="Ergebnis-Link in Zwischenablage kopieren">
-                <span class="btn-icon" aria-hidden="true">📋</span>
+                <span class="btn-icon" aria-hidden="true">??</span>
                 <span class="btn-text">Link kopieren</span>
             </button>
             <button type="button"
                     class="share-btn"
                     id="save-screenshot-btn"
                     aria-label="Screenshot der Ergebnisse speichern">
-                <span class="btn-icon" aria-hidden="true">📸</span>
+                <span class="btn-icon" aria-hidden="true">??</span>
                 <span class="btn-text">Screenshot</span>
             </button>
         </div>
 
-        <!-- ✅ P1 UI/UX: Feedback for copy action -->
+        <!-- ? P1 UI/UX: Feedback for copy action -->
         <div class="share-feedback"
              id="share-feedback"
              role="status"
              aria-live="polite"
              hidden>
-            <span class="feedback-icon" aria-hidden="true">✅</span>
+            <span class="feedback-icon" aria-hidden="true">?</span>
             <span class="feedback-text">Link kopiert!</span>
         </div>
     </section>
 
-    <!-- ✅ P1 UI/UX: Spiel-Bewertung -->
+    <!-- ? P1 UI/UX: Spiel-Bewertung -->
     <section class="feedback-section" role="region" aria-labelledby="feedback-title">
-        <h3 id="feedback-title" class="feedback-title">⭐ Wie hat dir das Spiel gefallen?</h3>
+        <h3 id="feedback-title" class="feedback-title">? Wie hat dir das Spiel gefallen?</h3>
         <div class="rating-buttons" role="group" aria-label="Spiel bewerten">
             <button type="button"
                     class="rating-btn"
                     id="rating-great-btn"
                     aria-label="Sehr gut - 5 Sterne"
                     data-rating="5">
-                <span class="rating-emoji" aria-hidden="true">😍</span>
+                <span class="rating-emoji" aria-hidden="true">??</span>
                 <span class="rating-text">Sehr gut</span>
             </button>
             <button type="button"
@@ -233,7 +236,7 @@
                     id="rating-good-btn"
                     aria-label="Gut - 4 Sterne"
                     data-rating="4">
-                <span class="rating-emoji" aria-hidden="true">😊</span>
+                <span class="rating-emoji" aria-hidden="true">??</span>
                 <span class="rating-text">Gut</span>
             </button>
             <button type="button"
@@ -241,7 +244,7 @@
                     id="rating-okay-btn"
                     aria-label="Okay - 3 Sterne"
                     data-rating="3">
-                <span class="rating-emoji" aria-hidden="true">😐</span>
+                <span class="rating-emoji" aria-hidden="true">??</span>
                 <span class="rating-text">Okay</span>
             </button>
             <button type="button"
@@ -249,7 +252,7 @@
                     id="rating-bad-btn"
                     aria-label="Nicht so gut - 2 Sterne"
                     data-rating="2">
-                <span class="rating-emoji" aria-hidden="true">😕</span>
+                <span class="rating-emoji" aria-hidden="true">??</span>
                 <span class="rating-text">Nicht so gut</span>
             </button>
         </div>
@@ -259,7 +262,7 @@
              role="status"
              aria-live="polite"
              hidden>
-            <span class="feedback-text">Danke für dein Feedback! 🙏</span>
+            <span class="feedback-text">Danke f�r dein Feedback! ??</span>
         </div>
     </section>
 
@@ -269,18 +272,18 @@
                 class="btn btn-primary"
                 id="play-again-btn"
                 aria-label="Nochmal spielen">
-            <span aria-hidden="true">🔄</span> Nochmal spielen
+            <span aria-hidden="true">??</span> Nochmal spielen
         </button>
         <button type="button"
                 class="btn btn-secondary"
                 id="back-to-menu-btn"
-                aria-label="Zurück zum Hauptmenü">
-            <span aria-hidden="true">🏠</span> Hauptmenü
+                aria-label="Zur�ck zum Hauptmen�">
+            <span aria-hidden="true">??</span> Hauptmen�
         </button>
     </div>
 </div>
 
-<!-- ✅ P1 STABILITY: Auto-Redirect Warning Dialog -->
+<!-- ? P1 STABILITY: Auto-Redirect Warning Dialog -->
 <div class="auto-redirect-dialog"
      id="auto-redirect-dialog"
      role="alertdialog"
@@ -292,31 +295,31 @@
     <div class="dialog-overlay" aria-hidden="true"></div>
     <div class="dialog-content">
         <h2 id="redirect-title" class="dialog-title">
-            <span aria-hidden="true">⏱️</span> Automatische Weiterleitung
+            <span aria-hidden="true">??</span> Automatische Weiterleitung
         </h2>
         <p id="redirect-desc" class="dialog-description">
             Das Spiel wird in <span id="redirect-countdown" class="countdown-value">60</span> Sekunden beendet.
             <br><br>
-            Du wirst automatisch zum Hauptmenü weitergeleitet, wenn keine Aktion gewählt wird.
+            Du wirst automatisch zum Hauptmen� weitergeleitet, wenn keine Aktion gew�hlt wird.
         </p>
         <div class="dialog-buttons" role="group" aria-label="Optionen">
             <button class="btn-primary"
                     id="start-new-game-btn"
                     type="button"
                     aria-label="Neues Spiel starten">
-                <span aria-hidden="true">🎮</span> Neues Spiel starten
+                <span aria-hidden="true">??</span> Neues Spiel starten
             </button>
             <button class="btn-secondary"
                     id="stay-on-results-btn"
                     type="button"
                     aria-label="Auf dieser Seite bleiben">
-                <span aria-hidden="true">⏸️</span> Hier bleiben
+                <span aria-hidden="true">??</span> Hier bleiben
             </button>
             <button class="btn-tertiary"
                     id="go-to-menu-now-btn"
                     type="button"
-                    aria-label="Jetzt zum Hauptmenü">
-                <span aria-hidden="true">🏠</span> Jetzt zum Menü
+                    aria-label="Jetzt zum Hauptmen�">
+                <span aria-hidden="true">??</span> Jetzt zum Men�
             </button>
         </div>
     </div>
@@ -325,11 +328,11 @@
 <!-- Privacy Policy Footer Link -->
 <footer class="footer-links">
     <a href="privacy.html" target="_blank" rel="noopener">Datenschutz</a>
-    <span class="footer-separator" aria-hidden="true">•</span>
+    <span class="footer-separator" aria-hidden="true">�</span>
     <a href="imprint.html" target="_blank" rel="noopener">Impressum</a>
 </footer>
 
-    <!-- âœ… ERROR BOUNDARY: Global Error Handling -->
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 
 </body>
