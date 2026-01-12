@@ -598,7 +598,9 @@
             if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
                 try {
                     window.NocapUtils.setLocalStorage('nocap_game_state', stateToSave);
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('⚠️ Could not save state via NocapUtils:', e.message);
+                }
             }
 
             // Method 2: Direct localStorage - GUARANTEED
@@ -615,7 +617,9 @@
                 sessionStorage.setItem('nocap_game_id', currentGameId);
                 sessionStorage.setItem('nocap_game_state', JSON.stringify(stateToSave));
                 console.log('💾 Guest saved to sessionStorage');
-            } catch (e) {}
+            } catch (e) {
+                console.warn('⚠️ Could not save state to sessionStorage:', e.message);
+            }
 
             // Method 4: URL parameter
             const targetUrl = 'multiplayer-gameplay.html?gameId=' + encodeURIComponent(currentGameId);
