@@ -1416,6 +1416,10 @@
                         isPaused = false;
                         getServerTimestamp().then(serverTime => {
                             startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
+                        }).catch((error) => {
+                            console.error('❌ Error getting server timestamp:', error);
+                            // Fallback: start timer with local time
+                            startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
                         });
                         showNotification('▶️ Timer fortgesetzt', 'info', 2000);
                     }
