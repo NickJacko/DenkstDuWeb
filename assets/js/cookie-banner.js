@@ -434,17 +434,26 @@
         // FUNCTIONAL COOKIES (nur wenn zugestimmt)
         // ===================================
         if (consent.functional) {
-            // Allow persistent auth
-            if (window.firebase?.auth) {
-                firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-                    .then(() => {
-                        if (isDevelopment) {
-                            console.log('✅ Firebase persistence set to LOCAL');
-                        }
-                    })
-                    .catch(error => {
-                        console.warn('Could not set local persistence:', error);
-                    });
+            // Allow persistent auth - ONLY if Firebase is initialized
+            if (window.FirebaseConfig && window.FirebaseConfig.isInitialized()) {
+                try {
+                    const { auth } = window.FirebaseConfig.getFirebaseInstances();
+                    if (auth && auth.setPersistence) {
+                        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                            .then(() => {
+                                if (isDevelopment) {
+                                    console.log('✅ Firebase persistence set to LOCAL');
+                                }
+                            })
+                            .catch(error => {
+                                console.warn('Could not set local persistence:', error);
+                            });
+                    }
+                } catch (error) {
+                    console.warn('Firebase not ready for persistence setup:', error);
+                }
+            } else if (isDevelopment) {
+                console.log('⚠️ Firebase not initialized yet - persistence will be set later');
             }
 
             if (isDevelopment) {

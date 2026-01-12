@@ -31,6 +31,9 @@
         fsk18: false
     };
 
+    // ✅ FIX: Initialize Functions with correct region
+    let functionsInstance = null;
+
     // ===================================
     // INIT
     // ===================================
@@ -43,6 +46,14 @@
             Logger.warn('⚠️ Firebase not ready, retrying...');
             setTimeout(init, 500);
             return;
+        }
+
+        // ✅ FIX: Initialize Functions with europe-west1 region
+        try {
+            functionsInstance = firebase.app().functions('europe-west1');
+            Logger.info('✅ Firebase Functions initialized (europe-west1)');
+        } catch (error) {
+            Logger.error('❌ Failed to initialize Functions:', error);
         }
 
         // Listen to Auth State
@@ -391,8 +402,12 @@
         setButtonLoading(btn, true);
 
         try {
-            // Call Cloud Function
-            const setAge = firebase.functions().httpsCallable('setAgeVerification');
+            // ✅ FIX: Use regionalized Functions instance
+            if (!functionsInstance) {
+                throw new Error('Functions not initialized');
+            }
+
+            const setAge = functionsInstance.httpsCallable('setAgeVerification');
             const result = await setAge({
                 ageLevel: age,
                 verificationMethod: 'birthdate-self-declaration'
@@ -428,7 +443,12 @@
         }
 
         try {
-            const validateFSK = firebase.functions().httpsCallable('validateFSKAccess');
+            // ✅ FIX: Use regionalized Functions instance
+            if (!functionsInstance) {
+                throw new Error('Functions not initialized');
+            }
+
+            const validateFSK = functionsInstance.httpsCallable('validateFSKAccess');
             const result = await validateFSK({ category: category });
 
             if (result.data.allowed) {
@@ -502,7 +522,12 @@
         try {
             Logger.info('📥 Exporting user data...');
 
-            const exportData = firebase.functions().httpsCallable('exportUserData');
+            // ✅ FIX: Use regionalized Functions instance
+            if (!functionsInstance) {
+                throw new Error('Functions not initialized');
+            }
+
+            const exportData = functionsInstance.httpsCallable('exportUserData');
             const result = await exportData();
 
             Logger.info('Export completed:', result.data);
@@ -567,8 +592,13 @@
         try {
             Logger.info('🗑️ Scheduling account deletion...');
 
+            // ✅ FIX: Use regionalized Functions instance
+            if (!functionsInstance) {
+                throw new Error('Functions not initialized');
+            }
+
             // ✅ NEW: Use scheduleAccountDeletion with 48h grace period
-            const scheduleDelete = firebase.functions().httpsCallable('scheduleAccountDeletion');
+            const scheduleDelete = functionsInstance.httpsCallable('scheduleAccountDeletion');
             const result = await scheduleDelete({
                 confirmation: 'DELETE_MY_ACCOUNT'
             });
@@ -613,7 +643,12 @@
         try {
             Logger.info('↩️ Cancelling account deletion...');
 
-            const cancelDelete = firebase.functions().httpsCallable('cancelAccountDeletion');
+            // ✅ FIX: Use regionalized Functions instance
+            if (!functionsInstance) {
+                throw new Error('Functions not initialized');
+            }
+
+            const cancelDelete = functionsInstance.httpsCallable('cancelAccountDeletion');
             const result = await cancelDelete();
 
             Logger.info('✅ Deletion cancelled:', result.data);

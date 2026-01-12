@@ -5,9 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor multiplayer gameplay, lobby, and results modules for improved event listener management; replace custom event listener functions with standard addEventListener; enhance code readability and maintainability">
+      <change afterPath="$PROJECT_DIR$/docs/ERROR_FIXES_QUICK_REF.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage.rules" beforeDir="false" afterPath="$PROJECT_DIR$/storage.rules" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/cookie-banner.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/cookie-banner.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database.rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database.rules.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -154,15 +156,7 @@
       <workItem from="1767865110916" duration="17234000" />
       <workItem from="1767952682710" duration="30595000" />
       <workItem from="1768167037940" duration="13518000" />
-      <workItem from="1768215061185" duration="1493000" />
-    </task>
-    <task id="LOCAL-00057" summary="Change from html to js &amp; html">
-      <option name="closed" value="true" />
-      <created>1763043864240</created>
-      <option name="number" value="00057" />
-      <option name="presentableId" value="LOCAL-00057" />
-      <option name="project" value="LOCAL" />
-      <updated>1763043864240</updated>
+      <workItem from="1768215061185" duration="2579000" />
     </task>
     <task id="LOCAL-00058" summary="Change from html to js &amp; html">
       <option name="closed" value="true" />
@@ -548,7 +542,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768215308327</updated>
     </task>
-    <option name="localTasksCounter" value="106" />
+    <task id="LOCAL-00106" summary="Refactor multiplayer gameplay, lobby, and results modules for improved event listener management; replace custom event listener functions with standard addEventListener; enhance code readability and maintainability">
+      <option name="closed" value="true" />
+      <created>1768218849543</created>
+      <option name="number" value="00106" />
+      <option name="presentableId" value="LOCAL-00106" />
+      <option name="project" value="LOCAL" />
+      <updated>1768218849543</updated>
+    </task>
+    <option name="localTasksCounter" value="107" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
