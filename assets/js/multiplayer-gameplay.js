@@ -292,7 +292,7 @@
             try {
                 localStorage.removeItem('nocap_offline_state');
             } catch (e) {
-                console.warn('⚠️ Could not remove offline state from localStorage:', e.message);
+                console.warn('[WARNING] Could not remove offline state from localStorage:', e.message);
             }
         }
     }
@@ -523,7 +523,7 @@
                     stateRestored = true;
                 }
             } catch (e) {
-                console.warn('⚠️ Could not recover state from sessionStorage:', e.message);
+                console.warn('[WARNING] Could not recover state from sessionStorage:', e.message);
             }
 
             // Try URL params
@@ -1365,10 +1365,10 @@
             try {
                 roundListenerRef.off('value', roundListener);
                 if (MultiplayerGameplayModule.isDevelopment) {
-                    console.log('🧹 Removed previous round listener');
+                    console.log('[DEBUG] Removed previous round listener');
                 }
             } catch (e) {
-                console.warn('⚠️ Could not remove previous round listener:', e.message);
+                console.warn('[WARNING] Could not remove previous round listener:', e.message);
             }
         }
 
@@ -1428,7 +1428,7 @@
                         getServerTimestamp().then(serverTime => {
                             startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
                         }).catch((error) => {
-                            console.error('❌ Error getting server timestamp:', error);
+                            console.error('[ERROR] Error getting server timestamp:', error);
                             // Fallback: start timer with local time
                             startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
                         });
@@ -2391,10 +2391,10 @@
             try {
                 gameListener.off(); // gameListener is the Firebase ref itself
                 if (MultiplayerGameplayModule.isDevelopment) {
-                    console.log('🧹 Removed game listener');
+                    console.log('[DEBUG] Removed game listener');
                 }
             } catch (e) {
-                console.warn('⚠️ Could not remove game listener during cleanup:', e.message);
+                console.warn('[WARNING] Could not remove game listener during cleanup:', e.message);
             }
             gameListener = null;
         }
@@ -2404,10 +2404,10 @@
             try {
                 roundListenerRef.off('value', roundListener);
                 if (MultiplayerGameplayModule.isDevelopment) {
-                    console.log('🧹 Removed round listener');
+                    console.log('[DEBUG] Removed round listener');
                 }
             } catch (e) {
-                console.warn('⚠️ Could not remove round listener during cleanup:', e.message);
+                console.warn('[WARNING] Could not remove round listener during cleanup:', e.message);
             }
             roundListener = null;
             roundListenerRef = null;

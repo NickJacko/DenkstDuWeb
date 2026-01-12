@@ -618,7 +618,7 @@
                 sessionStorage.setItem('nocap_game_state', JSON.stringify(stateToSave));
                 console.log('💾 Guest saved to sessionStorage');
             } catch (e) {
-                console.warn('⚠️ Could not save state to sessionStorage:', e.message);
+                console.warn('[WARNING] Could not save state to sessionStorage:', e.message);
             }
 
             // Method 4: URL parameter

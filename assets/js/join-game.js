@@ -201,7 +201,7 @@
                 try {
                     ageVerification = JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
                 } catch (e) {
-                    console.warn('⚠️ Invalid age verification data in localStorage:', e.message);
+                    console.warn('[WARNING] Invalid age verification data in localStorage:', e.message);
                     ageVerification = null;
                 }
             }

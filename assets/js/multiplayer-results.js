@@ -1156,7 +1156,7 @@
                 handleHostLeaving().then(() => {
                     redirectToMenu();
                 }).catch((error) => {
-                    console.error('❌ Error handling host leaving:', error);
+                    console.error('[ERROR] Error handling host leaving:', error);
                     // Still redirect even if host transfer fails
                     redirectToMenu();
                 });
@@ -1184,7 +1184,7 @@
                 handleHostLeaving().then(() => {
                     redirectToMenu();
                 }).catch((error) => {
-                    console.error('❌ Error handling host leaving:', error);
+                    console.error('[ERROR] Error handling host leaving:', error);
                     // Still redirect even if host transfer fails
                     redirectToMenu();
                 });
