@@ -1629,7 +1629,7 @@
         Logger.debug('✅ Multiplayer lobby cleanup completed');
     }
 
-    window.addTrackedEventListener('beforeunload', cleanup);
+    addTrackedEventListener(window, 'beforeunload', cleanup);
 
     // ===========================
     // INITIALIZATION
