@@ -1155,6 +1155,10 @@
                 // ✅ P1 STABILITY: Handle host leaving
                 handleHostLeaving().then(() => {
                     redirectToMenu();
+                }).catch((error) => {
+                    console.error('❌ Error handling host leaving:', error);
+                    // Still redirect even if host transfer fails
+                    redirectToMenu();
                 });
             });
         }
@@ -1178,6 +1182,10 @@
         if (goToMenuBtn) {
             addTrackedEventListener(goToMenuBtn, 'click', () => {
                 handleHostLeaving().then(() => {
+                    redirectToMenu();
+                }).catch((error) => {
+                    console.error('❌ Error handling host leaving:', error);
+                    // Still redirect even if host transfer fails
                     redirectToMenu();
                 });
             });
