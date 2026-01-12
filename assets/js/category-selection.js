@@ -531,7 +531,60 @@
             return;
         }
 
-        // Toggle selection
+        // ✅ NEW: FSK-Validierung via Cloud Function für fsk16/fsk18
+        if (category === 'fsk16' || category === 'fsk18') {
+            validateAndToggleCategory(element, category, data);
+            return;
+        }
+
+        // Toggle selection (für fsk0 und special)
+        performToggle(element, category, data);
+    }
+
+    /**
+     * ✅ NEW: Validate FSK access server-side before toggling
+     */
+    async function validateAndToggleCategory(element, category, data) {
+        try {
+            // Call SettingsModule.validateFSKAccess if available
+            if (window.SettingsModule && typeof window.SettingsModule.validateFSKAccess === 'function') {
+                Logger.info('🔐 Validating FSK access via Cloud Function:', category);
+
+                const allowed = await window.SettingsModule.validateFSKAccess(category);
+
+                if (allowed) {
+                    Logger.info('✅ FSK access granted, toggling category');
+                    performToggle(element, category, data);
+                } else {
+                    Logger.warn('❌ FSK access denied');
+                    // showFSKError already called by SettingsModule
+                }
+            } else {
+                // Fallback to client-side check if SettingsModule not available
+                Logger.warn('⚠️ SettingsModule not available, using fallback');
+                const ageLevel = window.NocapUtils
+                    ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
+                    : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+
+                if ((category === 'fsk16' && ageLevel >= 16) || (category === 'fsk18' && ageLevel >= 18)) {
+                    performToggle(element, category, data);
+                } else {
+                    showNotification(
+                        `Du musst ${category === 'fsk16' ? '16' : '18'}+ sein für diese Kategorie`,
+                        'warning'
+                    );
+                }
+            }
+        } catch (error) {
+            Logger.error('❌ Error validating FSK:', error);
+            showNotification('Fehler bei der Altersverifikation', 'error');
+        }
+    }
+
+    /**
+     * ✅ NEW: Perform actual toggle logic (extracted for reuse)
+     */
+    function performToggle(element, category, data) {
         const isSelected = element.classList.contains('selected');
 
         if (isSelected) {

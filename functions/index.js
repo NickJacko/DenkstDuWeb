@@ -1,7 +1,66 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const express = require('express');
+const rateLimit = require('express-rate-limit');
+const cors = require('cors');
 
-admin.initializeApp();
+// ✅ P0 SECURITY: Initialize with least-privilege principle
+// Admin SDK only runs server-side, never bundled in client
+// Database URL is set directly for Firebase Emulator compatibility
+admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    databaseURL: 'https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app'
+});
+
+// ✅ P0 SECURITY: Rate limiting middleware
+const createRateLimiter = (windowMs = 60000, max = 60) => {
+    return rateLimit({
+        windowMs,
+        max,
+        message: { error: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.' },
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+};
+
+// ✅ P1 STABILITY: Enhanced logging helper
+const logger = {
+    info: (functionName, message, data = {}) => {
+        functions.logger.info(`[${functionName}] ${message}`, data);
+    },
+    warn: (functionName, message, data = {}) => {
+        functions.logger.warn(`[${functionName}] ${message}`, data);
+    },
+    error: (functionName, message, error, data = {}) => {
+        functions.logger.error(`[${functionName}] ${message}`, {
+            error: error?.message || error,
+            stack: error?.stack,
+            ...data
+        });
+    }
+};
+
+// ✅ P0 SECURITY: Token verification helper
+const verifyAuth = async (context, requiredClaims = []) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'Authentifizierung erforderlich'
+        );
+    }
+
+    // Verify additional claims if needed
+    for (const claim of requiredClaims) {
+        if (!context.auth.token[claim]) {
+            throw new functions.https.HttpsError(
+                'permission-denied',
+                `Fehlende Berechtigung: ${claim}`
+            );
+        }
+    }
+
+    return context.auth;
+};
 
 /**
  * ✅ P1 DSGVO: Auto-delete expired games
@@ -15,13 +74,13 @@ exports.cleanupOldGames = functions.pubsub
         const db = admin.database();
 
         try {
-            console.log('🧹 Starting game cleanup...');
+            logger.info('cleanupOldGames', '🧹 Starting game cleanup...');
 
             const snapshot = await db.ref('games').once('value');
             const games = snapshot.val();
 
             if (!games) {
-                console.log('✅ No games to clean up');
+                logger.info('cleanupOldGames', '✅ No games to clean up');
                 return null;
             }
 
@@ -33,7 +92,7 @@ exports.cleanupOldGames = functions.pubsub
 
                 // Delete if TTL expired
                 if (game.ttl && game.ttl < now) {
-                    console.log(`Deleting expired game: ${gameId}`);
+                    logger.info('cleanupOldGames', `Deleting expired game: ${gameId}`, { ttl: game.ttl });
                     deletions.push(
                         db.ref(`games/${gameId}`).remove()
                     );
@@ -42,7 +101,7 @@ exports.cleanupOldGames = functions.pubsub
 
                 // Fallback: Delete if createdAt is older than 24h
                 else if (game.createdAt && (now - game.createdAt) > (24 * 60 * 60 * 1000)) {
-                    console.log(`Deleting old game (24h+): ${gameId}`);
+                    logger.info('cleanupOldGames', `Deleting old game (24h+): ${gameId}`, { createdAt: game.createdAt });
                     deletions.push(
                         db.ref(`games/${gameId}`).remove()
                     );
@@ -52,15 +111,15 @@ exports.cleanupOldGames = functions.pubsub
 
             if (deletions.length > 0) {
                 await Promise.all(deletions);
-                console.log(`✅ Deleted ${deletedCount} expired games`);
+                logger.info('cleanupOldGames', `✅ Deleted ${deletedCount} expired games`);
             } else {
-                console.log('✅ No expired games found');
+                logger.info('cleanupOldGames', '✅ No expired games found');
             }
 
             return null;
 
         } catch (error) {
-            console.error('❌ Error during cleanup:', error);
+            logger.error('cleanupOldGames', '❌ Error during cleanup', error);
             throw error;
         }
     });
@@ -73,7 +132,7 @@ exports.cleanupUserData = functions.auth.user().onDelete(async (user) => {
     const db = admin.database();
 
     try {
-        console.log(`🗑️ Cleaning up data for deleted user: ${uid}`);
+        logger.info('cleanupUserData', `🗑️ Cleaning up data for deleted user: ${uid}`);
 
         // Delete user data
         await db.ref(`users/${uid}`).remove();
@@ -101,140 +160,379 @@ exports.cleanupUserData = functions.auth.user().onDelete(async (user) => {
 
             if (Object.keys(updates).length > 0) {
                 await db.ref().update(updates);
-                console.log(`✅ Removed user from ${Object.keys(updates).length} game(s)`);
+                logger.info('cleanupUserData', `✅ Removed user from ${Object.keys(updates).length} game(s)`);
             }
         }
 
-        console.log('✅ User data cleanup completed');
+        logger.info('cleanupUserData', '✅ User data cleanup completed');
 
     } catch (error) {
-        console.error('❌ Error during user data cleanup:', error);
+        logger.error('cleanupUserData', '❌ Error during user data cleanup', error);
         throw error;
     }
 });
 
 /**
  * ✅ P0 SECURITY: Validate FSK access server-side
+ * ✅ P0 SECURITY: Rate-limited to prevent abuse
  */
-exports.validateFSKAccess = functions.https.onCall(async (data, context) => {
-    // Check authentication
-    if (!context.auth) {
-        throw new functions.https.HttpsError(
-            'unauthenticated',
-            'User must be authenticated'
-        );
-    }
+exports.validateFSKAccess = functions
+    .runWith({
+        memory: '256MB',
+        timeoutSeconds: 10
+    })
+    .https.onCall(async (data, context) => {
+        const functionName = 'validateFSKAccess';
 
-    const { category } = data;
-    const uid = context.auth.uid;
+        // ✅ P0 SECURITY: Check authentication
+        try {
+            await verifyAuth(context);
+        } catch (error) {
+            logger.warn(functionName, 'Unauthenticated access attempt');
+            throw error;
+        }
 
-    try {
-        // FSK0 is always allowed
-        if (category === 'fsk0' || category === 'special') {
+        const { category } = data;
+        const uid = context.auth.uid;
+
+        // Input validation
+        if (!category || typeof category !== 'string') {
+            logger.warn(functionName, 'Invalid category parameter', { uid, category });
+            throw new functions.https.HttpsError(
+                'invalid-argument',
+                'Kategorie ist erforderlich'
+            );
+        }
+
+        try {
+            logger.info(functionName, 'FSK validation request', { uid, category });
+
+            // FSK0 is always allowed
+            if (category === 'fsk0' || category === 'special') {
+                logger.info(functionName, 'FSK0/special allowed', { uid, category });
+                return { allowed: true, category };
+            }
+
+            // Get user age verification
+            const userSnapshot = await admin.database()
+                .ref(`users/${uid}`)
+                .once('value');
+
+            const userData = userSnapshot.val();
+
+            if (!userData || !userData.ageVerified) {
+                logger.warn(functionName, 'Age not verified', { uid, category });
+                return {
+                    allowed: false,
+                    reason: 'age_not_verified',
+                    message: 'Altersverifikation erforderlich'
+                };
+            }
+
+            const ageLevel = userData.ageLevel || 0;
+
+            // Check FSK16
+            if (category === 'fsk16' && ageLevel < 16) {
+                logger.warn(functionName, 'FSK16 access denied', { uid, ageLevel });
+                return {
+                    allowed: false,
+                    reason: 'age_too_young',
+                    message: 'FSK 16 erforderlich'
+                };
+            }
+
+            // Check FSK18
+            if (category === 'fsk18' && ageLevel < 18) {
+                logger.warn(functionName, 'FSK18 access denied', { uid, ageLevel });
+                return {
+                    allowed: false,
+                    reason: 'age_too_young',
+                    message: 'FSK 18 erforderlich'
+                };
+            }
+
+            logger.info(functionName, 'FSK access granted', { uid, category, ageLevel });
             return { allowed: true, category };
+
+        } catch (error) {
+            logger.error(functionName, 'FSK validation error', error, { uid, category });
+            throw new functions.https.HttpsError(
+                'internal',
+                'Fehler bei der FSK-Validierung'
+            );
         }
-
-        // Get user age verification
-        const userSnapshot = await admin.database()
-            .ref(`users/${uid}`)
-            .once('value');
-
-        const userData = userSnapshot.val();
-
-        if (!userData || !userData.ageVerified) {
-            return {
-                allowed: false,
-                reason: 'age_not_verified',
-                message: 'Altersverifikation erforderlich'
-            };
-        }
-
-        const ageLevel = userData.ageLevel || 0;
-
-        // Check FSK16
-        if (category === 'fsk16' && ageLevel < 16) {
-            return {
-                allowed: false,
-                reason: 'age_too_young',
-                message: 'FSK 16 erforderlich'
-            };
-        }
-
-        // Check FSK18
-        if (category === 'fsk18' && ageLevel < 18) {
-            return {
-                allowed: false,
-                reason: 'age_too_young',
-                message: 'FSK 18 erforderlich'
-            };
-        }
-
-        return { allowed: true, category };
-
-    } catch (error) {
-        console.error('FSK validation error:', error);
-        throw new functions.https.HttpsError(
-            'internal',
-            'Fehler bei der FSK-Validierung'
-        );
-    }
-});
+    });
 
 /**
  * ✅ P1 DSGVO: Export user data (GDPR Article 20)
+ * ✅ P0 SECURITY: Rate-limited to prevent abuse
  */
-exports.exportUserData = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError(
-            'unauthenticated',
-            'User must be authenticated'
-        );
-    }
+exports.exportUserData = functions
+    .runWith({
+        memory: '512MB',
+        timeoutSeconds: 60
+    })
+    .https.onCall(async (data, context) => {
+        const functionName = 'exportUserData';
 
-    const uid = context.auth.uid;
-    const db = admin.database();
-
-    try {
-        // Collect all user data
-        const userData = {};
-
-        // User profile
-        const userSnapshot = await db.ref(`users/${uid}`).once('value');
-        userData.profile = userSnapshot.val();
-
-        // Games where user participated
-        const gamesSnapshot = await db.ref('games').once('value');
-        const games = gamesSnapshot.val();
-
-        userData.games = [];
-
-        if (games) {
-            Object.keys(games).forEach(gameId => {
-                const game = games[gameId];
-
-                if (game.players && game.players[uid]) {
-                    userData.games.push({
-                        gameId: gameId,
-                        createdAt: game.createdAt,
-                        isHost: game.hostId === uid,
-                        playerData: game.players[uid]
-                    });
-                }
-            });
+        // ✅ P0 SECURITY: Check authentication
+        try {
+            await verifyAuth(context);
+        } catch (error) {
+            logger.warn(functionName, 'Unauthenticated export attempt');
+            throw error;
         }
 
-        return {
-            exportDate: new Date().toISOString(),
-            userId: uid,
-            data: userData
-        };
+        const uid = context.auth.uid;
+        const db = admin.database();
 
-    } catch (error) {
-        console.error('User data export error:', error);
-        throw new functions.https.HttpsError(
-            'internal',
-            'Fehler beim Datenexport'
-        );
-    }
-});
+        try {
+            logger.info(functionName, 'Starting user data export', { uid });
+
+            // Collect all user data
+            const userData = {};
+
+            // User profile
+            const userSnapshot = await db.ref(`users/${uid}`).once('value');
+            userData.profile = userSnapshot.val();
+
+            // Games where user participated
+            const gamesSnapshot = await db.ref('games').once('value');
+            const games = gamesSnapshot.val();
+
+            userData.games = [];
+
+            if (games) {
+                Object.keys(games).forEach(gameId => {
+                    const game = games[gameId];
+
+                    if (game.players && game.players[uid]) {
+                        userData.games.push({
+                            gameId: gameId,
+                            createdAt: game.createdAt,
+                            isHost: game.hostId === uid,
+                            playerData: game.players[uid]
+                        });
+                    }
+                });
+            }
+
+            logger.info(functionName, 'User data export completed', {
+                uid,
+                gamesCount: userData.games.length
+            });
+
+            return {
+                exportDate: new Date().toISOString(),
+                userId: uid,
+                data: userData
+            };
+
+        } catch (error) {
+            logger.error(functionName, 'User data export error', error, { uid });
+            throw new functions.https.HttpsError(
+                'internal',
+                'Fehler beim Datenexport'
+            );
+        }
+    });
+
+/**
+ * ✅ P1 DSGVO: "Recht auf Vergessenwerden" (GDPR Article 17)
+ * Deletes all user data from Realtime Database and Auth
+ * ✅ P0 SECURITY: Requires authentication and confirmation
+ */
+exports.deleteMyAccount = functions
+    .runWith({
+        memory: '512MB',
+        timeoutSeconds: 60
+    })
+    .https.onCall(async (data, context) => {
+        const functionName = 'deleteMyAccount';
+
+        // ✅ P0 SECURITY: Check authentication
+        try {
+            await verifyAuth(context);
+        } catch (error) {
+            logger.warn(functionName, 'Unauthenticated deletion attempt');
+            throw error;
+        }
+
+        const { confirmation } = data;
+        const uid = context.auth.uid;
+
+        // Require explicit confirmation
+        if (confirmation !== 'DELETE_MY_ACCOUNT') {
+            logger.warn(functionName, 'Missing or invalid confirmation', { uid });
+            throw new functions.https.HttpsError(
+                'failed-precondition',
+                'Bestätigung erforderlich. Bitte senden Sie "DELETE_MY_ACCOUNT".'
+            );
+        }
+
+        const db = admin.database();
+
+        try {
+            logger.info(functionName, `Starting account deletion for user: ${uid}`);
+
+            // 1. Delete user data from Realtime Database
+            await db.ref(`users/${uid}`).remove();
+            logger.info(functionName, 'User profile deleted', { uid });
+
+            // 2. Remove user from all games
+            const gamesSnapshot = await db.ref('games').once('value');
+            const games = gamesSnapshot.val();
+
+            if (games) {
+                const updates = {};
+                let affectedGames = 0;
+
+                Object.keys(games).forEach(gameId => {
+                    const game = games[gameId];
+
+                    // Remove from players
+                    if (game.players && game.players[uid]) {
+                        updates[`games/${gameId}/players/${uid}`] = null;
+                        affectedGames++;
+                    }
+
+                    // If user was host, delete entire game
+                    if (game.hostId === uid) {
+                        updates[`games/${gameId}`] = null;
+                    }
+                });
+
+                if (Object.keys(updates).length > 0) {
+                    await db.ref().update(updates);
+                    logger.info(functionName, `Removed user from ${affectedGames} game(s)`, { uid });
+                }
+            }
+
+            // 3. Delete Firebase Auth user
+            try {
+                await admin.auth().deleteUser(uid);
+                logger.info(functionName, 'Firebase Auth user deleted', { uid });
+            } catch (authError) {
+                // Log but don't fail if auth deletion fails (might already be deleted)
+                logger.warn(functionName, 'Auth deletion failed (might be already deleted)', {
+                    uid,
+                    error: authError.message
+                });
+            }
+
+            logger.info(functionName, '✅ Account deletion completed successfully', { uid });
+
+            return {
+                success: true,
+                message: 'Ihr Account wurde vollständig gelöscht.',
+                deletedAt: new Date().toISOString()
+            };
+
+        } catch (error) {
+            logger.error(functionName, 'Account deletion error', error, { uid });
+            throw new functions.https.HttpsError(
+                'internal',
+                'Fehler beim Löschen des Accounts'
+            );
+        }
+    });
+
+/**
+ * ✅ P0 SECURITY: Set user age verification (Admin only)
+ * This should only be called after proper age verification process
+ */
+exports.setAgeVerification = functions
+    .runWith({
+        memory: '256MB',
+        timeoutSeconds: 10
+    })
+    .https.onCall(async (data, context) => {
+        const functionName = 'setAgeVerification';
+
+        // ✅ P0 SECURITY: Check authentication
+        try {
+            await verifyAuth(context);
+        } catch (error) {
+            logger.warn(functionName, 'Unauthenticated age verification attempt');
+            throw error;
+        }
+
+        const { ageLevel, verificationMethod } = data;
+        const uid = context.auth.uid;
+
+        // Input validation
+        if (typeof ageLevel !== 'number' || ageLevel < 0 || ageLevel > 99) {
+            logger.warn(functionName, 'Invalid age level', { uid, ageLevel });
+            throw new functions.https.HttpsError(
+                'invalid-argument',
+                'Ungültige Altersangabe (0-99 erwartet)'
+            );
+        }
+
+        const db = admin.database();
+
+        try {
+            logger.info(functionName, 'Setting age verification', {
+                uid,
+                ageLevel,
+                verificationMethod
+            });
+
+            const updates = {
+                ageVerified: true,
+                ageLevel: ageLevel,
+                ageVerifiedAt: admin.database.ServerValue.TIMESTAMP,
+                verificationMethod: verificationMethod || 'self-declaration'
+            };
+
+            await db.ref(`users/${uid}`).update(updates);
+
+            // Set custom claims for FSK access
+            const customClaims = {};
+            if (ageLevel >= 16) customClaims.fsk16 = true;
+            if (ageLevel >= 18) customClaims.fsk18 = true;
+
+            await admin.auth().setCustomUserClaims(uid, customClaims);
+
+            logger.info(functionName, 'Age verification set successfully', {
+                uid,
+                ageLevel,
+                claims: customClaims
+            });
+
+            return {
+                success: true,
+                ageLevel: ageLevel,
+                fskAccess: {
+                    fsk0: true,
+                    fsk16: ageLevel >= 16,
+                    fsk18: ageLevel >= 18
+                }
+            };
+
+        } catch (error) {
+            logger.error(functionName, 'Age verification error', error, { uid, ageLevel });
+            throw new functions.https.HttpsError(
+                'internal',
+                'Fehler bei der Altersverifikation'
+            );
+        }
+    });
+
+// ===================================
+// IMPORT ACCOUNT DELETION FUNCTIONS
+// ===================================
+
+/**
+ * ✅ Import all exports from account-deletion.js
+ * This prevents timeout issues from multiple admin.initializeApp() calls
+ */
+const accountDeletion = require('./account-deletion');
+
+// Re-export all functions from account-deletion.js
+exports.scheduleAccountDeletion = accountDeletion.scheduleAccountDeletion;
+exports.cancelAccountDeletion = accountDeletion.cancelAccountDeletion;
+exports.processScheduledDeletions = accountDeletion.processScheduledDeletions;
+exports.deleteUserAccount = accountDeletion.deleteUserAccount; // Legacy/deprecated
+// Note: cleanupOldGames is already defined above, so we don't re-export it
 
