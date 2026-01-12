@@ -13,12 +13,83 @@
 (function() {
     'use strict';
 
-const Logger = window.NocapUtils?.Logger || { debug: (...args) => {}, info: (...args) => {}, warn: console.warn, error: console.error };
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
 
-const MultiplayerResultsModule = { state: { gameState: null, MultiplayerResultsModule.firebaseService: null, eventListenerCleanup: [], MultiplayerResultsModule.isDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('192.168.') }, get MultiplayerResultsModule.gameState() { return this.state.MultiplayerResultsModule.gameState; }, set MultiplayerResultsModule.gameState(val) { this.state.MultiplayerResultsModule.gameState = val; }, get MultiplayerResultsModule.firebaseService() { return this.state.MultiplayerResultsModule.firebaseService; }, set MultiplayerResultsModule.firebaseService(val) { this.state.MultiplayerResultsModule.firebaseService = val; }, get MultiplayerResultsModule.isDevelopment() { return this.state.MultiplayerResultsModule.isDevelopment; } }; Object.seal(MultiplayerResultsModule.state);
-function throttle(func, wait = 100) { let timeout = null; let previous = 0; return function(...args) { const now = Date.now(); const remaining = wait - (now - previous); if (remaining <= 0 || remaining > wait) { if (timeout) { clearTimeout(timeout); timeout = null; } previous = now; func.apply(this, args); } else if (!timeout) { timeout = setTimeout(() => { previous = Date.now(); timeout = null; func.apply(this, args); }, remaining); } }; }
-function debounce(func, wait = 300) { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; }
-function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.addTrackedEventListener(evt, handler, opts); MultiplayerResultsModule.state.eventListenerCleanup.push({element: el, event: evt, handler, options: opts}); }
+    // ===========================
+    // MODULE PATTERN
+    // ===========================
+
+    const MultiplayerResultsModule = {
+        state: {
+            gameState: null,
+            firebaseService: null,
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('192.168.')
+        },
+
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get firebaseService() { return this.state.firebaseService; },
+        set firebaseService(val) { this.state.firebaseService = val; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    Object.seal(MultiplayerResultsModule.state);
+
+    // ===========================
+    // UTILITIES
+    // ===========================
+
+    function throttle(func, wait = 100) {
+        let timeout = null;
+        let previous = 0;
+        return function(...args) {
+            const now = Date.now();
+            const remaining = wait - (now - previous);
+            if (remaining <= 0 || remaining > wait) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                previous = now;
+                func.apply(this, args);
+            } else if (!timeout) {
+                timeout = setTimeout(() => {
+                    previous = Date.now();
+                    timeout = null;
+                    func.apply(this, args);
+                }, remaining);
+            }
+        };
+    }
+
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    function addTrackedEventListener(el, evt, handler, opts = {}) {
+        if (!el) return;
+        el.addEventListener(evt, handler, opts);
+        MultiplayerResultsModule.state.eventListenerCleanup.push({
+            element: el,
+            event: evt,
+            handler,
+            options: opts
+        });
+    }
 
     // ===========================
     // CONSTANTS
@@ -58,7 +129,7 @@ function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.add
     // INITIALIZATION
     // ===========================
 
-    document.addTrackedEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         try {
             // ✅ P0 SECURITY: Check DOMPurify availability
             if (typeof DOMPurify === 'undefined') {
@@ -1043,14 +1114,14 @@ function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.add
         const copyBtn = document.getElementById('copy-results-btn');
         const screenshotBtn = document.getElementById('save-screenshot-btn');
 
-        if (whatsappBtn) whatsappBtn.addTrackedEventListener('click', shareViaWhatsApp);
-        if (telegramBtn) telegramBtn.addTrackedEventListener('click', shareViaTelegram);
-        if (copyBtn) copyBtn.addTrackedEventListener('click', copyResultsLink);
-        if (screenshotBtn) screenshotBtn.addTrackedEventListener('click', saveScreenshot);
+        if (whatsappBtn) addTrackedEventListener(whatsappBtn, 'click', shareViaWhatsApp);
+        if (telegramBtn) addTrackedEventListener(telegramBtn, 'click', shareViaTelegram);
+        if (copyBtn) addTrackedEventListener(copyBtn, 'click', copyResultsLink);
+        if (screenshotBtn) addTrackedEventListener(screenshotBtn, 'click', saveScreenshot);
 
         // Rating buttons
         document.querySelectorAll('.rating-btn').forEach(btn => {
-            btn.addTrackedEventListener('click', () => {
+            addTrackedEventListener(btn, 'click', () => {
                 const rating = parseInt(btn.getAttribute('data-rating'));
                 submitRating(rating);
             });
@@ -1059,13 +1130,13 @@ function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.add
         // ✅ P1 UI/UX: Toggle ranking view button
         const toggleRankingBtn = document.getElementById('toggle-ranking-btn');
         if (toggleRankingBtn) {
-            toggleRankingBtn.addTrackedEventListener('click', toggleRankingView);
+            addTrackedEventListener(toggleRankingBtn, 'click', toggleRankingView);
         }
 
         // ✅ P1 STABILITY: Restart game button
         const restartGameBtn = document.getElementById('restart-game-btn');
         if (restartGameBtn) {
-            restartGameBtn.addTrackedEventListener('click', restartGame);
+            addTrackedEventListener(restartGameBtn, 'click', restartGame);
         }
 
         // Action buttons
@@ -1073,14 +1144,14 @@ function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.add
         const backToMenuBtn = document.getElementById('back-to-menu-btn');
 
         if (playAgainBtn) {
-            playAgainBtn.addTrackedEventListener('click', () => {
+            addTrackedEventListener(playAgainBtn, 'click', () => {
                 cancelAutoRedirect();
                 window.location.href = 'multiplayer-lobby.html';
             });
         }
 
         if (backToMenuBtn) {
-            backToMenuBtn.addTrackedEventListener('click', () => {
+            addTrackedEventListener(backToMenuBtn, 'click', () => {
                 // ✅ P1 STABILITY: Handle host leaving
                 handleHostLeaving().then(() => {
                     redirectToMenu();
@@ -1094,18 +1165,18 @@ function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.add
         const goToMenuBtn = document.getElementById('go-to-menu-now-btn');
 
         if (startNewGameBtn) {
-            startNewGameBtn.addTrackedEventListener('click', () => {
+            addTrackedEventListener(startNewGameBtn, 'click', () => {
                 cancelAutoRedirect();
                 restartGame();
             });
         }
 
         if (stayBtn) {
-            stayBtn.addTrackedEventListener('click', cancelAutoRedirect);
+            addTrackedEventListener(stayBtn, 'click', cancelAutoRedirect);
         }
 
         if (goToMenuBtn) {
-            goToMenuBtn.addTrackedEventListener('click', () => {
+            addTrackedEventListener(goToMenuBtn, 'click', () => {
                 handleHostLeaving().then(() => {
                     redirectToMenu();
                 });
@@ -1276,7 +1347,7 @@ function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.add
     }
 
     // ✅ P1 STABILITY: Cleanup on page unload
-    window.addTrackedEventListener('beforeunload', cleanup);
+    window.addEventListener('beforeunload', cleanup);
 
 })();
 

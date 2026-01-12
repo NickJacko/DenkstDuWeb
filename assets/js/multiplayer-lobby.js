@@ -19,12 +19,75 @@
 (function(window) {
     'use strict';
 
-const Logger = window.NocapUtils?.Logger || { debug: (...args) => {}, info: (...args) => {}, warn: console.warn, error: console.error };
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
 
-const MultiplayerLobbyModule = { state: { gameState: null, MultiplayerLobbyModule.firebaseService: null, eventListenerCleanup: [], MultiplayerLobbyModule.isDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('192.168.') }, get MultiplayerLobbyModule.gameState() { return this.state.MultiplayerLobbyModule.gameState; }, set MultiplayerLobbyModule.gameState(val) { this.state.MultiplayerLobbyModule.gameState = val; }, get MultiplayerLobbyModule.firebaseService() { return this.state.MultiplayerLobbyModule.firebaseService; }, set MultiplayerLobbyModule.firebaseService(val) { this.state.MultiplayerLobbyModule.firebaseService = val; }, get MultiplayerLobbyModule.isDevelopment() { return this.state.MultiplayerLobbyModule.isDevelopment; } }; Object.seal(MultiplayerLobbyModule.state);
-function throttle(func, wait = 100) { let timeout = null; let previous = 0; return function(...args) { const now = Date.now(); const remaining = wait - (now - previous); if (remaining <= 0 || remaining > wait) { if (timeout) { clearTimeout(timeout); timeout = null; } previous = now; func.apply(this, args); } else if (!timeout) { timeout = setTimeout(() => { previous = Date.now(); timeout = null; func.apply(this, args); }, remaining); } }; }
-function debounce(func, wait = 300) { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; }
-function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.addTrackedEventListener(evt, handler, opts); MultiplayerLobbyModule.state.eventListenerCleanup.push({element: el, event: evt, handler, options: opts}); }
+    const MultiplayerLobbyModule = {
+        state: {
+            gameState: null,
+            firebaseService: null,
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('192.168.')
+        },
+
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get firebaseService() { return this.state.firebaseService; },
+        set firebaseService(val) { this.state.firebaseService = val; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    Object.seal(MultiplayerLobbyModule.state);
+
+    function throttle(func, wait = 100) {
+        let timeout = null;
+        let previous = 0;
+        return function(...args) {
+            const now = Date.now();
+            const remaining = wait - (now - previous);
+            if (remaining <= 0 || remaining > wait) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                previous = now;
+                func.apply(this, args);
+            } else if (!timeout) {
+                timeout = setTimeout(() => {
+                    previous = Date.now();
+                    timeout = null;
+                    func.apply(this, args);
+                }, remaining);
+            }
+        };
+    }
+
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    function addTrackedEventListener(el, evt, handler, opts = {}) {
+        if (!el) return;
+        el.addEventListener(evt, handler, opts);
+        MultiplayerLobbyModule.state.eventListenerCleanup.push({
+            element: el,
+            event: evt,
+            handler,
+            options: opts
+        });
+    }
 
     // ===========================
     // CONSTANTS

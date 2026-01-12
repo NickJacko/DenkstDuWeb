@@ -12,12 +12,76 @@
 (function(window) {
     'use strict';
 
-const Logger = window.NocapUtils?.Logger || { debug: (...args) => {}, info: (...args) => {}, warn: console.warn, error: console.error };
 
-const MultiplayerGameplayModule = { state: { gameState: null, MultiplayerGameplayModule.firebaseService: null, eventListenerCleanup: [], MultiplayerGameplayModule.isDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('192.168.') }, get MultiplayerGameplayModule.gameState() { return this.state.MultiplayerGameplayModule.gameState; }, set MultiplayerGameplayModule.gameState(val) { this.state.MultiplayerGameplayModule.gameState = val; }, get MultiplayerGameplayModule.firebaseService() { return this.state.MultiplayerGameplayModule.firebaseService; }, set MultiplayerGameplayModule.firebaseService(val) { this.state.MultiplayerGameplayModule.firebaseService = val; }, get MultiplayerGameplayModule.isDevelopment() { return this.state.MultiplayerGameplayModule.isDevelopment; } }; Object.seal(MultiplayerGameplayModule.state);
-function throttle(func, wait = 100) { let timeout = null; let previous = 0; return function(...args) { const now = Date.now(); const remaining = wait - (now - previous); if (remaining <= 0 || remaining > wait) { if (timeout) { clearTimeout(timeout); timeout = null; } previous = now; func.apply(this, args); } else if (!timeout) { timeout = setTimeout(() => { previous = Date.now(); timeout = null; func.apply(this, args); }, remaining); } }; }
-function debounce(func, wait = 300) { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; }
-function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.addTrackedEventListener(evt, handler, opts); MultiplayerGameplayModule.state.eventListenerCleanup.push({element: el, event: evt, handler, options: opts}); }
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
+
+    const MultiplayerGameplayModule = {
+        state: {
+            gameState: null,
+            firebaseService: null,
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('192.168.')
+        },
+
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get firebaseService() { return this.state.firebaseService; },
+        set firebaseService(val) { this.state.firebaseService = val; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    Object.seal(MultiplayerGameplayModule.state);
+
+    function throttle(func, wait = 100) {
+        let timeout = null;
+        let previous = 0;
+        return function(...args) {
+            const now = Date.now();
+            const remaining = wait - (now - previous);
+            if (remaining <= 0 || remaining > wait) {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = null;
+                }
+                previous = now;
+                func.apply(this, args);
+            } else if (!timeout) {
+                timeout = setTimeout(() => {
+                    previous = Date.now();
+                    timeout = null;
+                    func.apply(this, args);
+                }, remaining);
+            }
+        };
+    }
+
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    function addTrackedEventListener(el, evt, handler, opts = {}) {
+        if (!el) return;
+        el.addEventListener(evt, handler, opts);
+        MultiplayerGameplayModule.state.eventListenerCleanup.push({
+            element: el,
+            event: evt,
+            handler,
+            options: opts
+        });
+    }
 
     // ===========================
     // CONSTANTS & FALLBACK QUESTIONS
@@ -2331,14 +2395,14 @@ function addEventListener(el, evt, handler, opts = {}) { if (!el) return; el.add
         }
     }
 
-    window.addTrackedEventListener('beforeunload', cleanup);
+    window.addEventListener('beforeunload', cleanup);
 
     // ===========================
     // INITIALIZATION
     // ===========================
 
     if (document.readyState === 'loading') {
-        document.addTrackedEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', initialize);
     } else {
         initialize();
     }
