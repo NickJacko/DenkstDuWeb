@@ -1,6 +1,6 @@
-na/**
+/**
  * No-Cap Difficulty Selection (Single Device Mode)
- * Version 6.0 - JavaScript-Kern Hardening
+ * Version 6.1 - BUGFIX: GameState Constructor Error
  *
  * ✅ P0: Module Pattern - no global variables (XSS prevention)
  * ✅ P0: Event-Listener cleanup on beforeunload
@@ -21,8 +21,6 @@ na/**
         error: console.error
     };
 
-    // ===========================
-    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
     // ===========================
     // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
     // ===========================
@@ -120,37 +118,32 @@ na/**
         special: { easy: 30, medium: 50, hard: 80 }
     };
 
-    // ✅ P1 STABILITY: Question counts cache
-    // (moved to DifficultySelectionModule.state)
-
     // ===========================
     // INITIALIZATION
     // ===========================
 
     function initialize() {
-        if (DifficultySelectionModule.isDevelopment) {
-            console.log('⚡ Initializing difficulty selection...');
-        }
+        Logger.debug('⚡ Initializing difficulty selection...');
 
         showLoading();
 
         // Check DOMPurify
         if (typeof DOMPurify === 'undefined') {
-            console.error('❌ CRITICAL: DOMPurify not loaded!');
+            Logger.error('❌ CRITICAL: DOMPurify not loaded!');
             alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
             return;
         }
 
-        // Check dependencies
-        if (typeof DifficultySelectionModule.gameState === 'undefined') {
-            console.error('❌ DifficultySelectionModule.gameState not found');
+        // ✅ BUGFIX: Check for window.GameState (the constructor)
+        if (typeof window.GameState === 'undefined') {
+            Logger.error('❌ GameState not found');
             showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
             return;
         }
 
         // Wait for utils if available
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            window.NocapUtils.waitForDependencies(['DifficultySelectionModule.gameState']).then(() => {
+            window.NocapUtils.waitForDependencies(['GameState']).then(() => {
                 initializeGame();
             }).catch(() => {
                 initializeGame();
@@ -165,7 +158,8 @@ na/**
      */
     async function initializeGame() {
         try {
-            DifficultySelectionModule.gameState = new DifficultySelectionModule.gameState();
+            // ✅ BUGFIX: Use window.GameState (constructor) not DifficultySelectionModule.gameState
+            DifficultySelectionModule.gameState = new window.GameState();
 
             // ✅ P1 FIX: Validate device mode FIRST
             if (!validateDeviceMode()) {
@@ -184,7 +178,7 @@ na/**
             // ✅ P1 STABILITY: Load question counts with fallback
             await loadQuestionCounts();
 
-            // Load difficulty from DifficultySelectionModule.gameState
+            // Load difficulty from GameState
             initializeSelection();
 
             // Setup event listeners
@@ -192,13 +186,11 @@ na/**
 
             hideLoading();
 
-            if (DifficultySelectionModule.isDevelopment) {
-                console.log('✅ Difficulty selection initialized');
-                console.log('Game State:', DifficultySelectionModule.gameState.getDebugInfo());
-            }
+            Logger.debug('✅ Difficulty selection initialized');
+            Logger.debug('Game State:', DifficultySelectionModule.gameState.getDebugInfo());
 
         } catch (error) {
-            console.error('❌ Initialization error:', error);
+            Logger.error('❌ Initialization error:', error);
             hideLoading();
 
             // ✅ P1 STABILITY: User-friendly error handling with retry option
@@ -262,7 +254,7 @@ na/**
 
         // Check if device mode is set
         if (!deviceMode) {
-            console.error('❌ No device mode set');
+            Logger.error('❌ No device mode set');
             showNotification('Spielmodus nicht gesetzt', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -271,15 +263,13 @@ na/**
         // This page works for both 'single' and 'multi' modes
         // but we validate it's one of them
         if (deviceMode !== 'single' && deviceMode !== 'multi') {
-            console.error(`❌ Invalid device mode: ${deviceMode}`);
+            Logger.error(`❌ Invalid device mode: ${deviceMode}`);
             showNotification('Ungültiger Spielmodus', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
-        if (DifficultySelectionModule.isDevelopment) {
-            console.log(`✅ Device mode validated: ${deviceMode}`);
-        }
+        Logger.debug(`✅ Device mode validated: ${deviceMode}`);
 
         return true;
     }
@@ -296,7 +286,7 @@ na/**
         }
 
         if (!DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
-            console.warn('⚠️ No categories selected');
+            Logger.warn('⚠️ No categories selected');
             showNotification('Keine Kategorien ausgewählt!', 'warning');
 
             // Redirect based on device mode
@@ -318,7 +308,7 @@ na/**
                 const hasAccess = await DifficultySelectionModule.gameState.canAccessFSK(category);
 
                 if (!hasAccess) {
-                    console.error(`❌ Server denied access to category: ${category}`);
+                    Logger.error(`❌ Server denied access to category: ${category}`);
                     showNotification(`Keine Berechtigung für ${category.toUpperCase()}!`, 'error');
 
                     // Redirect to category selection to choose valid categories
@@ -331,12 +321,10 @@ na/**
                 }
             }
 
-            if (DifficultySelectionModule.isDevelopment) {
-                console.log('✅ All categories validated (server-side)');
-            }
+            Logger.debug('✅ All categories validated (server-side)');
 
         } catch (error) {
-            console.error('❌ Server-side FSK validation failed:', error);
+            Logger.error('❌ Server-side FSK validation failed:', error);
             showNotification('FSK-Validierung fehlgeschlagen. Bitte erneut versuchen.', 'error');
 
             const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
@@ -369,9 +357,7 @@ na/**
                     DifficultySelectionModule.questionCountsCache = await loadCountsFromFirebase(firebaseInstances.database);
 
                     if (DifficultySelectionModule.questionCountsCache) {
-                        if (DifficultySelectionModule.isDevelopment) {
-                            console.log('✅ Question counts loaded from Firebase:', DifficultySelectionModule.questionCountsCache);
-                        }
+                        Logger.debug('✅ Question counts loaded from Firebase:', DifficultySelectionModule.questionCountsCache);
                         updateDifficultyCardsWithCounts();
                         return;
                     }
@@ -379,11 +365,11 @@ na/**
             }
 
             // Fallback to local JSON
-            console.warn('⚠️ Firebase not available, loading fallback counts');
+            Logger.warn('⚠️ Firebase not available, loading fallback counts');
             await loadCountsFromLocalFile();
 
         } catch (error) {
-            console.error('❌ Error loading question counts:', error);
+            Logger.error('❌ Error loading question counts:', error);
             await loadCountsFromLocalFile();
         }
     }
@@ -409,7 +395,7 @@ na/**
 
             return counts;
         } catch (error) {
-            console.error('❌ Error loading from Firebase:', error);
+            Logger.error('❌ Error loading from Firebase:', error);
             return null;
         }
     }
@@ -425,14 +411,12 @@ na/**
                 const data = await response.json();
                 DifficultySelectionModule.questionCountsCache = data.counts || FALLBACK_DIFFICULTY_LIMITS;
 
-                if (DifficultySelectionModule.isDevelopment) {
-                    console.log('✅ Question counts loaded from local file:', DifficultySelectionModule.questionCountsCache);
-                }
+                Logger.debug('✅ Question counts loaded from local file:', DifficultySelectionModule.questionCountsCache);
             } else {
                 throw new Error('Local file not found');
             }
         } catch (error) {
-            console.warn('⚠️ Could not load local file, using hardcoded fallback');
+            Logger.warn('⚠️ Could not load local file, using hardcoded fallback');
             DifficultySelectionModule.questionCountsCache = FALLBACK_DIFFICULTY_LIMITS;
         }
 
@@ -495,7 +479,8 @@ na/**
 
     function checkAlcoholMode() {
         try {
-            DifficultySelectionModule.alcoholMode = DifficultySelectionModule.gameState.DifficultySelectionModule.alcoholMode === true;
+            // ✅ BUGFIX: Korrekter Zugriff auf alcoholMode (nicht verschachtelt)
+            DifficultySelectionModule.alcoholMode = DifficultySelectionModule.gameState.alcoholMode === true;
 
             // ✅ AUDIT FIX: Serverseitige FSK18-Validierung für Alkohol-Mode
             if (DifficultySelectionModule.alcoholMode) {
@@ -503,7 +488,7 @@ na/**
                 const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
 
                 if (ageLevel < 18) {
-                    console.warn('⚠️ Alcohol mode disabled: User under 18');
+                    Logger.warn('⚠️ Alcohol mode disabled: User under 18');
                     DifficultySelectionModule.alcoholMode = false;
                     DifficultySelectionModule.gameState.setAlcoholMode(false);
 
@@ -515,13 +500,11 @@ na/**
                 }
             }
 
-            if (DifficultySelectionModule.isDevelopment) {
-                console.log(`🍺 Alcohol mode: ${DifficultySelectionModule.alcoholMode}`);
-            }
+            Logger.debug(`🍺 Alcohol mode: ${DifficultySelectionModule.alcoholMode}`);
 
             updateUIForAlcoholMode();
         } catch (error) {
-            console.error('❌ Error checking alcohol mode:', error);
+            Logger.error('❌ Error checking alcohol mode:', error);
             DifficultySelectionModule.alcoholMode = false;
             updateUIForAlcoholMode();
         }
@@ -581,9 +564,6 @@ na/**
     }
 
     /**
-     * Safe content update with DOM manipulation
-     */
-    /**
      * ✅ P0 SECURITY: Update difficulty UI with safe DOM manipulation
      * No innerHTML - only textContent to prevent HTML injection
      */
@@ -593,28 +573,23 @@ na/**
         const formulaEl = document.getElementById(`${difficulty}-formula`);
 
         if (iconEl) {
-            // ✅ P0 SECURITY: textContent is XSS-safe
             iconEl.textContent = content.icon;
         }
 
         if (baseEl) {
-            // ✅ P0 SECURITY: textContent is XSS-safe
             baseEl.textContent = content.base;
         }
 
         if (formulaEl && Array.isArray(content.formula)) {
-            // ✅ P0 SECURITY: Clear with assignment, not innerHTML
-            // Preserve child nodes during rebuild
+            // Clear with safe removal
             while (formulaEl.firstChild) {
                 formulaEl.removeChild(formulaEl.firstChild);
             }
 
             content.formula.forEach((line, index) => {
                 const lineEl = document.createElement('div');
-                // ✅ P0 SECURITY: textContent is XSS-safe
                 lineEl.textContent = line;
                 if (index === 0) {
-                    // ✅ CSP-FIX: Use CSS class instead of inline style
                     lineEl.classList.add('font-bold');
                 }
                 formulaEl.appendChild(lineEl);
@@ -627,7 +602,7 @@ na/**
     // ===========================
 
     /**
-     * Initialize selection from DifficultySelectionModule.gameState
+     * Initialize selection from GameState
      */
     function initializeSelection() {
         if (DifficultySelectionModule.gameState.difficulty) {
@@ -649,7 +624,7 @@ na/**
 
         // Validate difficulty value
         if (!difficultyNames[difficulty]) {
-            console.error(`❌ Invalid difficulty: ${difficulty}`);
+            Logger.error(`❌ Invalid difficulty: ${difficulty}`);
             return;
         }
 
@@ -663,16 +638,14 @@ na/**
         element.classList.add('selected');
         element.setAttribute('aria-pressed', 'true');
 
-        // Save directly to DifficultySelectionModule.gameState
+        // Save directly to GameState
         DifficultySelectionModule.gameState.setDifficulty(difficulty);
 
         updateContinueButton();
 
         showNotification(`${difficultyNames[difficulty]} Modus gewählt!`, 'success', 2000);
 
-        if (DifficultySelectionModule.isDevelopment) {
-            console.log(`Selected difficulty: ${difficulty}`);
-        }
+        Logger.debug(`Selected difficulty: ${difficulty}`);
     }
 
     function updateContinueButton() {
@@ -741,6 +714,48 @@ na/**
                 proceedToNextStep();
             }
         });
+
+        // Alcohol toggle
+        const alcoholToggle = document.getElementById('alcohol-toggle');
+        if (alcoholToggle) {
+            addTrackedEventListener(alcoholToggle, 'change', handleAlcoholToggle);
+        }
+    }
+
+    /**
+     * Handle alcohol mode toggle
+     */
+    function handleAlcoholToggle(event) {
+        const isEnabled = event.target.checked;
+
+        // Check age requirement
+        const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+        if (isEnabled && ageLevel < 18) {
+            event.target.checked = false;
+            showNotification('Alkohol-Modus nur für 18+', 'warning');
+            return;
+        }
+
+        DifficultySelectionModule.alcoholMode = isEnabled;
+        DifficultySelectionModule.gameState.setAlcoholMode(isEnabled);
+
+        updateUIForAlcoholMode();
+
+        // Show/hide warning
+        const warning = document.getElementById('alcohol-warning');
+        if (warning) {
+            if (isEnabled) {
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+        }
+
+        showNotification(
+            isEnabled ? '🍺 Alkohol-Modus aktiviert' : '💧 Alkohol-Modus deaktiviert',
+            'info',
+            2000
+        );
     }
 
     /**
@@ -792,9 +807,7 @@ na/**
             return;
         }
 
-        if (DifficultySelectionModule.isDevelopment) {
-            console.log(`🚀 Proceeding with difficulty: ${difficulty}`);
-        }
+        Logger.debug(`🚀 Proceeding with difficulty: ${difficulty}`);
 
         showLoading();
 
@@ -816,18 +829,16 @@ na/**
                                 updatedAt: firebase.database.ServerValue.TIMESTAMP
                             });
 
-                        if (DifficultySelectionModule.isDevelopment) {
-                            console.log('✅ Difficulty saved to database');
-                        }
+                        Logger.debug('✅ Difficulty saved to database');
                     }
                 } else {
-                    console.warn('⚠️ Firebase not available, difficulty not synced');
+                    Logger.warn('⚠️ Firebase not available, difficulty not synced');
                 }
             } catch (error) {
-                console.error('❌ Error saving difficulty to database:', error);
+                Logger.error('❌ Error saving difficulty to database:', error);
 
                 // ✅ P1 STABILITY: Offline support - don't block user
-                console.warn('⚠️ Saving difficulty locally only (offline mode)');
+                Logger.warn('⚠️ Saving difficulty locally only (offline mode)');
 
                 // ✅ P1 STABILITY: Offer retry option for critical multiplayer saves
                 if (deviceMode === 'multi') {
@@ -850,7 +861,6 @@ na/**
         }
 
         // ✅ P1 STABILITY: Always save to localStorage as offline fallback
-        // This ensures the page works even without Firebase connection
         try {
             const difficultyState = {
                 difficulty: difficulty,
@@ -866,24 +876,19 @@ na/**
                 localStorage.setItem('nocap_difficulty_selection', JSON.stringify(difficultyState));
             }
 
-            if (DifficultySelectionModule.isDevelopment) {
-                console.log('✅ Difficulty saved to localStorage (offline fallback)', difficultyState);
-            }
+            Logger.debug('✅ Difficulty saved to localStorage (offline fallback)', difficultyState);
         } catch (storageError) {
-            console.error('❌ Failed to save to localStorage:', storageError);
-            // Show warning but continue
+            Logger.error('❌ Failed to save to localStorage:', storageError);
             showNotification('⚠️ Lokale Speicherung fehlgeschlagen', 'warning', 2000);
         }
 
         setTimeout(() => {
-
             if (deviceMode === 'single') {
                 window.location.href = 'player-setup.html';
             } else if (deviceMode === 'multi') {
                 window.location.href = 'multiplayer-lobby.html';
             } else {
-                // Fallback: should not happen after validation
-                console.warn('⚠️ Device mode not set, redirecting to home');
+                Logger.warn('⚠️ Device mode not set, redirecting to home');
                 window.location.href = 'index.html';
             }
         }, 500);
@@ -895,7 +900,7 @@ na/**
     function goBack() {
         // ✅ P1 UI/UX: Validate we have valid state to go back to
         if (!DifficultySelectionModule.gameState || !DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
-            console.warn('⚠️ No categories selected, redirecting to home');
+            Logger.warn('⚠️ No categories selected, redirecting to home');
             window.location.href = 'index.html';
             return;
         }
@@ -911,72 +916,11 @@ na/**
             } else if (deviceMode === 'single') {
                 window.location.href = 'category-selection.html';
             } else {
-                // ✅ P1 UI/UX: Fallback to safe route (never empty page)
-                console.warn('⚠️ Device mode unknown, redirecting to home');
+                Logger.warn('⚠️ Device mode unknown, redirecting to home');
                 window.location.href = 'index.html';
             }
         }, 300);
     }
-
-    /**
-     * ✅ P1 UI/UX: Check if difficulty selection is still valid
-     * Called when returning from other pages or on page visibility change
-     */
-    function validateDifficultySelection() {
-        // Check if selected categories still exist in DifficultySelectionModule.gameState
-        if (!DifficultySelectionModule.gameState || !DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
-            showNotification(
-                '⚠️ Keine Kategorien ausgewählt. Bitte wähle zuerst Kategorien aus.',
-                'warning',
-                3000
-            );
-
-            setTimeout(() => {
-                const redirectUrl = DifficultySelectionModule.gameState?.deviceMode === 'multi'
-                    ? 'multiplayer-category-selection.html'
-                    : 'category-selection.html';
-                window.location.href = redirectUrl;
-            }, 2000);
-
-            return false;
-        }
-
-        // ✅ P1 UI/UX: Check for premium difficulty with non-premium categories
-        if (DifficultySelectionModule.gameState.difficulty === 'premium') {
-            const hasPremiumCategory = DifficultySelectionModule.gameState.selectedCategories.includes('special');
-
-            if (!hasPremiumCategory) {
-                showNotification(
-                    '⚠️ Premium-Schwierigkeit erfordert die "Special Edition" Kategorie.',
-                    'warning',
-                    3000
-                );
-
-                // Reset to default difficulty
-                DifficultySelectionModule.gameState.setDifficulty('medium');
-                selectDifficulty(document.querySelector('[data-difficulty="medium"]'));
-
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * ✅ P1 UI/UX: Listen for page visibility changes
-     * Re-validate when user returns to this page
-     */
-    addTrackedEventListener(document, 'visibilitychange', () => {
-        if (!document.hidden && DifficultySelectionModule.gameState) {
-            // Page became visible again
-            if (DifficultySelectionModule.isDevelopment) {
-                console.log('🔄 Page visible again, re-validating...');
-            }
-
-            validateDifficultySelection();
-        }
-    });
 
     // ===========================
     // UTILITY FUNCTIONS (use NocapUtils)
@@ -999,8 +943,6 @@ na/**
     // ===========================
     // CLEANUP
     // ===========================
-    // CLEANUP
-    // ===========================
 
     function cleanup() {
         // Remove tracked event listeners
@@ -1018,9 +960,7 @@ na/**
             window.NocapUtils.cleanupEventListeners();
         }
 
-        if (DifficultySelectionModule.isDevelopment) {
-            console.log('✅ Difficulty selection cleanup completed');
-        }
+        Logger.debug('✅ Difficulty selection cleanup completed');
     }
 
     window.addEventListener('beforeunload', cleanup);

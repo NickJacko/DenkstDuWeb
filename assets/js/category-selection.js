@@ -1,6 +1,6 @@
 /**
  * No-Cap Category Selection (Single Device Mode)
- * Version 8.0 - JavaScript-Kern Hardening
+ * Version 8.1 - BUGFIX: GameState Constructor Error
  *
  * ✅ P0: Module Pattern - no global variables (XSS prevention)
  * ✅ P0: Event-Listener cleanup on beforeunload
@@ -166,8 +166,6 @@
     // ===========================
     // INITIALIZATION
     // ===========================
-    // INITIALIZATION
-    // ===========================
 
     /**
      * Wait for Firebase to be fully initialized
@@ -201,9 +199,9 @@
                 return;
             }
 
-            // Check dependencies
-            if (typeof CategorySelectionModule.gameState === 'undefined') {
-                Logger.error('❌ CategorySelectionModule.CategorySelectionModule.gameState not found');
+            // ✅ BUGFIX: Check for window.GameState (the constructor)
+            if (typeof window.GameState === 'undefined') {
+                Logger.error('❌ GameState not found');
                 showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
                 return;
             }
@@ -213,10 +211,11 @@
 
             // Wait for utils if available
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-                await window.NocapUtils.waitForDependencies(['CategorySelectionModule.CategorySelectionModule.gameState']);
+                await window.NocapUtils.waitForDependencies(['GameState']);
             }
 
-            CategorySelectionModule.CategorySelectionModule.gameState = new CategorySelectionModule.gameState();
+            // ✅ BUGFIX: Use window.GameState (constructor) not CategorySelectionModule.gameState
+            CategorySelectionModule.gameState = new window.GameState();
 
             // ✅ P1 FIX: Set device mode HERE (not on landing page)
             if (!CategorySelectionModule.gameState.deviceMode) {
@@ -240,7 +239,7 @@
             // Load question counts
             await loadQuestionCounts();
 
-            // Load selected categories from CategorySelectionModule.CategorySelectionModule.gameState
+            // Load selected categories from GameState
             initializeSelectedCategories();
 
             // Setup event listeners
@@ -356,7 +355,6 @@
 
                 const lockedOverlay = document.getElementById(`${category}-locked`);
                 if (lockedOverlay) {
-                    // ✅ CSP-FIX: Use CSS class instead of inline style
                     lockedOverlay.classList.remove('hidden');
                     lockedOverlay.classList.add('d-flex');
                     lockedOverlay.setAttribute('aria-hidden', 'false');
@@ -367,7 +365,6 @@
 
                 const lockedOverlay = document.getElementById(`${category}-locked`);
                 if (lockedOverlay) {
-                    // ✅ CSP-FIX: Use CSS class instead of inline style
                     lockedOverlay.classList.add('hidden');
                     lockedOverlay.classList.remove('d-flex');
                     lockedOverlay.setAttribute('aria-hidden', 'true');
@@ -378,13 +375,13 @@
 
     /**
      * ✅ P0 FIX: Check premium status with MANDATORY server-side validation
-     * Uses CategorySelectionModule.gameState.isPremiumUser() which calls Cloud Function
+     * Uses GameState.isPremiumUser() which calls Cloud Function
      */
     async function checkPremiumStatus() {
         try {
-            // ✅ P0 FIX: Use CategorySelectionModule.CategorySelectionModule.gameState's server-side validation
-            if (!CategorySelectionModule.CategorySelectionModule.gameState) {
-                Logger.warn('⚠️ CategorySelectionModule.CategorySelectionModule.gameState not initialized, cannot check premium status');
+            // ✅ P0 FIX: Use GameState's server-side validation
+            if (!CategorySelectionModule.gameState) {
+                Logger.warn('⚠️ GameState not initialized, cannot check premium status');
                 lockPremiumCategory();
                 return;
             }
@@ -409,7 +406,6 @@
                     specialCard.setAttribute('aria-disabled', 'false');
                 }
                 if (specialLocked) {
-                    // ✅ CSP-FIX: Use CSS class instead of inline style
                     specialLocked.classList.add('hidden');
                     specialLocked.classList.remove('d-flex');
                     specialLocked.setAttribute('aria-hidden', 'true');
@@ -451,7 +447,6 @@
             specialCard.setAttribute('aria-disabled', 'true');
         }
         if (specialLocked) {
-            // ✅ CSP-FIX: Use CSS class instead of inline style
             specialLocked.classList.remove('hidden');
             specialLocked.classList.add('d-flex');
             specialLocked.setAttribute('aria-hidden', 'false');
@@ -552,7 +547,7 @@
     // ===========================
 
     /**
-     * Initialize categories from CategorySelectionModule.CategorySelectionModule.gameState
+     * Initialize categories from GameState
      */
     function initializeSelectedCategories() {
         const selected = CategorySelectionModule.gameState.selectedCategories;
@@ -703,12 +698,12 @@
         const selectedCategories = CategorySelectionModule.gameState.selectedCategories || [];
 
         if (selectedCategories.length === 0) {
-            summaryElement.style.display = 'none';
+            summaryElement.classList.add('hidden');
             continueBtn.disabled = true;
             continueBtn.setAttribute('aria-disabled', 'true');
             continueHint.textContent = 'Wähle mindestens eine Kategorie aus';
         } else {
-            summaryElement.style.display = 'block';
+            summaryElement.classList.remove('hidden');
             continueBtn.disabled = false;
             continueBtn.setAttribute('aria-disabled', 'false');
             continueHint.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''} ausgewählt`;
@@ -758,7 +753,6 @@
 
         const modal = document.getElementById('premium-modal');
         if (modal) {
-            // ✅ CSP-FIX: Use CSS class instead of inline style
             modal.classList.remove('hidden');
             modal.classList.add('d-flex');
             modal.setAttribute('aria-hidden', 'false');
@@ -774,7 +768,6 @@
     function closePremiumModal() {
         const modal = document.getElementById('premium-modal');
         if (modal) {
-            // ✅ CSP-FIX: Use CSS class instead of inline style
             modal.classList.add('hidden');
             modal.classList.remove('d-flex');
             modal.setAttribute('aria-hidden', 'true');
@@ -834,7 +827,6 @@
 
             const specialLocked = document.getElementById('special-locked');
             if (specialLocked) {
-                // ✅ CSP-FIX: Use CSS class instead of inline style
                 specialLocked.classList.add('hidden');
                 specialLocked.classList.remove('d-flex');
                 specialLocked.setAttribute('aria-hidden', 'true');
@@ -1040,7 +1032,6 @@
     }
 
     // ===========================
-    // UTILITY FUNCTIONS
     // UI HELPERS (use NocapUtils)
     // ===========================
 

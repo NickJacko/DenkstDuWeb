@@ -650,7 +650,7 @@
                 copyButton.setAttribute('aria-label', 'Spiel-Code kopieren');
                 copyButton.setAttribute('title', 'Code kopieren');
 
-                copyButton.addTrackedEventListener('click', async () => {
+                addTrackedEventListener(copyButton, 'click', async () => {
                     try {
                         await navigator.clipboard.writeText(gameId);
                         showNotification('Spiel-Code kopiert!', 'success', 2000);
@@ -1498,33 +1498,33 @@
         const confirmLeaveBtn = document.getElementById('confirm-leave-btn');
 
         if (startBtn) {
-            startBtn.addTrackedEventListener('click', startGame);
+            addTrackedEventListener(startBtn, 'click', startGame);
         }
         if (readyBtn) {
-            readyBtn.addTrackedEventListener('click', toggleReady);
+            addTrackedEventListener(readyBtn, 'click', toggleReady);
         }
         if (leaveBtn) {
             // ✅ P1 STABILITY: Show confirmation instead of direct leave
-            leaveBtn.addTrackedEventListener('click', showLeaveConfirmation);
+            addTrackedEventListener(leaveBtn, 'click', showLeaveConfirmation);
         }
         if (copyBtn) {
             // ✅ P1 UI/UX: Use enhanced copy function
-            copyBtn.addTrackedEventListener('click', copyGameCode);
+            addTrackedEventListener(copyBtn, 'click', copyGameCode);
         }
         if (editBtn) {
-            editBtn.addTrackedEventListener('click', editSettings);
+            addTrackedEventListener(editBtn, 'click', editSettings);
         }
 
         // ✅ P1 STABILITY: Leave confirmation dialog handlers
         if (cancelLeaveBtn) {
-            cancelLeaveBtn.addTrackedEventListener('click', hideLeaveConfirmation);
+            addTrackedEventListener(cancelLeaveBtn, 'click', hideLeaveConfirmation);
         }
         if (confirmLeaveBtn) {
-            confirmLeaveBtn.addTrackedEventListener('click', confirmLeaveGame);
+            addTrackedEventListener(confirmLeaveBtn, 'click', confirmLeaveGame);
         }
 
         // ✅ P1 STABILITY: ESC key to close dialog
-        document.addTrackedEventListener('keydown', (e) => {
+        addTrackedEventListener(document, 'keydown', (e) => {
             if (e.key === 'Escape') {
                 const dialog = document.getElementById('leave-confirmation');
                 if (dialog && !dialog.hasAttribute('hidden')) {
@@ -1533,7 +1533,7 @@
             }
         });
 
-        window.addTrackedEventListener('beforeunload', cleanup);
+        addTrackedEventListener(window, 'beforeunload', cleanup);
 
         if (MultiplayerLobbyModule.isDevelopment) {
             console.log('✅ Event listeners setup');
@@ -1636,7 +1636,7 @@
     // ===========================
 
     if (document.readyState === 'loading') {
-        document.addTrackedEventListener('DOMContentLoaded', initialize);
+        addTrackedEventListener(document, 'DOMContentLoaded', initialize);
     } else {
         initialize();
     }

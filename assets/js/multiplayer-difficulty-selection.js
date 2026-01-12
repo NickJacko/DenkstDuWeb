@@ -1,16 +1,64 @@
 /**
  * No-Cap Multiplayer Difficulty Selection
- * Version 4.0 - Production Ready (Full Audit Fix)
+ * Version 4.1 - BUGFIX: Module Pattern & addEventListener
  *
+ * ✅ BUGFIX: Module Pattern added (was missing)
+ * ✅ BUGFIX: addEventListener usage corrected
+ * ✅ BUGFIX: FirebaseService reference fixed
  * ✅ P1 FIX: Device mode validation
- * ✅ P0 FIX: MultiplayerDifficultyModule.firebaseService reference
- * ✅ P0 FIX: localStorage with nocap_ prefix
  * ✅ P0 FIX: All DOM manipulation with textContent
  * ✅ P0 FIX: FSK validation
  */
 
 (function(window) {
     'use strict';
+
+    // Get Logger from utils
+    const Logger = window.NocapUtils?.Logger || {
+        debug: (...args) => {},
+        info: (...args) => {},
+        warn: console.warn,
+        error: console.error
+    };
+
+    // ===========================
+    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
+    // ✅ BUGFIX: This was completely missing!
+    // ===========================
+
+    const MultiplayerDifficultyModule = {
+        state: {
+            gameState: null,
+            firebaseService: null,
+            alcoholMode: false,
+            eventListenerCleanup: [],
+            isDevelopment: window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1'
+        },
+
+        get gameState() { return this.state.gameState; },
+        set gameState(val) { this.state.gameState = val; },
+
+        get firebaseService() { return this.state.firebaseService; },
+        set firebaseService(val) { this.state.firebaseService = val; },
+
+        get alcoholMode() { return this.state.alcoholMode; },
+        set alcoholMode(val) { this.state.alcoholMode = !!val; },
+
+        get isDevelopment() { return this.state.isDevelopment; }
+    };
+
+    Object.seal(MultiplayerDifficultyModule.state);
+
+    // ===========================
+    // 🛠️ PERFORMANCE UTILITIES
+    // ===========================
+
+    function addTrackedEventListener(element, event, handler, options = {}) {
+        if (!element) return;
+        element.addEventListener(event, handler, options);
+        MultiplayerDifficultyModule.state.eventListenerCleanup.push({element, event, handler, options});
+    }
 
     // ===========================
     // CONSTANTS
@@ -63,61 +111,49 @@
     };
 
     // ===========================
-    // GLOBAL STATE
-    // ===========================
-    
-
-    // ===========================
     // INITIALIZATION
     // ===========================
 
     async function initialize() {
-        if (MultiplayerDifficultyModule.isDevelopment) {
-            console.log('🎮 Initializing multiplayer difficulty selection...');
-        }
+        Logger.debug('🎮 Initializing multiplayer difficulty selection...');
 
         try {
             // Check DOMPurify
             if (typeof DOMPurify === 'undefined') {
-                console.error('❌ CRITICAL: DOMPurify not loaded!');
+                Logger.error('❌ CRITICAL: DOMPurify not loaded!');
                 alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
                 return;
             }
 
-            // Check dependencies
-            if (typeof GameState === 'undefined') {
-                showNotification('Fehler: MultiplayerDifficultyModule.gameState nicht gefunden', 'error');
+            // ✅ BUGFIX: Check for window.GameState (constructor)
+            if (typeof window.GameState === 'undefined') {
+                showNotification('Fehler: GameState nicht gefunden', 'error');
                 return;
             }
 
             // Wait for dependencies
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-                await window.NocapUtils.waitForDependencies(['MultiplayerDifficultyModule.gameState', 'MultiplayerDifficultyModule.firebaseService']);
+                await window.NocapUtils.waitForDependencies(['GameState', 'FirebaseService']);
             }
 
-            MultiplayerDifficultyModule.gameState = new GameState();
+            MultiplayerDifficultyModule.gameState = new window.GameState();
 
-            // ✅ FIX: Ensure device mode is set for multiplayer
+            // Ensure device mode is set for multiplayer
             if (!MultiplayerDifficultyModule.gameState.deviceMode) {
                 MultiplayerDifficultyModule.gameState.setDeviceMode('multi');
-                if (MultiplayerDifficultyModule.isDevelopment) {
-                    console.log('⚠️ Device mode was not set, setting to multi');
-                }
+                Logger.debug('⚠️ Device mode was not set, setting to multi');
             }
 
-            // ===========================
-            // CRITICAL: VALIDATE DEVICE MODE
-            // This page requires multiplayer host mode
-            // ===========================
+            // Validate device mode
             if (!validateGameState()) {
                 return;
             }
 
-            // ✅ FIX: Use window.MultiplayerDifficultyModule.firebaseService (not firebaseGameService)
-            if (typeof window.MultiplayerDifficultyModule.firebaseService !== 'undefined') {
-                MultiplayerDifficultyModule.firebaseService = window.MultiplayerDifficultyModule.firebaseService;
+            // ✅ BUGFIX: Use window.FirebaseService (not window.MultiplayerDifficultyModule.firebaseService)
+            if (typeof window.FirebaseService !== 'undefined') {
+                MultiplayerDifficultyModule.firebaseService = window.FirebaseService;
             } else {
-                console.error('❌ Firebase service not available');
+                Logger.error('❌ Firebase service not available');
                 showNotification('Firebase nicht verfügbar', 'error');
                 setTimeout(() => window.location.href = 'multiplayer-lobby.html', 3000);
                 return;
@@ -139,7 +175,7 @@
             // Setup event listeners
             setupEventListeners();
 
-            // Load from MultiplayerDifficultyModule.gameState
+            // Load from gameState
             if (MultiplayerDifficultyModule.gameState.difficulty) {
                 const card = document.querySelector(`[data-difficulty="${MultiplayerDifficultyModule.gameState.difficulty}"]`);
                 if (card) {
@@ -149,12 +185,10 @@
                 }
             }
 
-            if (MultiplayerDifficultyModule.isDevelopment) {
-                console.log('✅ Multiplayer difficulty selection initialized');
-            }
+            Logger.debug('✅ Multiplayer difficulty selection initialized');
 
         } catch (error) {
-            console.error('❌ Initialization error:', error);
+            Logger.error('❌ Initialization error:', error);
             showNotification('Fehler beim Laden', 'error');
         }
     }
@@ -163,23 +197,19 @@
     // VALIDATION
     // ===========================
 
-    /**
-     * Validate game state with strict checks
-     */
     function validateGameState() {
-        if (MultiplayerDifficultyModule.isDevelopment) {
-            console.log('🔍 Validating game state...');
-            console.log('GameState:', {
-                deviceMode: MultiplayerDifficultyModule.gameState?.deviceMode,
-                playerName: MultiplayerDifficultyModule.gameState?.playerName,
-                selectedCategories: MultiplayerDifficultyModule.gameState?.selectedCategories,
-                gameId: MultiplayerDifficultyModule.gameState?.gameId
-            });
-        }
+        Logger.debug('🔍 Validating game state...');
+        Logger.debug('GameState:', {
+            deviceMode: MultiplayerDifficultyModule.gameState?.deviceMode,
+            playerName: MultiplayerDifficultyModule.gameState?.playerName,
+            selectedCategories: MultiplayerDifficultyModule.gameState?.selectedCategories,
+            gameId: MultiplayerDifficultyModule.gameState?.gameId
+        });
 
         // Strict device mode check
-        if (!MultiplayerDifficultyModule.gameState || MultiplayerDifficultyModule.gameState.deviceMode !== 'multi') {
-            console.error('❌ Wrong device mode:', MultiplayerDifficultyModule.gameState?.deviceMode);
+        if (!MultiplayerDifficultyModule.gameState ||
+            MultiplayerDifficultyModule.gameState.deviceMode !== 'multi') {
+            Logger.error('❌ Wrong device mode:', MultiplayerDifficultyModule.gameState?.deviceMode);
             showNotification('Falscher Spielmodus', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -191,27 +221,24 @@
             return false;
         }
 
-        // ✅ Player name must be set (from category-selection)
-        if (!MultiplayerDifficultyModule.gameState.playerName || MultiplayerDifficultyModule.gameState.playerName.trim() === '') {
-            console.error('❌ No player name - redirecting to category selection');
+        // Player name must be set
+        if (!MultiplayerDifficultyModule.gameState.playerName ||
+            MultiplayerDifficultyModule.gameState.playerName.trim() === '') {
+            Logger.error('❌ No player name - redirecting to category selection');
             showNotification('Bitte zuerst Spielername eingeben', 'warning');
             setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
             return false;
         }
 
-        if (!MultiplayerDifficultyModule.gameState.selectedCategories || MultiplayerDifficultyModule.gameState.selectedCategories.length === 0) {
-            console.error('❌ No categories selected');
+        if (!MultiplayerDifficultyModule.gameState.selectedCategories ||
+            MultiplayerDifficultyModule.gameState.selectedCategories.length === 0) {
+            Logger.error('❌ No categories selected');
             showNotification('Keine Kategorien ausgewählt', 'error');
             setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
             return false;
         }
 
-        // ✅ FIX: Game-ID wird erst in der Lobby erstellt, nicht hier prüfen!
-        // Flow: Category → Difficulty → Lobby (Game-ID wird HIER erstellt)
-
-        if (MultiplayerDifficultyModule.isDevelopment) {
-            console.log('✅ Game state valid');
-        }
+        Logger.debug('✅ Game state valid');
         return true;
     }
 
@@ -222,17 +249,12 @@
     function checkAlcoholMode() {
         try {
             if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-                // ✅ FIX: Use nocap_alcohol_mode (with prefix)
                 const alcoholModeStr = window.NocapUtils.getLocalStorage('nocap_alcohol_mode');
                 MultiplayerDifficultyModule.alcoholMode = alcoholModeStr === 'true';
             }
-            if (MultiplayerDifficultyModule.isDevelopment) {
-                console.log(`🍺 Alcohol mode: ${MultiplayerDifficultyModule.alcoholMode}`);
-            }
+            Logger.debug(`🍺 Alcohol mode: ${MultiplayerDifficultyModule.alcoholMode}`);
         } catch (error) {
-            if (MultiplayerDifficultyModule.isDevelopment) {
-                console.error('❌ Error checking alcohol mode:', error);
-            }
+            Logger.error('❌ Error checking alcohol mode:', error);
             MultiplayerDifficultyModule.alcoholMode = false;
         }
     }
@@ -268,7 +290,6 @@
             hostNameEl.textContent = MultiplayerDifficultyModule.gameState.playerName;
         }
 
-        // ✅ Game-ID wird erst in Lobby erstellt
         if (gameIdEl) {
             if (MultiplayerDifficultyModule.gameState.gameId) {
                 gameIdEl.textContent = MultiplayerDifficultyModule.gameState.gameId;
@@ -279,19 +300,17 @@
     }
 
     // ===========================
-    // DISPLAY CATEGORIES WITH TEXTCONTENT
+    // DISPLAY CATEGORIES
     // ===========================
 
-    /**
-     * Display selected categories with safe DOM manipulation
-     */
     function displaySelectedCategories() {
         const container = document.getElementById('selected-categories-display');
         if (!container) return;
 
         container.innerHTML = '';
 
-        if (!MultiplayerDifficultyModule.gameState.selectedCategories || MultiplayerDifficultyModule.gameState.selectedCategories.length === 0) {
+        if (!MultiplayerDifficultyModule.gameState.selectedCategories ||
+            MultiplayerDifficultyModule.gameState.selectedCategories.length === 0) {
             const emptyMsg = document.createElement('span');
             emptyMsg.className = 'empty-categories-msg';
             emptyMsg.textContent = 'Keine Kategorien';
@@ -321,18 +340,12 @@
             container.appendChild(tag);
         });
 
-        if (MultiplayerDifficultyModule.isDevelopment) {
-            console.log('✅ Categories displayed');
-        }
+        Logger.debug('✅ Categories displayed');
     }
-
     // ===========================
-    // RENDER CARDS WITH TEXTCONTENT
+    // RENDER CARDS
     // ===========================
 
-    /**
-     * Render difficulty cards with safe DOM manipulation
-     */
     function renderDifficultyCards() {
         const grid = document.getElementById('difficulty-grid');
         if (!grid) return;
@@ -385,11 +398,11 @@
             card.appendChild(penalty);
             card.appendChild(formula);
 
-            // Event listeners
-            card.addTrackedEventListener('click', () => selectDifficulty(key));
+            // ✅ BUGFIX: Use addTrackedEventListener function (not card.addTrackedEventListener)
+            addTrackedEventListener(card, 'click', () => selectDifficulty(key));
 
             // Keyboard support
-            card.addTrackedEventListener('keydown', (e) => {
+            addTrackedEventListener(card, 'keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     selectDifficulty(key);
@@ -399,22 +412,17 @@
             grid.appendChild(card);
         });
 
-        if (MultiplayerDifficultyModule.isDevelopment) {
-            console.log('✅ Difficulty cards rendered');
-        }
+        Logger.debug('✅ Difficulty cards rendered');
     }
 
     // ===========================
     // DIFFICULTY SELECTION
     // ===========================
 
-    /**
-     * Select difficulty with validation
-     */
     function selectDifficulty(difficulty) {
         // Validate difficulty
         if (!difficultyData[difficulty]) {
-            console.error(`❌ Invalid difficulty: ${difficulty}`);
+            Logger.error(`❌ Invalid difficulty: ${difficulty}`);
             return;
         }
 
@@ -431,7 +439,7 @@
             selectedCard.setAttribute('aria-checked', 'true');
         }
 
-        // Update MultiplayerDifficultyModule.gameState
+        // Update gameState
         MultiplayerDifficultyModule.gameState.difficulty = difficulty;
 
         // Update continue button
@@ -440,9 +448,7 @@
         // Show confirmation
         showNotification(`${difficultyData[difficulty].name} gewählt!`, 'success', 1500);
 
-        if (MultiplayerDifficultyModule.isDevelopment) {
-            console.log(`Selected difficulty: ${difficulty}`);
-        }
+        Logger.debug(`Selected difficulty: ${difficulty}`);
     }
 
     function updateContinueButton() {
@@ -471,16 +477,14 @@
         const continueBtn = document.getElementById('continue-btn');
 
         if (backBtn) {
-            backBtn.addTrackedEventListener('click', goBack);
+            addTrackedEventListener(backBtn, 'click', goBack);
         }
 
         if (continueBtn) {
-            continueBtn.addTrackedEventListener('click', proceed);
+            addTrackedEventListener(continueBtn, 'click', proceed);
         }
 
-        if (MultiplayerDifficultyModule.isDevelopment) {
-            console.log('✅ Event listeners setup');
-        }
+        Logger.debug('✅ Event listeners setup');
     }
 
     // ===========================
@@ -494,9 +498,6 @@
         }
 
         try {
-            // ✅ Difficulty wird in MultiplayerDifficultyModule.gameState gespeichert
-            // Firebase Update erfolgt erst in Lobby wenn Game-ID erstellt wurde
-
             showNotification('Weiter zur Lobby...', 'success', 500);
 
             setTimeout(() => {
@@ -504,9 +505,7 @@
             }, 500);
 
         } catch (error) {
-            if (MultiplayerDifficultyModule.isDevelopment) {
-                console.error('❌ Proceed error:', error);
-            }
+            Logger.error('❌ Proceed error:', error);
             showNotification('Fehler beim Fortfahren', 'error');
         }
     }
@@ -519,9 +518,6 @@
     // INPUT SANITIZATION
     // ===========================
 
-    /**
-     * Sanitize text with NocapUtils or fallback
-     */
     function sanitizeText(input) {
         if (!input) return '';
 
@@ -533,35 +529,47 @@
     }
 
     // ===========================
-    // UTILITIES (use NocapUtils)
+    // UTILITIES
     // ===========================
 
-    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
-        alert(sanitizeText(String(message))); // Fallback
-    };
+    const showNotification = window.NocapUtils?.showNotification ||
+        function(message, type = 'info') {
+            alert(sanitizeText(String(message)));
+        };
 
     // ===========================
     // CLEANUP
     // ===========================
 
     function cleanup() {
+        MultiplayerDifficultyModule.state.eventListenerCleanup.forEach(
+            ({element, event, handler, options}) => {
+                try {
+                    element.removeEventListener(event, handler, options);
+                } catch (error) {
+                    // Element may have been removed from DOM
+                }
+            }
+        );
+        MultiplayerDifficultyModule.state.eventListenerCleanup = [];
+
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();
         }
 
-        if (MultiplayerDifficultyModule.isDevelopment) {
-            console.log('✅ Multiplayer difficulty selection cleanup completed');
-        }
+        Logger.debug('✅ Multiplayer difficulty selection cleanup completed');
     }
 
-    window.addTrackedEventListener('beforeunload', cleanup);
+    // ✅ BUGFIX: Use normal window.addEventListener
+    window.addEventListener('beforeunload', cleanup);
 
     // ===========================
     // INITIALIZATION
     // ===========================
 
+    // ✅ BUGFIX: Use normal document.addEventListener
     if (document.readyState === 'loading') {
-        document.addTrackedEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', initialize);
     } else {
         initialize();
     }

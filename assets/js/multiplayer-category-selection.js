@@ -1,15 +1,16 @@
 /**
  * No-Cap Multiplayer Category Selection
- * Version 5.0 - JavaScript-Kern Hardening
+ * Version 5.1 - BUGFIX: addEventListener Errors
  *
  * CRITICAL: This page is the "Source of Truth" for Multiplayer Host Mode
  * - Sets deviceMode = 'multi'
- * - Sets MultiplayerCategoryModule.isHost = true, isGuest = false
+ * - Sets isHost = true, isGuest = false
  * - Creates/manages Firebase game
  *
  * ✅ P0: Module Pattern - no global variables (XSS prevention)
  * ✅ P0: Event-Listener cleanup on beforeunload
  * ✅ P0: MANDATORY server-side premium validation
+ * ✅ BUGFIX: Corrected addEventListener usage
  */
 
 (function(window) {
@@ -97,9 +98,10 @@
         };
     }
 
-    function addEventListener(element, event, handler, options = {}) {
+    // ✅ BUGFIX: Corrected function name and implementation
+    function addTrackedEventListener(element, event, handler, options = {}) {
         if (!element) return;
-        element.addTrackedEventListener(event, handler, options);
+        element.addEventListener(event, handler, options);
         MultiplayerCategoryModule.state.eventListenerCleanup.push({element, event, handler, options});
     }
 
@@ -145,80 +147,63 @@
         }
     };
 
-    // (All state moved to MultiplayerCategoryModule)
-
     // ===========================
     // INITIALIZATION
     // ===========================
 
     async function initialize() {
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('🌐 Initializing multiplayer category selection...');
-        }
+        Logger.debug('🌐 Initializing multiplayer category selection...');
 
         // P0 FIX: Check DOMPurify
         if (typeof DOMPurify === 'undefined') {
-            console.error('❌ CRITICAL: DOMPurify not loaded!');
+            Logger.error('❌ CRITICAL: DOMPurify not loaded!');
             alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
             return;
         }
 
-        // P0 FIX: Check dependencies
-        if (typeof GameState === 'undefined') {
+        // ✅ BUGFIX: Check for window.GameState (constructor)
+        if (typeof window.GameState === 'undefined') {
             showNotification('Fehler beim Laden', 'error');
             return;
         }
 
         // P1 FIX: Wait for dependencies
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            await window.NocapUtils.waitForDependencies(['MultiplayerCategoryModule.gameState', 'firebaseGameService']);
+            await window.NocapUtils.waitForDependencies(['GameState', 'FirebaseService']);
         }
 
-        MultiplayerCategoryModule.gameState = new GameState();
+        MultiplayerCategoryModule.gameState = new window.GameState();
 
-        // ===========================
         // CRITICAL: DEVICE MODE ENFORCEMENT
-        // This page is ONLY for multiplayer host mode
-        // ✅ P1 UI/UX: But guests might navigate here - detect and handle
-        // ===========================
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('🎮 Checking user role...');
-        }
+        Logger.debug('🎮 Checking user role...');
 
-        // Check if user is guest (has gameId but isGuest flag)
-        if (MultiplayerCategoryModule.gameState.isGuest === true || (MultiplayerCategoryModule.gameState.gameId && !MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost)) {
+        // Check if user is guest
+        if (MultiplayerCategoryModule.gameState.isGuest === true ||
+            (MultiplayerCategoryModule.gameState.gameId && !MultiplayerCategoryModule.gameState.isHost)) {
             MultiplayerCategoryModule.isHost = false;
-            MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost = false;
+            MultiplayerCategoryModule.gameState.isHost = false;
             MultiplayerCategoryModule.gameState.isGuest = true;
-
-            if (MultiplayerCategoryModule.isDevelopment) {
-                console.log('👤 User is GUEST - showing read-only view');
-            }
+            Logger.debug('👤 User is GUEST - showing read-only view');
         } else {
             // Force host mode
             MultiplayerCategoryModule.isHost = true;
             MultiplayerCategoryModule.gameState.deviceMode = 'multi';
-            MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost = true;
+            MultiplayerCategoryModule.gameState.isHost = true;
             MultiplayerCategoryModule.gameState.isGuest = false;
-
-            if (MultiplayerCategoryModule.isDevelopment) {
-                console.log('👑 User is HOST - showing editable view');
-            }
+            Logger.debug('👑 User is HOST - showing editable view');
         }
 
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('✅ User role set:', {
-                deviceMode: MultiplayerCategoryModule.gameState.deviceMode,
-                isHost: MultiplayerCategoryModule.isHost,
-                isGuest: MultiplayerCategoryModule.gameState.isGuest
-            });
-        }
+        Logger.debug('✅ User role set:', {
+            deviceMode: MultiplayerCategoryModule.gameState.deviceMode,
+            isHost: MultiplayerCategoryModule.isHost,
+            isGuest: MultiplayerCategoryModule.gameState.isGuest
+        });
 
-        // P0 FIX: Use global firebaseGameService
-        if (typeof window.MultiplayerCategoryModule.firebaseService !== 'undefined') {
-            MultiplayerCategoryModule.firebaseService = window.MultiplayerCategoryModule.firebaseService;
+        // ✅ BUGFIX: Use window.FirebaseService
+        if (typeof window.FirebaseService !== 'undefined') {
+            MultiplayerCategoryModule.firebaseService = window.FirebaseService;
         } else {
-            console.error('❌ Firebase service not available');
+            Logger.error('❌ Firebase service not available');
             showNotification('Firebase nicht verfügbar', 'error');
             setTimeout(() => window.location.href = 'index.html', 3000);
             return;
@@ -237,8 +222,9 @@
         // Update UI with player info
         updateHeaderInfo();
 
-        // Check if player name already set (from previous navigation)
-        if (MultiplayerCategoryModule.gameState.playerName && MultiplayerCategoryModule.gameState.playerName.trim()) {
+        // Check if player name already set
+        if (MultiplayerCategoryModule.gameState.playerName &&
+            MultiplayerCategoryModule.gameState.playerName.trim()) {
             MultiplayerCategoryModule.playerNameConfirmed = true;
             showCategorySelection();
         } else {
@@ -249,25 +235,23 @@
         await checkPremiumStatus();
         await loadQuestionCounts();
 
-        // Render categories (will be hidden if name not confirmed)
+        // Render categories
         renderCategoryCards();
 
         // Setup event listeners
         setupEventListeners();
 
-        // P1 FIX: Load from MultiplayerCategoryModule.gameState
+        // Load from gameState
         if (MultiplayerCategoryModule.playerNameConfirmed) {
             initializeSelectedCategories();
 
-            // ✅ P1 STABILITY: Mark guest as ready when they view categories
+            // Mark guest as ready when they view categories
             if (!MultiplayerCategoryModule.isHost) {
                 setTimeout(() => markPlayerReady(), 1000);
             }
         }
 
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('✅ Multiplayer category selection initialized');
-        }
+        Logger.debug('✅ Multiplayer category selection initialized');
     }
 
     // ===========================
@@ -330,17 +314,13 @@
             return;
         }
 
-        // ✅ FIX: Use setPlayerName() to save persistently
         MultiplayerCategoryModule.gameState.setPlayerName(playerName);
         MultiplayerCategoryModule.playerNameConfirmed = true;
 
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('✅ Player name set and saved:', playerName);
-        }
+        Logger.debug('✅ Player name set and saved:', playerName);
 
         showNotification(`Willkommen ${playerName}! 👋`, 'success', 1500);
 
-        // Show category selection
         setTimeout(() => {
             showCategorySelection();
         }, 500);
@@ -351,21 +331,20 @@
     // ===========================
 
     function validateGameState() {
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('🔍 Validating game state...');
-        }
+        Logger.debug('🔍 Validating game state...');
 
         // P0 FIX: Strict device mode check
-        if (!MultiplayerCategoryModule.gameState || MultiplayerCategoryModule.gameState.deviceMode !== 'multi') {
-            console.error('❌ Wrong device mode:', MultiplayerCategoryModule.gameState?.deviceMode);
+        if (!MultiplayerCategoryModule.gameState ||
+            MultiplayerCategoryModule.gameState.deviceMode !== 'multi') {
+            Logger.error('❌ Wrong device mode:', MultiplayerCategoryModule.gameState?.deviceMode);
             showNotification('Falscher Spielmodus', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
         // P0 FIX: Verify host status
-        if (!MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost) {
-            console.error('❌ Not host');
+        if (!MultiplayerCategoryModule.gameState.isHost) {
+            Logger.error('❌ Not host');
             showNotification('Du bist nicht der Host', 'error');
             setTimeout(() => window.location.href = 'multiplayer-lobby.html', 2000);
             return false;
@@ -377,12 +356,7 @@
             return false;
         }
 
-        // ✅ FIX: playerName wird erst später in der Lobby gesetzt, nicht hier prüfen
-        // Im Multiplayer-Flow: Index → Category → Difficulty → Lobby (dort wird Name eingegeben)
-
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('✅ Game state valid');
-        }
+        Logger.debug('✅ Game state valid');
         return true;
     }
 
@@ -390,42 +364,36 @@
     // AGE VERIFICATION
     // ===========================
 
-    /**
-     * P0 FIX: Check age verification with 24h expiration
-     */
     function checkAgeVerification() {
         try {
-            // ✅ Load from nocap_age_verification (consistent with index.js)
             const verification = window.NocapUtils
                 ? window.NocapUtils.getLocalStorage('nocap_age_verification')
                 : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
 
             if (!verification || typeof verification !== 'object') {
-                console.error('❌ No age verification found');
+                Logger.error('❌ No age verification found');
                 showNotification('Altersverifizierung erforderlich!', 'warning');
                 setTimeout(() => window.location.href = 'index.html', 2000);
                 return false;
             }
 
-            // ✅ Check if verification is recent (7 days instead of 24h)
+            // Check if verification is recent (1 year)
             const now = Date.now();
-            const maxAge = 365 * 24 * 60 * 60 * 1000; // 365 days (1 year)
+            const maxAge = 365 * 24 * 60 * 60 * 1000;
 
             if (verification.timestamp && now - verification.timestamp > maxAge) {
-                console.warn('⚠️ Age verification expired (>7 days)');
+                Logger.warn('⚠️ Age verification expired');
                 showNotification('Altersverifizierung abgelaufen - bitte neu bestätigen', 'warning');
                 setTimeout(() => window.location.href = 'index.html', 2000);
                 return false;
             }
 
-            if (MultiplayerCategoryModule.isDevelopment) {
-                const ageLevel = verification.isAdult ? 18 : 0;
-                console.log(`✅ Age verification: ${ageLevel}+`);
-            }
+            const ageLevel = verification.isAdult ? 18 : 0;
+            Logger.debug(`✅ Age verification: ${ageLevel}+`);
             return true;
 
         } catch (error) {
-            console.error('❌ Age verification error:', error);
+            Logger.error('❌ Age verification error:', error);
             showNotification('Altersverifizierung erforderlich!', 'warning');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -436,20 +404,12 @@
     // PREMIUM & QUESTION COUNTS
     // ===========================
 
-    /**
-     * ✅ P0 FIX: Check premium status with server-side validation
-     * Already uses async MultiplayerCategoryModule.gameState.isPremiumUser()
-     */
     async function checkPremiumStatus() {
         try {
-            // ✅ Already using server-side validation via MultiplayerCategoryModule.gameState
             const isPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
 
-            if (MultiplayerCategoryModule.isDevelopment) {
-                console.log(`${isPremium ? '✅' : '🔒'} Premium status (server-validated): ${isPremium}`);
-            }
+            Logger.debug(`${isPremium ? '✅' : '🔒'} Premium status: ${isPremium}`);
 
-            // Update UI based on premium status
             const specialCard = document.querySelector('[data-category="special"]');
             if (specialCard) {
                 if (isPremium) {
@@ -462,9 +422,8 @@
             }
 
         } catch (error) {
-            console.error('❌ Premium check failed:', error);
+            Logger.error('❌ Premium check failed:', error);
 
-            // ✅ P0 FIX: FAIL SECURE - lock premium on error
             const specialCard = document.querySelector('[data-category="special"]');
             if (specialCard) {
                 specialCard.classList.add('locked');
@@ -484,9 +443,7 @@
     async function loadQuestionCounts() {
         try {
             if (!MultiplayerCategoryModule.firebaseService || typeof firebase === 'undefined') {
-                if (MultiplayerCategoryModule.isDevelopment) {
-                    console.warn('⚠️ Firebase not available, using defaults');
-                }
+                Logger.warn('⚠️ Firebase not available, using defaults');
                 return;
             }
 
@@ -498,20 +455,16 @@
                 Object.keys(categoryData).forEach(key => {
                     if (questions[key]) {
                         if (Array.isArray(questions[key])) {
-                            MultiplayerCategoryModule.questionCounts[key] = questions[key].length;
+                            MultiplayerCategoryModule.state.questionCounts[key] = questions[key].length;
                         } else if (typeof questions[key] === 'object') {
-                            MultiplayerCategoryModule.questionCounts[key] = Object.keys(questions[key]).length;
+                            MultiplayerCategoryModule.state.questionCounts[key] = Object.keys(questions[key]).length;
                         }
                     }
                 });
-                if (MultiplayerCategoryModule.isDevelopment) {
-                    console.log('✅ Question counts loaded:', MultiplayerCategoryModule.questionCounts);
-                }
+                Logger.debug('✅ Question counts loaded:', MultiplayerCategoryModule.questionCounts);
             }
         } catch (error) {
-            if (MultiplayerCategoryModule.isDevelopment) {
-                console.warn('⚠️ Question counts error:', error);
-            }
+            Logger.warn('⚠️ Question counts error:', error);
         }
     }
 
@@ -527,7 +480,6 @@
             hostNameEl.textContent = MultiplayerCategoryModule.gameState.playerName;
         }
 
-        // Game-ID wird erst in der Lobby erstellt, nicht hier
         if (gameIdEl) {
             if (MultiplayerCategoryModule.gameState.gameId) {
                 gameIdEl.textContent = MultiplayerCategoryModule.gameState.gameId;
@@ -536,7 +488,6 @@
             }
         }
     }
-
     // ===========================
     // EVENT LISTENERS
     // ===========================
@@ -548,16 +499,16 @@
         const confirmNameBtn = document.getElementById('confirm-name-btn');
 
         if (backBtn) {
-            backBtn.addTrackedEventListener('click', goBack);
+            addTrackedEventListener(backBtn, 'click', goBack);
         }
         if (proceedBtn) {
-            proceedBtn.addTrackedEventListener('click', proceed);
+            addTrackedEventListener(proceedBtn, 'click', proceed);
         }
 
         // Player name input listeners
         if (nameInput) {
-            nameInput.addTrackedEventListener('input', handleNameInput);
-            nameInput.addTrackedEventListener('keypress', (e) => {
+            addTrackedEventListener(nameInput, 'input', handleNameInput);
+            addTrackedEventListener(nameInput, 'keypress', (e) => {
                 if (e.key === 'Enter' && !confirmNameBtn.disabled) {
                     confirmPlayerName();
                 }
@@ -569,29 +520,22 @@
         }
 
         if (confirmNameBtn) {
-            confirmNameBtn.addTrackedEventListener('click', confirmPlayerName);
+            addTrackedEventListener(confirmNameBtn, 'click', confirmPlayerName);
         }
 
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('✅ Event listeners setup');
-        }
+        Logger.debug('✅ Event listeners setup');
     }
 
     // ===========================
     // INITIALIZE SELECTED CATEGORIES
     // ===========================
 
-    /**
-     * P1 FIX: Initialize selected categories from MultiplayerCategoryModule.gameState
-     */
     function initializeSelectedCategories() {
-        if (MultiplayerCategoryModule.gameState.selectedCategories && Array.isArray(MultiplayerCategoryModule.gameState.selectedCategories)) {
+        if (MultiplayerCategoryModule.gameState.selectedCategories &&
+            Array.isArray(MultiplayerCategoryModule.gameState.selectedCategories)) {
             MultiplayerCategoryModule.gameState.selectedCategories.forEach(key => {
-                // P0 FIX: Validate category exists
                 if (!categoryData[key]) {
-                    if (MultiplayerCategoryModule.isDevelopment) {
-                        console.warn(`⚠️ Invalid category: ${key}`);
-                    }
+                    Logger.warn(`⚠️ Invalid category: ${key}`);
                     return;
                 }
 
@@ -606,21 +550,15 @@
     }
 
     // ===========================
-    // P0 FIX: RENDER CARDS WITH TEXTCONTENT
+    // RENDER CARDS
     // ===========================
 
-    /**
-     * ✅ P0 SECURITY + P1 UI/UX: Render category cards with safe DOM manipulation
-     * - Uses textContent only (no innerHTML) to prevent XSS
-     * - Shows disabled cards for guests with clear visual feedback
-     */
     async function renderCategoryCards() {
         const grid = document.getElementById('categories-grid');
         if (!grid) return;
 
         grid.innerHTML = '';
 
-        // Get age level for FSK checks
         let ageLevel = 0;
         if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
             ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
@@ -636,9 +574,8 @@
             card.setAttribute('tabindex', '0');
             card.setAttribute('aria-label', `${cat.name} auswählen`);
 
-            // ✅ P1 UI/UX: Guests see all cards as disabled
             const isGuest = !MultiplayerCategoryModule.isHost;
-            const locked = isGuest || // ✅ Guest cannot select
+            const locked = isGuest ||
                 (key === 'fsk18' && ageLevel < 18) ||
                 (key === 'fsk16' && ageLevel < 16) ||
                 (key === 'special' && !hasPremium);
@@ -648,35 +585,34 @@
                 card.setAttribute('aria-disabled', 'true');
             }
 
-            // ✅ P1 UI/UX: Add guest-specific class
             if (isGuest) {
                 card.classList.add('guest-disabled');
                 card.setAttribute('aria-label', `${cat.name} (Nur Host kann auswählen)`);
             }
 
-            // ✅ P0 SECURITY: Build with textContent instead of innerHTML
             buildCategoryCard(card, key, cat, locked, ageLevel, isGuest);
 
             // Event listeners
             if (!locked && !isGuest) {
-                card.addTrackedEventListener('click', () => toggleCategory(key));
-                card.addTrackedEventListener('keypress', (e) => {
+                addTrackedEventListener(card, 'click', () => toggleCategory(key));
+                addTrackedEventListener(card, 'keypress', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         toggleCategory(key);
                     }
                 });
             } else if (isGuest) {
-                // ✅ P1 UI/UX: Show message when guest tries to click
-                card.addTrackedEventListener('click', () => {
+                addTrackedEventListener(card, 'click', () => {
                     showNotification('Nur der Host kann Kategorien auswählen', 'info');
                 });
             } else if (key === 'fsk18' && ageLevel < 18) {
-                card.addTrackedEventListener('click', () => showNotification('Du musst 18+ sein', 'warning'));
+                addTrackedEventListener(card, 'click', () =>
+                    showNotification('Du musst 18+ sein', 'warning'));
             } else if (key === 'fsk16' && ageLevel < 16) {
-                card.addTrackedEventListener('click', () => showNotification('Du musst 16+ sein', 'warning'));
+                addTrackedEventListener(card, 'click', () =>
+                    showNotification('Du musst 16+ sein', 'warning'));
             } else if (key === 'special') {
-                card.addTrackedEventListener('click', (e) => {
+                addTrackedEventListener(card, 'click', (e) => {
                     if (e.target.closest('.unlock-btn')) {
                         e.stopPropagation();
                         showPremiumInfo();
@@ -687,16 +623,9 @@
             grid.appendChild(card);
         });
 
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log(`✅ Cards rendered (${MultiplayerCategoryModule.isHost ? 'Host' : 'Guest'} mode)`);
-        }
+        Logger.debug(`✅ Cards rendered (${MultiplayerCategoryModule.isHost ? 'Host' : 'Guest'} mode)`);
     }
 
-    /**
-     * ✅ P0 SECURITY: Build category card with safe DOM manipulation
-     * - Uses textContent exclusively (no innerHTML)
-     * - Sanitizes all user-facing strings
-     */
     function buildCategoryCard(card, key, cat, locked, ageLevel, isGuest = false) {
         // Locked overlay
         if (locked) {
@@ -705,18 +634,15 @@
 
             const lockIcon = document.createElement('div');
             lockIcon.className = 'lock-icon';
-            // ✅ P0 SECURITY: textContent is XSS-safe
-            lockIcon.textContent = isGuest ? '👁️' : '🔒'; // Different icon for guests
+            lockIcon.textContent = isGuest ? '👁️' : '🔒';
             lockIcon.setAttribute('aria-hidden', 'true');
 
             const lockMessage = document.createElement('p');
             lockMessage.className = 'lock-message';
 
-            // ✅ P1 UI/UX: Guest-specific message
             if (isGuest) {
                 lockMessage.textContent = 'Nur Host kann auswählen';
             } else if (key === 'fsk18' && ageLevel < 18) {
-                // ✅ P0 SECURITY: textContent is XSS-safe
                 lockMessage.textContent = 'Nur für Erwachsene (18+)';
             } else if (key === 'fsk16' && ageLevel < 16) {
                 lockMessage.textContent = 'Ab 16 Jahren';
@@ -734,11 +660,9 @@
             overlay.appendChild(lockMessage);
             card.appendChild(overlay);
 
-            // Premium badge
             if (key === 'special') {
                 const badge = document.createElement('div');
                 badge.className = 'premium-badge';
-                // ✅ P0 SECURITY: textContent is XSS-safe
                 badge.textContent = '👑 PREMIUM';
                 badge.setAttribute('aria-hidden', 'true');
                 card.appendChild(badge);
@@ -751,13 +675,11 @@
 
         const icon = document.createElement('div');
         icon.className = 'category-icon';
-        // ✅ P0 SECURITY: textContent is XSS-safe
         icon.textContent = cat.icon;
         icon.setAttribute('aria-hidden', 'true');
 
         const fskBadge = document.createElement('div');
         fskBadge.className = `fsk-badge ${key}-badge`;
-        // ✅ P0 SECURITY: textContent is XSS-safe
         fskBadge.textContent = cat.fsk;
 
         header.appendChild(icon);
@@ -766,13 +688,11 @@
         // Title
         const title = document.createElement('h3');
         title.className = 'category-title';
-        // ✅ P0 SECURITY: textContent is XSS-safe
         title.textContent = cat.name;
 
         // Description
         const description = document.createElement('p');
         description.className = 'category-description';
-        // ✅ P0 SECURITY: textContent is XSS-safe
         description.textContent = cat.description;
 
         // Examples
@@ -818,29 +738,23 @@
     // CATEGORY SELECTION
     // ===========================
 
-    /**
-     * P0 FIX: Toggle category with validation
-     */
     function toggleCategory(key) {
         const card = document.querySelector(`[data-category="${key}"]`);
         if (!card || card.classList.contains('locked')) return;
 
-        // P0 FIX: Validate category exists
         if (!categoryData[key]) {
-            console.error(`❌ Invalid category: ${key}`);
+            Logger.error(`❌ Invalid category: ${key}`);
             return;
         }
 
         const selectedCategories = getSelectedCategories();
 
         if (selectedCategories.includes(key)) {
-            // ✅ FIX: Use removeCategory() for persistent storage
             MultiplayerCategoryModule.gameState.removeCategory(key);
             card.classList.remove('selected');
             card.classList.remove(key);
             card.setAttribute('aria-pressed', 'false');
         } else {
-            // ✅ FIX: Use addCategory() for persistent storage
             MultiplayerCategoryModule.gameState.addCategory(key);
             card.classList.add('selected');
             card.classList.add(key);
@@ -851,16 +765,10 @@
         syncWithFirebase();
     }
 
-    /**
-     * Get selected categories from MultiplayerCategoryModule.gameState
-     */
     function getSelectedCategories() {
         return MultiplayerCategoryModule.gameState.selectedCategories || [];
     }
 
-    /**
-     * P0 FIX: Update selection summary with textContent
-     */
     function updateSelectionSummary() {
         const summary = document.getElementById('selection-summary');
         const title = document.getElementById('summary-title');
@@ -882,7 +790,6 @@
                 title.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''} ausgewählt`;
             }
 
-            // P0 FIX: Build list with textContent
             if (list) {
                 list.innerHTML = '';
 
@@ -907,7 +814,8 @@
             }
 
             if (total) {
-                const totalQ = selectedCategories.reduce((sum, c) => sum + (MultiplayerCategoryModule.questionCounts[c] || 0), 0);
+                const totalQ = selectedCategories.reduce((sum, c) =>
+                    sum + (MultiplayerCategoryModule.questionCounts[c] || 0), 0);
                 total.textContent = totalQ;
             }
         } else {
@@ -921,74 +829,60 @@
     }
 
     async function syncWithFirebase() {
-        if (!MultiplayerCategoryModule.firebaseService || !MultiplayerCategoryModule.gameState.gameId) return;
+        if (!MultiplayerCategoryModule.firebaseService ||
+            !MultiplayerCategoryModule.gameState.gameId) return;
 
         try {
-            const gameRef = firebase.database().ref(`games/${MultiplayerCategoryModule.gameState.gameId}/settings/categories`);
+            const gameRef = firebase.database()
+                .ref(`games/${MultiplayerCategoryModule.gameState.gameId}/settings/categories`);
             await gameRef.set(MultiplayerCategoryModule.gameState.selectedCategories);
         } catch (error) {
-            if (MultiplayerCategoryModule.isDevelopment) {
-                console.error('❌ Sync error:', error);
-            }
+            Logger.error('❌ Sync error:', error);
         }
     }
 
-    /**
-     * ✅ P1 STABILITY: Check if all players have marked themselves as ready
-     * Server-side validation via Firebase
-     */
     async function checkAllPlayersReady() {
         if (!MultiplayerCategoryModule.gameState.gameId) {
-            // No multiplayer game yet - proceed
             return true;
         }
 
         try {
             if (typeof firebase === 'undefined' || !firebase.database) {
-                if (MultiplayerCategoryModule.isDevelopment) {
-                    console.warn('⚠️ Firebase not available for ready check');
-                }
-                return true; // Fallback: allow proceed
+                Logger.warn('⚠️ Firebase not available for ready check');
+                return true;
             }
 
-            const gameRef = firebase.database().ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players`);
+            const gameRef = firebase.database()
+                .ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players`);
             const snapshot = await gameRef.once('value');
 
             if (!snapshot.exists()) {
-                // No players yet - proceed
                 return true;
             }
 
             const players = snapshot.val();
             const playerList = Object.values(players);
 
-            // Check if all non-host players have categoryReady flag
             const allReady = playerList.every(player => {
-                if (player.MultiplayerCategoryModule.isHost) return true; // Host is always ready
+                if (player.isHost) return true;
                 return player.categoryReady === true;
             });
 
-            if (MultiplayerCategoryModule.isDevelopment) {
-                const readyCount = playerList.filter(p => p.categoryReady || p.MultiplayerCategoryModule.isHost).length;
-                console.log(`✅ Ready check: ${readyCount}/${playerList.length} players ready`);
-            }
+            Logger.debug(`✅ Ready check: ${playerList.filter(p =>
+                p.categoryReady || p.isHost).length}/${playerList.length} players ready`);
 
             return allReady;
 
         } catch (error) {
-            console.error('❌ Ready check error:', error);
-            // On error, show warning but allow proceed
+            Logger.error('❌ Ready check error:', error);
             showNotification('Fehler beim Ready-Check - fortfahren mit Vorsicht', 'warning');
             return true;
         }
     }
 
-    /**
-     * ✅ P1 STABILITY: Mark current player as ready (for guests)
-     * Called when guest has viewed the category selection
-     */
     async function markPlayerReady() {
-        if (!MultiplayerCategoryModule.gameState.gameId || MultiplayerCategoryModule.isHost) return;
+        if (!MultiplayerCategoryModule.gameState.gameId ||
+            MultiplayerCategoryModule.isHost) return;
 
         try {
             if (typeof firebase === 'undefined' || !firebase.database) return;
@@ -996,27 +890,21 @@
             const userId = firebase.auth()?.currentUser?.uid;
             if (!userId) return;
 
-            const playerRef = firebase.database().ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players/${userId}/categoryReady`);
+            const playerRef = firebase.database()
+                .ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players/${userId}/categoryReady`);
             await playerRef.set(true);
 
-            if (MultiplayerCategoryModule.isDevelopment) {
-                console.log('✅ Player marked as ready for category selection');
-            }
+            Logger.debug('✅ Player marked as ready for category selection');
 
         } catch (error) {
-            console.error('❌ Mark ready error:', error);
+            Logger.error('❌ Mark ready error:', error);
         }
     }
 
     // ===========================
     // NAVIGATION
-    // ✅ P1 STABILITY: Ready-check before proceeding
     // ===========================
 
-    /**
-     * ✅ P1 STABILITY: Proceed with ready-check for multiplayer
-     * Host must wait until all guests have seen the categories
-     */
     async function proceed() {
         const selectedCategories = getSelectedCategories();
 
@@ -1025,7 +913,6 @@
             return;
         }
 
-        // ✅ P1 STABILITY: Check if all players are ready (for multiplayer)
         if (MultiplayerCategoryModule.isHost && MultiplayerCategoryModule.gameState.gameId) {
             const allReady = await checkAllPlayersReady();
             if (!allReady) {
@@ -1037,7 +924,6 @@
             }
         }
 
-        // Already saved in MultiplayerCategoryModule.gameState
         showNotification('Kategorien gespeichert!', 'success', 500);
         setTimeout(() => {
             window.location.href = 'multiplayer-difficulty-selection.html';
@@ -1045,20 +931,16 @@
     }
 
     function goBack() {
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('🔙 Navigating back to index...');
-        }
+        Logger.debug('🔙 Navigating back to index...');
 
-        // ✅ FIX: Reset game state when going back
         if (MultiplayerCategoryModule.gameState) {
             MultiplayerCategoryModule.gameState.deviceMode = null;
-            MultiplayerCategoryModule.gameState.MultiplayerCategoryModule.isHost = false;
+            MultiplayerCategoryModule.gameState.isHost = false;
             MultiplayerCategoryModule.gameState.isGuest = false;
             MultiplayerCategoryModule.gameState.selectedCategories = [];
             MultiplayerCategoryModule.gameState.playerName = '';
             MultiplayerCategoryModule.gameState.gameId = null;
 
-            // Clear from localStorage
             if (window.NocapUtils && window.NocapUtils.removeLocalStorage) {
                 window.NocapUtils.removeLocalStorage('nocap_player_name');
                 window.NocapUtils.removeLocalStorage('nocap_game_id');
@@ -1067,7 +949,6 @@
             MultiplayerCategoryModule.gameState.save();
         }
 
-        // Navigate back to index
         window.location.href = 'index.html';
     }
 
@@ -1080,12 +961,9 @@
     }
 
     // ===========================
-    // P0 FIX: INPUT SANITIZATION
+    // INPUT SANITIZATION
     // ===========================
 
-    /**
-     * Sanitize text with NocapUtils or fallback
-     */
     function sanitizeText(input) {
         if (!input) return '';
 
@@ -1097,35 +975,47 @@
     }
 
     // ===========================
-    // UTILITIES (use NocapUtils)
+    // UTILITIES
     // ===========================
 
-    const showNotification = window.NocapUtils?.showNotification || function(message, type = 'info') {
-        alert(sanitizeText(String(message))); // Fallback
-    };
+    const showNotification = window.NocapUtils?.showNotification ||
+        function(message, type = 'info') {
+            alert(sanitizeText(String(message)));
+        };
 
     // ===========================
     // CLEANUP
     // ===========================
 
     function cleanup() {
+        MultiplayerCategoryModule.state.eventListenerCleanup.forEach(
+            ({element, event, handler, options}) => {
+                try {
+                    element.removeEventListener(event, handler, options);
+                } catch (error) {
+                    // Element may have been removed from DOM
+                }
+            }
+        );
+        MultiplayerCategoryModule.state.eventListenerCleanup = [];
+
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();
         }
 
-        if (MultiplayerCategoryModule.isDevelopment) {
-            console.log('✅ Multiplayer category selection cleanup completed');
-        }
+        Logger.debug('✅ Multiplayer category selection cleanup completed');
     }
 
-    window.addTrackedEventListener('beforeunload', cleanup);
+    // ✅ BUGFIX: Use normal window.addEventListener
+    window.addEventListener('beforeunload', cleanup);
 
     // ===========================
     // INITIALIZATION
     // ===========================
 
+    // ✅ BUGFIX: Use normal document.addEventListener
     if (document.readyState === 'loading') {
-        document.addTrackedEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', initialize);
     } else {
         initialize();
     }

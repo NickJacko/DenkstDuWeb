@@ -1,6 +1,6 @@
 /**
  * No-Cap Multiplayer Gameplay
- * Version 3.0 - Audit-Fixed & Production Ready with Real-Time Sync
+ * Version 3.1 - BUGFIX: Module Pattern & addEventListener
  *
  * CRITICAL: Complex 4-phase gameplay with Firebase real-time synchronization
  * - Phase 1: Question & Answer
@@ -450,7 +450,7 @@
         }
 
         // Check dependencies
-        if (typeof MultiplayerGameplayModule.gameState === 'undefined') {
+        if (typeof window.GameState === 'undefined') {
             console.error('❌ MultiplayerGameplayModule.gameState not loaded');
             showNotification('Fehler beim Laden', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
@@ -462,7 +462,7 @@
             await window.NocapUtils.waitForDependencies(['MultiplayerGameplayModule.gameState', 'firebaseGameService', 'firebase']);
         }
 
-        MultiplayerGameplayModule.gameState = new MultiplayerGameplayModule.gameState();
+        MultiplayerGameplayModule.gameState = new window.GameState();
 
         // ✅ CRITICAL FIX: Restore MultiplayerGameplayModule.gameState from multiple sources
         let stateRestored = false;
@@ -570,8 +570,8 @@
         }
 
         // P0 FIX: Use global firebaseGameService
-        if (typeof window.MultiplayerGameplayModule.firebaseService !== 'undefined') {
-            MultiplayerGameplayModule.firebaseService = window.MultiplayerGameplayModule.firebaseService;
+        if (typeof window.FirebaseService !== 'undefined') {
+            MultiplayerGameplayModule.firebaseService = window.FirebaseService;
         } else {
             console.error('❌ Firebase service not available');
             showNotification('Firebase nicht verfügbar', 'error');
@@ -710,41 +710,41 @@
         const yesBtn = document.getElementById('yes-btn');
         const noBtn = document.getElementById('no-btn');
 
-        if (yesBtn) yesBtn.addTrackedEventListener('click', () => selectAnswer(true));
-        if (noBtn) noBtn.addTrackedEventListener('click', () => selectAnswer(false));
+        if (yesBtn) addTrackedEventListener(yesBtn, 'click', () => selectAnswer(true));
+        if (noBtn) addTrackedEventListener(noBtn, 'click', () => selectAnswer(false));
 
         // Submit button
         const submitBtn = document.getElementById('submit-btn');
         if (submitBtn) {
-            submitBtn.addTrackedEventListener('click', submitAnswers);
+            addTrackedEventListener(submitBtn, 'click', submitAnswers);
         }
 
         // Host controls
         const nextQuestionBtn = document.getElementById('next-question-btn');
         if (nextQuestionBtn) {
-            nextQuestionBtn.addTrackedEventListener('click', nextQuestion);
+            addTrackedEventListener(nextQuestionBtn, 'click', nextQuestion);
         }
 
         const showOverallBtn = document.getElementById('show-overall-btn');
         if (showOverallBtn) {
-            showOverallBtn.addTrackedEventListener('click', showOverallResults);
+            addTrackedEventListener(showOverallBtn, 'click', showOverallResults);
         }
 
         // Pause button
         const pauseTimerBtn = document.getElementById('pause-timer-btn');
         if (pauseTimerBtn) {
-            pauseTimerBtn.addTrackedEventListener('click', pauseTimer);
+            addTrackedEventListener(pauseTimerBtn, 'click', pauseTimer);
         }
 
         // Overall results controls
         const continueGameBtn = document.getElementById('continue-game-btn');
         if (continueGameBtn) {
-            continueGameBtn.addTrackedEventListener('click', continueGame);
+            addTrackedEventListener(continueGameBtn, 'click', continueGame);
         }
 
         const endGameBtn = document.getElementById('end-game-btn');
         if (endGameBtn) {
-            endGameBtn.addTrackedEventListener('click', endGameForAll);
+            addTrackedEventListener(endGameBtn, 'click', endGameForAll);
         }
 
         // ✅ P1 UI/UX: Keyboard shortcuts
@@ -759,7 +759,7 @@
      * ✅ P1 UI/UX: Setup keyboard shortcuts for accessibility
      */
     function setupKeyboardShortcuts() {
-        document.addTrackedEventListener('keydown', (e) => {
+        addTrackedEventListener(document, 'keydown', (e) => {
             // Only in question phase
             if (currentPhase !== 'question' || hasSubmittedThisRound) return;
 
@@ -832,7 +832,7 @@
     function addPhaseListener(phase, element, event, handler) {
         if (!element) return;
 
-        element.addTrackedEventListener(event, handler);
+        addTrackedEventListener(element, event, handler);
 
         if (!_phaseListeners.has(phase)) {
             _phaseListeners.set(phase, []);
@@ -1654,7 +1654,7 @@
             numberBtn.setAttribute('role', 'radio');
             numberBtn.setAttribute('aria-checked', 'false');
             numberBtn.setAttribute('aria-label', `${i} Spieler schätzen`);
-            numberBtn.addTrackedEventListener('click', () => selectNumber(i));
+            addTrackedEventListener(numberBtn, 'click', () => selectNumber(i));
 
             numberGrid.appendChild(numberBtn);
         }
@@ -2046,6 +2046,7 @@
                 // ✅ CSP FIX: Use CSS class instead of inline style
                 personalBox.classList.remove('hidden');
             }
+
 
             const estEl = document.getElementById('personal-estimation');
             if (estEl) {

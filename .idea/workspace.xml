@@ -4,12 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor multiplayer gameplay, lobby, and results modules for improved event listener management; replace custom event listener functions with standard addEventListener; enhance code readability and maintainability">
-      <change afterPath="$PROJECT_DIR$/docs/ERROR_FIXES_QUICK_REF.md" afterDir="false" />
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/cookie-banner.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/cookie-banner.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/database.rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database.rules.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -156,15 +160,7 @@
       <workItem from="1767865110916" duration="17234000" />
       <workItem from="1767952682710" duration="30595000" />
       <workItem from="1768167037940" duration="13518000" />
-      <workItem from="1768215061185" duration="2579000" />
-    </task>
-    <task id="LOCAL-00058" summary="Change from html to js &amp; html">
-      <option name="closed" value="true" />
-      <created>1763044650979</created>
-      <option name="number" value="00058" />
-      <option name="presentableId" value="LOCAL-00058" />
-      <option name="project" value="LOCAL" />
-      <updated>1763044650979</updated>
+      <workItem from="1768215061185" duration="5357000" />
     </task>
     <task id="LOCAL-00059" summary="Change from html to js &amp; html">
       <option name="closed" value="true" />
@@ -550,7 +546,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768218849543</updated>
     </task>
-    <option name="localTasksCounter" value="107" />
+    <task id="LOCAL-00107" summary="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions">
+      <option name="closed" value="true" />
+      <created>1768219637837</created>
+      <option name="number" value="00107" />
+      <option name="presentableId" value="LOCAL-00107" />
+      <option name="project" value="LOCAL" />
+      <updated>1768219637837</updated>
+    </task>
+    <option name="localTasksCounter" value="108" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -571,7 +575,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Lobby Changes" />
     <MESSAGE value="Join-Game edit" />
     <MESSAGE value="Lobby update" />
     <MESSAGE value="Lobby auto load" />
@@ -596,7 +599,8 @@
     <MESSAGE value="Implement FSK validation and user settings management; enhance security with rate limiting and logging; add age verification features and user account management" />
     <MESSAGE value="Enhance security by adding domain whitelist public key and private key exclusions; implement real-time security functions for game updates and violations; improve event listener management in multiplayer gameplay" />
     <MESSAGE value="Refactor multiplayer gameplay, lobby, and results modules for improved event listener management; replace custom event listener functions with standard addEventListener; enhance code readability and maintainability" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor multiplayer gameplay, lobby, and results modules for improved event listener management; replace custom event listener functions with standard addEventListener; enhance code readability and maintainability" />
+    <MESSAGE value="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions" />
+    <option name="LAST_COMMIT_MESSAGE" value="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
