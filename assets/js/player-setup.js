@@ -622,7 +622,8 @@
         }
 
         // ✅ P1 STABILITY: Save to undo stack before removing
-        const removedPlayerName = inputs[index].querySelector('.player-input').value;
+        const playerInput = inputs[index].querySelector('.player-input');
+        const removedPlayerName = playerInput ? playerInput.value : '';
         if (removedPlayerName && removedPlayerName.trim()) {
             addToUndoStack({
                 action: 'remove',

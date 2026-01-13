@@ -29,7 +29,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ğŸ¯</text></svg>">
 
     <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
@@ -54,12 +54,12 @@
 
 </head>
 <body>
-<!-- ? P1 Stabilität: Error Modal für Verbindungsabbrüche und Fehlerfälle -->
+<!-- ? P1 Stabilitï¿½t: Error Modal fï¿½r Verbindungsabbrï¿½che und Fehlerfï¿½lle -->
 <div class="error-modal hidden" id="error-modal" role="dialog" aria-labelledby="error-title" aria-modal="true">
     <div class="error-modal-backdrop" id="error-backdrop"></div>
     <div class="error-modal-content">
         <div class="error-modal-header">
-            <h2 class="error-modal-title" id="error-title">?? Fehler aufgetreten</h2>
+            <h2 class="error-modal-title" id="error-title">âŒ Fehler aufgetreten</h2>
         </div>
         <div class="error-modal-body">
             <p class="error-modal-message" id="error-message">Ein unerwarteter Fehler ist aufgetreten.</p>
@@ -86,11 +86,11 @@
     <p class="loading-text">Lade Spiel...</p>
 </div>
 
-<!-- ? P1 UI/UX: Loading Overlay für Zustandswechsel -->
+<!-- ? P1 UI/UX: Loading Overlay fï¿½r Zustandswechsel -->
 <div class="loading-overlay hidden" id="loading-overlay" role="status" aria-live="polite">
     <div class="loading-content">
         <div class="spinner" aria-hidden="true"></div>
-        <p class="loading-text" id="loading-text">Lädt...</p>
+        <p class="loading-text" id="loading-text">Lï¿½dt...</p>
     </div>
 </div>
 
@@ -99,7 +99,7 @@
     <!-- Game Info Top -->
     <header class="game-info-top">
         <span class="info-text">Runde <span id="current-round" aria-live="polite">1</span></span>
-        <span class="info-separator" aria-hidden="true">•</span>
+        <span class="info-separator" aria-hidden="true">ï¿½</span>
         <span class="info-text"><span id="players-count" aria-live="polite">0 Spieler</span></span>
     </header>
 
@@ -109,9 +109,9 @@
         <article class="question-card">
             <div class="question-category-wrapper">
                 <div class="question-category" id="question-category" aria-live="polite">
-                    ?? Loading...
+                    â³ Loading...
                 </div>
-                <!-- ? P1 DSGVO: FSK-Badge für Jugendschutz -->
+                <!-- ? P1 DSGVO: FSK-Badge fï¿½r Jugendschutz -->
                 <div class="fsk-badge hidden" id="fsk-badge" role="status" aria-label="FSK Einstufung">
                     <span class="fsk-text" id="fsk-text">ab 16</span>
                 </div>
@@ -123,8 +123,8 @@
 
         <!-- Answer Section -->
         <div class="answer-section">
-            <h2 class="answer-title">?? Deine Antwort</h2>
-            <div class="answer-buttons" role="radiogroup" aria-label="Antwort auswählen">
+            <h2 class="answer-title">ğŸ’­ Deine Antwort</h2>
+            <div class="answer-buttons" role="radiogroup" aria-label="Antwort auswï¿½hlen">
                 <button class="answer-btn yes" id="yes-btn" type="button" role="radio" aria-checked="false">
                     <div class="answer-emoji" aria-hidden="true">?</div>
                     <div>Ja, habe ich</div>
@@ -138,10 +138,10 @@
 
         <!-- Estimation Section -->
         <div class="estimation-section">
-            <h2 class="estimation-title">?? Wie viele antworten mit "Ja"?</h2>
+            <h2 class="estimation-title">ğŸ¤” Wie viele antworten mit "Ja"?</h2>
 
             <!-- Number Grid -->
-            <div class="number-grid" id="number-grid" role="radiogroup" aria-label="Anzahl schätzen">
+            <div class="number-grid" id="number-grid" role="radiogroup" aria-label="Anzahl schï¿½tzen">
                 <!-- Numbers generated dynamically -->
             </div>
 
@@ -157,7 +157,7 @@
         <!-- Submit Button -->
         <div class="submit-section">
             <button class="submit-btn" id="submit-btn" type="button" disabled aria-disabled="true">
-                ?? Antworten absenden
+                âœ… Antworten absenden
             </button>
         </div>
     </section>
@@ -190,10 +190,10 @@
 
             <!-- Personal Result Box -->
             <aside class="personal-result-box hidden" id="personal-result">
-                <h3 class="personal-result-title">?? Dein Ergebnis</h3>
+                <h3 class="personal-result-title">ğŸ“Š Dein Ergebnis</h3>
                 <div class="personal-result-content">
                     <div class="personal-result-item">
-                        <span class="personal-label">Deine Schätzung:</span>
+                        <span class="personal-label">Deine Schï¿½tzung:</span>
                         <span class="personal-value" id="personal-estimation">-</span>
                     </div>
                     <div class="personal-result-item">
@@ -214,14 +214,14 @@
             <!-- Host Controls -->
             <div class="host-controls host-only" id="host-controls">
                 <h3 class="host-title">
-                    ?? Host-Kontrollen
+                    ğŸ‘‘ Host-Kontrollen
                 </h3>
                 <div class="nav-buttons">
                     <button class="nav-btn primary" id="next-question-btn" type="button">
-                        ?? Nächste Frage
+                        â¡ï¸ NÃ¤chste Frage
                     </button>
                     <button class="nav-btn secondary" id="show-overall-btn" type="button">
-                        ?? Gesamtergebnisse
+                        ğŸ† Gesamtergebnisse
                     </button>
                 </div>
             </div>
@@ -237,7 +237,7 @@
     <section class="game-phase" id="overall-results-phase" role="region" aria-label="Gesamtergebnisse">
         <div class="overall-results-screen">
             <header class="overall-header">
-                <h2 class="overall-title">?? Gesamtergebnisse</h2>
+                <h2 class="overall-title">ğŸ† Gesamtergebnisse</h2>
                 <p class="overall-subtitle">Alle Runden abgeschlossen</p>
             </header>
 
@@ -253,7 +253,7 @@
             </div>
 
             <div class="overall-leaderboard">
-                <h3 class="leaderboard-title">?? Bestenliste</h3>
+                <h3 class="leaderboard-title">ğŸ† Bestenliste</h3>
                 <div id="overall-leaderboard-list" role="list">
                     <!-- Leaderboard populated by JS -->
                 </div>
@@ -261,13 +261,13 @@
 
             <!-- Host Controls -->
             <div class="host-controls host-only" id="overall-host-controls">
-                <h3 class="host-title">?? Host-Kontrollen</h3>
+                <h3 class="host-title">ğŸ‘‘ Host-Kontrollen</h3>
                 <div class="nav-buttons">
                     <button class="nav-btn primary" id="continue-game-btn" type="button">
-                        ?? Spiel fortfahren
+                        â–¶ï¸ Spiel fortfahren
                     </button>
                     <button class="nav-btn danger" id="end-game-btn" type="button">
-                        ?? Spiel beenden
+                        ğŸ›‘ Spiel beenden
                     </button>
                 </div>
             </div>

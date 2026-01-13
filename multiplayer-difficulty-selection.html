@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No-Cap - Multiplayer Schwierigkeit wählen</title>
+    <title>No-Cap - Multiplayer Schwierigkeit wï¿½hlen</title>
 
     <!-- ? SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -12,7 +12,7 @@
     <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
     <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
 
-    <!-- ? FIREBASE CONFIG für Production -->
+    <!-- ? FIREBASE CONFIG fï¿½r Production -->
     <!-- Config wird aus /firebase-client-config.json geladen (CSP-konform) -->
 
     <!-- Preconnect -->
@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ğŸ¯</text></svg>">
 
     <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
@@ -65,13 +65,13 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button" id="back-button" type="button" aria-label="Zurück">
-    ? Zurück
+<button class="back-button" id="back-button" type="button" aria-label="Zurï¿½ck">
+    ? Zurï¿½ck
 </button>
 
 <!-- App Container -->
 <div class="app-container">
-    <h1 class="screen-title">?? Schwierigkeit wählen</h1>
+    <h1 class="screen-title">âš™ï¸ Schwierigkeit wÃ¤hlen</h1>
 
     <div class="glass-card">
         <!-- Multiplayer Header -->
@@ -79,7 +79,7 @@
             <div class="host-info">
                 <div class="host-details">
                     <div class="host-name" id="host-name">Host Name</div>
-                    <div class="host-indicator">?? Du bist der Host</div>
+                    <div class="host-indicator">ğŸ‘‘ Du bist der Host</div>
                 </div>
                 <div class="game-id-section">
                     <div class="game-id-label">Spiel-Code:</div>
@@ -89,12 +89,12 @@
         </header>
 
         <p class="selection-description" id="difficulty-subtitle">
-            Wähle den Schwierigkeitsgrad für euer Multiplayer-Spiel
+            Wï¿½hle den Schwierigkeitsgrad fï¿½r euer Multiplayer-Spiel
         </p>
 
         <!-- Selected Categories Display -->
-        <aside class="selected-categories-section" id="selected-categories-section" role="region" aria-label="Ausgewählte Kategorien">
-            <h2 class="section-title">Ausgewählte Kategorien</h2>
+        <aside class="selected-categories-section" id="selected-categories-section" role="region" aria-label="Ausgewï¿½hlte Kategorien">
+            <h2 class="section-title">Ausgewï¿½hlte Kategorien</h2>
             <div class="selected-categories-display" id="selected-categories-display"></div>
         </aside>
 
@@ -103,7 +103,7 @@
 
         <!-- ? P1 UI/UX: Players Status Display -->
         <section class="players-status-section" id="players-status-section" role="region" aria-labelledby="players-status-title">
-            <h2 id="players-status-title" class="status-title">?? Spieler-Status</h2>
+            <h2 id="players-status-title" class="status-title">ğŸ“Š Spieler-Status</h2>
             <div class="players-status-grid" id="players-status-grid" role="list">
                 <div class="loading-players">Lade Spieler...</div>
             </div>
@@ -115,7 +115,7 @@
         <!-- Controls -->
         <div class="controls">
             <button class="btn-continue" id="continue-btn" type="button" disabled aria-disabled="true">
-                Schwierigkeitsgrad wählen
+                Schwierigkeitsgrad wï¿½hlen
             </button>
         </div>
     </div>
@@ -133,29 +133,29 @@
     <div class="dialog-overlay" aria-hidden="true"></div>
     <div class="dialog-content">
         <h2 id="fsk-dialog-title" class="dialog-title">
-            <span aria-hidden="true">??</span> FSK18-Bestätigung erforderlich
+            <span aria-hidden="true">ğŸ”</span> FSK18-BestÃ¤tigung erforderlich
         </h2>
         <p id="fsk-dialog-desc" class="dialog-description">
-            <strong>Du hast FSK18-Kategorien ausgewählt.</strong><br><br>
-            Bitte bestätige, dass alle teilnehmenden Spieler mindestens 18 Jahre alt sind.
-            Als Host bist du dafür verantwortlich, dass alle Teilnehmer die Altersbeschränkung erfüllen.
+            <strong>Du hast FSK18-Kategorien ausgewï¿½hlt.</strong><br><br>
+            Bitte bestï¿½tige, dass alle teilnehmenden Spieler mindestens 18 Jahre alt sind.
+            Als Host bist du dafï¿½r verantwortlich, dass alle Teilnehmer die Altersbeschrï¿½nkung erfï¿½llen.
         </p>
         <div class="fsk-warning-box" role="alert">
-            <span class="warning-icon" aria-hidden="true">??</span>
-            <span>Dies ist eine rechtlich bindende Bestätigung gemäß Jugendschutzgesetz (JuSchG)</span>
+            <span class="warning-icon" aria-hidden="true">âš ï¸</span>
+            <span>Dies ist eine rechtlich bindende Bestï¿½tigung gemï¿½ï¿½ Jugendschutzgesetz (JuSchG)</span>
         </div>
-        <div class="dialog-buttons" role="group" aria-label="Bestätigungsoptionen">
+        <div class="dialog-buttons" role="group" aria-label="Bestï¿½tigungsoptionen">
             <button class="btn-cancel"
                     id="fsk-cancel-btn"
                     type="button"
-                    aria-label="Abbrechen und zurück">
+                    aria-label="Abbrechen und zurï¿½ck">
                 ? Abbrechen
             </button>
             <button class="btn-confirm-fsk"
                     id="fsk-confirm-btn"
                     type="button"
-                    aria-label="Ich bestätige das Alter aller Spieler">
-                ? Ich bestätige, dass alle Spieler 18+ sind
+                    aria-label="Ich bestï¿½tige das Alter aller Spieler">
+                ? Ich bestï¿½tige, dass alle Spieler 18+ sind
             </button>
         </div>
     </div>
@@ -164,9 +164,9 @@
 <!-- Privacy Footer -->
 <div class="privacy-footer">
     <a href="/privacy.html" class="privacy-link" target="_blank" rel="noopener">Datenschutz</a>
-    <span class="footer-separator" aria-hidden="true">•</span>
+    <span class="footer-separator" aria-hidden="true">ï¿½</span>
     <a href="/imprint.html" class="privacy-link" target="_blank" rel="noopener">Impressum</a>
-    <span class="footer-separator" aria-hidden="true">•</span>
+    <span class="footer-separator" aria-hidden="true">ï¿½</span>
     <a href="/privacy-new-sections.html#jugendschutz" class="privacy-link" target="_blank" rel="noopener">Jugendschutz</a>
 </div>
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No-Cap - Multiplayer Kategorien wählen</title>
+    <title>No-Cap - Multiplayer Kategorien wï¿½hlen</title>
 
     <!-- ? SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -29,7 +29,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ğŸ¯</text></svg>">
 
     <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
@@ -70,19 +70,19 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button" id="back-button" type="button" aria-label="Zurück">
-    ? Zurück
+<button class="back-button" id="back-button" type="button" aria-label="Zurï¿½ck">
+    ? Zurï¿½ck
 </button>
 
 <!-- App Container -->
 <div class="app-container">
-    <h1 class="screen-title">?? Multiplayer Kategorien</h1>
+    <h1 class="screen-title">ğŸ® Multiplayer Kategorien</h1>
 
     <div class="glass-card">
         <!-- Player Name Input (First Step) -->
         <section class="player-name-section" id="player-name-section">
-            <h2 class="section-title">?? Dein Spielername</h2>
-            <p class="section-description">Gib deinen Namen ein, bevor du die Kategorien wählst</p>
+            <h2 class="section-title">ğŸ‘¤ Dein Spielername</h2>
+            <p class="section-description">Gib deinen Namen ein, bevor du die Kategorien wï¿½hlst</p>
 
             <div class="name-input-container">
                 <input
@@ -102,7 +102,7 @@
                     disabled
                     aria-disabled="true"
                 >
-                    ? Name bestätigen
+                    ? Name bestï¿½tigen
                 </button>
             </div>
         </section>
@@ -112,7 +112,7 @@
             <div class="host-info">
                 <div class="host-details">
                     <div class="host-name" id="host-name">Host Name</div>
-                    <div class="host-indicator">?? Du bist der Host</div>
+                    <div class="host-indicator">ğŸ‘‘ Du bist der Host</div>
                 </div>
                 <div class="game-id-section">
                     <div class="game-id-label">Spiel-Code:</div>
@@ -124,24 +124,24 @@
         <!-- Category Selection (Hidden until name confirmed) -->
         <div class="category-selection-container hidden" id="category-selection-container">
             <p class="selection-description">
-                Wähle die Kategorien für euer Multiplayer-Spiel
+                Wï¿½hle die Kategorien fï¿½r euer Multiplayer-Spiel
             </p>
 
             <!-- Category Grid -->
             <div class="category-grid" id="categories-grid" role="group" aria-label="Kategorie-Auswahl"></div>
 
             <!-- Selection Summary -->
-            <aside class="selection-summary" id="selection-summary" role="region" aria-label="Ausgewählte Kategorien">
-                <h2 class="summary-title" id="summary-title">0 Kategorien ausgewählt</h2>
+            <aside class="selection-summary" id="selection-summary" role="region" aria-label="Ausgewï¿½hlte Kategorien">
+                <h2 class="summary-title" id="summary-title">0 Kategorien ausgewï¿½hlt</h2>
                 <div class="selected-categories" id="selected-categories"></div>
                 <div class="total-questions">
-                    Insgesamt <span id="total-questions">0</span> verfügbare Fragen
+                    Insgesamt <span id="total-questions">0</span> verfï¿½gbare Fragen
                 </div>
             </aside>
 
             <!-- ? P1 DSGVO: FSK Restriction Options -->
             <section class="fsk-options" id="fsk-options" role="region" aria-labelledby="fsk-options-title">
-                <h2 id="fsk-options-title" class="options-title">?? Jugendschutz-Optionen</h2>
+                <h2 id="fsk-options-title" class="options-title">ğŸ” Jugendschutz-Optionen</h2>
                 <div class="option-item">
                     <label class="option-label">
                         <input type="checkbox"
@@ -150,20 +150,20 @@
                                role="switch"
                                aria-checked="false">
                         <span class="option-text">
-                            <strong>FSK-Einschränkungen aktivieren</strong>
-                            <small>Spieler unter 18 Jahren können FSK18-Kategorien nicht spielen</small>
+                            <strong>FSK-Einschrï¿½nkungen aktivieren</strong>
+                            <small>Spieler unter 18 Jahren kï¿½nnen FSK18-Kategorien nicht spielen</small>
                         </span>
                     </label>
                 </div>
                 <div class="fsk-warning" id="fsk-warning" role="alert" aria-live="polite" hidden>
-                    <span class="warning-icon" aria-hidden="true">??</span>
-                    <span class="warning-text">Einige Spieler können ausgewählte Kategorien nicht spielen</span>
+                    <span class="warning-icon" aria-hidden="true">âš ï¸</span>
+                    <span class="warning-text">Einige Spieler kï¿½nnen ausgewï¿½hlte Kategorien nicht spielen</span>
                 </div>
             </section>
 
             <!-- ? P1 UI/UX: Participating Players List (Host-only) -->
             <section class="players-list-section host-only" id="players-list-section" role="region" aria-labelledby="players-title">
-                <h2 id="players-title" class="players-title">?? Teilnehmende Spieler</h2>
+                <h2 id="players-title" class="players-title">ğŸ‘¥ Teilnehmende Spieler</h2>
                 <div class="players-count" id="players-count" aria-live="polite">
                     Warte auf Spieler...
                 </div>
@@ -173,7 +173,7 @@
                     </div>
                 </div>
                 <div class="players-hint">
-                    <small>?? = Spieler kann Kategorie nicht spielen (Alterseinschränkung)</small>
+                    <small>ğŸš« = Spieler kann Kategorie nicht spielen (Alterseinschrï¿½nkung)</small>
                 </div>
             </section>
 
@@ -206,14 +206,14 @@
             <button class="btn-primary"
                     id="extend-timeout-btn"
                     type="button"
-                    aria-label="Zeit verlängern">
-                ?? Zeit verlängern
+                    aria-label="Zeit verlÃ¤ngern">
+                â±ï¸ Zeit verlÃ¤ngern
             </button>
             <button class="btn-secondary"
                     id="cancel-timeout-btn"
                     type="button"
-                    aria-label="Lobby schließen">
-                Lobby schließen
+                    aria-label="Lobby schlieï¿½en">
+                Lobby schlieï¿½en
             </button>
         </div>
     </div>

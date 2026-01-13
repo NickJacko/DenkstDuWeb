@@ -194,9 +194,17 @@
             });
 
             // Age verification check
-            const ageVerification = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
-                : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
+            let ageVerification = null;
+            if (window.NocapUtils) {
+                ageVerification = window.NocapUtils.getLocalStorage('nocap_age_verification');
+            } else {
+                try {
+                    ageVerification = JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
+                } catch (e) {
+                    console.warn('[WARNING] Invalid age verification data in localStorage:', e.message);
+                    ageVerification = null;
+                }
+            }
 
             if (!ageVerification || typeof ageVerification !== 'object') {
                 Logger.warn('⚠️ No age verification found - redirecting to age gate');

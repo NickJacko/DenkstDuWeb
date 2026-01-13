@@ -126,6 +126,7 @@
     // ===========================
     let gameListener = null;
     let roundListener = null;
+    let roundListenerRef = null; // Store the Firebase ref for proper cleanup
     let currentGameData = null;
     let currentRoundData = null;
     let currentPlayers = {};
@@ -290,7 +291,9 @@
         } else {
             try {
                 localStorage.removeItem('nocap_offline_state');
-            } catch (e) {}
+            } catch (e) {
+                console.warn('[WARNING] Could not remove offline state from localStorage:', e.message);
+            }
         }
     }
 
@@ -519,7 +522,9 @@
                     console.log('📝 Recovered gameId from sessionStorage:', sessionState);
                     stateRestored = true;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('[WARNING] Could not recover state from sessionStorage:', e.message);
+            }
 
             // Try URL params
             if (!stateRestored) {
@@ -1355,11 +1360,16 @@
     }
 
     function setupRoundListener(roundNumber) {
-        // Remove old listener
-        if (roundListener) {
+        // Remove old listener using stored reference
+        if (roundListener && roundListenerRef) {
             try {
-                firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${roundNumber - 1}`).off();
-            } catch (e) {}
+                roundListenerRef.off('value', roundListener);
+                if (MultiplayerGameplayModule.isDevelopment) {
+                    console.log('[DEBUG] Removed previous round listener');
+                }
+            } catch (e) {
+                console.warn('[WARNING] Could not remove previous round listener:', e.message);
+            }
         }
 
         if (MultiplayerGameplayModule.isDevelopment) {
@@ -1367,6 +1377,7 @@
         }
 
         const roundRef = firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${roundNumber}`);
+        roundListenerRef = roundRef; // Store reference for cleanup
 
         roundListener = roundRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -1417,7 +1428,7 @@
                         getServerTimestamp().then(serverTime => {
                             startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
                         }).catch((error) => {
-                            console.error('❌ Error getting server timestamp:', error);
+                            console.error('[ERROR] Error getting server timestamp:', error);
                             // Fallback: start timer with local time
                             startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
                         });
@@ -2375,15 +2386,31 @@
         // ✅ P1 UI/UX: Stop timers
         stopTimer();
 
+        // Clean up game listener using stored reference
         if (gameListener) {
             try {
-                firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}`).off();
-            } catch (e) {}
+                gameListener.off(); // gameListener is the Firebase ref itself
+                if (MultiplayerGameplayModule.isDevelopment) {
+                    console.log('[DEBUG] Removed game listener');
+                }
+            } catch (e) {
+                console.warn('[WARNING] Could not remove game listener during cleanup:', e.message);
+            }
+            gameListener = null;
         }
-        if (roundListener) {
+
+        // Clean up round listener using stored reference
+        if (roundListener && roundListenerRef) {
             try {
-                firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentQuestionNumber}`).off();
-            } catch (e) {}
+                roundListenerRef.off('value', roundListener);
+                if (MultiplayerGameplayModule.isDevelopment) {
+                    console.log('[DEBUG] Removed round listener');
+                }
+            } catch (e) {
+                console.warn('[WARNING] Could not remove round listener during cleanup:', e.message);
+            }
+            roundListener = null;
+            roundListenerRef = null;
         }
 
         // ✅ P2 PERFORMANCE: Cleanup phase listeners
