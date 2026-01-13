@@ -84,98 +84,11 @@
     <h1 class="screen-title">👥 Spieler hinzufügen</h1>
 
     <div class="glass-card">
-        <!-- ? P1 UI/UX: Fortschritts-Bar -->
-        <div class="progress-section" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3" aria-label="Setup-Fortschritt">
-                <div class="progress-steps">
-                    <div class="progress-step active" data-step="1">
-                        <div class="step-number">1</div>
-                        <div class="step-label">Spieler</div>
-                    </div>
-                    <div class="progress-connector"></div>
-                    <div class="progress-step" data-step="2">
-                        <div class="step-number">2</div>
-                        <div class="step-label">Details</div>
-                    </div>
-                    <div class="progress-connector"></div>
-                    <div class="progress-step" data-step="3">
-                        <div class="step-number">3</div>
-                        <div class="step-label">Start</div>
-                    </div>
-                </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar" id="progress-bar" style="width: 33%"></div>
-            </div>
-        </div>
-
         <div class="game-mode-reminder" role="status">
                     <span class="mode-icon" aria-hidden="true">🎮</span>
                     <div class="mode-text">
                         <strong>Ein Gerät Modus</strong><br>
                         Das Handy wird zwischen den Spielern weitergegeben
-                    </div>
-                </div>
-
-                <!-- ? P1 DSGVO: Datenschutz-Hinweis -->
-                <div class="privacy-notice" role="note" aria-labelledby="privacy-notice-title">
-                    <div class="privacy-notice-icon" aria-hidden="true">ℹ️</div>
-                    <div class="privacy-notice-content">
-                        <strong id="privacy-notice-title">Datenschutz-Hinweis</strong>
-                        <p>
-                            <strong>Lokale Speicherung:</strong> Dein Name wird nur lokal auf diesem Gerät gespeichert und nach dem Spiel automatisch gelöscht.
-                        </p>
-                        <p>
-                            <strong>Avatare:</strong> Werden auf Firebase Storage hochgeladen und nach 24 Stunden automatisch gelöscht.
-                            Du kannst Avatare optional auch lokal speichern (siehe Einstellungen unten).
-                        </p>
-                        <details class="privacy-details">
-                            <summary>Mehr Informationen</summary>
-                            <ul>
-                                <li>Keine Weitergabe an Dritte</li>
-                                <li>Keine Tracking-Cookies</li>
-                                <li>Jederzeit widerrufbar durch Browserdaten-Löschung</li>
-                                <li>Altersverifikation gemäß JMStV (siehe Jugendschutz)</li>
-                            </ul>
-                        </details>
-                        <div class="privacy-links">
-                            <a href="/privacy.html" target="_blank" rel="noopener" class="privacy-link-inline">
-                                🔒 Datenschutzerklärung
-                            </a>
-                            <a href="/privacy-new-sections.html#jugendschutz" target="_blank" rel="noopener" class="privacy-link-inline">
-                                🔞 Jugendschutz
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ? P1 DSGVO: Avatar-Speicherung Opt-In -->
-                <div class="avatar-storage-options" role="group" aria-labelledby="avatar-storage-title">
-                    <h4 id="avatar-storage-title">Avatar-Speicherung</h4>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="save-avatars-locally" class="privacy-checkbox">
-                        <label for="save-avatars-locally">
-                            Avatare lokal im Browser speichern (keine Cloud-Synchronisierung)
-                        </label>
-                    </div>
-                    <p class="help-text">
-                        <small>
-                            Wenn aktiviert, werden Avatare nur im Browser-Cache gespeichert und nicht auf Firebase hochgeladen.
-                            Dadurch funktionieren sie nur auf diesem Gerät.
-                        </small>
-                    </p>
-                </div>
-
-                <!-- ? P1 DSGVO/Jugendschutz: Altersfreigabe-Hinweis -->
-                <div class="age-rating-notice" role="alert" aria-live="polite">
-                    <span class="age-icon" aria-hidden="true">🔞</span>
-                    <div class="age-content">
-                        <strong>Jugendschutz-Hinweis</strong>
-                        <p>
-                            Einige Kategorien enthalten Inhalte ab 16 oder 18 Jahren.
-                            Bitte achte darauf, dass alle Spieler das entsprechende Alter haben.
-                        </p>
-                        <div class="selected-difficulty-info" id="difficulty-age-info">
-                            <!-- Wird dynamisch befüllt basierend auf gew€hlter Schwierigkeit -->
-                        </div>
                     </div>
                 </div>
 
@@ -216,42 +129,6 @@
                                 aria-required="true"
                                 autocomplete="off">
 
-                            <!-- ? P1 UI/UX: Avatar Upload (Optional) -->
-                            <div class="avatar-upload-section" id="avatar-section-0">
-                                <input
-                                    type="file"
-                                    id="avatar-input-0"
-                                    class="avatar-input sr-only"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    data-index="0"
-                                    aria-label="Avatar für Spieler 1 hochladen (optional)">
-                                <label for="avatar-input-0" class="avatar-upload-btn" tabindex="0" role="button">
-                                    <span class="avatar-icon" aria-hidden="true">👤</span>
-                                    <span class="avatar-text">Avatar</span>
-                                </label>
-                                <div class="avatar-preview hidden" id="avatar-preview-0">
-                                    <img src="" alt="Avatar Vorschau" class="avatar-image" id="avatar-image-0">
-                                    <button type="button" class="avatar-remove-btn" data-index="0" aria-label="Avatar entfernen">
-                                        <span aria-hidden="true">×</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- ? P1 DSGVO/Jugendschutz: Alterscheck -->
-                            <div class="age-check-section" id="age-check-0">
-                                <label for="age-input-0" class="age-label">Alter:</label>
-                                <input
-                                    type="number"
-                                    id="age-input-0"
-                                    class="age-input"
-                                    min="6"
-                                    max="99"
-                                    placeholder="18"
-                                    data-index="0"
-                                    aria-label="Alter von Spieler 1"
-                                    aria-required="false">
-                            </div>
-
                             <button class="remove-player-btn hidden" data-index="0" type="button" aria-label="Spieler 1 entfernen">×</button>
                         </div>
 
@@ -272,53 +149,8 @@
                                 aria-required="true"
                                 autocomplete="off">
 
-                            <!-- ? P1 UI/UX: Avatar Upload (Optional) -->
-                            <div class="avatar-upload-section" id="avatar-section-1">
-                                <input
-                                    type="file"
-                                    id="avatar-input-1"
-                                    class="avatar-input sr-only"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    data-index="1"
-                                    aria-label="Avatar für Spieler 2 hochladen (optional)">
-                                <label for="avatar-input-1" class="avatar-upload-btn" tabindex="0" role="button">
-                                    <span class="avatar-icon" aria-hidden="true">👤</span>
-                                    <span class="avatar-text">Avatar</span>
-                                </label>
-                                <div class="avatar-preview hidden" id="avatar-preview-1">
-                                    <img src="" alt="Avatar Vorschau" class="avatar-image" id="avatar-image-1">
-                                    <button type="button" class="avatar-remove-btn" data-index="1" aria-label="Avatar entfernen">
-                                        <span aria-hidden="true">×</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- ? P1 DSGVO/Jugendschutz: Alterscheck -->
-                            <div class="age-check-section" id="age-check-1">
-                                <label for="age-input-1" class="age-label">Alter:</label>
-                                <input
-                                    type="number"
-                                    id="age-input-1"
-                                    class="age-input"
-                                    min="6"
-                                    max="99"
-                                    placeholder="18"
-                                    data-index="1"
-                                    aria-label="Alter von Spieler 2"
-                                    aria-required="false">
-                            </div>
-
                             <button class="remove-player-btn hidden" data-index="1" type="button" aria-label="Spieler 2 entfernen">×</button>
                         </div>
-                    </div>
-
-                    <!-- ? P0 SECURITY: Avatar Upload Info -->
-                    <div class="upload-info" role="note">
-                        <span class="info-icon" aria-hidden="true">ℹ️</span>
-                        <small>
-                            Avatare: Max. 2MB, nur JPG/PNG/WEBP erlaubt.
-                            Werden nach 24h automatisch gelöscht.
-                        </small>
                     </div>
 
                     <!-- Add Player Button -->
