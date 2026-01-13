@@ -30,7 +30,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>??</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ğŸ®</text></svg>">
 
     <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
@@ -77,7 +77,7 @@
 
 <!-- App Container -->
 <div class="app-container">
-    <h1 class="screen-title">?? Multiplayer Lobby</h1>
+    <h1 class="screen-title">ğŸ® Multiplayer Lobby</h1>
 
     <div class="glass-card">
         <!-- Game Info Section -->
@@ -95,7 +95,7 @@
                              aria-live="polite"
                              aria-labelledby="game-code-label"
                              role="status">
-                            Lädt...
+                            LÃ¤dt...
                         </div>
                         <!-- ? P1 UI/UX: Copy to Clipboard Button -->
                         <button class="copy-code-btn"
@@ -103,7 +103,7 @@
                                 type="button"
                                 aria-label="Spiel-Code in Zwischenablage kopieren"
                                 disabled>
-                            <span class="copy-icon" aria-hidden="true">??</span>
+                            <span class="copy-icon" aria-hidden="true">ğŸ“‹</span>
                             <span class="copy-text">Kopieren</span>
                         </button>
                     </div>
@@ -142,29 +142,29 @@
 
         <!-- Game Settings -->
         <aside class="game-settings" role="region" aria-labelledby="settings-title">
-            <h2 id="settings-title" class="settings-title">?? Einstellungen</h2>
+            <h2 id="settings-title" class="settings-title">âš™ï¸ Einstellungen</h2>
 
             <div class="setting-row">
                 <div class="setting-header">Schwierigkeit</div>
-                <div class="setting-content" id="difficulty-display" aria-live="polite">Lädt...</div>
+                <div class="setting-content" id="difficulty-display" aria-live="polite">LÃ¤dt...</div>
             </div>
 
             <!-- ? P1 DSGVO: Categories with FSK Badges -->
             <div class="setting-row">
                 <div class="setting-header">Kategorien</div>
                 <div class="categories-tags" id="selected-categories-display" role="list" aria-live="polite">
-                    <span class="loading-text-muted">Lädt...</span>
+                    <span class="loading-text-muted">LÃ¤dt...</span>
                 </div>
             </div>
 
             <!-- ? P1 DSGVO: Privacy Notice for Players -->
             <div class="privacy-notice" role="note" aria-labelledby="privacy-notice-title">
-                <div class="privacy-notice-icon" aria-hidden="true">??</div>
+                <div class="privacy-notice-icon" aria-hidden="true">â„¹ï¸</div>
                 <div class="privacy-notice-content">
                     <strong id="privacy-notice-title">Datenschutzhinweis</strong>
                     <p>
-                        Dein Name und deine Antworten werden während des Spiels temporär gespeichert
-                        und nach Beendigung automatisch gelöscht.
+                        Dein Name und deine Antworten werden wÃ¤hrend des Spiels temporÃ¤r gespeichert
+                        und nach Beendigung automatisch gelÃ¶scht.
                         <a href="privacy.html" class="privacy-link-inline" target="_blank" rel="noopener">
                             Mehr erfahren
                         </a>
@@ -176,14 +176,14 @@
                     id="edit-settings-btn"
                     type="button"
                     aria-label="Spieleinstellungen bearbeiten">
-                ?? Einstellungen ändern
+                âš™ï¸ Einstellungen Ã¤ndern
             </button>
         </aside>
 
         <!-- Players Section -->
         <section class="players-section">
             <div class="players-header">
-                <h2 class="players-title">?? Spieler</h2>
+                <h2 class="players-title">ğŸ‘¥ Spieler</h2>
                 <div class="player-count" id="player-count" aria-live="polite">0/8 Spieler</div>
             </div>
             <div class="players-list" id="players-list" role="list">
@@ -193,9 +193,9 @@
 
         <!-- Join Info -->
         <aside class="join-info host-only">
-            <div class="join-title">?? Andere einladen</div>
+            <div class="join-title">ğŸ“² Andere einladen</div>
             <div class="join-description">
-                Teile den Spielcode oder QR-Code mit deinen Freunden, damit sie direkt beitreten können.
+                Teile den Spielcode oder QR-Code mit deinen Freunden, damit sie direkt beitreten kÃ¶nnen.
             </div>
         </aside>
 
@@ -213,7 +213,7 @@
                     disabled
                     aria-disabled="true"
                     aria-label="Spiel starten (erst wenn alle bereit sind)">
-                <span aria-hidden="true">??</span> Spiel starten
+                <span aria-hidden="true">ğŸ®</span> Spiel starten
             </button>
             <button class="btn-leave"
                     id="leave-btn"
@@ -237,19 +237,19 @@
     <div class="dialog-overlay" aria-hidden="true"></div>
     <div class="dialog-content">
         <h2 id="leave-dialog-title" class="dialog-title">
-            <span aria-hidden="true">??</span> Lobby verlassen?
+            <span aria-hidden="true">ğŸšª</span> Lobby verlassen?
         </h2>
         <p id="leave-dialog-desc" class="dialog-description">
             <span id="leave-message-host" class="host-only">
                 <strong>Als Host verlassen:</strong><br>
                 <span id="connected-players-count">0 Spieler</span> sind verbunden.
-                Wenn du die Lobby verlässt, wird das Spiel für alle beendet.
+                Wenn du die Lobby verlâ‚¬sst, wird das Spiel fÃ¼r alle beendet.
             </span>
             <span id="leave-message-guest" class="guest-only">
-                Möchtest du die Lobby wirklich verlassen?
+                Mâ‚¬chtest du die Lobby wirklich verlassen?
             </span>
         </p>
-        <div class="dialog-buttons" role="group" aria-label="Bestätigungsoptionen">
+        <div class="dialog-buttons" role="group" aria-label="Bestâ‚¬tigungsoptionen">
             <button class="btn-cancel"
                     id="cancel-leave-btn"
                     type="button"
@@ -272,15 +272,15 @@
        class="privacy-link"
        target="_blank"
        rel="noopener noreferrer"
-       aria-label="Datenschutzerklärung öffnen">
+       aria-label="DatenschutzerklÃ¤rung â‚¬ffnen">
         Datenschutz
     </a>
-    <span class="footer-separator" aria-hidden="true">•</span>
+    <span class="footer-separator" aria-hidden="true">Ã—</span>
     <a href="imprint.html"
        class="privacy-link"
        target="_blank"
        rel="noopener noreferrer"
-       aria-label="Impressum öffnen">
+       aria-label="Impressum â‚¬ffnen">
         Impressum
     </a>
 </div>
