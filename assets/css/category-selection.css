@@ -519,6 +519,19 @@ body {
 }
 
 /* ============================================================================
+   CONTROLS
+   ============================================================================ */
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    text-align: center;
+}
+
+/* ============================================================================
    BUTTONS
    ============================================================================ */
 
@@ -533,22 +546,47 @@ body {
     font-family: 'Poppins', sans-serif;
 }
 
+.btn-continue,
 .btn-primary {
+    width: 100%;
+    max-width: 400px;
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
+    border: none;
+    padding: 18px 30px;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.5;
+    pointer-events: none;
+    font-family: inherit;
     box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
 }
 
-.btn-primary:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+.btn-continue.enabled,
+.btn-continue:not(:disabled),
+.btn-primary.enabled,
+.btn-primary:not(:disabled) {
+    opacity: 1;
+    pointer-events: auto;
 }
 
+.btn-continue.enabled:hover,
+.btn-continue:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
+}
+
+.btn-continue:focus,
 .btn-primary:focus {
     outline: 2px solid white;
     outline-offset: 2px;
 }
 
+.btn-continue:disabled,
 .btn-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -565,7 +603,7 @@ body {
 }
 
 .continue-hint {
-    margin-top: 15px;
+    margin-top: 10px;
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
 }
