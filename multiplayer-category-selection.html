@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>No-Cap - Multiplayer Kategorien w�hlen</title>
+    <title>No-Cap - Multiplayer Kategorien wählen</title>
 
     <!-- ? SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -70,8 +70,8 @@
 </div>
 
 <!-- Back Button -->
-<button class="back-button" id="back-button" type="button" aria-label="Zur�ck">
-    ? Zur�ck
+<button class="back-button" id="back-button" type="button" aria-label="Zurück">
+    🔙 Zurück
 </button>
 
 <!-- App Container -->
@@ -82,7 +82,7 @@
         <!-- Player Name Input (First Step) -->
         <section class="player-name-section" id="player-name-section">
             <h2 class="section-title">👤 Dein Spielername</h2>
-            <p class="section-description">Gib deinen Namen ein, bevor du die Kategorien w�hlst</p>
+            <p class="section-description">Gib deinen Namen ein, bevor du die Kategorien wählst</p>
 
             <div class="name-input-container">
                 <input
@@ -102,7 +102,7 @@
                     disabled
                     aria-disabled="true"
                 >
-                    ? Name best�tigen
+                    ✓ Name bestätigen
                 </button>
             </div>
         </section>
@@ -124,18 +124,18 @@
         <!-- Category Selection (Hidden until name confirmed) -->
         <div class="category-selection-container hidden" id="category-selection-container">
             <p class="selection-description">
-                W�hle die Kategorien f�r euer Multiplayer-Spiel
+                Wähle die Kategorien für euer Multiplayer-Spiel
             </p>
 
             <!-- Category Grid -->
             <div class="category-grid" id="categories-grid" role="group" aria-label="Kategorie-Auswahl"></div>
 
             <!-- Selection Summary -->
-            <aside class="selection-summary" id="selection-summary" role="region" aria-label="Ausgew�hlte Kategorien">
-                <h2 class="summary-title" id="summary-title">0 Kategorien ausgew�hlt</h2>
+            <aside class="selection-summary" id="selection-summary" role="region" aria-label="Ausgewählte Kategorien">
+                <h2 class="summary-title" id="summary-title">0 Kategorien ausgewählt</h2>
                 <div class="selected-categories" id="selected-categories"></div>
                 <div class="total-questions">
-                    Insgesamt <span id="total-questions">0</span> verf�gbare Fragen
+                    Insgesamt <span id="total-questions">0</span> verfügbare Fragen
                 </div>
             </aside>
 
@@ -150,14 +150,14 @@
                                role="switch"
                                aria-checked="false">
                         <span class="option-text">
-                            <strong>FSK-Einschr�nkungen aktivieren</strong>
-                            <small>Spieler unter 18 Jahren k�nnen FSK18-Kategorien nicht spielen</small>
+                            <strong>FSK-Einschränkungen aktivieren</strong>
+                            <small>Spieler unter 18 Jahren können FSK18-Kategorien nicht spielen</small>
                         </span>
                     </label>
                 </div>
                 <div class="fsk-warning" id="fsk-warning" role="alert" aria-live="polite" hidden>
                     <span class="warning-icon" aria-hidden="true">⚠️</span>
-                    <span class="warning-text">Einige Spieler k�nnen ausgew�hlte Kategorien nicht spielen</span>
+                    <span class="warning-text">Einige Spieler können ausgewählte Kategorien nicht spielen</span>
                 </div>
             </section>
 
@@ -173,13 +173,13 @@
                     </div>
                 </div>
                 <div class="players-hint">
-                    <small>🚫 = Spieler kann Kategorie nicht spielen (Alterseinschr�nkung)</small>
+                    <small>🚫 = Spieler kann Kategorie nicht spielen (Alterseinschränkung)</small>
                 </div>
             </section>
 
             <!-- Proceed Button -->
             <button class="proceed-button" id="proceed-button" type="button" disabled aria-disabled="true">
-                Weiter zur Schwierigkeitsauswahl ?
+                Weiter zur Schwierigkeitsauswahl ➡️
             </button>
         </div>
     </div>
@@ -212,8 +212,8 @@
             <button class="btn-secondary"
                     id="cancel-timeout-btn"
                     type="button"
-                    aria-label="Lobby schlie�en">
-                Lobby schlie�en
+                    aria-label="Lobby schließen">
+                Lobby schließen
             </button>
         </div>
     </div>
