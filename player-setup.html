@@ -81,12 +81,11 @@
 
 <!-- App Container -->
 <div class="app-container">
-    <div class="screen active">
-        <div class="content-area">
-            <h1 class="screen-title">👥 Spieler hinzufügen</h1>
+    <h1 class="screen-title">👥 Spieler hinzufügen</h1>
 
-            <!-- ? P1 UI/UX: Fortschritts-Bar -->
-            <div class="progress-section" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3" aria-label="Setup-Fortschritt">
+    <div class="glass-card">
+        <!-- ? P1 UI/UX: Fortschritts-Bar -->
+        <div class="progress-section" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3" aria-label="Setup-Fortschritt">
                 <div class="progress-steps">
                     <div class="progress-step active" data-step="1">
                         <div class="step-number">1</div>
@@ -103,13 +102,12 @@
                         <div class="step-label">Start</div>
                     </div>
                 </div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="progress-bar" style="width: 33%"></div>
-                </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar" style="width: 33%"></div>
             </div>
+        </div>
 
-            <div class="glass-card">
-                <div class="game-mode-reminder" role="status">
+        <div class="game-mode-reminder" role="status">
                     <span class="mode-icon" aria-hidden="true">🎮</span>
                     <div class="mode-text">
                         <strong>Ein Gerät Modus</strong><br>
@@ -373,29 +371,27 @@
                     </div>
                 </div>
 
-                <!-- Start Game Button -->
-                <div class="start-section">
-                    <button class="btn btn-primary btn-large" id="start-btn" type="button" disabled aria-disabled="true">
-                        🎮 Spiel starten!
-                    </button>
-                    <p class="start-hint" id="start-hint" aria-live="polite">Mindestens 2 Spieler nötig</p>
-                </div>
+        <!-- Start Game Button -->
+        <div class="controls">
+            <button class="btn-continue" id="start-btn" type="button" disabled aria-disabled="true">
+                🎮 Spiel starten!
+            </button>
+            <p class="start-hint" id="start-hint" aria-live="polite">Mindestens 2 Spieler nötig</p>
+        </div>
 
-                <!-- Privacy Footer -->
-                <div class="privacy-footer">
-                    <a href="/privacy.html" target="_blank" rel="noopener" class="privacy-link">
-                        Datenschutzerklärung
-                    </a>
-                    <span class="footer-separator" aria-hidden="true">×</span>
-                    <a href="/privacy-new-sections.html#jugendschutz" target="_blank" rel="noopener" class="privacy-link">
-                        Jugendschutz
-                    </a>
-                    <span class="footer-separator" aria-hidden="true">×</span>
-                    <a href="/imprint.html" target="_blank" rel="noopener" class="privacy-link">
-                        Impressum
-                    </a>
-                </div>
-            </div>
+        <!-- Privacy Footer -->
+        <div class="privacy-footer">
+            <a href="/privacy.html" target="_blank" rel="noopener" class="privacy-link">
+                Datenschutzerklärung
+            </a>
+            <span class="footer-separator" aria-hidden="true">×</span>
+            <a href="/privacy-new-sections.html#jugendschutz" target="_blank" rel="noopener" class="privacy-link">
+                Jugendschutz
+            </a>
+            <span class="footer-separator" aria-hidden="true">×</span>
+            <a href="/imprint.html" target="_blank" rel="noopener" class="privacy-link">
+                Impressum
+            </a>
         </div>
     </div>
 </div>

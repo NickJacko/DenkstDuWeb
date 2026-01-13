@@ -75,9 +75,9 @@
 
 <!-- App Container -->
 <div class="app-container">
-    <div class="glass-card">
-        <h1 class="screen-title">📋 Kategorien wählen</h1>
+    <h1 class="screen-title">📋 Kategorien wählen</h1>
 
+    <div class="glass-card">
         <p class="selection-description">
             Wähle eine oder mehrere Kategorien aus
         </p>
@@ -249,27 +249,26 @@
                     </button>
                 </div>
 
-                <!-- ? CSP FIX: Selection Summary with CSS class instead of inline style -->
-                <div class="selection-summary hidden" id="selection-summary">
-                    <div class="summary-header">
-                        <h3>? Ausgew€hlte Kategorien</h3>
-                    </div>
-                    <div class="selected-categories" id="selected-categories-list" aria-live="polite"></div>
-                    <div class="total-questions">
-                        Gesamt: <span id="total-questions">0</span> Fragen verf€gbar
-                    </div>
-                </div>
-
-                <!-- Continue Button -->
-                <div class="continue-section">
-                    <button class="btn btn-primary btn-large" id="continue-btn" type="button" disabled aria-disabled="true">
-                        Weiter zur Schwierigkeitsauswahl
-                    </button>
-                    <p class="continue-hint" id="continue-hint" aria-live="polite">Wähle mindestens eine Kategorie aus</p>
-                </div>
+        <!-- ? CSP FIX: Selection Summary with CSS class instead of inline style -->
+        <div class="selection-summary hidden" id="selection-summary">
+            <div class="summary-header">
+                <h3>? Ausgew€hlte Kategorien</h3>
+            </div>
+            <div class="selected-categories" id="selected-categories-list" aria-live="polite"></div>
+            <div class="total-questions">
+                Gesamt: <span id="total-questions">0</span> Fragen verf€gbar
             </div>
         </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn-continue" id="continue-btn" type="button" disabled aria-disabled="true">
+                Weiter zur Schwierigkeitsauswahl
+            </button>
+            <p class="continue-hint" id="continue-hint" aria-live="polite">Wähle mindestens eine Kategorie aus</p>
+        </div>
     </div>
+</div>
 
 <!-- Premium Info Modal -->
 <div class="modal" id="premium-modal" role="dialog" aria-labelledby="premium-modal-title" aria-modal="true" aria-hidden="true">
