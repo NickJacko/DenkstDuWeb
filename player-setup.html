@@ -71,7 +71,7 @@
 <!-- ? P1 STABILITY: Offline-Modus Warnung -->
 <div class="offline-warning hidden" id="offline-warning" role="alert" aria-live="assertive">
     <div class="offline-content">
-        <span class="offline-icon" aria-hidden="true">??</span>
+        <span class="offline-icon" aria-hidden="true">📴</span>
         <div class="offline-text">
             <strong>Offline-Modus aktiv</strong>
             <p>Firebase nicht erreichbar. Verwende lokale Fragen-Datenbank.</p>
@@ -83,7 +83,7 @@
 <div class="app-container">
     <div class="screen active">
         <div class="content-area">
-            <h1 class="screen-title">?? Spieler hinzufügen</h1>
+            <h1 class="screen-title">👥 Spieler hinzufügen</h1>
 
             <!-- ? P1 UI/UX: Fortschritts-Bar -->
             <div class="progress-section" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3" aria-label="Setup-Fortschritt">
@@ -110,7 +110,7 @@
 
             <div class="glass-card">
                 <div class="game-mode-reminder" role="status">
-                    <span class="mode-icon" aria-hidden="true">??</span>
+                    <span class="mode-icon" aria-hidden="true">🎮</span>
                     <div class="mode-text">
                         <strong>Ein Gerät Modus</strong><br>
                         Das Handy wird zwischen den Spielern weitergegeben
@@ -119,7 +119,7 @@
 
                 <!-- ? P1 DSGVO: Datenschutz-Hinweis -->
                 <div class="privacy-notice" role="note" aria-labelledby="privacy-notice-title">
-                    <div class="privacy-notice-icon" aria-hidden="true">??</div>
+                    <div class="privacy-notice-icon" aria-hidden="true">ℹ️</div>
                     <div class="privacy-notice-content">
                         <strong id="privacy-notice-title">Datenschutz-Hinweis</strong>
                         <p>
@@ -140,10 +140,10 @@
                         </details>
                         <div class="privacy-links">
                             <a href="/privacy.html" target="_blank" rel="noopener" class="privacy-link-inline">
-                                ?? Datenschutzerklärung
+                                🔒 Datenschutzerklärung
                             </a>
                             <a href="/privacy-new-sections.html#jugendschutz" target="_blank" rel="noopener" class="privacy-link-inline">
-                                ?? Jugendschutz
+                                🔞 Jugendschutz
                             </a>
                         </div>
                     </div>
@@ -168,7 +168,7 @@
 
                 <!-- ? P1 DSGVO/Jugendschutz: Altersfreigabe-Hinweis -->
                 <div class="age-rating-notice" role="alert" aria-live="polite">
-                    <span class="age-icon" aria-hidden="true">??</span>
+                    <span class="age-icon" aria-hidden="true">🔞</span>
                     <div class="age-content">
                         <strong>Jugendschutz-Hinweis</strong>
                         <p>
@@ -228,7 +228,7 @@
                                     data-index="0"
                                     aria-label="Avatar für Spieler 1 hochladen (optional)">
                                 <label for="avatar-input-0" class="avatar-upload-btn" tabindex="0" role="button">
-                                    <span class="avatar-icon" aria-hidden="true">??</span>
+                                    <span class="avatar-icon" aria-hidden="true">👤</span>
                                     <span class="avatar-text">Avatar</span>
                                 </label>
                                 <div class="avatar-preview hidden" id="avatar-preview-0">
@@ -284,7 +284,7 @@
                                     data-index="1"
                                     aria-label="Avatar für Spieler 2 hochladen (optional)">
                                 <label for="avatar-input-1" class="avatar-upload-btn" tabindex="0" role="button">
-                                    <span class="avatar-icon" aria-hidden="true">??</span>
+                                    <span class="avatar-icon" aria-hidden="true">👤</span>
                                     <span class="avatar-text">Avatar</span>
                                 </label>
                                 <div class="avatar-preview hidden" id="avatar-preview-1">
@@ -316,7 +316,7 @@
 
                     <!-- ? P0 SECURITY: Avatar Upload Info -->
                     <div class="upload-info" role="note">
-                        <span class="info-icon" aria-hidden="true">??</span>
+                        <span class="info-icon" aria-hidden="true">ℹ️</span>
                         <small>
                             Avatare: Max. 2MB, nur JPG/PNG/WEBP erlaubt.
                             Werden nach 24h automatisch gelöscht.
@@ -331,38 +331,38 @@
 
                     <!-- ? P1 Stabilität: Limit-Warnung -->
                     <div class="info-box hidden" id="player-limit-warning" role="alert" aria-live="assertive">
-                        <p><strong>?? Maximale Spielerzahl erreicht</strong></p>
+                        <p><strong>⚠️ Maximale Spielerzahl erreicht</strong></p>
                         <p>Es können maximal 10 Spieler teilnehmen. Entfernen Sie einen Spieler, um einen anderen hinzuzuf€gen.</p>
                     </div>
                 </div>
 
                 <!-- Players Preview with Drag & Drop -->
                 <div class="players-preview hidden" id="players-preview">
-                    <h3>?? Bitte passe die Reihenfolge nach der Sitzfolge an</h3>
+                    <h3>🔄 Bitte passe die Reihenfolge nach der Sitzfolge an</h3>
                     <p class="reorder-hint">Halte einen Namen gedrückt und ziehe ihn an die richtige Position</p>
                     <div class="players-order" id="players-order" role="list" aria-label="Spielerreihenfolge"></div>
                 </div>
 
                 <!-- Game Summary -->
                 <div class="game-summary">
-                    <h3>?? Spiel-übersicht</h3>
+                    <h3>📊 Spiel-übersicht</h3>
                     <div class="summary-grid">
                         <div class="summary-item">
-                            <span class="summary-icon" aria-hidden="true">??</span>
+                            <span class="summary-icon" aria-hidden="true">📋</span>
                             <div class="summary-content">
                                 <div class="summary-label">Kategorien</div>
                                 <div class="summary-value" id="categories-summary">Lädt...</div>
                             </div>
                         </div>
                         <div class="summary-item">
-                            <span class="summary-icon" id="difficulty-icon" aria-hidden="true">??</span>
+                            <span class="summary-icon" id="difficulty-icon" aria-hidden="true">⭐</span>
                             <div class="summary-content">
                                 <div class="summary-label">Schwierigkeit</div>
                                 <div class="summary-value" id="difficulty-summary">Lädt...</div>
                             </div>
                         </div>
                         <div class="summary-item">
-                            <span class="summary-icon" aria-hidden="true">??</span>
+                            <span class="summary-icon" aria-hidden="true">📋</span>
                             <div class="summary-content">
                                 <div class="summary-label">Fragen insgesamt</div>
                                 <div class="summary-value" id="questions-total">
@@ -376,7 +376,7 @@
                 <!-- Start Game Button -->
                 <div class="start-section">
                     <button class="btn btn-primary btn-large" id="start-btn" type="button" disabled aria-disabled="true">
-                        ?? Spiel starten!
+                        🎮 Spiel starten!
                     </button>
                     <p class="start-hint" id="start-hint" aria-live="polite">Mindestens 2 Spieler nötig</p>
                 </div>
