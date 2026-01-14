@@ -403,7 +403,6 @@
         setButtonLoading(btn, true);
 
         try {
-            // ✅ FIX: Use regionalized Functions instance
             if (!functionsInstance) {
                 throw new Error('Functions not initialized');
             }
@@ -443,35 +442,51 @@
             return false;
         }
 
+        if (!category || typeof category !== 'string') {
+            showError('Ungültige Kategorie');
+            return false;
+        }
+
         try {
-            // ✅ FIX: Get auth token for HTTP request
+            // ✅ sicherstellen, dass Functions init ok ist
+            if (!functionsInstance) {
+                throw new Error('Functions not initialized');
+            }
+
+            // ✅ Auth Token holen
             const idToken = await currentUser.getIdToken();
 
-            // ✅ FIX: Call HTTP function with proper CORS headers
+            // ✅ HTTP onRequest Call
             const response = await fetch('https://europe-west1-denkstduwebsite.cloudfunctions.net/validateFSKAccess', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${idToken}`
                 },
-                body: JSON.stringify({ data: { category: category } })
+                // ✅ simpler Payload (Backend unterstützt req.body oder req.body.data)
+                body: JSON.stringify({ category })
             });
 
+            // ✅ Fehlertext lesbar machen
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const text = await response.text().catch(() => '');
+                throw new Error(`HTTP ${response.status} ${response.statusText} ${text}`.trim());
             }
 
-            const result = await response.json();
+            const json = await response.json();
 
-            if (result.result && result.result.allowed) {
+            // Backend liefert: { result: { allowed, message, ... } }
+            const allowed = Boolean(json?.result?.allowed);
+            const message = json?.result?.message;
+
+            if (allowed) {
                 Logger.info('✅ FSK Access granted:', category);
                 return true;
-            } else {
-                const message = result.result?.message || 'Zugriff verweigert';
-                Logger.warn('❌ FSK Access denied:', message);
-                showFSKError(category, message);
-                return false;
             }
+
+            Logger.warn('❌ FSK Access denied:', message || 'Zugriff verweigert');
+            showFSKError(category, message);
+            return false;
 
         } catch (error) {
             Logger.error('FSK validation error:', error);
@@ -479,6 +494,7 @@
             return false;
         }
     }
+
 
     function showFSKError(fskLevel, message) {
         const messages = {

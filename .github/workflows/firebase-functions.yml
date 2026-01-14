@@ -20,32 +20,35 @@ jobs:
         node-version: [18.x]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: functions/package-lock.json
+      - name: Verify lockfile exists
+        run: test -f functions/package-lock.json
 
-    - name: Install dependencies
-      working-directory: ./functions
-      run: npm ci
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
 
-    - name: Run linter
-      working-directory: ./functions
-      run: npm run lint --if-present
+      - name: Install dependencies
+        working-directory: ./functions
+        run: npm ci
 
-    - name: Run tests
-      working-directory: ./functions
-      run: npm test
+      - name: Run linter
+        working-directory: ./functions
+        run: npm run lint --if-present
 
-    - name: Security audit
-      working-directory: ./functions
-      run: npm audit --audit-level=moderate
-      continue-on-error: true
+      - name: Run tests
+        working-directory: ./functions
+        run: npm test
+
+      - name: Security audit
+        working-directory: ./functions
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
 
   deploy:
     name: Deploy to Firebase
@@ -54,28 +57,32 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
+      - name: Verify lockfile exists
+        run: test -f functions/package-lock.json
 
-    - name: Install Firebase CLI
-      run: npm install -g firebase-tools
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
 
-    - name: Install dependencies
-      working-directory: ./functions
-      run: npm ci
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@latest
 
-    - name: Deploy to Firebase
-      working-directory: ./functions
-      env:
-        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-      run: firebase deploy --only functions --token "$FIREBASE_TOKEN"
+      - name: Install dependencies
+        working-directory: ./functions
+        run: npm ci
 
-    - name: Notify deployment
-      if: success()
-      run: echo "✅ Functions deployed successfully!"
+      - name: Deploy to Firebase
+        working-directory: ./functions
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: firebase deploy --only functions --token "$FIREBASE_TOKEN"
 
+      - name: Notify deployment
+        if: success()
+        run: echo "✅ Functions deployed successfully!"
