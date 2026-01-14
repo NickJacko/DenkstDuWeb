@@ -1324,6 +1324,19 @@
     }
 
     /**
+     * Get current user object safely
+     *
+     * @returns {Object|null} Firebase user object or null
+     */
+    function getCurrentUser() {
+        if (isFirebaseInitialized() && window.firebaseAuth.currentUser) {
+            return window.firebaseAuth.currentUser;
+        }
+
+        return null;
+    }
+
+    /**
      * Check if user is currently authenticated
      *
      * @returns {boolean} True if authenticated
@@ -1529,6 +1542,7 @@
         // Auth
         signInAnonymously,
         getCurrentUserId,
+        getCurrentUser,
         isAuthenticated,
 
         // Connection
