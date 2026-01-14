@@ -444,20 +444,32 @@
         }
 
         try {
-            // ✅ FIX: Use regionalized Functions instance
-            if (!functionsInstance) {
-                throw new Error('Functions not initialized');
+            // ✅ FIX: Get auth token for HTTP request
+            const idToken = await currentUser.getIdToken();
+
+            // ✅ FIX: Call HTTP function with proper CORS headers
+            const response = await fetch('https://europe-west1-denkstduwebsite.cloudfunctions.net/validateFSKAccess', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({ data: { category: category } })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const validateFSK = functionsInstance.httpsCallable('validateFSKAccess');
-            const result = await validateFSK({ category: category });
+            const result = await response.json();
 
-            if (result.data.allowed) {
+            if (result.result && result.result.allowed) {
                 Logger.info('✅ FSK Access granted:', category);
                 return true;
             } else {
-                Logger.warn('❌ FSK Access denied:', result.data.message);
-                showFSKError(category, result.data.message);
+                const message = result.result?.message || 'Zugriff verweigert';
+                Logger.warn('❌ FSK Access denied:', message);
+                showFSKError(category, message);
                 return false;
             }
 

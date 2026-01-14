@@ -254,42 +254,84 @@ exports.cleanupUserData = functions.auth.user().onDelete(async (user) => {
 /**
  * ✅ P0 SECURITY: Validate FSK access server-side
  * ✅ P0 SECURITY: Rate-limited to prevent abuse
+ * ✅ CORS: Explicit CORS handling for custom domain
  */
 exports.validateFSKAccess = functions
     .runWith({
         memory: '256MB',
         timeoutSeconds: 10
     })
-    .https.onCall(async (data, context) => {
+    .https.onRequest(async (req, res) => {
         const functionName = 'validateFSKAccess';
 
-        // ✅ P0 SECURITY: Check authentication
-        try {
-            await verifyAuth(context);
-        } catch (error) {
-            logger.warn(functionName, 'Unauthenticated access attempt');
-            throw error;
+        // ✅ CORS: Allow requests from no-cap.app and Firebase hosting domains
+        const allowedOrigins = [
+            'https://no-cap.app',
+            'https://denkstduwebsite.web.app',
+            'https://denkstduwebsite.firebaseapp.com',
+            'http://localhost:5000'
+        ];
+
+        const origin = req.headers.origin;
+
+        if (allowedOrigins.includes(origin)) {
+            res.set('Access-Control-Allow-Origin', origin);
         }
 
-        const { category } = data;
-        const uid = context.auth.uid;
+        res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.set('Access-Control-Allow-Credentials', 'true');
+        res.set('Access-Control-Max-Age', '3600');
 
-        // Input validation
-        if (!category || typeof category !== 'string') {
-            logger.warn(functionName, 'Invalid category parameter', { uid, category });
-            throw new functions.https.HttpsError(
-                'invalid-argument',
-                'Kategorie ist erforderlich'
-            );
+        // Handle preflight request
+        if (req.method === 'OPTIONS') {
+            res.status(204).send('');
+            return;
+        }
+
+        // Only allow POST requests
+        if (req.method !== 'POST') {
+            res.status(405).json({ error: 'Method not allowed' });
+            return;
         }
 
         try {
+            // ✅ P0 SECURITY: Verify Firebase Auth token
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                logger.warn(functionName, 'Missing or invalid authorization header');
+                res.status(401).json({ error: 'Authentifizierung erforderlich' });
+                return;
+            }
+
+            const idToken = authHeader.split('Bearer ')[1];
+            let decodedToken;
+
+            try {
+                decodedToken = await admin.auth().verifyIdToken(idToken);
+            } catch (error) {
+                logger.warn(functionName, 'Invalid auth token');
+                res.status(401).json({ error: 'Ungültiges Authentifizierungs-Token' });
+                return;
+            }
+
+            const uid = decodedToken.uid;
+            const { category } = req.body.data || req.body;
+
+            // Input validation
+            if (!category || typeof category !== 'string') {
+                logger.warn(functionName, 'Invalid category parameter', { uid, category });
+                res.status(400).json({ error: 'Kategorie ist erforderlich' });
+                return;
+            }
+
             logger.info(functionName, 'FSK validation request', { uid, category });
 
             // FSK0 is always allowed
             if (category === 'fsk0' || category === 'special') {
                 logger.info(functionName, 'FSK0/special allowed', { uid, category });
-                return { allowed: true, category };
+                res.status(200).json({ result: { allowed: true, category } });
+                return;
             }
 
             // Get user age verification
@@ -301,11 +343,14 @@ exports.validateFSKAccess = functions
 
             if (!userData || !userData.ageVerified) {
                 logger.warn(functionName, 'Age not verified', { uid, category });
-                return {
-                    allowed: false,
-                    reason: 'age_not_verified',
-                    message: 'Altersverifikation erforderlich'
-                };
+                res.status(200).json({
+                    result: {
+                        allowed: false,
+                        reason: 'age_not_verified',
+                        message: 'Altersverifikation erforderlich'
+                    }
+                });
+                return;
             }
 
             const ageLevel = userData.ageLevel || 0;
@@ -313,32 +358,35 @@ exports.validateFSKAccess = functions
             // Check FSK16
             if (category === 'fsk16' && ageLevel < 16) {
                 logger.warn(functionName, 'FSK16 access denied', { uid, ageLevel });
-                return {
-                    allowed: false,
-                    reason: 'age_too_young',
-                    message: 'FSK 16 erforderlich'
-                };
+                res.status(200).json({
+                    result: {
+                        allowed: false,
+                        reason: 'age_too_young',
+                        message: 'FSK 16 erforderlich'
+                    }
+                });
+                return;
             }
 
             // Check FSK18
             if (category === 'fsk18' && ageLevel < 18) {
                 logger.warn(functionName, 'FSK18 access denied', { uid, ageLevel });
-                return {
-                    allowed: false,
-                    reason: 'age_too_young',
-                    message: 'FSK 18 erforderlich'
-                };
+                res.status(200).json({
+                    result: {
+                        allowed: false,
+                        reason: 'age_too_young',
+                        message: 'FSK 18 erforderlich'
+                    }
+                });
+                return;
             }
 
             logger.info(functionName, 'FSK access granted', { uid, category, ageLevel });
-            return { allowed: true, category };
+            res.status(200).json({ result: { allowed: true, category } });
 
         } catch (error) {
-            logger.error(functionName, 'FSK validation error', error, { uid, category });
-            throw new functions.https.HttpsError(
-                'internal',
-                'Fehler bei der FSK-Validierung'
-            );
+            logger.error(functionName, 'FSK validation error', error);
+            res.status(500).json({ error: 'Fehler bei der FSK-Validierung' });
         }
     });
 
