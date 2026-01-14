@@ -78,6 +78,9 @@
                         console.warn("⚠️ App Check TEMPORARILY DISABLED (reCAPTCHA misconfigured)");
                     }
 
+                    // ✅ FIX: Set global flag for other scripts to detect initialization
+                    window.firebaseInitialized = true;
+
                     if (isDevelopment) {
                         console.log("✅ Firebase initialized");
                     }
