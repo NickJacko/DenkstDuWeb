@@ -181,13 +181,35 @@
         // CRITICAL: DEVICE MODE ENFORCEMENT
         Logger.debug('🎮 Checking user role...');
 
+        // Check if user explicitly wants to be host (coming from index.html)
+        let wantsHost = false;
+        try {
+            if (window.NocapUtils) {
+                wantsHost = window.NocapUtils.getLocalStorage('nocap_wants_host') === true ||
+                           window.NocapUtils.getLocalStorage('nocap_wants_host') === 'true';
+            } else {
+                wantsHost = localStorage.getItem('nocap_wants_host') === 'true';
+            }
+        } catch (error) {
+            Logger.warn('⚠️ Could not check nocap_wants_host flag:', error);
+        }
+
         // Check if user is guest
         if (MultiplayerCategoryModule.gameState.isGuest === true ||
             (MultiplayerCategoryModule.gameState.gameId && !MultiplayerCategoryModule.gameState.isHost)) {
-            MultiplayerCategoryModule.isHost = false;
-            MultiplayerCategoryModule.gameState.isHost = false;
-            MultiplayerCategoryModule.gameState.isGuest = true;
-            Logger.debug('👤 User is GUEST - showing read-only view');
+            // Only stay as guest if they didn't explicitly request to be host
+            if (!wantsHost) {
+                MultiplayerCategoryModule.isHost = false;
+                MultiplayerCategoryModule.gameState.isHost = false;
+                MultiplayerCategoryModule.gameState.isGuest = true;
+                Logger.debug('👤 User is GUEST - showing read-only view');
+            } else {
+                // User wants to be host, override guest status
+                MultiplayerCategoryModule.isHost = true;
+                MultiplayerCategoryModule.gameState.isHost = true;
+                MultiplayerCategoryModule.gameState.isGuest = false;
+                Logger.debug('👑 User wants HOST (overriding guest state) - showing editable view');
+            }
         } else {
             // Force host mode
             MultiplayerCategoryModule.isHost = true;
@@ -201,6 +223,20 @@
             isHost: MultiplayerCategoryModule.isHost,
             isGuest: MultiplayerCategoryModule.gameState.isGuest
         });
+
+        // Clear the wants_host flag after using it
+        if (wantsHost) {
+            try {
+                if (window.NocapUtils) {
+                    window.NocapUtils.removeLocalStorage('nocap_wants_host');
+                } else {
+                    localStorage.removeItem('nocap_wants_host');
+                }
+                Logger.debug('✅ Cleared nocap_wants_host flag');
+            } catch (error) {
+                Logger.warn('⚠️ Could not clear nocap_wants_host flag:', error);
+            }
+        }
 
         // ✅ BUGFIX: Use window.FirebaseService
         if (typeof window.FirebaseService !== 'undefined') {
