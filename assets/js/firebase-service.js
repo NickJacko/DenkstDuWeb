@@ -1843,6 +1843,22 @@
         }
 
         /**
+         * Get current user object
+         * @returns {firebase.User|null} Current user or null
+         */
+        getCurrentUser() {
+            try {
+                if (this.auth && this.auth.currentUser) {
+                    return this.auth.currentUser;
+                }
+                return null;
+            } catch (error) {
+                console.error('❌ Error getting current user:', error);
+                return null;
+            }
+        }
+
+        /**
          * Anonymous sign-in helper
          */
         async signInAnonymously() {

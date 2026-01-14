@@ -54,8 +54,8 @@
 
 </head>
 <body>
-<!-- ? P1 UI/UX: Loading Spinner für Fragen und Submissions -->
-<div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite" aria-label="Lädt">
+<!-- ? P1 UI/UX: Loading Spinner fÃ¼r Fragen und Submissions -->
+<div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite" aria-label="LÃ¤dt">
     <div class="loading-content">
         <div class="spinner" aria-hidden="true"></div>
         <p class="loading-text" id="loading-text">Lade Frage...</p>
@@ -80,7 +80,7 @@
                 <div class="question-category" id="question-category" role="status">
                     â³ Loading...
                 </div>
-                <!-- ? P1 DSGVO: FSK-Badge für Jugendschutz -->
+                <!-- ? P1 DSGVO: FSK-Badge fï¿½r Jugendschutz -->
                 <div class="fsk-badge hidden" id="fsk-badge" role="status" aria-label="FSK Einstufung">
                     <span class="fsk-text" id="fsk-text">ab 16</span>
                 </div>
@@ -118,7 +118,7 @@
         <!-- Answer Section -->
         <section class="answer-section fadeInUp" id="answer-section" aria-labelledby="answer-title">
             <h2 class="answer-title" id="answer-title">ğŸ’­ Deine Antwort</h2>
-            <!-- ? P1 UI/UX: Radio-group Semantik für Single-Selection -->
+            <!-- ? P1 UI/UX: Radio-group Semantik fï¿½r Single-Selection -->
             <div class="answer-buttons" role="radiogroup" aria-labelledby="answer-title" aria-required="true">
                 <button class="answer-btn yes"
                         id="yes-btn"
@@ -126,7 +126,7 @@
                         role="radio"
                         aria-checked="false"
                         aria-label="Ja, ich habe das schon gemacht">
-                    <div class="answer-emoji" aria-hidden="true">?</div>
+                    <div class="answer-emoji" aria-hidden="true">âœ“</div>
                     <div>Ja, habe ich</div>
                 </button>
                 <button class="answer-btn no"
@@ -135,7 +135,7 @@
                         role="radio"
                         aria-checked="false"
                         aria-label="Nein, ich habe das noch nie gemacht">
-                    <div class="answer-emoji" aria-hidden="true">?</div>
+                    <div class="answer-emoji" aria-hidden="true">âœ—</div>
                     <div>Nein, noch nie</div>
                 </button>
             </div>
@@ -148,7 +148,7 @@
             <!-- Current Selection Display -->
             <div class="current-selection" id="current-selection" role="status" aria-live="polite">
                 <div class="selection-display">
-                    <div class="selection-number" id="selected-number" aria-label="Ausgewählte Anzahl">-</div>
+                    <div class="selection-number" id="selected-number" aria-label="AusgewÃ¤hlte Anzahl">-</div>
                     <div class="selection-label">von <span id="total-players">0</span> Spielern</div>
                 </div>
             </div>
@@ -164,7 +164,7 @@
                     type="button"
                     disabled
                     aria-disabled="true"
-                    aria-label="Antwort und Schätzung bestätigen">
+                    aria-label="Antwort und SchÃ¤tzung bestÃ¤tigen">
                 âœ… Antwort bestÃ¤tigen
             </button>
         </div>
@@ -181,7 +181,7 @@
                 <button class="nav-btn primary"
                         id="next-question-btn"
                         type="button"
-                        aria-label="Nächste Frage laden">
+                        aria-label="NÃ¤chste Frage laden">
                     â¡ï¸ NÃ¤chste Frage
                 </button>
                 <button class="nav-btn secondary"
@@ -202,7 +202,7 @@
 
             <div class="leaderboard">
                 <h3 class="leaderboard-title">ğŸ† Rangliste</h3>
-                <p class="leaderboard-subtitle">Sortiert nach wenigsten Schlücken</p>
+                <p class="leaderboard-subtitle">Sortiert nach wenigsten SchlÃ¼cken</p>
                 <div id="leaderboard-list" role="list" aria-label="Rangliste"></div>
             </div>
 
@@ -229,15 +229,15 @@
         <div class="popup-avatar" id="popup-avatar" aria-hidden="true">M</div>
         <div class="popup-name" id="popup-name">Max</div>
         <p class="popup-message" id="popup-message">ist dran!</p>
-        <!-- ? P1 UI/UX: Tastatur-Bestätigung für Spielerwechsel -->
+        <!-- ? P1 UI/UX: Tastatur-BestÃ¤tigung fÃ¼r Spielerwechsel -->
         <button class="popup-confirm-btn"
                 id="popup-confirm-btn"
                 type="button"
                 aria-label="Bereit zum Spielen">
-            ? Bereit!
+            âœ“ Bereit!
         </button>
         <p class="popup-hint" aria-live="polite">
-            <small>Drücke Enter oder klicke "Bereit" um fortzufahren</small>
+            <small>DrÃ¼cke Enter oder klicke "Bereit" um fortzufahren</small>
         </p>
     </div>
 </div>
@@ -254,9 +254,9 @@
     <div class="exit-content">
         <h2 class="exit-title" id="exit-title">ğŸšª Spiel verlassen?</h2>
         <p class="exit-message" id="exit-message">
-            Möchtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.
+            MÃ¶chtest du das Spiel wirklich beenden? Der Fortschritt geht verloren.
         </p>
-        <div class="exit-buttons" role="group" aria-label="Bestätigungsoptionen">
+        <div class="exit-buttons" role="group" aria-label="BestÃ¤tigungsoptionen">
             <button class="exit-btn cancel"
                     id="exit-cancel-btn"
                     type="button"

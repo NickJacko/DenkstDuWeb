@@ -41,9 +41,25 @@
     function init() {
         Logger.info('🚀 Initializing Settings Module...');
 
-        // Wait for Firebase Auth
-        if (!firebase || !firebase.auth) {
-            Logger.warn('⚠️ Firebase not ready, retrying...');
+        // Wait for Firebase SDK to be loaded
+        if (!firebase || !firebase.app || !firebase.auth) {
+            Logger.warn('⚠️ Firebase SDK not loaded, retrying...');
+            setTimeout(init, 500);
+            return;
+        }
+
+        // Wait for Firebase App to be initialized by firebase-config.js
+        if (!window.firebaseInitialized) {
+            Logger.warn('⚠️ Firebase not initialized yet, retrying...');
+            setTimeout(init, 500);
+            return;
+        }
+
+        // Double-check Firebase App is accessible
+        try {
+            firebase.app();
+        } catch (error) {
+            Logger.warn('⚠️ Firebase App not accessible, retrying...', error.message);
             setTimeout(init, 500);
             return;
         }

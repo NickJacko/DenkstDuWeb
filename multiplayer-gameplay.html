@@ -54,7 +54,7 @@
 
 </head>
 <body>
-<!-- ? P1 Stabilit�t: Error Modal f�r Verbindungsabbr�che und Fehlerf�lle -->
+<!-- ? P1 Stabilität: Error Modal für Verbindungsabbrüche und Fehlerfälle -->
 <div class="error-modal hidden" id="error-modal" role="dialog" aria-labelledby="error-title" aria-modal="true">
     <div class="error-modal-backdrop" id="error-backdrop"></div>
     <div class="error-modal-content">
@@ -86,11 +86,11 @@
     <p class="loading-text">Lade Spiel...</p>
 </div>
 
-<!-- ? P1 UI/UX: Loading Overlay f�r Zustandswechsel -->
+<!-- ? P1 UI/UX: Loading Overlay für Zustandswechsel -->
 <div class="loading-overlay hidden" id="loading-overlay" role="status" aria-live="polite">
     <div class="loading-content">
         <div class="spinner" aria-hidden="true"></div>
-        <p class="loading-text" id="loading-text">L�dt...</p>
+        <p class="loading-text" id="loading-text">Lädt...</p>
     </div>
 </div>
 
@@ -99,7 +99,7 @@
     <!-- Game Info Top -->
     <header class="game-info-top">
         <span class="info-text">Runde <span id="current-round" aria-live="polite">1</span></span>
-        <span class="info-separator" aria-hidden="true">�</span>
+        <span class="info-separator" aria-hidden="true">•</span>
         <span class="info-text"><span id="players-count" aria-live="polite">0 Spieler</span></span>
     </header>
 
@@ -124,13 +124,13 @@
         <!-- Answer Section -->
         <div class="answer-section">
             <h2 class="answer-title">💭 Deine Antwort</h2>
-            <div class="answer-buttons" role="radiogroup" aria-label="Antwort ausw�hlen">
+            <div class="answer-buttons" role="radiogroup" aria-label="Antwort auswählen">
                 <button class="answer-btn yes" id="yes-btn" type="button" role="radio" aria-checked="false">
-                    <div class="answer-emoji" aria-hidden="true">?</div>
+                    <div class="answer-emoji" aria-hidden="true">✓</div>
                     <div>Ja, habe ich</div>
                 </button>
                 <button class="answer-btn no" id="no-btn" type="button" role="radio" aria-checked="false">
-                    <div class="answer-emoji" aria-hidden="true">?</div>
+                    <div class="answer-emoji" aria-hidden="true">✗</div>
                     <div>Nein, noch nie</div>
                 </button>
             </div>
@@ -141,7 +141,7 @@
             <h2 class="estimation-title">🤔 Wie viele antworten mit "Ja"?</h2>
 
             <!-- Number Grid -->
-            <div class="number-grid" id="number-grid" role="radiogroup" aria-label="Anzahl sch�tzen">
+            <div class="number-grid" id="number-grid" role="radiogroup" aria-label="Anzahl schätzen">
                 <!-- Numbers generated dynamically -->
             </div>
 
@@ -166,7 +166,7 @@
     <section class="game-phase" id="waiting-phase" role="region" aria-label="Warten auf andere Spieler">
         <div class="waiting-screen">
             <div class="waiting-spinner" aria-hidden="true"></div>
-            <h2 class="waiting-title">? Warten auf andere Spieler</h2>
+            <h2 class="waiting-title">⏳ Warten auf andere Spieler</h2>
             <p class="waiting-description">
                 Deine Antworten wurden gesendet.<br>
                 Warte, bis alle anderen geantwortet haben.
@@ -193,7 +193,7 @@
                 <h3 class="personal-result-title">📊 Dein Ergebnis</h3>
                 <div class="personal-result-content">
                     <div class="personal-result-item">
-                        <span class="personal-label">Deine Sch�tzung:</span>
+                        <span class="personal-label">Deine Schätzung:</span>
                         <span class="personal-value" id="personal-estimation">-</span>
                     </div>
                     <div class="personal-result-item">
@@ -228,7 +228,7 @@
 
             <!-- Player Controls -->
             <div class="player-waiting guest-only" id="player-controls">
-                <p class="waiting-host-text">? Warten auf Host...</p>
+                <p class="waiting-host-text">⏳ Warten auf Host...</p>
             </div>
         </div>
     </section>
@@ -274,7 +274,7 @@
 
             <!-- Player Waiting -->
             <div class="player-waiting guest-only" id="overall-player-controls">
-                <p class="waiting-host-text">? Warten auf Host...</p>
+                <p class="waiting-host-text">⏳ Warten auf Host...</p>
             </div>
         </div>
     </section>

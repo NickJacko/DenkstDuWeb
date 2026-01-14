@@ -54,7 +54,7 @@
 
 </head>
 <body>
-<!-- ? P1 DSGVO: Age-Gate Modal für Jugendschutz -->
+<!-- ? P1 DSGVO: Age-Gate Modal fÃ¼r Jugendschutz -->
 <div class="age-gate-modal hidden" id="age-gate-modal" role="dialog" aria-labelledby="age-gate-title" aria-modal="true">
     <div class="age-gate-backdrop"></div>
     <div class="age-gate-content">
@@ -63,30 +63,30 @@
         </div>
         <div class="age-gate-body">
             <p class="age-gate-message">
-                Das Spiel enthält Fragen mit einer FSK-Einstufung von <strong id="fsk-rating">16</strong> Jahren.
+                Das Spiel enthÃ¤lt Fragen mit einer FSK-Einstufung von <strong id="fsk-rating">16</strong> Jahren.
             </p>
             <p class="age-gate-confirmation">
-                Bitte bestätige, dass du das Mindestalter erreicht hast:
+                Bitte bestÃ¤tige, dass du das Mindestalter erreicht hast:
             </p>
             <div class="age-options">
                 <label class="age-option">
                     <input type="radio" name="age-confirmation" value="16" id="age-16">
-                    <span class="age-label">Ich bin 16 Jahre oder älter</span>
+                    <span class="age-label">Ich bin 16 Jahre oder Ã¤lter</span>
                 </label>
                 <label class="age-option">
                     <input type="radio" name="age-confirmation" value="18" id="age-18">
-                    <span class="age-label">Ich bin 18 Jahre oder älter</span>
+                    <span class="age-label">Ich bin 18 Jahre oder Ã¤lter</span>
                 </label>
             </div>
             <div class="age-gate-warning">
                 <p><strong>â„¹ï¸ Hinweis:</strong></p>
-                <p>Durch die Bestätigung versicherst du, dass deine Angaben der Wahrheit entsprechen.
-                   Falsche Angaben können zum Ausschluss aus dem Spiel führen.</p>
+                <p>Durch die BestÃ¤tigung versicherst du, dass deine Angaben der Wahrheit entsprechen.
+                   Falsche Angaben kÃ¶nnen zum Ausschluss aus dem Spiel fÃ¼hren.</p>
             </div>
         </div>
         <div class="age-gate-footer">
             <button class="age-btn secondary" id="age-decline" type="button">Abbrechen</button>
-            <button class="age-btn primary" id="age-confirm" type="button" disabled>Bestätigen</button>
+            <button class="age-btn primary" id="age-confirm" type="button" disabled>BestÃ¤tigen</button>
         </div>
     </div>
 </div>
@@ -116,20 +116,20 @@
             <h2 id="privacy-heading" class="privacy-heading">ğŸ”’ Datenschutzhinweis</h2>
             <p class="privacy-text">
                 Beim Beitreten werden <strong>Name</strong>, <strong>Alter</strong> und <strong>IP-Adresse</strong>
-                temporär für das Multiplayer-Spiel gespeichert. Daten werden nach Spielende automatisch gelöscht.
+                temporÃ¤r fÃ¼r das Multiplayer-Spiel gespeichert. Daten werden nach Spielende automatisch gelÃ¶scht.
                 <a href="/privacy.html" class="privacy-link" target="_blank" rel="noopener">Mehr erfahren</a>
             </p>
         </div>
 
         <!-- ? P0 SECURITY: Fehlermeldungen Container -->
         <div class="error-messages hidden" id="error-container" role="alert" aria-live="assertive" aria-atomic="true">
-            <!-- Fehler werden hier dynamisch eingefügt (via textContent, NICHT innerHTML) -->
+            <!-- Fehler werden hier dynamisch eingefÃ¼gt (via textContent, NICHT innerHTML) -->
         </div>
 
         <!-- ? P1 STABILITY: Offline-Warnung -->
         <div class="offline-warning hidden" id="offline-warning" role="alert" aria-live="polite">
             <strong>âš ï¸ Verbindung verloren</strong>
-            <p>Überprüfe deine Internetverbindung und versuche es erneut.</p>
+            <p>ÃœberprÃ¼fe deine Internetverbindung und versuche es erneut.</p>
         </div>
 
         <!-- Form Section -->
@@ -155,14 +155,14 @@
                 </div>
                 <span class="input-hint" id="code-hint">Vom Host mitgeteilt (z.B. ABC123)</span>
 
-                <!-- ? P1 UI/UX: Fehlermeldung für ungültigen Code -->
+                <!-- ? P1 UI/UX: Fehlermeldung fÃ¼r ungÃ¼ltigen Code -->
                 <span class="input-error hidden" id="code-error" role="alert">
-                    <!-- Fehlertext wird dynamisch eingefügt -->
+                    <!-- Fehlertext wird dynamisch eingefÃ¼gt -->
                 </span>
 
                 <!-- ? P0 Sicherheit: Rate-Limit Warnung -->
                 <div class="rate-limit-warning hidden" id="rate-limit-warning" role="alert" aria-live="polite">
-                    <strong>? Zu viele Versuche</strong>
+                    <strong>âš ï¸ Zu viele Versuche</strong>
                     <p>Bitte warte <span id="rate-limit-countdown" aria-live="polite">30</span> Sekunden bevor du es erneut versuchst.</p>
                 </div>
             </fieldset>
@@ -187,7 +187,7 @@
                     <dt>FSK-Einstufung:</dt>
                     <dd id="game-fsk-rating" class="fsk-warning" role="status">
                         <strong>ğŸ” FSK 16+</strong>
-                        <span class="fsk-hint">Altersprüfung erforderlich</span>
+                        <span class="fsk-hint">Altersprï¿½fung erforderlich</span>
                     </dd>
                 </dl>
             </aside>
@@ -214,17 +214,17 @@
                 </div>
                 <span class="input-hint" id="name-hint">2-20 Zeichen, nur Buchstaben und Zahlen</span>
 
-                <!-- ? P1 UI/UX: Fehlermeldung für ungültigen Namen -->
+                <!-- ? P1 UI/UX: Fehlermeldung fÃ¼r ungÃ¼ltigen Namen -->
                 <span class="input-error hidden" id="name-error" role="alert">
-                    <!-- Fehlertext wird dynamisch eingefügt -->
+                    <!-- Fehlertext wird dynamisch eingefÃ¼gt -->
                 </span>
             </fieldset>
         </form>
 
         <!-- Controls -->
         <div class="controls" role="navigation" aria-label="Formular-Navigation">
-            <button class="btn btn-outline" id="back-btn" type="button" aria-label="Zurück zur Startseite">
-                ? Zurück
+            <button class="btn btn-outline" id="back-btn" type="button" aria-label="ZurÃ¼ck zur Startseite">
+                â† ZurÃ¼ck
             </button>
             <button class="btn btn-primary" id="join-btn" type="button" disabled aria-disabled="true" aria-label="Spiel beitreten">
                 â¡ï¸ Beitreten

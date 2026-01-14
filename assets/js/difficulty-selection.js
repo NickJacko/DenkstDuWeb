@@ -348,19 +348,27 @@
      */
     async function loadQuestionCounts() {
         try {
-            // Check if Firebase is available
-            if (typeof firebase !== 'undefined' && firebase.database) {
-                const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances();
+            // Check if Firebase is available and initialized
+            if (typeof firebase !== 'undefined' &&
+                firebase.database &&
+                window.firebaseInitialized &&
+                window.FirebaseConfig) {
 
-                if (firebaseInstances && firebaseInstances.database) {
-                    // Try loading from Firebase
-                    DifficultySelectionModule.questionCountsCache = await loadCountsFromFirebase(firebaseInstances.database);
+                try {
+                    const firebaseInstances = window.FirebaseConfig.getFirebaseInstances();
 
-                    if (DifficultySelectionModule.questionCountsCache) {
-                        Logger.debug('✅ Question counts loaded from Firebase:', DifficultySelectionModule.questionCountsCache);
-                        updateDifficultyCardsWithCounts();
-                        return;
+                    if (firebaseInstances && firebaseInstances.database) {
+                        // Try loading from Firebase
+                        DifficultySelectionModule.questionCountsCache = await loadCountsFromFirebase(firebaseInstances.database);
+
+                        if (DifficultySelectionModule.questionCountsCache) {
+                            Logger.debug('✅ Question counts loaded from Firebase:', DifficultySelectionModule.questionCountsCache);
+                            updateDifficultyCardsWithCounts();
+                            return;
+                        }
                     }
+                } catch (fbError) {
+                    Logger.warn('⚠️ Firebase not ready yet:', fbError.message);
                 }
             }
 

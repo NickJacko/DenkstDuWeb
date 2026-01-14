@@ -273,7 +273,7 @@
 
     function checkAlcoholMode() {
         try {
-            PlayerSetupModule.alcoholMode = PlayerSetupModule.gameState.PlayerSetupModule.alcoholMode === true;
+            PlayerSetupModule.alcoholMode = PlayerSetupModule.gameState.alcoholMode === true;
 
             const difficultyIcon = document.getElementById('difficulty-icon');
             if (difficultyIcon) {
