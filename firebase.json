@@ -178,7 +178,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://firebase.googleapis.com https://www.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://firebasestorage.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com wss://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+            "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://firebase.googleapis.com https://www.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://firebasestorage.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://europe-west1-denkstduwebsite.cloudfunctions.net wss://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
           },
           {
             "key": "Set-Cookie",
