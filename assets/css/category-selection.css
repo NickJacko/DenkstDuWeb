@@ -336,13 +336,19 @@ body {
     bottom: 0;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(5px);
-    display: flex;
+    display: none; /* Hidden by default to prevent flash on load */
     flex-direction: column;
     justify-content: center;
     align-items: center;
     border-radius: 15px;
     z-index: 10;
     gap: 10px;
+}
+
+/* Show overlay when not hidden */
+.locked-overlay:not(.hidden),
+.locked-overlay.d-flex {
+    display: flex;
 }
 
 .lock-icon {
