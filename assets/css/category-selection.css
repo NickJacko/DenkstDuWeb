@@ -203,30 +203,79 @@ body {
 
 @media (min-width: 1024px) {
     .category-grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr;
-        gap: 25px;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
     }
 }
 
 /* ============================================================================
-   CATEGORY CARDS
+   CATEGORY CARDS - Matching Mode Card Design
    ============================================================================ */
 
 .category-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    padding: 25px;
+    /* Glass Morphism - matching mode-card design */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+
+    /* Shape */
+    border-radius: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+
+    /* Spacing */
+    padding: 32px 28px;
+
+    /* Behavior */
     cursor: pointer;
-    transition: all 0.3s ease;
+
+    /* Transitions */
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Position */
     position: relative;
     overflow: hidden;
+
+    /* Effects */
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+    /* Display */
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
 }
 
+/* Subtle shine effect */
+.category-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 0;
+}
+
+.category-card:hover::before {
+    opacity: 1;
+}
+
+/* Ensure content is above the shine effect */
+.category-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Hover State */
 .category-card:hover:not(.locked) {
-    transform: translateY(-5px);
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(79, 172, 254, 0.3);
+    border-color: rgba(79, 172, 254, 0.6);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.12));
 }
 
 .category-card:focus {
@@ -239,32 +288,40 @@ body {
     cursor: not-allowed;
 }
 
+/* Selected States with FSK-specific colors */
 .category-card.selected,
 .category-card[aria-pressed="true"] {
-    background: rgba(76, 175, 80, 0.2);
-    border-color: #4CAF50;
-    transform: translateY(-8px);
-    box-shadow: 0 15px 35px rgba(76, 175, 80, 0.3);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 60px rgba(76, 175, 80, 0.35),
+                0 0 40px rgba(76, 175, 80, 0.2);
 }
 
 .category-card.fsk0.selected {
     border-color: #4CAF50;
-    background: rgba(76, 175, 80, 0.1);
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.12), rgba(69, 160, 73, 0.08));
+    box-shadow: 0 20px 60px rgba(76, 175, 80, 0.35),
+                0 0 40px rgba(76, 175, 80, 0.2);
 }
 
 .category-card.fsk16.selected {
     border-color: #FF9800;
-    background: rgba(255, 152, 0, 0.1);
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.12), rgba(245, 124, 0, 0.08));
+    box-shadow: 0 20px 60px rgba(255, 152, 0, 0.35),
+                0 0 40px rgba(255, 152, 0, 0.2);
 }
 
 .category-card.fsk18.selected {
     border-color: #F44336;
-    background: rgba(244, 67, 54, 0.1);
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.12), rgba(211, 47, 47, 0.08));
+    box-shadow: 0 20px 60px rgba(244, 67, 54, 0.35),
+                0 0 40px rgba(244, 67, 54, 0.2);
 }
 
 .category-card.special.selected {
     border-color: #FFD700;
-    background: rgba(255, 215, 0, 0.1);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 165, 0, 0.08));
+    box-shadow: 0 20px 60px rgba(255, 215, 0, 0.35),
+                0 0 40px rgba(255, 215, 0, 0.2);
 }
 
 /* ============================================================================
@@ -279,13 +336,19 @@ body {
     bottom: 0;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(5px);
-    display: flex;
+    display: none; /* Hidden by default to prevent flash on load */
     flex-direction: column;
     justify-content: center;
     align-items: center;
     border-radius: 15px;
     z-index: 10;
     gap: 10px;
+}
+
+/* Show overlay when not hidden */
+.locked-overlay:not(.hidden),
+.locked-overlay.d-flex {
+    display: flex;
 }
 
 .lock-icon {
@@ -341,15 +404,18 @@ body {
 
 .premium-badge {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background: linear-gradient(45deg, #FFD700, #FFA500);
+    top: 18px;
+    right: 18px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
     color: white;
-    padding: 5px 12px;
-    border-radius: 15px;
-    font-size: 0.7rem;
+    padding: 7px 16px;
+    border-radius: 18px;
+    font-size: 0.85rem;
     font-weight: 700;
+    letter-spacing: 0.3px;
     z-index: 5;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    text-transform: uppercase;
     animation: pulse-premium 2s ease-in-out infinite;
 }
 
@@ -370,22 +436,25 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 15px;
+    margin-bottom: 22px;
 }
 
 .category-icon {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     line-height: 1;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
 }
 
 .fsk-badge {
     background: rgba(255, 255, 255, 0.9);
     color: #333;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    padding: 7px 16px;
+    border-radius: 18px;
+    font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .fsk0-badge {
@@ -410,16 +479,19 @@ body {
 
 .category-title {
     color: white;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    letter-spacing: -0.02em;
 }
 
 .category-description {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin-bottom: 15px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.98rem;
+    line-height: 1.65;
+    margin-bottom: 22px;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
 }
 
 .category-examples {
@@ -433,29 +505,32 @@ body {
 }
 
 .example-question {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.9);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    line-height: 1.3;
-    border-left: 3px solid rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08));
+    color: rgba(255, 255, 255, 0.95);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    border-left: 3px solid rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .category-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .age-range,
 .question-count {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.88rem;
     font-weight: 600;
+    letter-spacing: 0.02em;
 }
 
 .loading-dots {
@@ -833,11 +908,19 @@ body {
     }
 
     .category-card {
-        padding: 20px;
+        padding: 24px 20px;
     }
 
     .category-icon {
         font-size: 2.5rem;
+    }
+
+    .category-title {
+        font-size: 1.3rem;
+    }
+
+    .category-description {
+        font-size: 0.92rem;
     }
 
     .btn-large {

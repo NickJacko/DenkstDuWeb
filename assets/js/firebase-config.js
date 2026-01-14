@@ -1581,4 +1581,39 @@
             console.warn('?? Domain whitelist initialization failed:', error.message);
         }
     });
+
+    // ===================================
+    // 🚀 AUTO-INITIALIZATION
+    // ===================================
+
+    /**
+     * Auto-initialize Firebase when DOM is ready
+     * This ensures Firebase is always ready before other scripts try to use it
+     */
+    function autoInitialize() {
+        // Check if Firebase SDK is loaded
+        if (typeof firebase === 'undefined' || !firebase.app || !firebase.auth || !firebase.database) {
+            if (isDevelopment) {
+                console.warn('⚠️ Firebase SDK not loaded yet, retrying...');
+            }
+            setTimeout(autoInitialize, 100);
+            return;
+        }
+
+        if (isDevelopment) {
+            console.log('🚀 Auto-initializing Firebase...');
+        }
+
+        initializeFirebase().catch(error => {
+            console.error('❌ Auto-initialization failed:', error);
+        });
+    }
+
+    // Start auto-initialization when DOM is ready (or immediately if already ready)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoInitialize);
+    } else {
+        // DOM is already ready, start immediately
+        autoInitialize();
+    }
 })(window);

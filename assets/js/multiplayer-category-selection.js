@@ -174,6 +174,10 @@
 
         MultiplayerCategoryModule.gameState = new window.GameState();
 
+        // CRITICAL: Always set device mode to 'multi' for multiplayer pages
+        MultiplayerCategoryModule.gameState.setDeviceMode('multi');
+        Logger.debug('📱 Device mode set to: multi');
+
         // CRITICAL: DEVICE MODE ENFORCEMENT
         Logger.debug('🎮 Checking user role...');
 
@@ -187,7 +191,6 @@
         } else {
             // Force host mode
             MultiplayerCategoryModule.isHost = true;
-            MultiplayerCategoryModule.gameState.deviceMode = 'multi';
             MultiplayerCategoryModule.gameState.isHost = true;
             MultiplayerCategoryModule.gameState.isGuest = false;
             Logger.debug('👑 User is HOST - showing editable view');
@@ -262,10 +265,32 @@
         const nameSection = document.getElementById('player-name-section');
         const categoryContainer = document.getElementById('category-selection-container');
         const multiplayerHeader = document.getElementById('multiplayer-header');
+        const nameInput = document.getElementById('player-name-input');
 
         if (nameSection) nameSection.classList.remove('hidden');
         if (categoryContainer) categoryContainer.classList.add('hidden');
         if (multiplayerHeader) multiplayerHeader.classList.add('hidden');
+
+        // ✅ Load display name from settings (if set)
+        if (nameInput) {
+            try {
+                // Try to get display name from localStorage (set by settings.js)
+                const savedDisplayName = window.NocapUtils
+                    ? window.NocapUtils.getLocalStorage('nocap_display_name')
+                    : localStorage.getItem('nocap_display_name');
+
+                if (savedDisplayName && savedDisplayName.trim()) {
+                    nameInput.value = savedDisplayName.trim();
+                    Logger.debug('✅ Pre-filled name from settings:', savedDisplayName);
+
+                    // Trigger input event to enable confirm button
+                    const event = new Event('input', { bubbles: true });
+                    nameInput.dispatchEvent(event);
+                }
+            } catch (error) {
+                Logger.warn('⚠️ Could not load display name from settings:', error);
+            }
+        }
     }
 
     function showCategorySelection() {
@@ -316,6 +341,18 @@
 
         MultiplayerCategoryModule.gameState.setPlayerName(playerName);
         MultiplayerCategoryModule.playerNameConfirmed = true;
+
+        // ✅ Save display name to settings (sync with settings.js)
+        try {
+            if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
+                window.NocapUtils.setLocalStorage('nocap_display_name', playerName);
+            } else {
+                localStorage.setItem('nocap_display_name', playerName);
+            }
+            Logger.debug('✅ Display name saved to settings');
+        } catch (error) {
+            Logger.warn('⚠️ Could not save display name to settings:', error);
+        }
 
         Logger.debug('✅ Player name set and saved:', playerName);
 

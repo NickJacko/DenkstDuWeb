@@ -138,11 +138,9 @@
 
             MultiplayerDifficultyModule.gameState = new window.GameState();
 
-            // Ensure device mode is set for multiplayer
-            if (!MultiplayerDifficultyModule.gameState.deviceMode) {
-                MultiplayerDifficultyModule.gameState.setDeviceMode('multi');
-                Logger.debug('⚠️ Device mode was not set, setting to multi');
-            }
+            // CRITICAL: Always set device mode to 'multi' for multiplayer pages
+            MultiplayerDifficultyModule.gameState.setDeviceMode('multi');
+            Logger.debug('📱 Device mode set to: multi');
 
             // Validate device mode
             if (!validateGameState()) {
