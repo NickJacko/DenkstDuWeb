@@ -217,11 +217,9 @@
             // ✅ BUGFIX: Use window.GameState (constructor) not CategorySelectionModule.gameState
             CategorySelectionModule.gameState = new window.GameState();
 
-            // ✅ P1 FIX: Set device mode HERE (not on landing page)
-            if (!CategorySelectionModule.gameState.deviceMode) {
-                Logger.debug('📱 Setting device mode: single');
-                CategorySelectionModule.gameState.setDeviceMode('single');
-            }
+            // ✅ P1 FIX: Always set device mode to 'single' for category-selection
+            Logger.debug('📱 Setting device mode: single');
+            CategorySelectionModule.gameState.setDeviceMode('single');
 
             // Validate game state
             if (!validateGameState()) {
@@ -262,13 +260,7 @@
     // ===========================
 
     function validateGameState() {
-        // ✅ P1 FIX: Device mode might not be set yet - that's OK
-        // We set it above, so now validate it
-        if (CategorySelectionModule.gameState.deviceMode !== 'single') {
-            Logger.warn('⚠️ Device mode was not "single", correcting...');
-            CategorySelectionModule.gameState.setDeviceMode('single');
-        }
-
+        // Device mode is already set to 'single' during initialization
         if (!CategorySelectionModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
