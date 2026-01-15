@@ -14,18 +14,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Root Dependencies
-        run: npm ci
-
+      # ✅ NUR Functions Dependencies installieren
       - name: Install Functions Dependencies
         working-directory: ./functions
         run: npm ci
 
+      # ✅ Tests in functions/ laufen lassen
       - name: Run Functions Tests
         working-directory: ./functions
         run: npm test
 
-      - name: Deploy to Firebase (Hosting + Functions)
+      # ✅ Firebase deployen (braucht kein Root npm)
+      - name: Deploy to Firebase
         run: |
           npm install -g firebase-tools
           firebase deploy --token "$FIREBASE_TOKEN"
