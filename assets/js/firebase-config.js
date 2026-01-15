@@ -799,22 +799,23 @@
 
                     if (firebase.appCheck && appCheckKey) {
                         try {
-                            // ✅ P1 STABILITY: Activate App Check with auto-refresh
-                            const appCheck = firebase.appCheck();
+                            const appCheckKey =
+                                window.FIREBASE_APP_CHECK_KEY ||
+                                firebaseConfig.appCheckKey ||
+                                null;
 
-                            const DISABLE_APP_CHECK = true; // <- JETZT auf true
+                            const DISABLE_APP_CHECK = true; // <-- für jetzt: true (bis AppCheck korrekt konfiguriert ist)
 
                             if (!DISABLE_APP_CHECK && isProduction && firebase.appCheck && appCheckKey) {
                                 try {
                                     const appCheck = firebase.appCheck();
                                     await appCheck.activate(appCheckKey, true);
+                                    if (isDevelopment) console.log('✅ App Check activated');
                                 } catch (e) {
-                                    console.warn('AppCheck failed:', e.message);
+                                    console.warn('⚠️ AppCheck activation failed:', e?.message || e);
                                 }
-                            }
-                            if (isDevelopment) {
-                                console.log('%c✅ App Check activated with auto-refresh',
-                                    'color: #4CAF50; font-weight: bold');
+                            } else {
+                                if (isDevelopment) console.log('ℹ️ App Check skipped (disabled or not in prod)');
                             }
 
                             // ✅ P1 STABILITY: Log to telemetry
@@ -877,11 +878,10 @@
                 window.firebaseAuth = firebase.auth();
                 window.firebaseDatabase = firebase.database();
 
-                // ✅ OPTIONAL: Functions (only if SDK loaded)
                 try {
                     if (typeof firebase.functions === 'function') {
-                        // Region must match your deployed functions (default is us-central1 unless set)
-                        window.firebaseFunctions = firebase.functions('europe-west1');
+                        // ✅ compat-correct: region über app().functions(...)
+                        window.firebaseFunctions = firebase.app().functions('europe-west1');
                     } else {
                         window.firebaseFunctions = null;
                     }

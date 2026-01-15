@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor Cloud Functions tests for improved isolation and coverage; add proxyquire for dependency mocking, enhance FSK validation and privacy logic tests, and update dev dependencies">
-      <change afterPath="$PROJECT_DIR$/.github/workflows/firebase-hosting.yml" afterDir="false" />
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Improve Firebase initialization robustness and set Functions region to europe-west1">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-config.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -161,62 +164,6 @@
       <workItem from="1768167037940" duration="13518000" />
       <workItem from="1768215061185" duration="14448000" />
       <workItem from="1768323670735" duration="7628000" />
-    </task>
-    <task id="LOCAL-00064" summary="Audit changes/ Extract to css">
-      <option name="closed" value="true" />
-      <created>1763994323261</created>
-      <option name="number" value="00064" />
-      <option name="presentableId" value="LOCAL-00064" />
-      <option name="project" value="LOCAL" />
-      <updated>1763994323261</updated>
-    </task>
-    <task id="LOCAL-00065" summary="Update Hash">
-      <option name="closed" value="true" />
-      <created>1763994895083</created>
-      <option name="number" value="00065" />
-      <option name="presentableId" value="LOCAL-00065" />
-      <option name="project" value="LOCAL" />
-      <updated>1763994895083</updated>
-    </task>
-    <task id="LOCAL-00066" summary="Update Hash">
-      <option name="closed" value="true" />
-      <created>1763995150595</created>
-      <option name="number" value="00066" />
-      <option name="presentableId" value="LOCAL-00066" />
-      <option name="project" value="LOCAL" />
-      <updated>1763995150595</updated>
-    </task>
-    <task id="LOCAL-00067" summary="Update Hash">
-      <option name="closed" value="true" />
-      <created>1763995478073</created>
-      <option name="number" value="00067" />
-      <option name="presentableId" value="LOCAL-00067" />
-      <option name="project" value="LOCAL" />
-      <updated>1763995478073</updated>
-    </task>
-    <task id="LOCAL-00068" summary="Update Hash/ joingame/ mcs/ mds/ ml">
-      <option name="closed" value="true" />
-      <created>1764057531667</created>
-      <option name="number" value="00068" />
-      <option name="presentableId" value="LOCAL-00068" />
-      <option name="project" value="LOCAL" />
-      <updated>1764057531667</updated>
-    </task>
-    <task id="LOCAL-00069" summary="Update all atleast but not the 4 failed">
-      <option name="closed" value="true" />
-      <created>1764078392105</created>
-      <option name="number" value="00069" />
-      <option name="presentableId" value="LOCAL-00069" />
-      <option name="project" value="LOCAL" />
-      <updated>1764078392105</updated>
-    </task>
-    <task id="LOCAL-00070" summary="Update Device Mode">
-      <option name="closed" value="true" />
-      <created>1764148414783</created>
-      <option name="number" value="00070" />
-      <option name="presentableId" value="LOCAL-00070" />
-      <option name="project" value="LOCAL" />
-      <updated>1764148414786</updated>
     </task>
     <task id="LOCAL-00071" summary="Update Device Mode">
       <option name="closed" value="true" />
@@ -554,7 +501,63 @@
       <option name="project" value="LOCAL" />
       <updated>1768493011145</updated>
     </task>
-    <option name="localTasksCounter" value="113" />
+    <task id="LOCAL-00113" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
+      <option name="closed" value="true" />
+      <created>1768493247669</created>
+      <option name="number" value="00113" />
+      <option name="presentableId" value="LOCAL-00113" />
+      <option name="project" value="LOCAL" />
+      <updated>1768493247669</updated>
+    </task>
+    <task id="LOCAL-00114" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
+      <option name="closed" value="true" />
+      <created>1768493344235</created>
+      <option name="number" value="00114" />
+      <option name="presentableId" value="LOCAL-00114" />
+      <option name="project" value="LOCAL" />
+      <updated>1768493344235</updated>
+    </task>
+    <task id="LOCAL-00115" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
+      <option name="closed" value="true" />
+      <created>1768493613303</created>
+      <option name="number" value="00115" />
+      <option name="presentableId" value="LOCAL-00115" />
+      <option name="project" value="LOCAL" />
+      <updated>1768493613303</updated>
+    </task>
+    <task id="LOCAL-00116" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
+      <option name="closed" value="true" />
+      <created>1768493790043</created>
+      <option name="number" value="00116" />
+      <option name="presentableId" value="LOCAL-00116" />
+      <option name="project" value="LOCAL" />
+      <updated>1768493790043</updated>
+    </task>
+    <task id="LOCAL-00117" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
+      <option name="closed" value="true" />
+      <created>1768493942082</created>
+      <option name="number" value="00117" />
+      <option name="presentableId" value="LOCAL-00117" />
+      <option name="project" value="LOCAL" />
+      <updated>1768493942082</updated>
+    </task>
+    <task id="LOCAL-00118" summary="Update Firebase deployment step to use --force flag in GitHub Actions workflow">
+      <option name="closed" value="true" />
+      <created>1768494087629</created>
+      <option name="number" value="00118" />
+      <option name="presentableId" value="LOCAL-00118" />
+      <option name="project" value="LOCAL" />
+      <updated>1768494087629</updated>
+    </task>
+    <task id="LOCAL-00119" summary="Improve Firebase initialization robustness and set Functions region to europe-west1">
+      <option name="closed" value="true" />
+      <created>1768496998920</created>
+      <option name="number" value="00119" />
+      <option name="presentableId" value="LOCAL-00119" />
+      <option name="project" value="LOCAL" />
+      <updated>1768496998921</updated>
+    </task>
+    <option name="localTasksCounter" value="120" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -575,9 +578,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Lobby auto load fixed users" />
-    <MESSAGE value="Firebase fix" />
-    <MESSAGE value="Backup" />
     <MESSAGE value="Change from html to js &amp; html" />
     <MESSAGE value="new changes after audit" />
     <MESSAGE value="Audit changes/ Extract to css" />
@@ -600,7 +600,10 @@
     <MESSAGE value="Claude changes" />
     <MESSAGE value="Enhance Firebase App Check integration, improve FSK validation, and refactor privacy and UI logic&#10;&#10;- Add firebase-app-check-key meta tag to all HTML files; remove hardcoded fallback keys from JS configs&#10;- Update firebase-init.js and firebase-config.js to require App Check key via meta/env, improve error handling and logging&#10;- Refactor FSK validation in difficulty-selection.js for stricter server-side checks and better error feedback&#10;- Improve multiplayer-category-selection.js player readiness logic and player key handling&#10;- Refactor multiplayer-difficulty-selection.js for cleaner event listener management and dependency checks&#10;- Enhance join-game.js with robust Firebase readiness checks and improved FSK badge rendering&#10;- Update firebase-auth.js for safer initialization, promise handling, and redirect logic&#10;- Refactor privacy.js: use NocapCookies for consent, improve modal cleanup, TOC insertion, and section toggling&#10;- Improve 404.js and difficulty-selection.js for accessibility, reduced motion, and error handling&#10;- Add getPlayerKey utility, update event listener cleanup, and minor UI/UX improvements across modules" />
     <MESSAGE value="Refactor Cloud Functions tests for improved isolation and coverage; add proxyquire for dependency mocking, enhance FSK validation and privacy logic tests, and update dev dependencies" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor Cloud Functions tests for improved isolation and coverage; add proxyquire for dependency mocking, enhance FSK validation and privacy logic tests, and update dev dependencies" />
+    <MESSAGE value="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch" />
+    <MESSAGE value="Update Firebase deployment step to use --force flag in GitHub Actions workflow" />
+    <MESSAGE value="Improve Firebase initialization robustness and set Functions region to europe-west1" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improve Firebase initialization robustness and set Functions region to europe-west1" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

@@ -285,6 +285,7 @@
         });
     }
     function setupEventListeners() {
+        const fskWarningModal = document.getElementById('fsk-warning-modal');
         // Settings Button
         const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) {

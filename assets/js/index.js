@@ -1228,7 +1228,7 @@
             IndexPageModule.state.initialized = true;
 
             if (!checkDOMPurify()) return;
-            initializeFirebase().catch(err => Logger.warn('⚠️ Firebase initialization error:', err));
+            await initializeFirebase().catch(err => Logger.warn('⚠️ Firebase initialization error:', err));
             if (typeof GameState === 'undefined') {
                 Logger.error('❌ GameState class not found!');
                 window.NocapUtils?.showNotification?.('Fehler beim Laden der Spieldaten', 'error');
