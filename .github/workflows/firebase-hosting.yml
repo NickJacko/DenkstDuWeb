@@ -9,17 +9,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ✅ Node Setup ohne automatisches Caching
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+
+      # ✅ Manuelles Caching für Root Dependencies
+      - name: Cache Root Dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # ✅ Manuelles Caching für Functions Dependencies
+      - name: Cache Functions Dependencies
+        uses: actions/cache@v3
+        with:
+          path: functions/node_modules
+          key: ${{ runner.os }}-functions-${{ hashFiles('functions/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-functions-
 
       - name: Verify Functions Setup
         run: test -f functions/package-lock.json
 
-      - name: Install Dependencies
+      - name: Install Root Dependencies
         run: npm ci && npm run build
+
+      - name: Install Functions Dependencies
+        run: cd functions && npm ci
 
       - name: Run Functions Tests
         run: npm test --prefix functions
