@@ -3,7 +3,7 @@
  * Version 2.0 - Enhanced Security & Compliance
  *
  * Features:
- * ✅ P0: IAM-based authorization (only authorized sources)
+ * ✅ P0: Server-side scheduled execution (Cloud Scheduler/PubSub)
  * ✅ P0: Comprehensive data deletion with audit trail
  * ✅ P1: 48-hour grace period (reversible deletion)
  * ✅ P1: Email notifications
@@ -24,7 +24,7 @@ const admin = require('firebase-admin');
 
 const CONFIG = {
     GRACE_PERIOD_HOURS: 48,
-    DELETION_SECRET: functions.config().deletion?.secret || process.env.DELETION_SECRET,
+    DELETION_SECRET: (functions.config()?.deletion?.secret) || process.env.DELETION_SECRET || null,
     EMAIL_SENDER: 'noreply@denkstduweb.app',
     EMAIL_SUPPORT: 'support@denkstduweb.app'
 };
@@ -213,7 +213,9 @@ function generateCancellationEmail(userName) {
  * ✅ P1: Schedule account deletion (48h grace period)
  * User can cancel within 48 hours
  */
-exports.scheduleAccountDeletion = functions.https.onCall(async (data, context) => {
+exports.scheduleAccountDeletion = functions
+    .region('europe-west1')
+    .https.onCall(async (data, context) => {
     const functionName = 'scheduleAccountDeletion';
 
     try {
@@ -278,7 +280,9 @@ exports.scheduleAccountDeletion = functions.https.onCall(async (data, context) =
 /**
  * ✅ P1: Cancel scheduled account deletion
  */
-exports.cancelAccountDeletion = functions.https.onCall(async (data, context) => {
+exports.cancelAccountDeletion = functions
+    .region('europe-west1')
+    .https.onCall(async (data, context) => {
     const functionName = 'cancelAccountDeletion';
 
     try {
@@ -342,8 +346,9 @@ exports.cancelAccountDeletion = functions.https.onCall(async (data, context) => 
  * ✅ P1: Anonymous logging for audit trail
  */
 exports.processScheduledDeletions = functions
+    .region('europe-west1')
     .runWith({ timeoutSeconds: 540, memory: '1GB' })
-    .pubsub.schedule('0 * * * *') // Every hour
+    .pubsub.schedule('0 * * * *')
     .timeZone('Europe/Berlin')
     .onRun(async (context) => {
         const functionName = 'processScheduledDeletions';
@@ -465,9 +470,8 @@ async function executeAccountDeletion(userId, requestKey) {
 
         // 4. Delete Storage files (if any)
         try {
-            const bucket = admin.storage().bucket();
             const [files] = await bucket.getFiles({
-                prefix: `users/${userId}/`
+                prefix: `avatars/${userId}/`
             });
 
             for (const file of files) {
@@ -492,7 +496,7 @@ async function executeAccountDeletion(userId, requestKey) {
         }
 
         // 6. Update deletion request status
-        await db.ref(`deletionRequests/${requestKey}`).update({
+        await db.ref(`deletionRequests/${userId}`).update({
             status: 'completed',
             completedAt: admin.database.ServerValue.TIMESTAMP,
             stats: deletionStats
@@ -516,7 +520,7 @@ async function executeAccountDeletion(userId, requestKey) {
         logger.error(functionName, 'Account deletion failed', error, { userId });
 
         // Mark as failed
-        await db.ref(`deletionRequests/${requestKey}`).update({
+        await db.ref(`deletionRequests/${userId}`).update({
             status: 'failed',
             failedAt: admin.database.ServerValue.TIMESTAMP,
             error: error.message
@@ -605,11 +609,11 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
  * ✅ Helper Function: Schedule automatic deletion of old games
  * Runs daily at midnight (UTC)
  */
-exports.cleanupOldGames = functions.pubsub
+exports.cleanupOldGamesDaily = functions.pubsub
     .schedule('0 0 * * *')
     .timeZone('Europe/Berlin')
-    .onRun(async (context) => {
-        const functionName = 'cleanupOldGames';
+    .onRun(async () => {
+        const functionName = 'cleanupOldGamesDaily';
 
         logger.info(functionName, '🧹 Starting automatic game cleanup');
 
@@ -634,7 +638,6 @@ exports.cleanupOldGames = functions.pubsub
             await Promise.all(deletePromises);
 
             logger.info(functionName, `✅ Deleted ${deletePromises.length} old games`);
-
             return null;
         } catch (error) {
             logger.error(functionName, 'Cleanup error', error);
@@ -642,10 +645,11 @@ exports.cleanupOldGames = functions.pubsub
         }
     });
 
+
 exports.cleanupAgeVerifications = functions.pubsub.schedule('0 1 * * *')
     .timeZone('Europe/Berlin')
     .onRun(async (context) => {
-        console.log('🧹 Starting age verification cleanup...');
+        logger.info('🧹 Starting age verification cleanup...');
 
         const db = admin.database();
         const ageVerificationsRef = db.ref('ageVerifications');
@@ -666,11 +670,11 @@ exports.cleanupAgeVerifications = functions.pubsub.schedule('0 1 * * *')
             });
 
             await Promise.all(deletePromises);
-            console.log(`✅ Deleted ${deletePromises.length} old age verifications`);
+            logger.info(`✅ Deleted ${deletePromises.length} old age verifications`);
 
             return null;
         } catch (error) {
-            console.error('❌ Age verification cleanup error:', error);
+            logger.error('❌ Age verification cleanup error:', error);
             return null;
         }
     });

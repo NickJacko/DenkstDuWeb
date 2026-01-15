@@ -799,11 +799,6 @@
 
                     if (firebase.appCheck && appCheckKey) {
                         try {
-                            const appCheckKey =
-                                window.FIREBASE_APP_CHECK_KEY ||
-                                firebaseConfig.appCheckKey ||
-                                null;
-
                             const DISABLE_APP_CHECK = true; // <-- für jetzt: true (bis AppCheck korrekt konfiguriert ist)
 
                             if (!DISABLE_APP_CHECK && isProduction && firebase.appCheck && appCheckKey) {
@@ -880,7 +875,7 @@
 
                 try {
                     if (firebase?.functions) {
-                        window.firebaseFunctions = firebase.app().functions("europe-west1");
+                        window.firebaseFunctions = firebase.app().functions('europe-west1');
                     } else {
                         window.firebaseFunctions = null;
                     }

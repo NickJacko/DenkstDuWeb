@@ -255,6 +255,7 @@ exports.cleanupUserData = functions.auth.user().onDelete(async (user) => {
  * ✅ CORS: Explicit CORS handling for custom domain
  */
 exports.validateFSKAccess = functions
+    .region('europe-west1')
     .runWith({
         memory: '256MB',
         timeoutSeconds: 10

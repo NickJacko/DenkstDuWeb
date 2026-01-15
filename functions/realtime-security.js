@@ -65,7 +65,7 @@ const logger = {
 // ===================================
 
 const validationCache = new Map();
-
+const rapidUpdateCache = new Map();
 function shouldThrottle(gameId) {
     const lastValidation = validationCache.get(gameId);
     const now = Date.now();
@@ -250,57 +250,41 @@ async function validateFSKCategory(gameData, userId) {
     const functionName = 'validateFSKCategory';
 
     const selectedCategories = gameData.selectedCategories || [];
+    const restrictedCategories = selectedCategories.filter(cat => cat === 'fsk16' || cat === 'fsk18');
 
-    // Check if any FSK16/18 categories are selected
-    const restrictedCategories = selectedCategories.filter(cat =>
-        cat === 'fsk16' || cat === 'fsk18'
-    );
-
-    if (restrictedCategories.length === 0) {
-        return { valid: true };
-    }
+    if (restrictedCategories.length === 0) return { valid: true };
 
     try {
-        // Get user's age verification status
-        const userRecord = await admin.auth().getUser(userId);
-        const customClaims = userRecord.customClaims || {};
+        const db = admin.database();
+
+        // ✅ Prefer DB cache (cheap) – expect: users/{uid}.ageVerified + ageLevel OR fsk flags
+        const userSnap = await db.ref(`users/${userId}`).once('value');
+        const userData = userSnap.val() || {};
+
+        // If you store ageLevel:
+        const ageVerified = userData.ageVerified === true;
+        const ageLevel = Number(userData.ageLevel || 0);
 
         for (const category of restrictedCategories) {
-            if (category === 'fsk16' && !customClaims.fsk16) {
-                logger.security(functionName, 'Unauthorized FSK16 access attempt', {
-                    userId,
-                    category
-                });
-
-                return {
-                    valid: false,
-                    reason: 'fsk16_not_verified',
-                    details: 'User is not verified for FSK16 content'
-                };
+            if (!ageVerified) {
+                return { valid: false, reason: 'age_not_verified', details: 'Age verification required' };
             }
-
-            if (category === 'fsk18' && !customClaims.fsk18) {
-                logger.security(functionName, 'Unauthorized FSK18 access attempt', {
-                    userId,
-                    category
-                });
-
-                return {
-                    valid: false,
-                    reason: 'fsk18_not_verified',
-                    details: 'User is not verified for FSK18 content'
-                };
+            if (category === 'fsk16' && ageLevel < 16) {
+                return { valid: false, reason: 'fsk16_not_verified', details: 'User is not verified for FSK16 content' };
+            }
+            if (category === 'fsk18' && ageLevel < 18) {
+                return { valid: false, reason: 'fsk18_not_verified', details: 'User is not verified for FSK18 content' };
             }
         }
 
         return { valid: true };
-
     } catch (error) {
         logger.error(functionName, 'Error validating FSK', error, { userId });
-        // On error, allow (fail open) but log
-        return { valid: true };
+        // ✅ fail-closed for safety
+        return { valid: false, reason: 'fsk_validation_error', details: 'FSK validation failed - access denied' };
     }
 }
+
 
 // ===================================
 // VIOLATION TRACKING
@@ -331,8 +315,9 @@ async function recordViolation(gameId, userId, violation) {
             type: violation.reason
         });
 
-        // Check if user should be banned
-        await checkAndBanUser(userId);
+        // ⚠️ RTDB Trigger hat keinen echten "writer". Auto-Ban kann falsche treffen.
+        // Deshalb: nur loggen, kein Auto-Ban auf Basis unsicherer Attribution.
+
 
     } catch (error) {
         logger.error(functionName, 'Error recording violation', error);
@@ -487,58 +472,50 @@ function generateSecurityEmailHTML(data) {
 async function sendSlackNotification(data) {
     const functionName = 'sendSlackNotification';
 
-    if (!CONFIG.SLACK_WEBHOOK) {
+    if (!CONFIG.SLACK_WEBHOOK) return;
+
+    // Node 18+ in Cloud Functions hat i.d.R. global fetch.
+    // Falls nicht verfügbar: nicht crashen -> nur loggen.
+    const fetchFn = globalThis.fetch;
+    if (typeof fetchFn !== 'function') {
+        logger.warn(functionName, 'fetch not available - Slack notification skipped');
         return;
     }
 
     try {
-        const fetch = require('node-fetch');
-
         const message = {
             text: `🚨 Security Alert: ${data.type}`,
             blocks: [
                 {
                     type: 'header',
-                    text: {
-                        type: 'plain_text',
-                        text: '🚨 Security Alert'
-                    }
+                    text: { type: 'plain_text', text: '🚨 Security Alert' }
                 },
                 {
                     type: 'section',
                     fields: [
-                        {
-                            type: 'mrkdwn',
-                            text: `*Type:*\n${data.type}`
-                        },
-                        {
-                            type: 'mrkdwn',
-                            text: `*User:*\n${data.userId || 'N/A'}`
-                        }
+                        { type: 'mrkdwn', text: `*Type:*\n${data.type}` },
+                        { type: 'mrkdwn', text: `*User:*\n${data.userId || 'N/A'}` }
                     ]
                 },
                 {
                     type: 'section',
-                    text: {
-                        type: 'mrkdwn',
-                        text: `\`\`\`${JSON.stringify(data, null, 2)}\`\`\``
-                    }
+                    text: { type: 'mrkdwn', text: `\`\`\`${JSON.stringify(data, null, 2)}\`\`\`` }
                 }
             ]
         };
 
-        await fetch(CONFIG.SLACK_WEBHOOK, {
+        await fetchFn(CONFIG.SLACK_WEBHOOK, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(message)
         });
 
         logger.info(functionName, 'Slack notification sent');
-
     } catch (error) {
         logger.error(functionName, 'Error sending Slack notification', error);
     }
 }
+
 
 // ===================================
 // ROLLBACK MECHANISM
@@ -555,7 +532,7 @@ async function rollbackChanges(gameId, beforeData, reason) {
         const gameRef = db.ref(`games/${gameId}`);
 
         // Restore previous data
-        await gameRef.set(beforeData);
+        await gameRef.update(beforeData);
 
         logger.security(functionName, 'Changes rolled back', {
             gameId,
@@ -578,7 +555,7 @@ async function rollbackChanges(gameId, beforeData, reason) {
  * ✅ Main security trigger for game updates
  * Validates all changes and rolls back manipulations
  */
-exports.validateGameUpdate = functions.database
+exports.validateGameUpdate = functions.region('europe-west1').database
     .ref('/games/{gameId}')
     .onUpdate(async (change, context) => {
         const functionName = 'validateGameUpdate';
@@ -684,7 +661,7 @@ exports.validateGameUpdate = functions.database
 /**
  * ✅ Detect and prevent rapid-fire updates (DDoS protection)
  */
-exports.detectRapidUpdates = functions.database
+exports.detectRapidUpdates = functions.region('europe-west1').database
     .ref('/games/{gameId}')
     .onWrite(async (change, context) => {
         const functionName = 'detectRapidUpdates';
@@ -692,7 +669,7 @@ exports.detectRapidUpdates = functions.database
 
         // Track update frequency
         const cacheKey = `updates_${gameId}`;
-        const updates = validationCache.get(cacheKey) || [];
+        const updates = rapidUpdateCache.get(cacheKey) || [];
         const now = Date.now();
 
         // Add current update
@@ -700,7 +677,7 @@ exports.detectRapidUpdates = functions.database
 
         // Keep only last minute
         const recentUpdates = updates.filter(time => (now - time) < 60000);
-        validationCache.set(cacheKey, recentUpdates);
+        rapidUpdateCache.set(cacheKey, recentUpdates);
 
         // Check for suspicious activity (>30 updates/min)
         if (recentUpdates.length > 30) {
@@ -723,7 +700,7 @@ exports.detectRapidUpdates = functions.database
 /**
  * ✅ Monitor for deleted games (potential data loss)
  */
-exports.monitorGameDeletion = functions.database
+exports.monitorGameDeletion = functions.region('europe-west1').database
     .ref('/games/{gameId}')
     .onDelete(async (snapshot, context) => {
         const functionName = 'monitorGameDeletion';
@@ -755,7 +732,7 @@ exports.monitorGameDeletion = functions.database
 /**
  * ✅ Cleanup old security violations (runs daily)
  */
-exports.cleanupOldViolations = functions.pubsub
+exports.cleanupOldViolations = functions.region('europe-west1').pubsub
     .schedule('0 2 * * *')
     .timeZone('Europe/Berlin')
     .onRun(async (context) => {

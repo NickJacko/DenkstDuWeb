@@ -58,6 +58,10 @@
             SettingsState.functionsInstance = functions;
             Logger.info('✅ Firebase Functions ready (via FirebaseConfig)');
         }
+        if (!auth) {
+            Logger.error('❌ Firebase Auth not available (SDK missing or not initialized).');
+            return;
+        }
 
         const unsub = auth.onAuthStateChanged(onAuthStateChanged);
         if (typeof unsub === 'function') SettingsState.eventCleanup.push(unsub);
@@ -338,7 +342,6 @@
                 if (e.target === settingsModal) closeSettings();
             });
         }
-
         if (fskWarningModal) {
             addTrackedListener(fskWarningModal, 'click', (e) => {
                 if (e.target === fskWarningModal) closeFSKModal();
@@ -471,6 +474,13 @@
 
             // Force Token Refresh (wichtig für Custom Claims!)
             await SettingsState.currentUser.getIdToken(true);
+            const refreshed = await SettingsState.currentUser.getIdTokenResult(true);
+            SettingsState.userFSKAccess = {
+                fsk0: true,
+                fsk16: refreshed?.claims?.fsk16 === true,
+                fsk18: refreshed?.claims?.fsk18 === true
+            };
+            updateFSKBadges(SettingsState.userFSKAccess);
 
             showSuccess('Altersverifikation erfolgreich!');
 
