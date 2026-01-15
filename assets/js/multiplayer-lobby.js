@@ -132,7 +132,15 @@
     const REJOIN_BUFFER_TIME = 120000; // 2 minutes to rejoin
     const PRESENCE_UPDATE_INTERVAL = 10000; // 10 seconds
 
-    
+    function getPlayerKey() {
+        try {
+            const uid = firebase?.auth?.()?.currentUser?.uid;
+            return uid || currentUserId || MultiplayerLobbyModule.gameState?.playerId || null;
+        } catch (e) {
+            return currentUserId || MultiplayerLobbyModule.gameState?.playerId || null;
+        }
+    }
+
 
     // ===========================
     // INITIALIZATION
@@ -155,11 +163,11 @@
             return;
         }
 
-        // Check dependencies
-        if (typeof MultiplayerLobbyModule.gameState === 'undefined') {
-            showNotification('Fehler: MultiplayerLobbyModule.gameState nicht gefunden', 'error');
+        if (!window.gameState && !window.GameState) {
+            showNotification('Fehler: GameState nicht geladen', 'error');
             return;
         }
+
 
         // P1 FIX: Wait for dependencies
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
@@ -186,22 +194,28 @@
             }
         }
 
-        MultiplayerLobbyModule.gameState = new MultiplayerLobbyModule.gameState();
+        MultiplayerLobbyModule.gameState = window.gameState || (window.GameState ? new window.GameState() : null);
+
+        if (!MultiplayerLobbyModule.gameState) {
+            showNotification('GameState nicht verfügbar', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return;
+        }
+
 
         // P0 FIX: Validate game state
         if (!validateGameState()) {
             return;
         }
 
-        // P0 FIX: Use global firebaseGameService
-        if (typeof window.MultiplayerLobbyModule.firebaseService !== 'undefined') {
-            MultiplayerLobbyModule.firebaseService = window.MultiplayerLobbyModule.firebaseService
+        if (window.firebaseGameService) {
+            MultiplayerLobbyModule.firebaseService = window.firebaseGameService;
         } else {
-            console.error('❌ Firebase service not available');
-            showNotification('Firebase nicht verfügbar', 'error');
+            showNotification('Firebase Game Service nicht verfügbar', 'error');
             setTimeout(() => window.location.href = 'index.html', 3000);
             return;
         }
+
 
         // ✅ FIX: Ensure Firebase Auth user exists (sign in anonymously if needed)
         if (typeof firebase !== 'undefined' && firebase.auth) {
@@ -390,8 +404,8 @@
                 hostName: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
                 settings: settings,
                 players: {
-                    [currentUserId]: {
-                        id: currentUserId,
+                    [getPlayerKey()]: {
+                        id: getPlayerKey(),
                         name: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
                         isHost: true,
                         isReady: true, // Host is always ready
@@ -446,10 +460,7 @@
             // ✅ FIX: Don't add player if already joined via join-game.html
             // join-game.html already adds the player via MultiplayerLobbyModule.firebaseService.joinGame()
             // Just verify player exists
-            const playerExists = game.players && Object.keys(game.players).some(pid => {
-                const player = game.players[pid];
-                return player.uid === currentUserId || pid === MultiplayerLobbyModule.gameState.playerId;
-            });
+            const playerExists = !!game.players?.[getPlayerKey()];
 
             if (!playerExists && !isHost) {
                 // Only add if player truly doesn't exist (shouldn't happen normally)
@@ -476,15 +487,16 @@
     async function addPlayerToGame(gameId) {
         try {
             const playerData = {
-                id: currentUserId,
+                id: getPlayerKey(),
                 name: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
                 isHost: false,
                 isReady: false,
                 joinedAt: Date.now()
             };
 
-            const playerRef = firebase.database().ref(`games/${gameId}/players/${currentUserId}`);
-            await playerRef.set(playerData);
+            const playerRef = firebase.database().ref(`games/${gameId}/players/${getPlayerKey()}`);
+            await playerRef.update(playerData);
+
 
             if (MultiplayerLobbyModule.isDevelopment) {
                 console.log('✅ Player added to game');
@@ -556,10 +568,10 @@
      * ✅ P1 STABILITY: Update player's lastSeen timestamp
      */
     async function updatePlayerLastSeen(gameId) {
-        if (!currentUserId || !gameId) return;
+        if (!getPlayerKey() || !gameId) return;
 
         try {
-            const playerRef = firebase.database().ref(`games/${gameId}/players/${currentUserId}/lastSeen`);
+            const playerRef = firebase.database().ref(`games/${gameId}/players/${getPlayerKey()}/lastSeen`);
             await playerRef.set(Date.now());
         } catch (error) {
             // Silent fail - not critical
@@ -584,7 +596,8 @@
             // Prepare state object
             const stateToSave = {
                 gameId: currentGameId,
-                playerId: MultiplayerLobbyModule.gameState.playerId,
+                playerId: getPlayerKey(),
+                authUid: getPlayerKey(),
                 deviceMode: 'multi',
                 isHost: false,
                 isGuest: true,
@@ -912,14 +925,14 @@
         }
 
         currentPlayers = players; // ✅ Update global state
-        const playersArray = Object.values(players);
+        const playersArray = Object.entries(players).map(([key, p]) => ({ ...p, _key: key }));
 
         if (playerCount) {
             playerCount.textContent = `${playersArray.length}/${MAX_PLAYERS} Spieler`;
         }
 
         if (playersList) {
-            playersList.innerHTML = '';
+            while (playersList.firstChild) playersList.removeChild(playersList.firstChild);
 
             // ✅ P1 UI/UX: Sort players - Host first, then alphabetically
             const sortedPlayers = playersArray.sort((a, b) => {
@@ -1002,7 +1015,7 @@
                     kickBtn.type = 'button';
                     kickBtn.textContent = '✕';
                     kickBtn.setAttribute('aria-label', `${playerName} entfernen`);
-                    kickBtn.addTrackedEventListener('click', () => kickPlayer(player.id));
+                    addTrackedEventListener(kickBtn, 'click', () => kickPlayer(player._key));
                     playerItem.appendChild(kickBtn);
                 }
 
@@ -1131,8 +1144,7 @@
     function onConnectionEstablished() {
         if (!currentGameId || !currentUserId) return;
 
-        const playerId = MultiplayerLobbyModule.gameState.playerId || currentUserId;
-        presenceRef = firebase.database().ref(`games/${currentGameId}/players/${playerId}`);
+        presenceRef = firebase.database().ref(`games/${currentGameId}/players/${getPlayerKey()}`);
 
         // Set online status
         presenceRef.update({
@@ -1183,8 +1195,7 @@
             }
 
             const gameData = snapshot.val();
-            const playerId = MultiplayerLobbyModule.gameState.playerId || currentUserId;
-            const player = gameData.players?.[playerId];
+            const player = gameData.players?.[getPlayerKey()];
 
             if (!player) {
                 return false; // Player not in game
@@ -1221,9 +1232,8 @@
                 return;
             }
 
-            // Update player status
-            const playerId = MultiplayerLobbyModule.gameState.playerId || currentUserId;
-            const playerRef = firebase.database().ref(`games/${currentGameId}/players/${playerId}`);
+            const playerRef = firebase.database().ref(`games/${currentGameId}/players/${getPlayerKey()}`);
+
 
             await playerRef.update({
                 online: true,
@@ -1260,16 +1270,12 @@
             const currentStatus = MultiplayerLobbyModule.gameState.isReady || false;
             const newStatus = !currentStatus;
 
-            // ✅ FIX: Use playerId instead of currentUserId
-            // Guest players have a generated playerId (e.g. p_abc123), not currentUserId
-            const playerId = MultiplayerLobbyModule.gameState.playerId || currentUserId;
+            // ✅ IMPORTANT: Player key is ALWAYS Firebase Auth UID (fallback only if needed).
+            // Keep this consistent across: players/{playerKey} and answers/{playerKey}
 
-            if (MultiplayerLobbyModule.isDevelopment) {
-                console.log('🔄 Toggling ready for player:', playerId);
-            }
-
-            const playerRef = firebase.database().ref(`games/${currentGameId}/players/${playerId}/isReady`);
+            const playerRef = firebase.database().ref(`games/${currentGameId}/players/${getPlayerKey()}/isReady`);
             await playerRef.set(newStatus);
+
 
             MultiplayerLobbyModule.gameState.isReady = newStatus;
 
@@ -1329,6 +1335,8 @@
                 deviceMode: 'multi',
                 isHost: true,
                 isGuest: false,
+                playerId: getPlayerKey(),
+                authUid: getPlayerKey(),
                 gamePhase: 'playing',
                 playerName: MultiplayerLobbyModule.gameState.playerName,
                 selectedCategories: MultiplayerLobbyModule.gameState.selectedCategories,
@@ -1399,20 +1407,15 @@
 
         try {
             if (currentGameId) {
-                // ✅ FIX: Use playerId for guests, currentUserId for host
-                const playerId = MultiplayerLobbyModule.gameState.playerId || currentUserId;
+                // ✅ remove myself from players
+                await firebase.database().ref(`games/${currentGameId}/players/${getPlayerKey()}`).remove();
 
-                if (playerId) {
-                    const playerRef = firebase.database().ref(`games/${currentGameId}/players/${playerId}`);
-                    await playerRef.remove();
-                }
-
-                // If host leaves, delete entire game
+                // ✅ if host -> delete whole game
                 if (isHost) {
-                    const gameRef = firebase.database().ref(`games/${currentGameId}`);
-                    await gameRef.remove();
+                    await firebase.database().ref(`games/${currentGameId}`).remove();
                 }
             }
+
 
             cleanup();
             MultiplayerLobbyModule.gameState.gameId = null;
@@ -1644,5 +1647,4 @@
     } else {
         initialize();
     }
-
 })(window);

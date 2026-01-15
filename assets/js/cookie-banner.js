@@ -21,7 +21,7 @@
 
     const COOKIE_CONSENT_KEY = 'nocap_cookie_consent';
     const COOKIE_CONSENT_VERSION = '2.0';
-    const CONSENT_EXPIRY_DAYS = 365;
+    const CONSENT_EXPIRY_DAYS = 180;
 
     // ✅ P1 STABILITY: Cookie fallback for private mode
     const COOKIE_NAME = 'nocap_consent';
@@ -91,7 +91,9 @@
             const cookies = document.cookie.split(';');
 
             for (let cookie of cookies) {
-                const [cookieName, cookieValue] = cookie.trim().split('=');
+                const parts = cookie.trim().split('=');
+                const cookieName = parts.shift();
+                const cookieValue = parts.join('=');
 
                 if (cookieName === safeName) {
                     return decodeURIComponent(cookieValue);
@@ -112,11 +114,11 @@
     function deleteSecureCookie(name) {
         try {
             const safeName = encodeURIComponent(name);
-            document.cookie = `${safeName}=; max-age=0; path=/`;
-
-            if (isDevelopment) {
-                console.log('✅ Cookie deleted:', safeName);
-            }
+            const isSecure = window.location.protocol === 'https:';
+            let cookieString = `${safeName}=; max-age=0; path=/`;
+            if (isSecure) cookieString += '; Secure';
+            cookieString += '; SameSite=Strict';
+            document.cookie = cookieString;
         } catch (error) {
             console.error('Error deleting cookie:', error);
         }
@@ -207,8 +209,15 @@
                 console.warn('localStorage.setItem failed, falling back to cookie:', error);
             }
         }
-
-        // Fallback to cookie
+        // cookie fallback: compact for consent only
+        if (key === COOKIE_CONSENT_KEY) {
+            try {
+                const o = typeof value === 'string' ? JSON.parse(value) : value;
+                const compact = `${o.version}|${o.timestamp}|${o.analytics?1:0}|${o.functional?1:0}`;
+                setSecureCookie(COOKIE_NAME, compact);
+                return true;
+            } catch (e) {}
+        }
         setSecureCookie(key, stringValue);
         return true;
     }
@@ -230,25 +239,37 @@
             }
         }
 
-        // Fallback to cookie
+        if (key === COOKIE_CONSENT_KEY) {
+            const compact = getSecureCookie(COOKIE_NAME);
+            if (compact) return JSON.stringify(parseCompactConsent(compact));
+        }
         return getSecureCookie(key);
     }
-
+    function parseCompactConsent(s) {
+        const [version, ts, a, f] = String(s).split('|');
+        return {
+            version: sanitizeStorageValue(version),
+            timestamp: validateTimestamp(ts) || Date.now(),
+            analytics: a === '1',
+            functional: f === '1',
+            necessary: true
+        };
+    }
     /**
      * ✅ P1 STABILITY: Remove from storage
      * @param {string} key - Storage key
      */
     function removeStorage(key) {
         if (localStorageAvailable) {
-            try {
-                localStorage.removeItem(key);
-            } catch (error) {
-                console.warn('localStorage.removeItem failed:', error);
-            }
+            try { localStorage.removeItem(key); } catch (e) {}
         }
 
-        // Also remove cookie
         deleteSecureCookie(key);
+
+        // ALSO remove compact consent cookie
+        if (key === COOKIE_CONSENT_KEY) {
+            deleteSecureCookie(COOKIE_NAME);
+        }
     }
 
     /**
@@ -289,7 +310,7 @@
 
             // ✅ P1 DSGVO: Check if consent is still valid (6 months = 180 days)
             const expiryDate = new Date(timestamp);
-            expiryDate.setDate(expiryDate.getDate() + 180); // 6 months
+            expiryDate.setDate(expiryDate.getDate() + CONSENT_EXPIRY_DAYS);
 
             if (new Date() > expiryDate) {
                 // Consent expired after 6 months
@@ -407,102 +428,76 @@
      */
     function applyConsent(consent) {
         if (!consent) {
-            if (isDevelopment) {
-                console.warn('⚠️ No consent object provided to applyConsent()');
-            }
+            if (isDevelopment) console.warn('⚠️ No consent object provided to applyConsent()');
             return;
         }
 
-        // ===================================
-        // ANALYTICS (nur wenn zugestimmt)
-        // ===================================
+        // =========================
+        // ANALYTICS
+        // =========================
         if (consent.analytics) {
             enableAnalytics();
-
-            if (isDevelopment) {
-                console.log('✅ Analytics enabled (user consent)');
-            }
+            if (isDevelopment) console.log('✅ Analytics enabled (user consent)');
         } else {
             disableAnalytics();
-
-            if (isDevelopment) {
-                console.log('ℹ️ Analytics disabled (no consent)');
-            }
+            if (isDevelopment) console.log('ℹ️ Analytics disabled (no consent)');
         }
 
-        // ===================================
-        // FUNCTIONAL COOKIES (nur wenn zugestimmt)
-        // ===================================
-        if (consent.functional) {
-            // Allow persistent auth - ONLY if Firebase is initialized
-            if (window.FirebaseConfig && window.FirebaseConfig.isInitialized()) {
-                try {
-                    const { auth } = window.FirebaseConfig.getFirebaseInstances();
-                    if (auth && auth.setPersistence) {
-                        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-                            .then(() => {
-                                if (isDevelopment) {
-                                    console.log('✅ Firebase persistence set to LOCAL');
-                                }
-                            })
-                            .catch(error => {
-                                console.warn('Could not set local persistence:', error);
-                            });
-                    }
-                } catch (error) {
-                    console.warn('Firebase not ready for persistence setup:', error);
-                }
-            } else if (isDevelopment) {
-                console.log('⚠️ Firebase not initialized yet - persistence will be set later');
-            }
-
-            if (isDevelopment) {
-                console.log('✅ Functional cookies enabled (user consent)');
-            }
-        } else {
-            // Session-only persistence
-            if (window.firebase?.auth) {
-                firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION)
-                    .then(() => {
-                        if (isDevelopment) {
-                            console.log('✅ Firebase persistence set to SESSION (no functional consent)');
+        // =========================
+        // FUNCTIONAL (Firebase Auth Persistence)
+        // =========================
+        if (window.FirebaseConfig && window.FirebaseConfig.isInitialized()) {
+            try {
+                const { auth } = window.FirebaseConfig.getFirebaseInstances();
+                if (auth && typeof auth.setPersistence === 'function') {
+                    if (consent.functional) {
+                        const P = auth.Persistence?.LOCAL ?? window.FirebaseConfig?.authPersistence?.LOCAL;
+                        if (P) {
+                            auth.setPersistence(P)
+                                .then(() => { if (isDevelopment) console.log('✅ Firebase persistence set to LOCAL'); })
+                                .catch(err => console.warn('Could not set local persistence:', err));
+                        } else if (isDevelopment) {
+                            console.warn('⚠️ No LOCAL persistence constant available (skip setting)');
                         }
-                    })
-                    .catch(error => {
-                        console.warn('Could not set session persistence:', error);
-                    });
+                        if (isDevelopment) console.log('✅ Functional cookies enabled (user consent)');
+                    } else {
+                        const P = auth.Persistence?.SESSION ?? window.FirebaseConfig?.authPersistence?.SESSION;
+                        if (P) {
+                            auth.setPersistence(P)
+                                .then(() => { if (isDevelopment) console.log('✅ Firebase persistence set to SESSION (no functional consent)'); })
+                                .catch(err => console.warn('Could not set session persistence:', err));
+                        } else if (isDevelopment) {
+                            console.warn('⚠️ No SESSION persistence constant available (skip setting)');
+                        }
+                        if (isDevelopment) console.log('ℹ️ Functional cookies disabled (no consent)');
+                    }
+                }
+            } catch (e) {
+                console.warn('Firebase persistence setup failed:', e);
             }
-
-            if (isDevelopment) {
-                console.log('ℹ️ Functional cookies disabled (no consent)');
-            }
+        } else if (isDevelopment) {
+            console.log('⚠️ Firebase not initialized yet - persistence will be set later');
         }
 
-        // ===================================
-        // PRIVACY CONSENT (für Kompatibilität)
-        // ===================================
+        // =========================
+        // PRIVACY CONSENT (Compatibility)
+        // =========================
         if (window.NocapPrivacy?.acceptPrivacy) {
             window.NocapPrivacy.acceptPrivacy();
-            if (isDevelopment) {
-                console.log('✅ Privacy consent granted via NocapPrivacy.acceptPrivacy()');
-            }
+            if (isDevelopment) console.log('✅ Privacy consent granted via NocapPrivacy.acceptPrivacy()');
         } else {
-            // Fallback: Direct localStorage
             try {
                 localStorage.setItem('nocap_privacy_consent', 'true');
                 localStorage.setItem('nocap_privacy_date', new Date().toISOString());
-
-                if (isDevelopment) {
-                    console.log('✅ Privacy consent set directly (fallback)');
-                }
+                if (isDevelopment) console.log('✅ Privacy consent set directly (fallback)');
             } catch (e) {
                 console.warn('Could not set privacy consent:', e);
             }
         }
 
-        // ===================================
-        // DISPATCH EVENT (für andere Scripts)
-        // ===================================
+        // =========================
+        // DISPATCH EVENT
+        // =========================
         window.dispatchEvent(new CustomEvent('nocap:consentChanged', {
             detail: {
                 analytics: consent.analytics,
@@ -511,10 +506,10 @@
             }
         }));
 
-        if (isDevelopment) {
-            console.log('✅ Cookie consent applied:', consent);
-        }
+        if (isDevelopment) console.log('✅ Cookie consent applied:', consent);
     }
+
+
 
     /**
      * Enable analytics tracking
@@ -565,82 +560,37 @@
      * Allows cookie-banner.js to work standalone on any page
      */
     function createBannerElement() {
-        // Check if banner already exists
-        if (document.getElementById('cookie-banner')) {
-            return;
-        }
+        // Create ONLY if missing
+        if (document.getElementById('cookie-banner')) return;
 
-        const banner = document.createElement('div');
-        banner.id = 'cookie-banner';
-        banner.className = 'cookie-banner';
-        banner.setAttribute('role', 'dialog');
-        banner.setAttribute('aria-labelledby', 'cookie-banner-title');
-        banner.setAttribute('aria-describedby', 'cookie-banner-desc');
-
-        banner.innerHTML = `
-            <div class="cookie-banner-content">
-                <div class="cookie-banner-text">
-                    <h3 id="cookie-banner-title">🍪 Cookie-Hinweis</h3>
-                    <p id="cookie-banner-desc">
-                        Wir verwenden Cookies, um deine Erfahrung zu verbessern.
-                        Notwendige Cookies sind für die Funktionalität erforderlich.
-                        <a href="/privacy.html" target="_blank" rel="noopener">Mehr erfahren</a>
-                    </p>
-                </div>
-                <div class="cookie-banner-actions">
-                    <button id="cookie-accept" class="btn btn-primary" aria-label="Alle Cookies akzeptieren">
-                        ✅ Alle akzeptieren
-                    </button>
-                    <button id="cookie-decline" class="btn btn-secondary" aria-label="Nur notwendige Cookies">
-                        ❌ Nur Notwendige
-                    </button>
-                    <button id="cookie-settings" class="btn btn-link" aria-label="Cookie-Einstellungen anpassen">
-                        ⚙️ Einstellungen
-                    </button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(banner);
-
-        if (isDevelopment) {
-            console.log('✅ Cookie banner element created dynamically');
+        const tpl = document.getElementById('cookie-banner-template');
+        if (tpl && tpl.content) {
+            document.body.appendChild(tpl.content.cloneNode(true));
+        } else {
+            console.warn('Cookie banner template missing');
         }
     }
 
-    /**
-     * Show cookie banner
-     */
+    let _escHandlerBound = false;
+
     function showBanner() {
         const banner = document.getElementById('cookie-banner');
-        if (!banner) {
-            console.warn('Cookie banner element not found');
-            return;
-        }
+        if (!banner) return;
 
         banner.classList.add('show');
         banner.setAttribute('role', 'dialog');
         banner.setAttribute('aria-labelledby', 'cookie-banner-title');
-        banner.setAttribute('aria-modal', 'false'); // Not blocking
+        banner.setAttribute('aria-modal', 'false');
 
-        // Focus first button
+        if (!_escHandlerBound) {
+            _escHandlerBound = true;
+            document.addEventListener('keydown', onKeydown);
+        }
+
         const firstButton = banner.querySelector('button');
-        if (firstButton) {
-            setTimeout(() => firstButton.focus(), 100);
-        }
-
-        // Announce to screen readers
-        if (window.NocapUtils && window.NocapUtils.announceToScreenReader) {
-            window.NocapUtils.announceToScreenReader(
-                'Cookie-Hinweis angezeigt. Bitte wähle deine Cookie-Einstellungen.',
-                'polite'
-            );
-        }
+        if (firstButton) setTimeout(() => firstButton.focus(), 100);
     }
 
-    /**
-     * Hide cookie banner
-     */
     function hideBanner() {
         const banner = document.getElementById('cookie-banner');
         if (!banner) return;
@@ -649,6 +599,15 @@
         banner.removeAttribute('role');
         banner.removeAttribute('aria-labelledby');
         banner.removeAttribute('aria-modal');
+
+        if (_escHandlerBound) {
+            _escHandlerBound = false;
+            document.removeEventListener('keydown', onKeydown);
+        }
+    }
+
+    function onKeydown(e) {
+        if (e.key === 'Escape') handleDecline();
     }
 
     /**
@@ -712,14 +671,9 @@
      */
     function init(options = {}) {
         // ✅ FIX: Verhindere Mehrfach-Initialisierung
-        if (window._cookieBannerInitialized) {
-            if (isDevelopment) {
-                console.log('ℹ️ Cookie banner already initialized, skipping');
-            }
-            return;
-        }
-        window._cookieBannerInitialized = true;
-
+        if (window.NocapCookies && window.NocapCookies._initialized) return;
+        if (!window.NocapCookies) window.NocapCookies = {};
+        window.NocapCookies._initialized = true;
         // Check if consent already exists
         const consent = getConsent();
 
@@ -799,27 +753,21 @@
         // ✅ NEW: Revoke consent (for "Einstellungen zurücksetzen")
         revokeConsent: () => {
             try {
-                localStorage.removeItem(COOKIE_CONSENT_KEY);
-                localStorage.removeItem('nocap_privacy_consent');
-                localStorage.removeItem('nocap_privacy_date');
-
-                if (isDevelopment) {
-                    console.log('✅ Cookie consent revoked');
-                }
-
+                removeStorage(COOKIE_CONSENT_KEY); // löscht LS + COOKIE_NAME sauber
+                removeStorage('nocap_privacy_consent');
+                removeStorage('nocap_privacy_date');
+                if (isDevelopment) console.log('✅ Cookie consent revoked');
                 return true;
-            } catch (error) {
-                console.error('Error revoking consent:', error);
+            } catch (e) {
+                console.error('Error revoking consent:', e);
                 return false;
             }
         },
-
-        // ✅ NEW: Re-initialize (useful after revoke)
         reinitialize: (options) => {
-            window._cookieBannerInitialized = false;
+            if (!window.NocapCookies) window.NocapCookies = {};
+            window.NocapCookies._initialized = false;
             init(options);
         },
-
         // Metadata
         version: COOKIE_CONSENT_VERSION,
         expiryDays: CONSENT_EXPIRY_DAYS

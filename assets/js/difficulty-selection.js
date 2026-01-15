@@ -13,13 +13,13 @@
 (function(window) {
     'use strict';
 
-    // Get Logger from utils
     const Logger = window.NocapUtils?.Logger || {
-        debug: (...args) => {},
-        info: (...args) => {},
-        warn: console.warn,
-        error: console.error
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {}
     };
+
 
     // ===========================
     // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
@@ -104,12 +104,6 @@
         hard: 'Hardcore'
     };
 
-    const difficultyMultipliers = {
-        easy: 1,
-        medium: 1,
-        hard: 2
-    };
-
     // ✅ P1 STABILITY: Fallback difficulty limits for offline mode
     const FALLBACK_DIFFICULTY_LIMITS = {
         fsk0: { easy: 50, medium: 100, hard: 150 },
@@ -129,6 +123,7 @@
 
         // Check DOMPurify
         if (typeof DOMPurify === 'undefined') {
+            hideLoading();
             Logger.error('❌ CRITICAL: DOMPurify not loaded!');
             alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
             return;
@@ -136,6 +131,7 @@
 
         // ✅ BUGFIX: Check for window.GameState (the constructor)
         if (typeof window.GameState === 'undefined') {
+            hideLoading();
             Logger.error('❌ GameState not found');
             showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
             return;
@@ -163,14 +159,16 @@
 
             // ✅ P1 FIX: Validate device mode FIRST
             if (!validateDeviceMode()) {
+                hideLoading();
                 return;
             }
 
-            // ✅ P0 FIX: Await async validation with server-side FSK checks
             const isValid = await validateGameState();
             if (!isValid) {
+                hideLoading();
                 return;
             }
+
 
             // Check alcohol mode
             checkAlcoholMode();
@@ -298,20 +296,34 @@
             return false;
         }
 
-        // ✅ P0 FIX: MANDATORY server-side FSK validation for each category
+// ✅ P0 FIX: MANDATORY server-side FSK validation for each category
         try {
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+
+            if (!window.FirebaseConfig?.isInitialized?.() || !instances?.functions) {
+                if (DifficultySelectionModule.isDevelopment) {
+                    Logger.warn('⚠️ FSK validation skipped (DEV, no functions)');
+                    return true;
+                }
+                showNotification('FSK-Validierung nicht verfügbar. Bitte später erneut versuchen.', 'error');
+                const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
+                    ? 'multiplayer-category-selection.html'
+                    : 'category-selection.html';
+
+                setTimeout(() => window.location.href = redirectUrl, 2000);
+                return false;
+            }
+
             for (const category of DifficultySelectionModule.gameState.selectedCategories) {
-                // Skip FSK0 - always allowed
                 if (category === 'fsk0') continue;
 
-                // ✅ P0 FIX: Server-side validation via Cloud Function
+                // ✅ REAL server-side validation (Cloud Function via GameState)
                 const hasAccess = await DifficultySelectionModule.gameState.canAccessFSK(category);
 
                 if (!hasAccess) {
                     Logger.error(`❌ Server denied access to category: ${category}`);
                     showNotification(`Keine Berechtigung für ${category.toUpperCase()}!`, 'error');
 
-                    // Redirect to category selection to choose valid categories
                     const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
                         ? 'multiplayer-category-selection.html'
                         : 'category-selection.html';
@@ -322,7 +334,6 @@
             }
 
             Logger.debug('✅ All categories validated (server-side)');
-
         } catch (error) {
             Logger.error('❌ Server-side FSK validation failed:', error);
             showNotification('FSK-Validierung fehlgeschlagen. Bitte erneut versuchen.', 'error');
@@ -334,7 +345,6 @@
             setTimeout(() => window.location.href = redirectUrl, 2000);
             return false;
         }
-
         return true;
     }
 
@@ -348,27 +358,15 @@
      */
     async function loadQuestionCounts() {
         try {
-            // Check if Firebase is available and initialized
-            if (typeof firebase !== 'undefined' &&
-                firebase.database &&
-                window.firebaseInitialized &&
-                window.FirebaseConfig) {
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
 
-                try {
-                    const firebaseInstances = window.FirebaseConfig.getFirebaseInstances();
-
-                    if (firebaseInstances && firebaseInstances.database) {
-                        // Try loading from Firebase
-                        DifficultySelectionModule.questionCountsCache = await loadCountsFromFirebase(firebaseInstances.database);
-
-                        if (DifficultySelectionModule.questionCountsCache) {
-                            Logger.debug('✅ Question counts loaded from Firebase:', DifficultySelectionModule.questionCountsCache);
-                            updateDifficultyCardsWithCounts();
-                            return;
-                        }
-                    }
-                } catch (fbError) {
-                    Logger.warn('⚠️ Firebase not ready yet:', fbError.message);
+            if (window.FirebaseConfig?.isInitialized?.() && database?.ref) {
+                DifficultySelectionModule.questionCountsCache = await loadCountsFromFirebase(database);
+                if (DifficultySelectionModule.questionCountsCache) {
+                    Logger.debug('✅ Question counts loaded from Firebase:', DifficultySelectionModule.questionCountsCache);
+                    updateDifficultyCardsWithCounts();
+                    return;
                 }
             }
 
@@ -394,8 +392,8 @@
                 const snapshot = await database.ref(`questions/${category}`).once('value');
 
                 if (snapshot.exists()) {
-                    const questions = snapshot.val();
-                    counts[category] = Object.keys(questions).length;
+                    const q = snapshot.val();
+                    counts[category] = Array.isArray(q) ? q.length : (q ? Object.keys(q).length : 0);
                 } else {
                     counts[category] = FALLBACK_DIFFICULTY_LIMITS[category]?.medium || 50;
                 }
@@ -824,24 +822,22 @@
 
         if (deviceMode === 'multi') {
             try {
-                // Prüfe ob Firebase verfügbar
-                if (typeof firebase !== 'undefined' && firebase.database) {
+                const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+                const database = instances?.database;
+
+                if (window.FirebaseConfig?.isInitialized?.() && database?.ref) {
                     const gameId = DifficultySelectionModule.gameState.gameId;
-
                     if (gameId) {
-                        await firebase.database()
-                            .ref(`games/${gameId}/settings`)
-                            .update({
-                                difficulty: difficulty,
-                                alcoholMode: DifficultySelectionModule.alcoholMode,
-                                updatedAt: firebase.database.ServerValue.TIMESTAMP
-                            });
-
-                        Logger.debug('✅ Difficulty saved to database');
+                        await database.ref(`games/${gameId}/settings`).update({
+                            difficulty,
+                            alcoholMode: DifficultySelectionModule.alcoholMode,
+                            updatedAt: Date.now()
+                        });
                     }
                 } else {
                     Logger.warn('⚠️ Firebase not available, difficulty not synced');
                 }
+
             } catch (error) {
                 Logger.error('❌ Error saving difficulty to database:', error);
 

@@ -7,10 +7,8 @@ const cors = require('cors');
 // ✅ P0 SECURITY: Initialize with least-privilege principle
 // Admin SDK only runs server-side, never bundled in client
 // Database URL is set directly for Firebase Emulator compatibility
-admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    databaseURL: 'https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app'
-});
+admin.initializeApp();
+
 
 // ✅ P0 SECURITY: Rate limiting middleware
 const createRateLimiter = (windowMs = 60000, max = 60) => {
@@ -264,29 +262,29 @@ exports.validateFSKAccess = functions
     .https.onRequest(async (req, res) => {
         const functionName = 'validateFSKAccess';
 
-        // ✅ CORS: Allow requests from no-cap.app and Firebase hosting domains
-        const allowedOrigins = [
+        const allowedOrigins = new Set([
             'https://no-cap.app',
             'https://denkstduwebsite.web.app',
             'https://denkstduwebsite.firebaseapp.com',
             'http://localhost:5000'
-        ];
+        ]);
 
         const origin = req.headers.origin;
+        const normalizedOrigin = typeof origin === 'string' ? origin.replace(/\/$/, '') : null;
 
-        if (allowedOrigins.includes(origin)) {
-            res.set('Access-Control-Allow-Origin', origin);
+        if (normalizedOrigin && allowedOrigins.has(normalizedOrigin)) {
+            res.setHeader('Access-Control-Allow-Origin', normalizedOrigin);
+            res.setHeader('Vary', 'Origin'); // ✅ verhindert falsches CORS-Caching
         }
+
 
         res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
         res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         res.set('Access-Control-Allow-Credentials', 'true');
         res.set('Access-Control-Max-Age', '3600');
 
-        // Handle preflight request
         if (req.method === 'OPTIONS') {
-            res.status(204).send('');
-            return;
+            return res.status(204).send('');
         }
 
         // Only allow POST requests

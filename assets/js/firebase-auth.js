@@ -73,11 +73,14 @@
                 return Promise.resolve(true);
             }
 
-            // ✅ P1 STABILITY: Create auth-ready promise
-            this._authReadyPromise = new Promise((resolve, reject) => {
-                this._authReadyResolve = resolve;
-                this._authReadyReject = reject;
-            });
+            // ✅ P1 STABILITY: Create auth-ready promise (only once)
+            if (!this._authReadyPromise) {
+                this._authReadyPromise = new Promise((resolve, reject) => {
+                    this._authReadyResolve = resolve;
+                    this._authReadyReject = reject;
+                });
+            }
+
 
             // Start initialization
             this._initPromise = (async () => {
@@ -92,6 +95,10 @@
 
                     if (!window.FirebaseConfig.isInitialized()) {
                         throw new Error('FirebaseConfig not initialized');
+                    }
+                    // ✅ P0: Ensure compat/global firebase object exists when used later
+                    if (!window.firebase || !window.firebase.auth || !window.firebase.database) {
+                        throw new Error('Global firebase compat SDK not available (window.firebase missing)');
                     }
 
                     // Get Firebase instances
@@ -378,9 +385,11 @@
                     window.NocapUtils.showNotification(message, 'error', 3000);
                 }
 
-                // Redirect after short delay
                 setTimeout(() => {
-                    window.location.href = redirectTo;
+                    // nur redirecten, wenn immer noch kein User da ist
+                    if (!this.isAuthenticated || !this.currentUser) {
+                        window.location.href = redirectTo;
+                    }
                 }, 1500);
 
                 throw error;
@@ -409,6 +418,13 @@
             // Initialize if needed
             if (!this.initialized) {
                 await this.initialize();
+            }
+            // ✅ P1 STABILITY: Ensure auth-ready promise exists (can be null after cleanup/errors)
+            if (!this._authReadyPromise) {
+                this._authReadyPromise = new Promise((resolve, reject) => {
+                    this._authReadyResolve = resolve;
+                    this._authReadyReject = reject;
+                });
             }
 
             // Wait for auth-ready promise with timeout
@@ -558,7 +574,7 @@
 
                 // Upgrade anonymous account if applicable
                 if (this.isAnonymous && this.currentUser) {
-                    const credential = firebase.auth.EmailAuthProvider.credential(
+                    const credential = window.firebase.auth.EmailAuthProvider.credential(
                         sanitizedEmail,
                         password
                     );
@@ -716,7 +732,7 @@
 
                 // ✅ P0 SECURITY: Only initialize Google provider (remove unused providers)
                 // ✅ P1 GDPR: Minimal scope - only profile and email
-                const provider = new firebase.auth.GoogleAuthProvider();
+                const provider = new window.firebase.auth.GoogleAuthProvider();
 
                 // ✅ P1 GDPR: Explicitly set minimal scopes
                 // Default scopes are already minimal (profile, email), but we make it explicit
@@ -950,114 +966,6 @@
             return claims[claimName] === true;
         }
 
-        // ===================================
-        // 🔄 P1 STABILITY: TOKEN & CLAIMS REFRESH
-        // ===================================
-
-        /**
-         * ✅ P1 STABILITY: Refresh authentication token to get updated custom claims
-         * Call this after server-side claim updates (e.g., premium activation)
-         * @param {boolean} forceRefresh - Force token refresh even if not expired
-         * @returns {Promise<Object>} Result object with updated token
-         */
-        async refreshAuthToken(forceRefresh = true) {
-            try {
-                if (!this.initialized) {
-                    await this.initialize();
-                }
-
-                if (!this.isAuthenticated) {
-                    return {
-                        success: false,
-                        error: 'No user authenticated'
-                    };
-                }
-
-                const { auth } = window.FirebaseConfig.getFirebaseInstances();
-                const user = auth.currentUser;
-
-                if (!user) {
-                    return {
-                        success: false,
-                        error: 'No current user'
-                    };
-                }
-
-                // ✅ P1 STABILITY: Force token refresh to get updated custom claims
-                const token = await user.getIdToken(forceRefresh);
-
-                if (this._isDevelopment) {
-                    console.log('✅ Auth token refreshed');
-
-                    // Decode token to show custom claims (dev only)
-                    try {
-                        const tokenResult = await user.getIdTokenResult(forceRefresh);
-                        console.log('Custom claims:', tokenResult.claims);
-                    } catch (e) {
-                        // Ignore decode errors
-                    }
-                }
-
-                // Dispatch event for components to react to claim updates
-                window.dispatchEvent(new CustomEvent('nocap:tokenRefreshed', {
-                    detail: { userId: user.uid }
-                }));
-
-                return {
-                    success: true,
-                    token: token
-                };
-
-            } catch (error) {
-                console.error('❌ Token refresh failed:', error);
-
-                return {
-                    success: false,
-                    error: error.message
-                };
-            }
-        }
-
-        /**
-         * ✅ P1 STABILITY: Get current custom claims
-         * @returns {Promise<Object>} Custom claims object
-         */
-        async getCustomClaims() {
-            try {
-                if (!this.initialized) {
-                    await this.initialize();
-                }
-
-                if (!this.isAuthenticated) {
-                    return {};
-                }
-
-                const { auth } = window.FirebaseConfig.getFirebaseInstances();
-                const user = auth.currentUser;
-
-                if (!user) {
-                    return {};
-                }
-
-                const tokenResult = await user.getIdTokenResult();
-                return tokenResult.claims || {};
-
-            } catch (error) {
-                console.error('❌ Failed to get custom claims:', error);
-                return {};
-            }
-        }
-
-        /**
-         * ✅ P1 STABILITY: Check if user has specific claim
-         * @param {string} claimName - Name of the claim to check
-         * @returns {Promise<boolean>} True if claim exists and is truthy
-         */
-        async hasClaim(claimName) {
-            const claims = await this.getCustomClaims();
-            return claims[claimName] === true;
-        }
-
         /**
          * ✅ P0 FIX: Safe user profile update
          * @private
@@ -1139,7 +1047,7 @@
                     createdAt: profile.createdAt,
                     lastSignIn: profile.lastSignIn,
                     ageVerified: this._getAgeVerification(),
-                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                    lastUpdate: window.firebase.database.ServerValue.TIMESTAMP
                 });
 
                 if (this._isDevelopment) {
@@ -1445,6 +1353,7 @@
             this._authReadyPromise = null;
             this._authReadyResolve = null;
             this._authReadyReject = null;
+            this._authRequired = false;
 
             if (this._isDevelopment) {
                 console.log('✅ FirebaseAuthService cleanup completed');

@@ -39,10 +39,6 @@
                 window.location.hostname === '127.0.0.1' ||
                 window.location.hostname.includes('192.168.');
 
-            // ✅ P0 FIX: Collision tracking
-            this._generationAttempts = new Map();
-            this.MAX_GENERATION_ATTEMPTS = 5;
-
             // ✅ P1 STABILITY: Timeout for DB operations (10 seconds)
             this.DB_OPERATION_TIMEOUT = 10000;
 
@@ -60,9 +56,6 @@
             };
             this._metaRefreshInterval = 5 * 60 * 1000; // 5 minutes
 
-            // ✅ P1 STABILITY: Active listener tracking for cleanup
-            this._activeListeners = new Map();
-            // Structure: Map<listenerId, { ref, eventType, callback }>
         }
 
         // ===========================
@@ -321,7 +314,6 @@
         async refreshUserMeta() {
             try {
                 const uid = this.getCurrentUserId();
-
                 if (!uid) {
                     if (this.isDevelopment) {
                         console.log('⚠️ No user ID - skipping meta refresh');
@@ -516,7 +508,8 @@
          */
         _isValidPlayerId(playerId) {
             if (typeof playerId !== 'string') return false;
-            return /^p_[a-z0-9]+_\d+$/.test(playerId);
+            // Firebase UID pattern (loose but safe)
+            return /^[A-Za-z0-9_-]{20,}$/.test(playerId);
         }
 
         /**
@@ -676,7 +669,7 @@
                     throw new Error('Nicht authentifiziert');
                 }
 
-                const hostId = this._generatePlayerId();
+                const hostId = user.uid;
                 const timestamp = firebase.database.ServerValue.TIMESTAMP;
 
                 // ✅ Sanitize all input data
@@ -771,52 +764,6 @@
             }
         }
 
-        /**
-         * ✅ P1 NEW: Sanitize game settings
-         */
-        _sanitizeGameSettings(settings) {
-            const sanitized = {};
-
-            // Categories: array of strings
-            if (Array.isArray(settings.categories)) {
-                sanitized.categories = settings.categories
-                    .filter(c => typeof c === 'string' && c.length > 0)
-                    .slice(0, 10); // Max 10 categories
-            }
-
-            // Difficulty: enum
-            const validDifficulties = ['easy', 'medium', 'hard'];
-            if (validDifficulties.includes(settings.difficulty)) {
-                sanitized.difficulty = settings.difficulty;
-            }
-
-            // Alcohol mode: boolean
-            sanitized.isAlcoholMode = settings.isAlcoholMode === true;
-
-            // Max players: number 2-8
-            const maxP = parseInt(settings.maxPlayers, 10);
-            sanitized.maxPlayers = (maxP >= 2 && maxP <= 8) ? maxP : 8;
-
-            // Questions per round: number 5-30
-            const qpr = parseInt(settings.questionsPerRound, 10);
-            sanitized.questionsPerRound = (qpr >= 5 && qpr <= 30) ? qpr : 10;
-
-            // Host name: string 2-20 chars
-            if (typeof settings.hostName === 'string') {
-                const name = settings.hostName.trim();
-                if (name.length >= 2 && name.length <= 20) {
-                    sanitized.hostName = name;
-                }
-            }
-
-            // Age level: 0, 16, or 18
-            if ([0, 16, 18].includes(settings.ageLevel)) {
-                sanitized.ageLevel = settings.ageLevel;
-            }
-
-            return sanitized;
-        }
-
         // ===========================
         // GAME JOINING
         // ===========================
@@ -877,8 +824,8 @@
                     throw new Error('Spiel ist voll');
                 }
 
-                // Generate player ID
-                const playerId = this._generatePlayerId();
+                const playerId = user.uid; // ✅ single source of truth
+
                 const timestamp = firebase.database.ServerValue.TIMESTAMP;
 
                 // Sanitize player name
@@ -923,11 +870,12 @@
 
                 return {
                     success: true,
-                    gameId: gameId,
-                    playerId: playerId,
+                    gameId,
+                    playerId,
                     isHost: false,
-                    gameData: gameData
+                    gameData
                 };
+
 
             } catch (error) {
                 console.error('❌ Error joining game:', error);
@@ -943,79 +891,29 @@
             }
         }
 
-        /**
-         * ✅ P1 NEW: Sanitize player name
-         */
-        _sanitizePlayerName(name) {
-            if (typeof name !== 'string') {
-                return 'Spieler';
+        async updatePlayerStatus(gameId, playerId, patch = {}) {
+            if (!this.isConnected) throw new Error('Keine Firebase-Verbindung');
+
+            // only allow editing own player node
+            if (playerId !== this.currentPlayerId) {
+                throw new Error('Can only update own status');
             }
 
-            // Trim and limit length
-            let sanitized = name.trim().slice(0, 20);
+            const allowed = {};
+            if (typeof patch.isReady === 'boolean') allowed.isReady = patch.isReady;
+            if (typeof patch.isOnline === 'boolean') allowed.isOnline = patch.isOnline;
 
-            // Remove dangerous characters
-            sanitized = sanitized.replace(/[<>\"'&]/g, '');
+            const updates = {};
+            updates[`games/${gameId}/players/${playerId}`] = allowed;
+            updates[`games/${gameId}/lastUpdate`] = firebase.database.ServerValue.TIMESTAMP;
 
-            // Ensure minimum length
-            if (sanitized.length < 2) {
-                sanitized = 'Spieler';
-            }
+            await this._withTimeout(
+                this.database.ref().update(updates),
+                this.DB_OPERATION_TIMEOUT,
+                'Update player status'
+            );
 
-            return sanitized;
-        }
-
-        /**
-         * ✅ P1 NEW: Validate game ID format
-         */
-        _isValidGameId(gameId) {
-            if (typeof gameId !== 'string') return false;
-            return /^[A-Z0-9]{6}$/.test(gameId);
-        }
-
-        // ===========================
-        // PLAYER STATUS UPDATES
-        // ===========================
-
-        /**
-         * ✅ P1 NEW: Update player status (only own player)
-         */
-        async updatePlayerStatus(gameId, playerId, status = {}) {
-            if (!this.isConnected) return false;
-
-            try {
-                // Validate ownership
-                if (playerId !== this.currentPlayerId) {
-                    throw new Error('Can only update own player status');
-                }
-
-                const playerRef = this.database.ref(`games/${gameId}/players/${playerId}`);
-                const updates = {};
-
-                // Only allow specific fields
-                if (typeof status.isReady === 'boolean') {
-                    updates.isReady = status.isReady;
-                }
-                if (typeof status.isOnline === 'boolean') {
-                    updates.isOnline = status.isOnline;
-                }
-
-                if (Object.keys(updates).length === 0) {
-                    return true; // Nothing to update
-                }
-
-                await playerRef.update(updates);
-
-                if (this.isDevelopment) {
-                    console.log(`✅ Player status updated:`, updates);
-                }
-
-                return true;
-
-            } catch (error) {
-                console.error('❌ Error updating player status:', error);
-                return false;
-            }
+            return true;
         }
 
         /**
@@ -1082,13 +980,7 @@
             }
 
             try {
-                // ✅ P0 SECURITY: Validate game ID
-                if (!this._isValidGameId(gameId)) {
-                    throw new Error('Invalid game ID');
-                }
-
-                // ✅ P0 SECURITY: Validate player ID
-                if (!this._isValidPlayerId(playerId)) {
+                if (typeof playerId !== 'string' || playerId.length < 10) {
                     throw new Error('Invalid player ID');
                 }
 
@@ -1348,9 +1240,6 @@
             }
         }
 
-        /**
-         * ✅ P1 NEW: Delete game (HOST ONLY)
-         */
         async deleteGame(gameId) {
             if (!this.isConnected) return false;
 
@@ -1552,10 +1441,6 @@
             return id;
         }
 
-        _generatePlayerId() {
-            return 'p_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-        }
-
         async _generateUniqueId(path, maxAttempts = 5) {
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                 const id = this._generateGameId();
@@ -1636,6 +1521,8 @@
                 }
 
                 const data = JSON.parse(rejoinData);
+                const uid = this.getCurrentUserId();
+                const rejoinPlayerId = uid || data.playerId;
                 const age = Date.now() - data.savedAt;
 
                 // Only rejoin if data is less than 24 hours old
@@ -1653,11 +1540,11 @@
 
                 // Restore connection
                 this.currentGameId = data.gameId;
-                this.currentPlayerId = data.playerId;
+                this.currentPlayerId = rejoinPlayerId;
                 this.gameRef = this.database.ref(`games/${data.gameId}`);
 
                 // Set player online
-                await this.setPlayerOnline(data.gameId, data.playerId, true);
+                await this.setPlayerOnline(data.gameId, rejoinPlayerId, true);
 
                 if (this.isDevelopment) {
                     console.log(`✅ Rejoined game: ${data.gameId}`);
@@ -1672,76 +1559,13 @@
             }
         }
 
-        // ===========================
-        // 🔌 P1 STABILITY: LISTENER MANAGEMENT
-        // ===========================
-
-        /**
-         * ✅ P1 STABILITY: Register listener for automatic cleanup
-         * @param {string} listenerId - Unique ID for this listener
-         * @param {Object} ref - Firebase reference
-         * @param {string} eventType - Event type ('value', 'child_added', etc.)
-         * @param {Function} callback - Callback function
-         */
-        _registerListener(listenerId, ref, eventType, callback) {
-            // Remove old listener with same ID if exists
-            if (this._activeListeners.has(listenerId)) {
-                this._removeListener(listenerId);
-            }
-
-            // Register new listener
-            this._activeListeners.set(listenerId, {
-                ref,
-                eventType,
-                callback,
-                registeredAt: Date.now()
-            });
-
-            if (this.isDevelopment) {
-                console.log(`✅ Registered listener: ${listenerId} (${eventType})`);
-            }
-        }
-
-        /**
-         * ✅ P1 STABILITY: Remove specific listener
-         * @param {string} listenerId - Listener ID to remove
-         */
-        _removeListener(listenerId) {
-            const listener = this._activeListeners.get(listenerId);
-
-            if (!listener) {
-                return;
-            }
-
-            try {
-                listener.ref.off(listener.eventType, listener.callback);
-                this._activeListeners.delete(listenerId);
-
-                if (this.isDevelopment) {
-                    console.log(`🗑️ Removed listener: ${listenerId}`);
-                }
-            } catch (error) {
-                console.error(`❌ Error removing listener ${listenerId}:`, error);
-            }
-        }
-
         /**
          * ✅ P1 STABILITY: Remove all listeners
          */
         _removeAllListeners() {
             if (this.isDevelopment) {
-                console.log(`🗑️ Removing ${this._activeListeners.size} active listeners...`);
+                console.log(`🗑️ Removing ${this.listeners.size} listeners...`);
             }
-
-            for (const [listenerId, listener] of this._activeListeners.entries()) {
-                try {
-                    listener.ref.off(listener.eventType, listener.callback);
-                } catch (error) {
-                    console.error(`❌ Error removing listener ${listenerId}:`, error);
-                }
-            }
-
-            this._activeListeners.clear();
 
             // Also clear old listener tracking (backward compatibility)
             this.listeners.forEach(({ ref, listener }, key) => {
@@ -1896,77 +1720,6 @@
         }
 
         // ===========================
-        // ✅ P0 SECURITY: INPUT SANITIZATION
-        // ===========================
-
-        /**
-         * Sanitize game ID
-         */
-        _sanitizeGameId(gameId) {
-            if (!gameId || typeof gameId !== 'string') {
-                throw new Error('Invalid gameId');
-            }
-            return gameId.replace(/[^a-zA-Z0-9\-_]/g, '').substring(0, 100);
-        }
-
-        /**
-         * Sanitize game code
-         */
-        _sanitizeGameCode(code) {
-            if (!code || typeof code !== 'string') {
-                throw new Error('Invalid game code');
-            }
-            return code.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
-        }
-
-        /**
-         * Sanitize player name
-         */
-        _sanitizePlayerName(name) {
-            if (!name || typeof name !== 'string') {
-                throw new Error('Invalid player name');
-            }
-            // Use NocapUtils if available
-            if (window.NocapUtils && window.NocapUtils.sanitizeInput) {
-                return window.NocapUtils.sanitizeInput(name).substring(0, 15);
-            }
-            return name.replace(/[<>]/g, '').substring(0, 15);
-        }
-
-        /**
-         * Sanitize category
-         */
-        _sanitizeCategory(category) {
-            const validCategories = ['fsk0', 'fsk16', 'fsk18', 'special'];
-            if (!validCategories.includes(category)) {
-                throw new Error('Invalid category: ' + category);
-            }
-            return category;
-        }
-
-        /**
-         * Sanitize difficulty
-         */
-        _sanitizeDifficulty(difficulty) {
-            const validDifficulties = ['easy', 'medium', 'hard'];
-            if (!validDifficulties.includes(difficulty)) {
-                throw new Error('Invalid difficulty: ' + difficulty);
-            }
-            return difficulty;
-        }
-
-        /**
-         * Sanitize phase
-         */
-        _sanitizePhase(phase) {
-            const validPhases = ['lobby', 'playing', 'results', 'finished'];
-            if (!validPhases.includes(phase)) {
-                throw new Error('Invalid phase: ' + phase);
-            }
-            return phase;
-        }
-
-        // ===========================
         // ✅ P1 UI/UX: EVENT SYSTEM
         // ===========================
 
@@ -2095,42 +1848,13 @@
         // ===========================
 
         /**
-         * Delete game manually
-         */
-        async deleteGame(gameId) {
-            const sanitizedGameId = this._sanitizeGameId(gameId);
-
-            try {
-                await this._withTimeout(
-                    this.database.ref(`games/${sanitizedGameId}`).remove(),
-                    this.DB_OPERATION_TIMEOUT,
-                    'Delete game'
-                );
-
-                this._emit('statusChange', {
-                    status: 'gameDeleted',
-                    gameId: sanitizedGameId
-                });
-
-                if (this.isDevelopment) {
-                    console.log('✅ Game deleted:', sanitizedGameId);
-                }
-
-                return { success: true };
-
-            } catch (error) {
-                this._handleError(error, { operation: 'deleteGame', gameId: sanitizedGameId });
-                throw error;
-            }
-        }
-
-        /**
          * Get server timestamp
          */
         getServerTimestamp() {
-            return this.database ? this.database.ServerValue.TIMESTAMP : Date.now();
+            return (typeof firebase !== 'undefined' && firebase.database && firebase.database.ServerValue)
+                ? firebase.database.ServerValue.TIMESTAMP
+                : Date.now();
         }
-
         // ===========================
         // ✅ P1 STABILITY: ERROR HANDLING
         // ===========================
@@ -2194,29 +1918,6 @@
             console.log('%c✅ FirebaseGameService v8.0 loaded (Security + DSGVO Enhanced)',
                 'color: #FF6F00; font-weight: bold; font-size: 12px');
         }
-
-        // ✅ P1 STABILITY: Setup connection monitoring
-        window.addEventListener('DOMContentLoaded', () => {
-            const service = window.FirebaseService;
-
-            if (service.database) {
-                const connectedRef = service.database.ref('.info/connected');
-
-                connectedRef.on('value', (snapshot) => {
-                    const isConnected = snapshot.val() === true;
-                    service.isConnected = isConnected;
-
-                    service._emit('connectionChange', {
-                        status: isConnected ? 'connected' : 'disconnected',
-                        timestamp: Date.now()
-                    });
-
-                    if (isDev) {
-                        console.log(isConnected ? '✅ Firebase connected' : '⚠️ Firebase disconnected');
-                    }
-                });
-            }
-        });
     }
 
     // Cleanup on unload

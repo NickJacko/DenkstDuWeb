@@ -8,7 +8,7 @@
     const isDevelopment = window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
         window.location.hostname.includes('192.168.');
-
+    const PRIVACY_CONTACT_EMAIL = 'Nickjacklin99@web.de';
     // ============================================================================
     // 🎯 P1 STABILITY: EVENT LISTENER REGISTRY
     // ============================================================================
@@ -132,28 +132,9 @@
      */
     function hasPrivacyConsent() {
         try {
-            const consent = localStorage.getItem('nocap_privacy_consent');
-            const consentDate = localStorage.getItem('nocap_privacy_date');
-
-            if (!consent || consent !== 'true' || !consentDate) {
-                return false;
-            }
-
-            // Check if consent is still valid (1 year)
-            const consentTime = new Date(consentDate).getTime();
-            const currentTime = Date.now();
-            const daysSinceConsent = (currentTime - consentTime) / (24 * 60 * 60 * 1000);
-
-            if (daysSinceConsent > 365) {
-                // Consent expired - remove old consent
-                revokePrivacyConsentSilent();
-                return false;
-            }
-
-            return true;
-
-        } catch (error) {
-            console.error('Error checking privacy consent:', error);
+            const c = window.NocapCookies?.getConsent?.();
+            return !!c; // Consent vorhanden => privacy ok
+        } catch (e) {
             return false;
         }
     }
@@ -483,14 +464,17 @@
      */
     function closePrivacyModal() {
         const modal = document.getElementById('privacy-modal');
-        if (modal) {
-            modal.classList.remove('show');
-            setTimeout(() => {
-                if (modal.parentNode) {
-                    modal.remove();
-                }
-            }, 300);
-        }
+        if (!modal) return;
+
+        // ✅ P0: Listener/Fokus-Traps sauber entfernen (Leak verhindern)
+        eventListenerRegistry.removeAll();
+
+        modal.classList.remove('show');
+        setTimeout(() => {
+            if (modal.parentNode) {
+                modal.remove();
+            }
+        }, 300);
     }
 
     // ============================================================================
@@ -639,7 +623,7 @@
             // Insert TOC before first heading or at beginning of main
             const firstHeading = mainContent.querySelector('h1, h2');
             if (firstHeading) {
-                mainContent.insertBefore(tocContainer, firstHeading.nextSibling);
+                mainContent.insertBefore(tocContainer, firstHeading);
             } else {
                 mainContent.insertBefore(tocContainer, mainContent.firstChild);
             }
@@ -772,35 +756,27 @@
                 icon.textContent = '▼';
                 heading.appendChild(icon);
 
-                // Toggle handler
                 const toggleSection = () => {
                     const isExpanded = heading.getAttribute('aria-expanded') === 'true';
 
-                    heading.setAttribute('aria-expanded', !isExpanded);
-                    content.setAttribute('aria-hidden', isExpanded);
+                    heading.setAttribute('aria-expanded', String(!isExpanded));
+                    content.setAttribute('aria-hidden', String(isExpanded));
 
-                    if (isExpanded) {
-                        content.style.maxHeight = '0';
-                        heading.classList.add('collapsed');
-                        icon.textContent = '▶';
-                    } else {
-                        content.style.maxHeight = content.scrollHeight + 'px';
-                        heading.classList.remove('collapsed');
-                        icon.textContent = '▼';
-                    }
+                    section.classList.toggle('is-collapsed', isExpanded);
+                    heading.classList.toggle('collapsed', isExpanded);
+                    icon.textContent = isExpanded ? '▶' : '▼';
                 };
-
+                section.classList.remove('is-collapsed');
                 // Event listeners
-                heading.addEventListener('click', toggleSection);
-                heading.addEventListener('keydown', (e) => {
+                eventListenerRegistry.add(heading, 'click', toggleSection);
+
+                eventListenerRegistry.add(heading, 'keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         toggleSection();
                     }
                 });
 
-                // Set initial max-height for animation
-                content.style.maxHeight = content.scrollHeight + 'px';
             });
 
             if (isDevelopment) {
@@ -847,10 +823,9 @@
             }
         };
 
-        window.addEventListener('scroll', toggleButton, { passive: true });
+        eventListenerRegistry.add(window, 'scroll', toggleButton, { passive: true });
 
-        // Scroll to top on click
-        button.addEventListener('click', () => {
+        eventListenerRegistry.add(button, 'click', () => {
             const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
             window.scrollTo({
@@ -910,6 +885,8 @@
             // ✅ P1 UI/UX: Show loading indicator
             showExportProgress(true);
 
+            const c = window.NocapCookies?.getConsent?.();
+
             const userData = {
                 meta: {
                     exportDate: new Date().toISOString(),
@@ -917,13 +894,16 @@
                     appVersion: '4.0'
                 },
                 consent: {
-                    accepted: hasPrivacyConsent(),
-                    date: localStorage.getItem('nocap_privacy_date'),
-                    version: localStorage.getItem('nocap_privacy_version')
+                    accepted: !!c,
+                    timestamp: c?.timestamp ?? null,
+                    version: c?.version ?? null,
+                    analytics: c?.analytics ?? false,
+                    functional: c?.functional ?? false
                 },
                 gameState: null,
                 localStorage: {}
             };
+
 
             // Add GameState if available
             if (window.gameState && typeof window.gameState.getDebugInfo === 'function') {
@@ -1110,7 +1090,7 @@
             'Mit freundlichen Grüßen'
         );
 
-        const mailtoLink = `mailto:Nickjacklin99@web.de?subject=${subject}&body=${body}`;
+        const mailtoLink = `mailto:${PRIVACY_CONTACT_EMAIL}?subject=${subject}&body=${body}`;
         window.location.href = mailtoLink;
 
         if (window.NocapUtils) {

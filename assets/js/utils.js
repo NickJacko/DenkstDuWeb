@@ -364,6 +364,15 @@
             notificationContainer.setAttribute('aria-atomic', 'true');
             document.body.appendChild(notificationContainer);
         }
+        function getPlayerKey() {
+            try {
+                const auth = firebase && firebase.auth ? firebase.auth() : null;
+                const uid = auth && auth.currentUser ? auth.currentUser.uid : null;
+                return uid || MultiplayerCategoryModule.gameState?.playerId || null;
+            } catch (e) {
+                return MultiplayerCategoryModule.gameState?.playerId || null;
+            }
+        }
 
         // Remove old notifications of same type (prevent spam)
         const existingNotifications = notificationContainer.querySelectorAll(`.notification.${type}`);

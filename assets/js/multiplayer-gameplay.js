@@ -137,6 +137,11 @@
     let currentQuestionNumber = 1;
     let currentPhase = 'question';
     let hasSubmittedThisRound = false; // P0: Anti-cheat
+    let timerSyncRef = null;
+    let timerSyncCb = null;
+
+    let connectedRef = null;
+    let connectedCb = null;
 
     // Overall stats tracking
     let overallStats = {
@@ -176,8 +181,8 @@
      * ✅ P1 STABILITY: Monitor Firebase connection status
      */
     function setupConnectionMonitoring() {
-        const connectedRef = firebase.database().ref('.info/connected');
-        connectedRef.on('value', (snapshot) => {
+        connectedRef = firebase.database().ref('.info/connected');
+        connectedCb = (snapshot) => {
             if (snapshot.val() === true) {
                 if (connectionState === 'disconnected') {
                     console.log('✅ Reconnected to Firebase');
@@ -192,7 +197,8 @@
                 handleDisconnection();
                 updateConnectionUI(false);
             }
-        });
+        };
+        connectedRef.on('value', connectedCb);
     }
 
     /**
@@ -433,6 +439,16 @@
 
         return purified.substring(0, 20);
     }
+    function getPlayerKey() {
+        try {
+            const auth = firebase && firebase.auth ? firebase.auth() : null;
+            const uid = auth && auth.currentUser ? auth.currentUser.uid : null;
+            return uid || MultiplayerGameplayModule.gameState?.playerId || null;
+        } catch (e) {
+            return MultiplayerGameplayModule.gameState?.playerId || null;
+        }
+    }
+
 
     // ===========================
     // INITIALIZATION
@@ -1183,35 +1199,6 @@
                         console.log('🎮 Game update received');
                     }
 
-                    // ...existing update logic...
-                } catch (error) {
-                    handleFirebaseError(error, 'Spiel-Update verarbeiten', false);
-                }
-            }, (error) => {
-                // ✅ P1 STABILITY: Listener error callback
-                handleFirebaseError(error, 'Echtzeit-Synchronisation', true);
-            });
-
-            // ✅ P1 STABILITY: Error handler for listener
-            gameRef.on('value', (snapshot) => {
-                try {
-                    if (!snapshot.exists()) {
-                        console.warn('⚠️ Game not found');
-                        handleFirebaseError(
-                            new Error('Game not found'),
-                            'Spiel-Synchronisation',
-                            false
-                        );
-                        cleanup();
-                        setTimeout(() => window.location.href = 'index.html', 2000);
-                        return;
-                    }
-
-                    currentGameData = snapshot.val();
-                    if (MultiplayerGameplayModule.isDevelopment) {
-                        console.log('🎮 Game update received');
-                    }
-
                     // Update players
                     currentPlayers = currentGameData.players || {};
                     updatePlayersCount();
@@ -1236,7 +1223,8 @@
                     }
 
                     // Check for game end
-                    if (currentGameData.MultiplayerGameplayModule.gameState === 'finished') {
+                    if (currentGameData.gameState === 'finished') {
+
                         if (MultiplayerGameplayModule.isDevelopment) {
                             console.log('🛑 Game finished');
                         }
@@ -1344,7 +1332,6 @@
                             pausedTimeRemaining = gameData.timerRemaining || 0;
                             updatePauseButton();
                         } else if (gameData.timerStartTime && roundData.timerDuration) {
-                            const serverTime = await getServerTimestamp();
                             startTimer(gameData.timerStartTime, roundData.timerDuration);
                         }
                     }
@@ -1410,34 +1397,32 @@
             }
         });
 
-        // ✅ P1 UI/UX: Listen for timer pause events
-        const gameRef = firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}`);
-        gameRef.on('value', (snapshot) => {
-            if (snapshot.exists() && !MultiplayerGameplayModule.gameState.isHost) {
-                const gameData = snapshot.val();
+// ✅ P1 UI/UX: Listen for timer pause events (REGISTER ONCE)
+        if (!timerSyncRef) {
+            timerSyncRef = firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}`);
+            timerSyncCb = (snapshot) => {
+                if (snapshot.exists() && !MultiplayerGameplayModule.gameState.isHost) {
+                    const gameData = snapshot.val();
 
-                // Sync timer pause state for guests
-                if (gameData.timerPaused !== isPaused) {
-                    if (gameData.timerPaused) {
-                        isPaused = true;
-                        pausedTimeRemaining = gameData.timerRemaining || 0;
-                        stopTimer();
-                        showNotification('⏸️ Timer pausiert vom Host', 'info', 2000);
-                    } else if (gameData.timerStartTime) {
-                        isPaused = false;
-                        getServerTimestamp().then(serverTime => {
+                    if (gameData.timerPaused !== isPaused) {
+                        if (gameData.timerPaused) {
+                            isPaused = true;
+                            pausedTimeRemaining = gameData.timerRemaining || 0;
+                            stopTimer();
+                            showNotification('⏸️ Timer pausiert vom Host', 'info', 2000);
+                        } else if (gameData.timerStartTime) {
+                            isPaused = false;
                             startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
-                        }).catch((error) => {
-                            console.error('[ERROR] Error getting server timestamp:', error);
-                            // Fallback: start timer with local time
-                            startTimer(gameData.timerStartTime, gameData.timerRemaining || timerDuration);
-                        });
-                        showNotification('▶️ Timer fortgesetzt', 'info', 2000);
+                            showNotification('▶️ Timer fortgesetzt', 'info', 2000);
+                        }
+                        updatePauseButton();
                     }
-                    updatePauseButton();
                 }
-            }
-        });
+            };
+
+            timerSyncRef.on('value', timerSyncCb);
+        }
+
 
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log('✅ Round listener active');
@@ -1826,8 +1811,14 @@
             return;
         }
 
+        const playerKey = getPlayerKey();
+        if (!playerKey) {
+            showNotification('Spieler-ID fehlt – bitte Lobby neu öffnen', 'error');
+            return;
+        }
+
         const answerData = {
-            playerId: MultiplayerGameplayModule.gameState.playerId || firebase.auth().currentUser?.uid,
+            playerId: playerKey,
             playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
             answer: userAnswer,
             estimation: userEstimation,
@@ -1837,8 +1828,9 @@
 
         try {
             const answerRef = firebase.database().ref(
-                `games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentQuestionNumber}/answers/${answerData.playerId}`
+                `games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentQuestionNumber}/answers/${playerKey}`
             );
+
 
             await answerRef.set({
                 ...answerData,
@@ -1943,7 +1935,7 @@
         statusContainer.innerHTML = '';
 
         Object.entries(currentPlayers).forEach(([playerId, player]) => {
-            const hasAnswered = answers[playerId] !== undefined;
+            const hasAnswered = !!answers[playerId] || !!answers[player.uid] || !!answers[player.playerId];
 
             const statusItem = document.createElement('div');
             statusItem.className = 'player-status-item';
@@ -2052,7 +2044,8 @@
         }
 
         // Find current player's result
-        const currentPlayerId = MultiplayerGameplayModule.gameState.playerId || firebase.auth().currentUser?.uid;
+        const currentPlayerId = getPlayerKey();
+
         const myResult = results.find(r => r.playerId === currentPlayerId);
 
         if (myResult) {
@@ -2425,6 +2418,26 @@
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log('✅ Multiplayer gameplay cleanup completed');
         }
+        // ✅ Remove timer sync listener (registered once)
+        if (timerSyncRef && timerSyncCb) {
+            try {
+                timerSyncRef.off('value', timerSyncCb);
+            } catch (e) {
+                console.warn('[WARNING] Could not remove timer sync listener:', e.message);
+            }
+            timerSyncRef = null;
+            timerSyncCb = null;
+        }
+        if (connectedRef && connectedCb) {
+            try {
+                connectedRef.off('value', connectedCb);
+            } catch (e) {
+                console.warn('[WARNING] Could not remove connectedRef listener:', e.message);
+            }
+            connectedRef = null;
+            connectedCb = null;
+        }
+
     }
 
     window.addEventListener('beforeunload', cleanup);

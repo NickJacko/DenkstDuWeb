@@ -791,10 +791,11 @@
                     // ✅ P0 SECURITY: Firebase App Check with ReCAPTCHA v3
                     // ===================================
 
-                    // ✅ P1 STABILITY: Get App Check key from environment or config
-                    const appCheckKey = window.FIREBASE_APP_CHECK_KEY ||
-                                       firebaseConfig.appCheckKey ||
-                                       '6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l'; // Fallback (production key)
+                    const appCheckKey =
+                        window.FIREBASE_APP_CHECK_KEY ||
+                        firebaseConfig.appCheckKey ||
+                        null; // ✅ No hardcoded fallback key (must be provided via env/meta/config)
+
 
                     if (firebase.appCheck && appCheckKey) {
                         try {
@@ -1047,6 +1048,11 @@
 
                 if (isConnected) {
                     // ✅ Connected - cancel offline timeout
+                    // cache connection state (used by isConnected())
+                    try { sessionStorage.setItem('nocap_firebase_connected', 'true'); } catch (e) {}
+                    document.body.classList.add('firebase-online');
+                    document.body.classList.remove('firebase-offline');
+
                     cancelOfflineTimeout();
 
                     if (isDevelopment) {
@@ -1068,6 +1074,11 @@
 
                 } else {
                     // ❌ Disconnected - start offline timeout
+                    // cache connection state (used by isConnected())
+                    try { sessionStorage.setItem('nocap_firebase_connected', 'false'); } catch (e) {}
+                    document.body.classList.remove('firebase-online');
+                    document.body.classList.add('firebase-offline');
+
                     startOfflineTimeout();
 
                     if (isDevelopment) {
@@ -1356,6 +1367,7 @@
             }
 
             const elapsed = Date.now() - parseInt(authTime, 10);
+            if (elapsed < 0) return false; // clock skew / tamper guard
             const twentyFourHours = 24 * 60 * 60 * 1000;
 
             return elapsed < twentyFourHours;
@@ -1429,7 +1441,7 @@
             await initializeFirebase();
 
             // Setup monitoring after successful initialization
-            setupConnectionMonitoring();
+            setupConnectionMonitoring(window.firebaseDatabase);
             setupAuthStateListener();
 
             // ✅ P1 PERFORMANCE: Setup telemetry heartbeat (180s interval)
@@ -1474,9 +1486,12 @@
         }
 
         // Only in production with telemetry enabled
-        if (isDevelopment || !window.NocapUtils || !window.NocapUtils.logInfo) {
+        if (!window.NocapUtils || !window.NocapUtils.logInfo) {
             return;
         }
+        // (no dev log - heartbeat disabled in dev)
+
+
 
         telemetryHeartbeatTimer = setInterval(() => {
             if (isConnected() && isAuthenticated()) {
@@ -1585,49 +1600,5 @@
 
         console.log('%cNew in v7.0: IndexedDB persistence, Telemetry, Enhanced domain whitelist',
             'color: #2196F3; font-size: 11px; font-style: italic;');
-    }
-
-
-
-    // Load domain whitelist immediately
-    loadDomainWhitelist().catch(error => {
-        if (isDevelopment) {
-            console.warn('?? Domain whitelist initialization failed:', error.message);
-        }
-    });
-
-    // ===================================
-    // 🚀 AUTO-INITIALIZATION
-    // ===================================
-
-    /**
-     * Auto-initialize Firebase when DOM is ready
-     * This ensures Firebase is always ready before other scripts try to use it
-     */
-    function autoInitialize() {
-        // Check if Firebase SDK is loaded
-        if (typeof firebase === 'undefined' || !firebase.app || !firebase.auth || !firebase.database) {
-            if (isDevelopment) {
-                console.warn('⚠️ Firebase SDK not loaded yet, retrying...');
-            }
-            setTimeout(autoInitialize, 100);
-            return;
-        }
-
-        if (isDevelopment) {
-            console.log('🚀 Auto-initializing Firebase...');
-        }
-
-        initializeFirebase().catch(error => {
-            console.error('❌ Auto-initialization failed:', error);
-        });
-    }
-
-    // Start auto-initialization when DOM is ready (or immediately if already ready)
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', autoInitialize);
-    } else {
-        // DOM is already ready, start immediately
-        autoInitialize();
     }
 })(window);

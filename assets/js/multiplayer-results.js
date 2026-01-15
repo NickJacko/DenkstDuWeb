@@ -48,6 +48,11 @@
     // ===========================
     // UTILITIES
     // ===========================
+    function getFirebaseService() {
+        return window.FirebaseService || null;
+    }
+
+    let firebaseUnsubscribers = [];
 
     function throttle(func, wait = 100) {
         let timeout = null;
@@ -119,9 +124,6 @@
     let currentHostId = null;
     let playersInGame = [];
 
-    // ✅ P2 PERFORMANCE: Listener tracking
-    let gameListener = null;
-
     // ✅ P1 UI/UX: View filters
     let showOnlyTop3 = false;
 
@@ -131,11 +133,8 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
         try {
-            // ✅ P0 SECURITY: Check DOMPurify availability
             if (typeof DOMPurify === 'undefined') {
-                console.error('❌ CRITICAL: DOMPurify not loaded!');
-                showError('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
-                return;
+                Logger.warn('⚠️ DOMPurify not loaded - continuing (textContent-only rendering)');
             }
 
             // ✅ P0 SECURITY: Verify user authentication
@@ -177,21 +176,17 @@
      * ✅ P0 SECURITY: Verify user is authenticated
      */
     async function verifyUserAuthentication() {
-        // Try Firebase Auth
-        if (firebase && firebase.auth) {
-            const user = firebase.auth().currentUser;
+        if (window.firebase && window.firebase.auth) {
+            const user = window.firebase.auth().currentUser;
             if (user) {
                 currentUserId = user.uid;
                 return;
             }
 
-            // Wait for auth state
             await new Promise((resolve) => {
-                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                const unsubscribe = window.firebase.auth().onAuthStateChanged((user) => {
                     unsubscribe();
-                    if (user) {
-                        currentUserId = user.uid;
-                    }
+                    if (user) currentUserId = user.uid;
                     resolve();
                 });
             });
@@ -210,11 +205,11 @@
             }
         }
 
-        // Generate anonymous ID if needed
+        // If we can't identify the user, we must not show protected results
         if (!currentUserId) {
-            currentUserId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            console.warn('⚠️ No authenticated user - using anonymous ID');
+            throw new Error('NOT_AUTHENTICATED');
         }
+
     }
 
     /**
@@ -263,6 +258,7 @@
      */
     async function loadGameResults() {
         // Try to get results from multiple sources
+        let gameData = null;
         const gameId = getGameIdFromURL() ||
                       localStorage.getItem('nocap_game_id') ||
                       sessionStorage.getItem('nocap_game_id');
@@ -273,16 +269,21 @@
 
         currentGameId = gameId;
 
-        // Try Firebase first
-        if (firebase && firebase.database) {
+        const svc = getFirebaseService();
+
+        if (svc && svc.database) {
             try {
-                const gameRef = firebase.database().ref(`games/${gameId}`);
+                const gameRef = svc.database.ref(`games/${gameId}`);
                 const snapshot = await gameRef.once('value');
-                const gameData = snapshot.val();
+                gameData = snapshot.val();
 
                 // ✅ P1 STABILITY: Check if game was deleted
                 if (!gameData) {
                     throw new Error('GAME_DELETED');
+                }
+                const endedAt = gameData.endedAt || gameData.lastUpdate || 0;
+                if (endedAt && Date.now() - endedAt > RESULTS_RETENTION_TIME) {
+                    throw new Error('RESULTS_EXPIRED');
                 }
 
                 // ✅ P1 STABILITY: Check if game was ended by host
@@ -326,7 +327,6 @@
                 console.warn('localStorage parse failed:', error);
             }
         }
-
         throw new Error('NO_RESULTS');
     }
 
@@ -509,14 +509,12 @@
             const scoreEl = podiumPlayer.querySelector('.player-score');
 
             if (nameEl) {
-                // ✅ P0 SECURITY: Sanitize player name
-                const sanitizedName = DOMPurify.sanitize(player.name, {
-                    ALLOWED_TAGS: [],
-                    KEEP_CONTENT: true
-                });
-                nameEl.textContent = sanitizedName;
+                const rawName = typeof player.name === 'string' ? player.name : 'Unbekannt';
+                const safeName = (typeof DOMPurify !== 'undefined')
+                    ? DOMPurify.sanitize(rawName, { ALLOWED_TAGS: [], KEEP_CONTENT: true })
+                    : rawName.replace(/[<>\"'&]/g, '').slice(0, 20);
+                nameEl.textContent = safeName;
             }
-
             if (scoreEl) {
                 scoreEl.textContent = `${player.totalScore || 0} Punkte`;
             }
@@ -568,11 +566,11 @@
             // Name (sanitized)
             const nameEl = document.createElement('span');
             nameEl.className = 'player-name';
-            const sanitizedName = DOMPurify.sanitize(player.name, {
-                ALLOWED_TAGS: [],
-                KEEP_CONTENT: true
-            });
-            nameEl.textContent = sanitizedName;
+            const rawName = typeof player.name === 'string' ? player.name : 'Unbekannt';
+            const safeName = (typeof DOMPurify !== 'undefined')
+                ? DOMPurify.sanitize(rawName, { ALLOWED_TAGS: [], KEEP_CONTENT: true })
+                : rawName.replace(/[<>\"'&]/g, '').slice(0, 20);
+            nameEl.textContent = safeName;
 
             // Score (validate as number)
             const scoreEl = document.createElement('span');
@@ -722,9 +720,9 @@
      * ✅ P1 DSGVO: Schedule automatic deletion of results after 24 hours
      */
     function scheduleResultsDeletion() {
-        if (!currentGameId || !firebase || !firebase.database) {
-            return;
-        }
+        const svc = getFirebaseService();
+        if (!currentGameId || !svc?.database) return;
+
 
         // Only host schedules deletion
         if (currentUserId !== currentHostId) {
@@ -745,24 +743,21 @@
      * ✅ P1 DSGVO: Delete game results from database
      */
     async function deleteGameResults() {
-        if (!currentGameId || !firebase || !firebase.database) {
-            return;
-        }
+        const svc = getFirebaseService();
+        if (!currentGameId || !svc?.database) return;
 
         try {
             // Create anonymized summary before deletion
             const summary = createAnonymizedSummary();
 
-            // Save anonymized summary
-            await firebase.database()
+            await svc.database
                 .ref(`gameSummaries/${currentGameId}`)
                 .set({
                     ...summary,
-                    deletedAt: firebase.database.ServerValue.TIMESTAMP
+                    deletedAt: svc.database.ServerValue.TIMESTAMP
                 });
 
-            // Delete full game data
-            await firebase.database()
+            await svc.database
                 .ref(`games/${currentGameId}`)
                 .remove();
 
@@ -801,9 +796,9 @@
      * @param {string} newHostId - Player ID of new host
      */
     async function transferHost(newHostId) {
-        if (!currentGameId || !firebase || !firebase.database) {
-            return;
-        }
+        const svc = getFirebaseService();
+        if (!currentGameId || !svc?.database) return;
+
 
         // Only current host can transfer
         if (currentUserId !== currentHostId) {
@@ -818,11 +813,11 @@
         }
 
         try {
-            await firebase.database()
+            await svc.database
                 .ref(`games/${currentGameId}`)
                 .update({
                     hostId: newHostId,
-                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                    lastUpdate: svc.database.ServerValue.TIMESTAMP
                 });
 
             currentHostId = newHostId;
@@ -866,8 +861,8 @@
      * ✅ P1 UI/UX: Start new game with same players
      */
     async function restartGame() {
-        if (!currentGameId || !firebase || !firebase.database) {
-            // Fallback: Just go to lobby
+        const svc = getFirebaseService();
+        if (!currentGameId || !svc?.database) {
             window.location.href = 'multiplayer-lobby.html';
             return;
         }
@@ -879,8 +874,8 @@
                 return;
             }
 
-            // Create new game with same settings
-            const oldGameRef = firebase.database().ref(`games/${currentGameId}`);
+            // Load old game
+            const oldGameRef = svc.database.ref(`games/${currentGameId}`);
             const snapshot = await oldGameRef.once('value');
             const oldGame = snapshot.val();
 
@@ -888,38 +883,25 @@
                 throw new Error('Original game not found');
             }
 
-            // Generate new game code
-            const newGameCode = generateGameCode();
-            const newGameRef = firebase.database().ref(`games/${newGameCode}`);
+            // gleiche Settings übernehmen
+            const settings = {
+                categories: oldGame.settings?.categories || oldGame.selectedCategories || ['fsk0'],
+                difficulty: oldGame.settings?.difficulty || oldGame.difficulty || 'medium',
+                isAlcoholMode: oldGame.settings?.isAlcoholMode || false,
+                maxPlayers: oldGame.settings?.maxPlayers || 8,
+                questionsPerRound: oldGame.settings?.questionsPerRound || 10,
+                hostName: playersInGame.find(p => p.id === currentUserId)?.name || 'Host',
+                ageLevel: oldGame.settings?.ageLevel || 0
+            };
 
-            // Create new game
-            await newGameRef.set({
-                hostId: currentUserId,
-                hostName: oldGame.hostName || 'Host',
-                code: newGameCode,
-                status: 'waiting',
-                selectedCategories: oldGame.selectedCategories || ['fsk0'],
-                difficulty: oldGame.difficulty || 'medium',
-                players: {
-                    [currentUserId]: {
-                        id: currentUserId,
-                        name: playersInGame.find(p => p.id === currentUserId)?.name || 'Spieler',
-                        isHost: true,
-                        joinedAt: firebase.database.ServerValue.TIMESTAMP
-                    }
-                },
-                createdAt: firebase.database.ServerValue.TIMESTAMP
-            });
+            const created = await svc.createGame(settings);
 
-            // Save to localStorage
-            localStorage.setItem('nocap_game_id', newGameCode);
+            localStorage.setItem('nocap_game_id', created.gameId);
 
-            // Redirect to lobby
             showNotification('Neues Spiel erstellt! 🎮', 'success');
-
             setTimeout(() => {
-                window.location.href = `multiplayer-lobby.html?code=${newGameCode}`;
-            }, 1000);
+                window.location.href = `multiplayer-lobby.html?code=${created.gameId}`;
+            }, 500);
 
         } catch (error) {
             console.error('❌ Restart failed:', error);
@@ -1007,11 +989,11 @@
 
         const winner = gameResults.rankings[0];
 
-        // ✅ P0 SECURITY: Sanitize winner name to prevent XSS
-        const winnerName = DOMPurify.sanitize(winner.name, {
-            ALLOWED_TAGS: [],
-            KEEP_CONTENT: true
-        });
+        const rawWinnerName = typeof winner.name === 'string' ? winner.name : 'Spieler 1';
+        const winnerName = (typeof DOMPurify !== 'undefined')
+            ? DOMPurify.sanitize(rawWinnerName, { ALLOWED_TAGS: [], KEEP_CONTENT: true })
+            : rawWinnerName.replace(/[<>\"'&]/g, '').slice(0, 20);
+
 
         // ✅ P0 SECURITY: Sanitize score (validate as number)
         const score = Math.max(0, parseInt(winner.totalScore) || 0);
@@ -1070,14 +1052,14 @@
      * ✅ P1 UI/UX: Submit game rating
      */
     async function submitRating(rating) {
+        const svc = getFirebaseService();
         try {
-            // Save to Firebase (if available)
-            if (firebase && firebase.database && gameResults) {
-                await firebase.database()
+            if (svc?.database && gameResults) {
+                await svc.database
                     .ref(`ratings/${Date.now()}`)
                     .set({
                         rating,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        timestamp: svc.database.ServerValue.TIMESTAMP,
                         gameId: gameResults.gameId
                     });
             }
@@ -1233,6 +1215,18 @@
                 showNewGameButton = true;
                 break;
 
+            case 'NOT_AUTHENTICATED':
+                title = '🔒 Nicht angemeldet';
+                message = 'Bitte öffne die Ergebnisse aus dem laufenden Spiel oder melde dich erneut an.';
+                showNewGameButton = true;
+                break;
+
+            case 'RESULTS_EXPIRED':
+                title = '⏳ Ergebnisse abgelaufen';
+                message = 'Diese Ergebnisse sind nicht mehr verfügbar (Datenschutz).';
+                showNewGameButton = true;
+                break;
+
             default:
                 message = `Fehler beim Laden der Ergebnisse: ${error.message}`;
         }
@@ -1327,8 +1321,7 @@
 
     function showError(message) {
         hideLoading();
-        alert(message);
-        redirectToMenu();
+        showErrorDialog('❌ Fehler', String(message || 'Unbekannter Fehler'), true);
     }
 
     /**
@@ -1337,14 +1330,10 @@
     function cleanup() {
         cancelAutoRedirect();
 
-        // ✅ P2 PERFORMANCE: Remove Firebase listeners
-        if (gameListener) {
-            try {
-                gameListener.off();
-            } catch (e) {
-                console.warn('Error removing game listener:', e);
-            }
-        }
+        firebaseUnsubscribers.forEach(unsub => {
+            try { unsub(); } catch (e) {}
+        });
+        firebaseUnsubscribers = [];
 
         // Clear game data from storage
         localStorage.removeItem('nocap_game_results');

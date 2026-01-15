@@ -319,14 +319,30 @@
                 this.alcoholMode = state.alcoholMode === true;
                 this.questionCount = this.sanitizeNumber(state.questionCount, 1, 50, 10);
 
-                // ✅ CRITICAL FIX + P0 SECURITY: Load players array with validation
                 if (Array.isArray(state.players)) {
                     this.players = state.players
-                        .filter(name => typeof name === 'string' && name.trim().length > 0)
-                        .map(name => this.sanitizeString(name));
+                        .map(p => {
+                            if (typeof p === 'string') {
+                                const name = this.sanitizeString(p);
+                                return name ? name : null;
+                            }
+                            if (p && typeof p === 'object' && typeof p.name === 'string') {
+                                const name = this.sanitizeString(p.name);
+                                if (!name) return null;
+                                return {
+                                    name,
+                                    isHost: p.isHost === true,
+                                    avatar: p.avatar ? this.sanitizeString(p.avatar) : undefined,
+                                    gender: p.gender ? this.sanitizeValue(p.gender, ['m', 'f', 'd']) : undefined
+                                };
+                            }
+                            return null;
+                        })
+                        .filter(Boolean);
                 } else {
                     this.players = [];
                 }
+
 
                 this.playerName = this.sanitizeString(state.playerName);
                 this.gameId = this.sanitizeGameId(state.gameId);
@@ -964,67 +980,61 @@
 
                 // ✅ OPTIMIZATION: Check local age level first
                 const localAgeLevel = parseInt(localStorage.getItem('nocap_age_level'), 10) || 0;
-                const levelMap = {
-                    'fsk0': 0,
-                    'fsk16': 16,
-                    'fsk18': 18
-                };
-                const requiredAge = levelMap[level] || 0;
+                const levelMap = { fsk0: 0, fsk16: 16, fsk18: 18 };
 
-                // If local check fails, no need to ask server
-                if (localAgeLevel < requiredAge) {
-                    this.log(`❌ FSK ${level} denied: age ${localAgeLevel} < required ${requiredAge}`, 'warning');
-
-                    // Cache negative result
+                if (!Object.prototype.hasOwnProperty.call(levelMap, level)) {
+                    this.log(`❌ Unknown FSK level: ${level}`, 'warning');
                     this._sessionCache.fskLevels[level] = { allowed: false, checkedAt: now };
                     return false;
                 }
+
+                const requiredAge = levelMap[level];
+
+
+                if (localAgeLevel < requiredAge) {
+                    this.log(`❌ FSK ${level} denied: age ${localAgeLevel} < required ${requiredAge}`, 'warning');
+                    this._sessionCache.fskLevels[level] = { allowed: false, checkedAt: now };
+                    return false;
+                }
+
 
                 // ✅ Try server-side validation for authoritative check
                 if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
                     this.log(`⚠️ Firebase not available - using local FSK check for ${level}`, 'warning');
 
-                    // Cache local result (shorter TTL for fallback)
-                    this._sessionCache.fskLevels[level] = { allowed: true, checkedAt: now };
-                    return true;
+                    const allowedLocal = localAgeLevel >= requiredAge;
+                    this._sessionCache.fskLevels[level] = { allowed: allowedLocal, checkedAt: now };
+                    return allowedLocal;
+
                 }
 
-                const { functions } = window.FirebaseConfig.getFirebaseInstances();
-                if (!functions) {
-                    this.log(`⚠️ Functions not available - using local FSK check for ${level}`, 'warning');
-
-                    // Cache local result
-                    this._sessionCache.fskLevels[level] = { allowed: true, checkedAt: now };
-                    return true;
-                }
-
-                // Try server-side validation
+                // ✅ Server-side validation (authoritative)
                 try {
-                    const checkCategoryAccess = functions.httpsCallable('checkCategoryAccess');
-                    const result = await checkCategoryAccess({ categoryId: level });
-
-                    if (result.data && result.data.allowed === true) {
-                        this.log(`✅ FSK ${level} granted by server`, 'info');
-
-                        // ✅ OPTIMIZATION: Cache positive result
-                        this._sessionCache.fskLevels[level] = { allowed: true, checkedAt: now };
-                        return true;
+                    // SettingsModule muss existieren
+                    if (!window.SettingsModule || typeof window.SettingsModule.validateFSKAccess !== 'function') {
+                        this.log(`⚠️ SettingsModule not available - using local FSK check for ${level}`, 'warning');
+                        const allowedLocal = localAgeLevel >= requiredAge;
+                        this._sessionCache.fskLevels[level] = { allowed: allowedLocal, checkedAt: now };
+                        return allowedLocal;
                     }
 
-                    // Server denied - respect server decision
-                    this.log(`⚠️ FSK ${level} denied by server`, 'warning');
+                    // Server entscheidet (boolean)
+                    const allowedServer = await window.SettingsModule.validateFSKAccess(level);
 
-                    // Cache negative result
-                    this._sessionCache.fskLevels[level] = { allowed: false, checkedAt: now };
-                    return false;
+                    // Cache server decision
+                    this._sessionCache.fskLevels[level] = { allowed: allowedServer, checkedAt: now };
+
+                    this.log(allowedServer ? `✅ FSK ${level} granted by server` : `⚠️ FSK ${level} denied by server`, allowedServer ? 'info' : 'warning');
+                    return allowedServer;
+
 
                 } catch (serverError) {
                     // Server call failed - fallback to local
                     this.log(`⚠️ Server check failed - using local age ${localAgeLevel} for ${level}`, 'warning');
 
-                    // Cache local result (shorter TTL for fallback)
-                    this._sessionCache.fskLevels[level] = { allowed: true, checkedAt: now };
-                    return true;
+                    const allowedLocal = localAgeLevel >= requiredAge;
+                    this._sessionCache.fskLevels[level] = { allowed: allowedLocal, checkedAt: now };
+                    return allowedLocal;
                 }
 
             } catch (error) {
@@ -1033,7 +1043,10 @@
                 // ✅ FALLBACK: Try local check on any error
                 try {
                     const localAgeLevel = parseInt(localStorage.getItem('nocap_age_level'), 10) || 0;
-                    const requiredAge = { 'fsk0': 0, 'fsk16': 16, 'fsk18': 18 }[level] || 0;
+                    const map = { fsk0: 0, fsk16: 16, fsk18: 18 };
+                    if (!Object.prototype.hasOwnProperty.call(map, level)) return false;
+                    const requiredAge = map[level];
+
                     const allowed = localAgeLevel >= requiredAge;
 
                     // Cache fallback result
@@ -1052,16 +1065,24 @@
          * @returns {boolean} Cached FSK status (NOT authoritative)
          */
         canAccessFSKCached(level) {
+
             try {
                 const ageLevel = parseInt(localStorage.getItem('nocap_age_level'), 10) || 0;
-
+                const now = Date.now();
                 const levelMap = {
                     'fsk0': 0,
                     'fsk16': 16,
                     'fsk18': 18
                 };
 
-                const requiredAge = levelMap[level] || 0;
+                if (!Object.prototype.hasOwnProperty.call(levelMap, level)) {
+                    this.log(`❌ Unknown FSK level: ${level}`, 'warning');
+                    this._sessionCache.fskLevels[level] = { allowed: false, checkedAt: now };
+                    return false;
+                }
+
+                const requiredAge = levelMap[level];
+
                 const hasAccess = ageLevel >= requiredAge;
 
                 if (!hasAccess) {
@@ -1147,16 +1168,14 @@
 
         /**
          * ✅ P0 SECURITY: Set players array with type validation
-         * @param {Array<string>} players - Array of player names
+         * @param {Array<string|Object>} players - Array of player names or objects {name, avatar?, gender?, isHost?}
          */
         setPlayers(players) {
-            // ✅ P0 SECURITY: Validate input type
             if (!Array.isArray(players)) {
                 this.log('⚠️ setPlayers: Invalid input, must be array', 'warning');
                 return;
             }
 
-            // ✅ P0 SECURITY: Check for prototype pollution in array
             const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
             for (const key of dangerousKeys) {
                 if (key in players) {
@@ -1165,19 +1184,30 @@
                 }
             }
 
-            // Sanitize each player name
             const sanitized = players
-                .filter(name => typeof name === 'string' && name.trim().length > 0)
-                .map(name => this.sanitizeString(name));
+                .map(p => {
+                    if (typeof p === 'string') {
+                        const name = this.sanitizeString(p);
+                        return name ? name : null;
+                    }
+                    if (p && typeof p === 'object' && typeof p.name === 'string') {
+                        const name = this.sanitizeString(p.name);
+                        if (!name) return null;
+                        return {
+                            name,
+                            isHost: p.isHost === true,
+                            avatar: p.avatar ? this.sanitizeString(p.avatar) : undefined,
+                            gender: p.gender ? this.sanitizeValue(p.gender, ['m', 'f', 'd']) : undefined
+                        };
+                    }
+                    return null;
+                })
+                .filter(Boolean);
 
-            if (sanitized.length > 0) {
-                this.players = sanitized;
-                this._isDirty = true;
-                this.save(true); // Immediate save for players
-                this.log(`✅ Players set: ${sanitized.length} players`);
-            } else {
-                this.log('⚠️ setPlayers: No valid players provided', 'warning');
-            }
+            this.players = sanitized;
+            this._isDirty = true;
+            this.save(true);
+            this.log(`✅ Players set: ${sanitized.length} players`);
         }
 
         /**
@@ -1329,11 +1359,15 @@
         addCategory(category) {
             const sanitized = this.sanitizeValue(category, ['fsk0', 'fsk16', 'fsk18', 'special']);
             if (sanitized && !this.selectedCategories.includes(sanitized)) {
+                const old = [...this.selectedCategories];
                 this.selectedCategories.push(sanitized);
-                this._emit('change:selectedCategories', this.selectedCategories, [...this.selectedCategories]);
-                this._emit('change', 'selectedCategories', this.selectedCategories);
+
+                this._emit('change:selectedCategories', [...this.selectedCategories], old);
+                this._emit('change', 'selectedCategories', [...this.selectedCategories], old);
+
                 this._isDirty = true;
                 this.save();
+
             }
         }
 
@@ -1662,7 +1696,7 @@
         window.location.hostname.includes('192.168.');
 
     if (isDev) {
-        console.log('%c✅ GameState v8.0 loaded (Optimizations & Player Management)', 'color: #4CAF50; font-weight: bold; font-size: 14px');
+        console.log('%c✅ GameState v9.0 loaded (Optimizations & Player Management)', 'color: #4CAF50; font-weight: bold; font-size: 14px');
         console.log('%c   - Session cache for Premium/FSK (5min TTL - verhindert redundante Calls)', 'color: #888; font-size: 12px');
         console.log('%c   - addPlayer() / removePlayer() / getPlayerCount() methods', 'color: #888; font-size: 12px');
         console.log('%c   - Player metadata support (avatar, gender)', 'color: #888; font-size: 12px');

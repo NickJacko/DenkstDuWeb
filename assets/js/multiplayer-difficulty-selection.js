@@ -29,7 +29,6 @@
     const MultiplayerDifficultyModule = {
         state: {
             gameState: null,
-            firebaseService: null,
             alcoholMode: false,
             eventListenerCleanup: [],
             isDevelopment: window.location.hostname === 'localhost' ||
@@ -38,9 +37,6 @@
 
         get gameState() { return this.state.gameState; },
         set gameState(val) { this.state.gameState = val; },
-
-        get firebaseService() { return this.state.firebaseService; },
-        set firebaseService(val) { this.state.firebaseService = val; },
 
         get alcoholMode() { return this.state.alcoholMode; },
         set alcoholMode(val) { this.state.alcoholMode = !!val; },
@@ -57,7 +53,8 @@
     function addTrackedEventListener(element, event, handler, options = {}) {
         if (!element) return;
         element.addEventListener(event, handler, options);
-        MultiplayerDifficultyModule.state.eventListenerCleanup.push({element, event, handler, options});
+        const capture = typeof options === 'boolean' ? options : !!options.capture;
+        MultiplayerDifficultyModule.state.eventListenerCleanup.push({ element, event, handler, capture });
     }
 
     // ===========================
@@ -118,12 +115,6 @@
         Logger.debug('🎮 Initializing multiplayer difficulty selection...');
 
         try {
-            // Check DOMPurify
-            if (typeof DOMPurify === 'undefined') {
-                Logger.error('❌ CRITICAL: DOMPurify not loaded!');
-                alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
-                return;
-            }
 
             // ✅ BUGFIX: Check for window.GameState (constructor)
             if (typeof window.GameState === 'undefined') {
@@ -133,7 +124,7 @@
 
             // Wait for dependencies
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-                await window.NocapUtils.waitForDependencies(['GameState', 'FirebaseService']);
+                await window.NocapUtils.waitForDependencies(['GameState']);
             }
 
             MultiplayerDifficultyModule.gameState = new window.GameState();
@@ -144,16 +135,6 @@
 
             // Validate device mode
             if (!validateGameState()) {
-                return;
-            }
-
-            // ✅ BUGFIX: Use window.FirebaseService (not window.MultiplayerDifficultyModule.firebaseService)
-            if (typeof window.FirebaseService !== 'undefined') {
-                MultiplayerDifficultyModule.firebaseService = window.FirebaseService;
-            } else {
-                Logger.error('❌ Firebase service not available');
-                showNotification('Firebase nicht verfügbar', 'error');
-                setTimeout(() => window.location.href = 'multiplayer-lobby.html', 3000);
                 return;
             }
 
@@ -437,8 +418,11 @@
             selectedCard.setAttribute('aria-checked', 'true');
         }
 
-        // Update gameState
-        MultiplayerDifficultyModule.gameState.difficulty = difficulty;
+        if (typeof MultiplayerDifficultyModule.gameState.setDifficulty === 'function') {
+            MultiplayerDifficultyModule.gameState.setDifficulty(difficulty);
+        } else {
+            MultiplayerDifficultyModule.gameState.difficulty = difficulty;
+        }
 
         // Update continue button
         updateContinueButton();
@@ -541,15 +525,15 @@
 
     function cleanup() {
         MultiplayerDifficultyModule.state.eventListenerCleanup.forEach(
-            ({element, event, handler, options}) => {
+            ({ element, event, handler, capture }) => {
                 try {
-                    element.removeEventListener(event, handler, options);
-                } catch (error) {
-                    // Element may have been removed from DOM
+                    if (element) element.removeEventListener(event, handler, capture);
+                } catch (e) {
                 }
             }
         );
-        MultiplayerDifficultyModule.state.eventListenerCleanup = [];
+
+        MultiplayerDifficultyModule.state.eventListenerCleanup.length = 0;
 
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();

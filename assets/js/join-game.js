@@ -269,6 +269,20 @@
 
                 Logger.debug('✅ Firebase ready:', JoinGameModule.firebaseService.getStatus());
 
+                const waitUntilReady = async (timeoutMs = 8000) => {
+                    const start = Date.now();
+                    while (Date.now() - start < timeoutMs) {
+                        if (JoinGameModule.firebaseService && JoinGameModule.firebaseService.isReady) return true;
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+                    return false;
+                };
+
+                const ready = await waitUntilReady();
+                if (!ready) {
+                    throw new Error('Keine Firebase-Verbindung');
+                }
+
             } catch (error) {
                 Logger.error('❌ Firebase initialization failed:', error);
                 hideLoading();
@@ -513,8 +527,16 @@
                 throw new Error('Ungültiges Code-Format');
             }
 
-            if (!JoinGameModule.firebaseService || !JoinGameModule.firebaseService.isReady) {
+            if (!JoinGameModule.firebaseService) {
                 throw new Error('Keine Firebase-Verbindung');
+            }
+
+            if (!JoinGameModule.firebaseService.isReady) {
+                // ✅ quick retry window (covers slow auth/db init)
+                await new Promise(r => setTimeout(r, 400));
+                if (!JoinGameModule.firebaseService.isReady) {
+                    throw new Error('Keine Firebase-Verbindung');
+                }
             }
 
             const gameRef = JoinGameModule.firebaseService.database.ref(`games/${gameCode}`);
@@ -670,14 +692,47 @@
         const fskElem = document.getElementById('game-fsk-rating');
         if (fskElem) {
             if (hasFSK18) {
-                fskElem.innerHTML = '<strong>⚠️ FSK 18+</strong><span class="fsk-hint">Nur für Erwachsene</span>';
+                while (fskElem.firstChild) fskElem.removeChild(fskElem.firstChild);
+
+                const strong = document.createElement('strong');
+                strong.textContent = '⚠️ FSK 18+';
+
+                const span = document.createElement('span');
+                span.className = 'fsk-hint';
+                span.textContent = 'Nur für Erwachsene';
+
+                fskElem.appendChild(strong);
+                fskElem.appendChild(span);
                 fskElem.classList.add('fsk-warning');
+
             } else if (hasFSK16) {
-                fskElem.innerHTML = '<strong>⚠️ FSK 16+</strong><span class="fsk-hint">Jugendschutz aktiv</span>';
+                while (fskElem.firstChild) fskElem.removeChild(fskElem.firstChild);
+
+                const strong = document.createElement('strong');
+                strong.textContent = '⚠️ FSK 16+';
+
+                const span = document.createElement('span');
+                span.className = 'fsk-hint';
+                span.textContent = 'Enthält Inhalte ab 16 Jahren';
+
+                fskElem.appendChild(strong);
+                fskElem.appendChild(span);
                 fskElem.classList.add('fsk-warning');
+
             } else {
-                fskElem.innerHTML = '<strong>✅ FSK 0</strong><span class="fsk-hint">Für alle Altersgruppen</span>';
-                fskElem.classList.remove('fsk-warning');
+                while (fskElem.firstChild) fskElem.removeChild(fskElem.firstChild);
+
+                const strong = document.createElement('strong');
+                strong.textContent = ' FSK 0';
+
+                const span = document.createElement('span');
+                span.className = 'fsk-hint';
+                span.textContent = 'Enthält keine Inhalte für Erwachsene';
+
+                fskElem.appendChild(strong);
+                fskElem.appendChild(span);
+                fskElem.classList.add('fsk-warning');
+
             }
         }
 
@@ -778,7 +833,11 @@
             Logger.debug('✅ Join successful:', result);
 
             JoinGameModule.gameState.gameId = gameCode;
-            JoinGameModule.gameState.playerId = result.playerId;
+            JoinGameModule.gameState.playerId =
+                (JoinGameModule.firebaseService?.getCurrentUser?.()?.uid) ||
+                (firebase?.auth?.()?.currentUser?.uid) ||
+                result.playerId;
+            JoinGameModule.gameState.authUid = JoinGameModule.gameState.playerId;
             JoinGameModule.gameState.setPlayerName(playerName);
 
             JoinGameModule.gameState.setDeviceMode('multi');

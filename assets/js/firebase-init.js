@@ -9,8 +9,6 @@
     const isProduction = !isDevelopment;
 
     function getFirebaseConfig() {
-        if (window.FIREBASE_CONFIG) return window.FIREBASE_CONFIG;
-
         const getMeta = (n) =>
             document.querySelector(`meta[name="firebase-${n}"]`)?.content || null;
 
@@ -26,12 +24,14 @@
             messagingSenderId: getMeta("messaging-sender-id"),
             appId: getMeta("app-id"),
             measurementId: getMeta("measurement-id"),
+            appCheckKey: getMeta("app-check-key"),
         };
+
     }
 
     function validateConfig(config) {
         if (!config || typeof config !== "object") return false;
-        if (!config.apiKey?.startsWith("AIza")) return false;
+        if (!config.apiKey || typeof config.apiKey !== "string") return false;
         return !!(config.authDomain && config.projectId);
     }
 
@@ -49,34 +49,44 @@
 
     function initializeFirebase() {
         const config = getFirebaseConfig();
-        if (!config || !validateConfig(config)) return;
+        if (!config || !validateConfig(config)) {
+            console.error("❌ Firebase config missing/invalid. Check meta tags (firebase-*) in <head>.");
+            return;
+        }
 
         waitForFirebase(() => {
             try {
                 if (!firebase.apps || firebase.apps.length === 0) {
                     firebase.initializeApp(config);
 
-                    // 🔐 App Check (reCAPTCHA v3) - TEMPORÄR DEAKTIVIERT
-                    // TODO: reCAPTCHA muss in Firebase Console für no-cap.app konfiguriert werden
-                    if (firebase.appCheck && isProduction) {
+                    // 🔐 App Check (reCAPTCHA v3) - ✅ No hardcoded fallback key
+                    const appCheckKey =
+                        window.FIREBASE_APP_CHECK_KEY ||
+                        config.appCheckKey ||
+                        null;
+
+                    if (firebase.appCheck && appCheckKey) {
                         try {
-                            firebase.appCheck().activate(
-                                "6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l", // SITE KEY
-                                true
+                            firebase.appCheck().activate(appCheckKey, true);
+
+                            console.log(
+                                isDevelopment
+                                    ? "✅ Firebase initialized + App Check active (dev)"
+                                    : "✅ Firebase initialized + App Check active (prod)"
                             );
 
-                            if (isDevelopment) {
-                                console.log("✅ Firebase initialized + App Check active (Production)");
-                            }
                         } catch (error) {
-                            console.warn("⚠️ App Check activation failed:", error);
-                            // Non-fatal: Continue without App Check
+                            console.warn("⚠️ App Check activation failed (continuing without):", error);
                         }
-                    } else if (isDevelopment) {
-                        console.log("⚠️ App Check disabled (Development mode)");
                     } else {
-                        console.warn("⚠️ App Check TEMPORARILY DISABLED (reCAPTCHA misconfigured)");
+                        // No key or SDK -> run without App Check (non-fatal)
+                        if (isProduction) {
+                            console.warn("⚠️ App Check not active (missing key or SDK)");
+                        } else if (isDevelopment) {
+                            console.log("ℹ️ App Check not active in dev (missing key or SDK)");
+                        }
                     }
+
 
                     // ✅ FIX: Set global flag for other scripts to detect initialization
                     window.firebaseInitialized = true;

@@ -20,15 +20,15 @@
         // ✅ P1 UI/UX: Back Button Navigation
         // ===================================
         if (backButton) {
-            backButton.addEventListener('click', function() {
-                // If browser has history, go back
+            const onBackClick = () => {
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {
-                    // Fallback to home if no history
                     window.location.href = '/index.html';
                 }
-            });
+            };
+            backButton.addEventListener('click', onBackClick);
+
 
             // ✅ P1 UI/UX: Auto-focus on back button for keyboard users
             // Wait for page load to prevent scroll jump
@@ -40,21 +40,22 @@
         // ===================================
         // ✅ P1 UI/UX: ESC Key Navigation
         // ===================================
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                event.preventDefault();
+        const onKeyDown = (event) => {
+            if (event.key !== 'Escape') return;
 
-                // ✅ Announce navigation to screen readers
-                if (errorMessage && errorMessage.hasAttribute('aria-live')) {
-                    errorMessage.textContent = 'Navigation zur Startseite...';
-                }
+            event.preventDefault();
 
-                // Navigate after brief delay for screen reader announcement
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 200);
+            // Announce navigation to screen readers
+            if (errorMessage && errorMessage.hasAttribute('aria-live')) {
+                errorMessage.textContent = 'Navigation zur Startseite...';
             }
-        });
+
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 200);
+        };
+        document.addEventListener('keydown', onKeyDown);
+
 
         // ===================================
         // ✅ P2 PERFORMANCE: Reduce Animations
@@ -63,19 +64,14 @@
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (prefersReducedMotion) {
-            // Disable particle animations
-            const particles = document.querySelectorAll('.particle');
-            particles.forEach(particle => {
-                particle.style.animation = 'none';
-                particle.style.opacity = '0.3'; // Keep visible but static
-            });
+            document.documentElement.classList.add('reduced-motion');
         }
 
         // ===================================
         // ✅ P1 UI/UX: ARIA Announcement
         // ===================================
         // Announce error to screen readers on load
-        if (errorMessage) {
+        if (errorMessage && errorMessage.hasAttribute('aria-live')) {
             // Trigger aria-live announcement by updating content
             const originalText = errorMessage.textContent;
             errorMessage.textContent = '';

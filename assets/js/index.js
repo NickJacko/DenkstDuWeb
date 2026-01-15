@@ -24,13 +24,17 @@
     // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
     // ===================================
 
-    // Get Logger from utils
     const Logger = window.NocapUtils?.Logger || {
-        debug: (...args) => {},
-        info: (...args) => {},
-        warn: console.warn,
-        error: console.error
+        debug: () => {
+        },
+        info: () => {
+        },
+        warn: () => {
+        },
+        error: () => {
+        }
     };
+
 
     // ✅ P0 FIX: All state encapsulated in module scope (no global variables)
     const IndexPageModule = {
@@ -43,25 +47,44 @@
             directJoinInterval: null,
             eventListenerCleanup: [],
             scrollThrottle: null,
+            initialized: false,
             isDevelopment: window.location.hostname === 'localhost' ||
                 window.location.hostname === '127.0.0.1' ||
                 window.location.hostname.includes('192.168.')
         },
 
         // Getters/Setters for controlled access
-        get ageVerified() { return this.state.ageVerified; },
-        set ageVerified(val) { this.state.ageVerified = !!val; },
+        get ageVerified() {
+            return this.state.ageVerified;
+        },
+        set ageVerified(val) {
+            this.state.ageVerified = !!val;
+        },
 
-        get isAdult() { return this.state.isAdult; },
-        set isAdult(val) { this.state.isAdult = !!val; },
+        get isAdult() {
+            return this.state.isAdult;
+        },
+        set isAdult(val) {
+            this.state.isAdult = !!val;
+        },
 
-        get alcoholMode() { return this.state.alcoholMode; },
-        set alcoholMode(val) { this.state.alcoholMode = !!val; },
+        get alcoholMode() {
+            return this.state.alcoholMode;
+        },
+        set alcoholMode(val) {
+            this.state.alcoholMode = !!val;
+        },
 
-        get gameState() { return this.state.gameState; },
-        set gameState(val) { this.state.gameState = val; },
+        get gameState() {
+            return this.state.gameState;
+        },
+        set gameState(val) {
+            this.state.gameState = val;
+        },
 
-        get isDevelopment() { return this.state.isDevelopment; }
+        get isDevelopment() {
+            return this.state.isDevelopment;
+        }
     };
 
     // Prevent tampering
@@ -257,7 +280,7 @@
                 sessionStorage.removeItem('nocap_return_url');
 
                 if (IndexPageModule.isDevelopment) {
-                    console.log('↩️ Returning to:', returnUrl);
+                    Logger.debug('↩️ Returning to:', returnUrl);
                 }
 
                 // Show smooth transition notification
@@ -293,41 +316,22 @@
         try {
             const ageLevel = isAdultUser ? 18 : 0;
 
-            // ✅ P0 FIX: Serverseitige Validierung MUSS erfolgreich sein
             const serverVerified = await updateFirebaseAgeVerification(ageLevel);
 
-            if (!serverVerified) {
-                // Server-Validierung fehlgeschlagen - KEINE lokale Speicherung
-                console.error('❌ Server verification failed - age not saved');
+            // ✅ PROD: must be verified, DEV: allow local-only
+            if (!serverVerified && !IndexPageModule.isDevelopment) {
+                Logger.error("❌ Server verification failed (prod) - age not saved");
                 return false;
             }
 
-            // ✅ P1 FIX: Synchronize with Firebase Auth Custom Claims
-            if (window.FirebaseConfig && window.FirebaseConfig.isInitialized()) {
-                try {
-                    const user = window.FirebaseConfig.getCurrentUser();
-                    if (user) {
-                        // Force token refresh to get updated custom claims
-                        await user.getIdToken(true);
-
-                        if (IndexPageModule.isDevelopment) {
-                            Logger.debug('✅ Firebase token refreshed with new age claims');
-                        }
-                    }
-                } catch (authError) {
-                    Logger.warn('⚠️ Could not refresh auth token:', authError);
-                    // Non-fatal - continue with local storage
-                }
-            }
-
-            // Nur nach erfolgreicher Server-Validierung: Lokale Speicherung (UX-Cache)
             const verification = {
                 ageVerified: true,
                 isAdult: isAdultUser === true,
                 alcoholMode: allowAlcohol === true,
                 timestamp: Date.now(),
-                serverVerified: true // Flag für serverseitige Bestätigung
+                serverVerified: serverVerified === true
             };
+
 
             // Use safe storage helpers
             if (window.NocapUtils) {
@@ -344,13 +348,18 @@
             IndexPageModule.alcoholMode = allowAlcohol;
 
             if (IndexPageModule.isDevelopment) {
-                console.log('✅ Age verification saved (server-validated):', { ageLevel, alcoholMode });
+                Logger.debug(
+                    serverVerified
+                        ? '✅ Age verification saved (server-validated)'
+                        : '⚠️ Age verification saved (LOCAL ONLY - not server verified)',
+                    {ageLevel, alcoholMode, serverVerified}
+                );
             }
 
             return true;
 
         } catch (error) {
-            console.error('❌ Could not save age verification:', error);
+            Logger.error('❌ Could not save age verification:', error);
 
             if (window.NocapUtils && window.NocapUtils.showNotification) {
                 window.NocapUtils.showNotification(
@@ -370,108 +379,89 @@
      * @returns {Promise<boolean>} Success status
      */
     async function updateFirebaseAgeVerification(ageLevel) {
-        try {
-            // ✅ FALLBACK: If Firebase not available, allow local-only storage with warning
-            if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
-                if (IndexPageModule.isDevelopment) {
-                    console.warn('⚠️ Firebase not initialized - using local-only age verification');
-                }
+        const dev = IndexPageModule.isDevelopment;
 
-                // Show warning to user
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
+        // ✅ PRODUCTION: server verification is mandatory
+        if (!dev) {
+            // Must have Firebase + user + functions
+            if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
+                Logger.error("❌ Firebase not initialized in production - cannot verify age server-side");
+                if (window.NocapUtils?.showNotification) {
                     window.NocapUtils.showNotification(
-                        '⚠️ Offline-Modus: Altersverifikation nur lokal gespeichert',
-                        'warning',
-                        3000
+                        "Server-Verifizierung nicht möglich. Bitte Seite neu laden.",
+                        "error",
+                        4000
                     );
                 }
-
-                return true; // Allow continuation with local storage
+                return false;
             }
 
             const userId = window.FirebaseConfig.getCurrentUserId();
             if (!userId) {
-                if (IndexPageModule.isDevelopment) {
-                    console.warn('⚠️ No user ID - using local-only age verification');
-                }
-
-                // Show warning
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
+                Logger.error("❌ No userId in production - cannot verify age server-side");
+                if (window.NocapUtils?.showNotification) {
                     window.NocapUtils.showNotification(
-                        '⚠️ Altersverifikation nur lokal gespeichert',
-                        'warning',
+                        "Anmeldung nicht bereit. Bitte kurz warten und erneut versuchen.",
+                        "error",
+                        3500
+                    );
+                }
+                return false;
+            }
+        }
+
+        // ✅ DEV: allow local-only fallback (but return false for 'serverVerified')
+        if (dev && (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized())) {
+            Logger.warn("⚠️ DEV: Firebase not initialized - skipping server verification");
+            return false; // important: NOT server verified
+        }
+
+        try {
+            const {functions} = window.FirebaseConfig.getFirebaseInstances();
+            if (!functions) throw new Error("Firebase Functions not available");
+
+            const verifyAge = functions.httpsCallable("verifyAge");
+            const result = await verifyAge({ageLevel, consent: true});
+
+            if (result?.data?.success) {
+                if (window.NocapUtils?.showNotification) {
+                    window.NocapUtils.showNotification(
+                        "✓ Altersverifikation gespeichert",
+                        "success",
+                        2000
+                    );
+                }
+                return true; // ✅ server verified
+            }
+
+            throw new Error("Server verification failed");
+        } catch (err) {
+            Logger.error("❌ Server-side age verification failed:", err);
+
+            if (dev) {
+                // DEV: allow continuation locally, but mark NOT verified
+                if (window.NocapUtils?.showNotification) {
+                    window.NocapUtils.showNotification(
+                        "⚠️ DEV: Altersverifikation nur lokal (kein Server-Verify)",
+                        "warning",
                         3000
                     );
                 }
-
-                return true; // Allow continuation
+                return false;
             }
 
-            // ✅ P0 FIX: Try server-side validation via Cloud Function
-            try {
-                const { functions } = window.FirebaseConfig.getFirebaseInstances();
-
-                if (!functions) {
-                    throw new Error('Firebase Functions not available');
-                }
-
-                const verifyAge = functions.httpsCallable('verifyAge');
-
-                const result = await verifyAge({
-                    ageLevel: ageLevel,
-                    consent: true
-                });
-
-                if (result.data && result.data.success) {
-                    if (IndexPageModule.isDevelopment) {
-                        console.log('✅ Server-side age verification successful:', result.data);
-                    }
-
-                    // Show success
-                    if (window.NocapUtils && window.NocapUtils.showNotification) {
-                        window.NocapUtils.showNotification(
-                            '✓ Altersverifikation gespeichert',
-                            'success',
-                            2000
-                        );
-                    }
-
-                    return true;
-                } else {
-                    throw new Error('Server verification failed');
-                }
-
-            } catch (cloudFunctionError) {
-                console.error('❌ Server-side age verification FAILED:', cloudFunctionError);
-
-                // ✅ FALLBACK: Allow local storage with warning instead of blocking
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        '⚠️ Server-Validierung fehlgeschlagen - Altersverifikation nur lokal gespeichert',
-                        'warning',
-                        4000
-                    );
-                }
-
-                // Don't clear - allow local storage
-                return true; // Allow continuation with local-only verification
-            }
-
-        } catch (error) {
-            console.error('❌ Age verification error:', error);
-
-            // ✅ FALLBACK: Allow local storage instead of failing completely
-            if (window.NocapUtils && window.NocapUtils.showNotification) {
+            // PROD: block
+            if (window.NocapUtils?.showNotification) {
                 window.NocapUtils.showNotification(
-                    '⚠️ Altersverifikation nur lokal gespeichert',
-                    'warning',
-                    3000
+                    "Server-Validierung fehlgeschlagen. Bitte später erneut versuchen.",
+                    "error",
+                    4000
                 );
             }
-
-            return true; // Allow continuation
+            return false;
         }
     }
+
 
     /**
      * ✅ P0 SECURITY: Load age verification with validation and expiry check
@@ -507,12 +497,22 @@
             const now = Date.now();
             const oneDay = 24 * 60 * 60 * 1000;
 
-            // Check if verification is still valid (24 hours)
             if (timestamp && now - timestamp < oneDay) {
-                // ✅ P0 SECURITY: Strict boolean validation
+                const isDev = IndexPageModule.isDevelopment;
+
+                // ✅ PROD: only accept verification if serverVerified === true
+                const isServerVerified = verification.serverVerified === true;
+
+                if (!isDev && !isServerVerified) {
+                    Logger.warn("⚠️ Ignoring local age verification in production (not server verified)");
+                    clearVerification();
+                    return false;
+                }
+
                 IndexPageModule.ageVerified = verification.ageVerified === true;
                 IndexPageModule.isAdult = verification.isAdult === true;
                 IndexPageModule.alcoholMode = verification.alcoholMode === true;
+
 
                 if (IndexPageModule.isDevelopment) {
                     Logger.debug('✅ Age verification loaded from storage');
@@ -589,7 +589,7 @@
         try {
             // Check for FirebaseConfig (new architecture)
             if (!window.FirebaseConfig) {
-                console.warn('⚠️ FirebaseConfig not available - offline mode');
+                Logger.warn('⚠️ FirebaseConfig not available - offline mode');
                 return false;
             }
 
@@ -600,18 +600,18 @@
 
             // Check if initialization was successful
             if (!window.FirebaseConfig.isInitialized()) {
-                console.warn('⚠️ Firebase not initialized - offline mode');
+                Logger.warn('⚠️ Firebase not initialized - offline mode');
                 return false;
             }
 
             if (IndexPageModule.isDevelopment) {
-                console.log('✅ Firebase ready for multiplayer');
+                Logger.debug('✅ Firebase ready for multiplayer');
             }
 
             return true;
 
         } catch (error) {
-            console.error('❌ Firebase initialization error:', error);
+            Logger.error('❌ Firebase initialization error:', error);
             return false;
         }
     }
@@ -637,7 +637,7 @@
         }
 
         if (!IndexPageModule.gameState) {
-            console.error('❌ GameState not initialized');
+            Logger.error('❌ GameState not initialized');
 
             if (window.NocapUtils && window.NocapUtils.showNotification) {
                 window.NocapUtils.showNotification(
@@ -670,13 +670,13 @@
             }
 
             if (IndexPageModule.isDevelopment) {
-                console.log('🎮 Navigating to single device category selection');
+                Logger.debug('🎮 Navigating to single device category selection');
             }
 
             window.location.href = 'category-selection.html';
 
         } catch (error) {
-            console.error('❌ Error starting single device mode:', error);
+            Logger.error('❌ Error starting single device mode:', error);
 
             if (window.NocapUtils && window.NocapUtils.showNotification) {
                 window.NocapUtils.showNotification(
@@ -712,13 +712,13 @@
             }
 
             if (IndexPageModule.isDevelopment) {
-                console.log('🌐 Navigating to multiplayer category selection');
+                Logger.debug('🌐 Navigating to multiplayer category selection');
             }
 
             window.location.href = 'multiplayer-category-selection.html';
 
         } catch (error) {
-            console.error('❌ Error starting multiplayer mode:', error);
+            Logger.error('❌ Error starting multiplayer mode:', error);
 
             if (window.NocapUtils && window.NocapUtils.showNotification) {
                 window.NocapUtils.showNotification(
@@ -753,13 +753,13 @@
             }
 
             if (IndexPageModule.isDevelopment) {
-                console.log('🔗 Navigating to join game');
+                Logger.debug('🔗 Navigating to join game');
             }
 
             window.location.href = 'join-game.html';
 
         } catch (error) {
-            console.error('❌ Error joining game:', error);
+            Logger.error('❌ Error joining game:', error);
 
             if (window.NocapUtils && window.NocapUtils.showNotification) {
                 window.NocapUtils.showNotification(
@@ -770,347 +770,319 @@
         }
     }
 
-        // ===================================
-        // 🎬 ANIMATION HELPERS
-        // ===================================
+    // ===================================
+    // 🎬 ANIMATION HELPERS
+    // ===================================
 
-        /**
-         * ✅ P1 UI/UX: Setup scroll-to-top button with throttled scroll event
-         */
-        function setupScrollToTop() {
-            // Check if button already exists
-            let scrollButton = document.getElementById('scroll-to-top');
+    /**
+     * ✅ P1 UI/UX: Setup scroll-to-top button with throttled scroll event
+     */
+    function setupScrollToTop() {
+        // Check if button already exists
+        let scrollButton = document.getElementById('scroll-to-top');
 
-            if (!scrollButton) {
-                // Create scroll-to-top button
-                scrollButton = document.createElement('button');
-                scrollButton.id = 'scroll-to-top';
-                scrollButton.className = 'scroll-to-top hidden';
-                scrollButton.setAttribute('aria-label', 'Zurück nach oben');
-                scrollButton.setAttribute('title', 'Zurück nach oben');
-                scrollButton.innerHTML = '<span aria-hidden="true">↑</span>';
+        if (!scrollButton) {
+            // Create scroll-to-top button
+            scrollButton = document.createElement('button');
+            scrollButton.id = 'scroll-to-top';
+            scrollButton.className = 'scroll-to-top hidden';
+            scrollButton.setAttribute('aria-label', 'Zurück nach oben');
+            scrollButton.setAttribute('title', 'Zurück nach oben');
+            const icon = document.createElement("span");
+            icon.setAttribute("aria-hidden", "true");
+            icon.textContent = "↑";
+            scrollButton.appendChild(icon);
 
-                document.body.appendChild(scrollButton);
-            }
 
-            // Show/hide button based on scroll position
-            const toggleScrollButton = () => {
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-                if (scrollTop > 300) {
-                    scrollButton.classList.remove('hidden');
-                    scrollButton.classList.add('visible');
-                } else {
-                    scrollButton.classList.remove('visible');
-                    scrollButton.classList.add('hidden');
-                }
-            };
-
-            // ✅ P1 FIX: Throttle scroll event for performance (max 1 call per 100ms)
-            const throttledToggle = throttle(toggleScrollButton, 100);
-
-            // Scroll to top on click
-            const scrollToTop = () => {
-                // Check for reduced motion preference
-                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-                window.scrollTo({
-                    top: 0,
-                    behavior: prefersReducedMotion ? 'auto' : 'smooth'
-                });
-
-                // Focus on main content after scroll
-                const mainContent = document.getElementById('main-content');
-                if (mainContent) {
-                    mainContent.focus();
-                }
-            };
-
-            // Add event listeners with throttle
-            addTrackedEventListener(window, 'scroll', throttledToggle, { passive: true });
-            addTrackedEventListener(scrollButton, 'click', scrollToTop);
-
-            // Initial check
-            toggleScrollButton();
-
-            if (IndexPageModule.isDevelopment) {
-                Logger.debug('✅ Scroll-to-top button initialized (throttled)');
-            }
+            document.body.appendChild(scrollButton);
         }
 
-        /**
-         * ✅ P1 UI/UX: Lazy load modals and heavy components
-         */
-        function lazyLoadComponents() {
-            // Lazy load age modal content (only when needed)
-            const ageModal = document.getElementById('age-modal');
+        // Show/hide button based on scroll position
+        const toggleScrollButton = () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-            if (ageModal && !ageModal.dataset.loaded) {
-                // Mark as loaded
-                ageModal.dataset.loaded = 'true';
-
-                // Add intersection observer for future lazy-loaded images
-                if ('IntersectionObserver' in window) {
-                    const imageObserver = new IntersectionObserver((entries, observer) => {
-                        entries.forEach(entry => {
-                            if (entry.isIntersecting) {
-                                const img = entry.target;
-
-                                if (img.dataset.src) {
-                                    img.src = img.dataset.src;
-                                    img.removeAttribute('data-src');
-                                }
-
-                                observer.unobserve(img);
-                            }
-                        });
-                    }, {
-                        rootMargin: '50px' // Load 50px before entering viewport
-                    });
-
-                    // Observe all lazy images
-                    document.querySelectorAll('img[data-src]').forEach(img => {
-                        imageObserver.observe(img);
-                    });
-
-                    if (IndexPageModule.isDevelopment) {
-                        Logger.debug('✅ Image lazy loading initialized');
-                    }
-                }
+            if (scrollTop > 300) {
+                scrollButton.classList.remove('hidden');
+                scrollButton.classList.add('visible');
+            } else {
+                scrollButton.classList.remove('visible');
+                scrollButton.classList.add('hidden');
             }
-        }
+        };
 
-        /**
-         * ✅ AUDIT FIX: Animate mode cards via CSS classes (respects prefers-reduced-motion)
-         */
-        function animateCards() {
+        // ✅ P1 FIX: Throttle scroll event for performance (max 1 call per 100ms)
+        const throttledToggle = throttle(toggleScrollButton, 100);
+
+        // Scroll to top on click
+        const scrollToTop = () => {
             // Check for reduced motion preference
             const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-            if (prefersReducedMotion) {
-                if (IndexPageModule.isDevelopment) {
-                    Logger.info('ℹ️ Animations disabled (prefers-reduced-motion)');
-                }
-                // Make cards visible immediately if animation is disabled
-                const cards = document.querySelectorAll('.mode-card');
-                cards.forEach(card => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                });
-                return;
-            }
-
-            setTimeout(() => {
-                const cards = document.querySelectorAll('.mode-card');
-
-                cards.forEach((card, index) => {
-                    // Add will-animate class first to enable animation
-                    card.classList.add('will-animate');
-                    setTimeout(() => {
-                        card.classList.add('card-animate-in');
-                    }, index * 150);
-                });
-            }, 300);
-        }
-
-        /**
-         * ✅ P1 UI/UX: Smooth scroll to section with accessibility support
-         * @param {string} target - CSS selector for target element
-         */
-        function smoothScrollTo(target) {
-            const element = document.querySelector(target);
-            if (!element) {
-                return;
-            }
-
-            // Check for reduced motion preference
-            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-            element.scrollIntoView({
-                behavior: prefersReducedMotion ? 'auto' : 'smooth',
-                block: 'start'
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion ? 'auto' : 'smooth'
             });
 
-            // Focus target for keyboard users
-            if (element.hasAttribute('tabindex') || element.tagName === 'A' || element.tagName === 'BUTTON') {
-                element.focus();
+            // Focus on main content after scroll
+            const mainContent = document.getElementById('main-content');
+            if (mainContent) {
+                mainContent.focus();
+            }
+        };
+
+        // Add event listeners with throttle
+        addTrackedEventListener(window, 'scroll', throttledToggle, {passive: true});
+        addTrackedEventListener(scrollButton, 'click', scrollToTop);
+
+        // Initial check
+        toggleScrollButton();
+
+        if (IndexPageModule.isDevelopment) {
+            Logger.debug('✅ Scroll-to-top button initialized (throttled)');
+        }
+    }
+
+    /**
+     * ✅ P1 UI/UX: Lazy load modals and heavy components
+     */
+    function lazyLoadComponents() {
+        // Lazy load age modal content (only when needed)
+        const ageModal = document.getElementById('age-modal');
+
+        if (ageModal && !ageModal.dataset.loaded) {
+            // Mark as loaded
+            ageModal.dataset.loaded = 'true';
+
+            // Add intersection observer for future lazy-loaded images
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+
+                            if (img.dataset.src) {
+                                img.src = img.dataset.src;
+                                img.removeAttribute('data-src');
+                            }
+
+                            observer.unobserve(img);
+                        }
+                    });
+                }, {
+                    rootMargin: '50px' // Load 50px before entering viewport
+                });
+
+                // Observe all lazy images
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+
+                if (IndexPageModule.isDevelopment) {
+                    Logger.debug('✅ Image lazy loading initialized');
+                }
             }
         }
+    }
 
-        // ===================================
-        // 🔗 URL PARAMETER HANDLING
-        // ===================================
+    /**
+     * ✅ AUDIT FIX: Animate mode cards via CSS classes (respects prefers-reduced-motion)
+     */
+    function animateCards() {
+        // Check for reduced motion preference
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        /**
-         * ✅ AUDIT FIX: Handle direct game join with STRICT validation
-         * Only allows exactly 6 alphanumeric characters [A-Z0-9]{6}
-         */
-        function handleDirectJoin() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const gameId = urlParams.get('gameId');
+        if (prefersReducedMotion) {
+            if (IndexPageModule.isDevelopment) {
+                Logger.info('ℹ️ Animations disabled (prefers-reduced-motion)');
+            }
+            // Make cards visible immediately if animation is disabled
+            const cards = document.querySelectorAll('.mode-card');
+            cards.forEach(card => {
+                card.classList.add('card-animate-in');
+                card.classList.remove('will-animate');
+            });
+            return;
+        }
 
-            if (!gameId) {
-                return;
+        setTimeout(() => {
+            const cards = document.querySelectorAll('.mode-card');
+
+            cards.forEach((card, index) => {
+                // Add will-animate class first to enable animation
+                card.classList.add('will-animate');
+                setTimeout(() => {
+                    card.classList.add('card-animate-in');
+                }, index * 150);
+            });
+        }, 300);
+    }
+
+    /**
+     * ✅ P1 UI/UX: Smooth scroll to section with accessibility support
+     * @param {string} target - CSS selector for target element
+     */
+    function smoothScrollTo(target) {
+        const element = document.querySelector(target);
+        if (!element) return;
+
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        element.scrollIntoView({
+            behavior: prefersReducedMotion ? "auto" : "smooth",
+            block: "start"
+        });
+
+        // ✅ A11y: ensure focus works even if element isn't normally focusable
+        const hadTabIndex = element.hasAttribute("tabindex");
+        if (!hadTabIndex) element.setAttribute("tabindex", "-1");
+
+        element.focus({preventScroll: true});
+
+        if (!hadTabIndex) {
+            // keep it clean after focus (optional)
+            setTimeout(() => element.removeAttribute("tabindex"), 1000);
+        }
+    }
+
+
+    // ===================================
+    // 🔗 URL PARAMETER HANDLING
+    // ===================================
+
+    /**
+     * ✅ AUDIT FIX: Handle direct game join with STRICT validation
+     * Only allows exactly 6 alphanumeric characters [A-Z0-9]{6}
+     */
+    function handleDirectJoin() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get('gameId');
+
+        if (!gameId) {
+            return;
+        }
+
+        // ✅ STRICT VALIDATION: Only [A-Z0-9]{6}
+        const strictPattern = /^[A-Z0-9]{6}$/i;
+
+        // Validate length and pattern
+        if (gameId.length !== 6 || !strictPattern.test(gameId)) {
+            Logger.warn('⚠️ Invalid gameId format (must be exactly 6 alphanumeric chars):', gameId);
+
+            if (window.NocapUtils && window.NocapUtils.showNotification) {
+                window.NocapUtils.showNotification(
+                    'Ungültiger Spiel-Code. Muss 6 Zeichen sein (A-Z, 0-9)',
+                    'error'
+                );
             }
 
-            // ✅ STRICT VALIDATION: Only [A-Z0-9]{6}
-            const strictPattern = /^[A-Z0-9]{6}$/i;
+            // Clear invalid parameter from URL
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+            return;
+        }
 
-            // Validate length and pattern
-            if (gameId.length !== 6 || !strictPattern.test(gameId)) {
-                console.warn('⚠️ Invalid gameId format (must be exactly 6 alphanumeric chars):', gameId);
+        // Sanitize with DOMPurify AND uppercase
+        const sanitizedGameId = DOMPurify.sanitize(gameId.toUpperCase().trim());
+        // If user came via direct join link, trigger age modal immediately
+        if (!IndexPageModule.ageVerified) {
+            showAgeModal();
+        }
 
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
+        // Clear any existing interval
+        if (IndexPageModule.state.directJoinInterval) {
+            clearInterval(IndexPageModule.state.directJoinInterval);
+        }
+
+        // Wait for age verification
+        let attempts = 0;
+        const maxAttempts = 100; // 10 seconds
+
+        IndexPageModule.state.directJoinInterval = setInterval(() => {
+            attempts++;
+
+            if (IndexPageModule.ageVerified) {
+                clearInterval(IndexPageModule.state.directJoinInterval);
+                IndexPageModule.state.directJoinInterval = null;
+
+                // Use encodeURIComponent for safe URL parameter
+                window.location.href = `join-game.html?gameId=${encodeURIComponent(sanitizedGameId)}`;
+            }
+
+            // Timeout after 10 seconds
+            if (attempts >= maxAttempts) {
+                clearInterval(IndexPageModule.state.directJoinInterval);
+                IndexPageModule.state.directJoinInterval = null;
+
+                if (!IndexPageModule.ageVerified && window.NocapUtils && window.NocapUtils.showNotification) {
                     window.NocapUtils.showNotification(
-                        'Ungültiger Spiel-Code. Muss 6 Zeichen sein (A-Z, 0-9)',
-                        'error'
+                        'Altersverifikation erforderlich zum Beitreten',
+                        'warning'
                     );
                 }
-
-                // Clear invalid parameter from URL
-                const cleanUrl = window.location.pathname;
-                window.history.replaceState({}, document.title, cleanUrl);
-                return;
             }
+        }, 100);
+    }
 
-            // Sanitize with DOMPurify AND uppercase
-            const sanitizedGameId = DOMPurify.sanitize(gameId.toUpperCase().trim());
+    // ===================================
+    // 🎯 EVENT LISTENERS
+    // ===================================
 
-            // Clear any existing interval
-            if (IndexPageModule.state.directJoinInterval) {
-                clearInterval(IndexPageModule.state.directJoinInterval);
-            }
+    /**
+     * Register event listener with cleanup tracking
+     * @param {Element} element - DOM element
+     * @param {string} event - Event type
+     * @param {Function} handler - Event handler
+     * @param {Object} options - Event options
+     */
+    function addTrackedEventListener(element, event, handler, options = {}) {
+        if (!element) return;
 
-            // Wait for age verification
-            let attempts = 0;
-            const maxAttempts = 100; // 10 seconds
+        element.addEventListener(event, handler, options);
+        IndexPageModule.state.eventListenerCleanup.push({element, event, handler, options});
+    }
 
-            IndexPageModule.state.directJoinInterval = setInterval(() => {
-                attempts++;
-
-                if (IndexPageModule.ageVerified) {
-                    clearInterval(IndexPageModule.state.directJoinInterval);
-                    IndexPageModule.state.directJoinInterval = null;
-
-                    // Use encodeURIComponent for safe URL parameter
-                    window.location.href = `join-game.html?gameId=${encodeURIComponent(sanitizedGameId)}`;
+    /**
+     * Setup all event listeners with proper cleanup tracking
+     */
+    function setupEventListeners() {
+        // ✅ AUDIT FIX: ESC-Taste schließt Age-Modal (falls bereits verifiziert)
+        const ageModal = document.getElementById("age-modal");
+        if (ageModal) {
+            addTrackedEventListener(document, "keydown", (e) => {
+                if (e.key === "Escape" && IndexPageModule.ageVerified) {
+                    hideAgeModal();
                 }
-
-                // Timeout after 10 seconds
-                if (attempts >= maxAttempts) {
-                    clearInterval(IndexPageModule.state.directJoinInterval);
-                    IndexPageModule.state.directJoinInterval = null;
-
-                    if (!IndexPageModule.ageVerified && window.NocapUtils && window.NocapUtils.showNotification) {
-                        window.NocapUtils.showNotification(
-                            'Altersverifikation erforderlich zum Beitreten',
-                            'warning'
-                        );
-                    }
-                }
-            }, 100);
+            });
         }
 
-        // ===================================
-        // 🎯 EVENT LISTENERS
-        // ===================================
+        // Age checkbox
+        const ageCheckbox = document.getElementById('age-checkbox');
+        const btn18Plus = document.getElementById('btn-18plus');
 
-        /**
-         * Register event listener with cleanup tracking
-         * @param {Element} element - DOM element
-         * @param {string} event - Event type
-         * @param {Function} handler - Event handler
-         * @param {Object} options - Event options
-         */
-        function addTrackedEventListener(element, event, handler, options = {}) {
-            if (!element) return;
+        if (ageCheckbox && btn18Plus) {
+            addTrackedEventListener(ageCheckbox, 'change', function () {
+                const isChecked = this.checked;
+                btn18Plus.disabled = !isChecked;
+                btn18Plus.setAttribute('aria-disabled', !isChecked);
 
-            element.addEventListener(event, handler, options);
-            IndexPageModule.state.eventListenerCleanup.push({element, event, handler, options});
+                if (isChecked) {
+                    btn18Plus.classList.add('enabled');
+                } else {
+                    btn18Plus.classList.remove('enabled');
+                }
+            });
         }
 
-        /**
-         * Setup all event listeners with proper cleanup tracking
-         */
-        function setupEventListeners() {
-            // ✅ AUDIT FIX: ESC-Taste schließt Age-Modal (falls bereits verifiziert)
-            const ageModal = document.getElementById('age-modal');
-            if (ageModal) {
-                addTrackedEventListener(ageModal, 'modal-close', function () {
-                    // Nur schließen, wenn bereits verifiziert
-                    if (IndexPageModule.ageVerified) {
-                        hideAgeModal();
-                    }
-                });
-            }
-
-            // Age checkbox
-            const ageCheckbox = document.getElementById('age-checkbox');
-            const btn18Plus = document.getElementById('btn-18plus');
-
-            if (ageCheckbox && btn18Plus) {
-                addTrackedEventListener(ageCheckbox, 'change', function () {
-                    const isChecked = this.checked;
-                    btn18Plus.disabled = !isChecked;
-                    btn18Plus.setAttribute('aria-disabled', !isChecked);
-
-                    if (isChecked) {
-                        btn18Plus.classList.add('enabled');
-                    } else {
-                        btn18Plus.classList.remove('enabled');
-                    }
-                });
-            }
-
-            // 18+ button
-            if (btn18Plus) {
-                addTrackedEventListener(btn18Plus, 'click', async function () {
-                    const checkbox = document.getElementById('age-checkbox');
-                    if (checkbox && checkbox.checked) {
-                        // ✅ P0 FIX: Warte auf serverseitige Validierung
-                        this.disabled = true;
-                        this.textContent = '⏳ Validiere...';
-
-                        const success = await saveVerification(true, true);
-
-                        if (success) {
-                            updateUIForVerification();
-                            hideAgeModal();
-                            animateCards();
-
-                            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                                window.NocapUtils.showNotification(
-                                    'Spiel mit allen Inhalten verfügbar',
-                                    'success',
-                                    2000
-                                );
-                            }
-                        } else {
-                            // Reset Button bei Fehler
-                            this.disabled = false;
-                            this.innerHTML = '<span aria-hidden="true">🔞</span> Weiter (18+)';
-
-                            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                                window.NocapUtils.showNotification(
-                                    'Validierung fehlgeschlagen. Bitte versuche es später erneut.',
-                                    'error',
-                                    4000
-                                );
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Under 18 button
-            const btnUnder18 = document.getElementById('btn-under-18');
-            if (btnUnder18) {
-                addTrackedEventListener(btnUnder18, 'click', async function () {
-                    // ✅ P0 FIX: Auch unter-18 Validierung serverseitig
+        // 18+ button
+        if (btn18Plus) {
+            addTrackedEventListener(btn18Plus, 'click', async function () {
+                const checkbox = document.getElementById('age-checkbox');
+                if (checkbox && checkbox.checked) {
+                    // ✅ P0 FIX: Warte auf serverseitige Validierung
                     this.disabled = true;
-                    this.textContent = '⏳ Speichere...';
+                    this.textContent = '⏳ Validiere...';
 
-                    const success = await saveVerification(false, false);
+                    const success = await saveVerification(true, true);
 
                     if (success) {
                         updateUIForVerification();
@@ -1119,15 +1091,20 @@
 
                         if (window.NocapUtils && window.NocapUtils.showNotification) {
                             window.NocapUtils.showNotification(
-                                'Jugendschutz-Modus aktiviert',
-                                'info',
+                                'Spiel mit allen Inhalten verfügbar',
+                                'success',
                                 2000
                             );
                         }
                     } else {
                         // Reset Button bei Fehler
                         this.disabled = false;
-                        this.innerHTML = '<span aria-hidden="true">👶</span> Ich bin unter 18';
+                        this.textContent = "Weiter (18+)";
+                        const s = document.createElement("span");
+                        s.setAttribute("aria-hidden", "true");
+                        s.textContent = "🔞 ";
+                        this.prepend(s);
+
 
                         if (window.NocapUtils && window.NocapUtils.showNotification) {
                             window.NocapUtils.showNotification(
@@ -1137,182 +1114,158 @@
                             );
                         }
                     }
-                });
-            }
-
-            // Game mode buttons
-            const btnSingle = document.getElementById('btn-single');
-            if (btnSingle) {
-                addTrackedEventListener(btnSingle, 'click', startSingleDevice);
-            }
-
-            const btnMulti = document.getElementById('btn-multi');
-            if (btnMulti) {
-                addTrackedEventListener(btnMulti, 'click', startMultiplayer);
-            }
-
-            const btnJoin = document.getElementById('btn-join');
-            if (btnJoin) {
-                addTrackedEventListener(btnJoin, 'click', joinGame);
-            }
-
-            // Scroll indicator (Button - no need for click handler on div)
-            const scrollIndicator = document.getElementById('scroll-indicator');
-            if (scrollIndicator) {
-                addTrackedEventListener(scrollIndicator, 'click', function () {
-                    smoothScrollTo('.game-modes');
-                });
-            }
-
-            if (IndexPageModule.isDevelopment) {
-                console.log(`✅ ${IndexPageModule.state.eventListenerCleanup.length} event listeners registered`);
-            }
-        }
-
-        // ===================================
-        // 🧹 CLEANUP
-        // ===================================
-
-        /**
-         * Cleanup all resources on page unload
-         */
-        function cleanup() {
-            // Clear intervals
-            if (IndexPageModule.state.directJoinInterval) {
-                clearInterval(IndexPageModule.state.directJoinInterval);
-                IndexPageModule.state.directJoinInterval = null;
-            }
-
-            // Remove all tracked event listeners
-            IndexPageModule.state.eventListenerCleanup.forEach(({element, event, handler, options}) => {
-                try {
-                    element.removeEventListener(event, handler, options);
-                } catch (error) {
-                    // Element may have been removed from DOM
                 }
             });
-            IndexPageModule.state.eventListenerCleanup = [];
-
-            // Cleanup utils
-            if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
-                window.NocapUtils.cleanupEventListeners();
-            }
-
-            // Cleanup modal focus trap
-            const modal = document.getElementById('age-modal');
-            if (modal && modal._focusTrapCleanup) {
-                modal._focusTrapCleanup();
-                modal._focusTrapCleanup = null;
-            }
-
-            if (IndexPageModule.isDevelopment) {
-                console.log('✅ Index page cleanup completed');
-            }
         }
 
-        addTrackedEventListener(window, 'beforeunload', cleanup);
+        // Under 18 button
+        const btnUnder18 = document.getElementById('btn-under-18');
+        if (btnUnder18) {
+            addTrackedEventListener(btnUnder18, 'click', async function () {
+                // ✅ P0 FIX: Auch unter-18 Validierung serverseitig
+                this.disabled = true;
+                this.textContent = '⏳ Speichere...';
 
-        // ===================================
-        // 🚀 INITIALIZATION
-        // ===================================
+                const success = await saveVerification(false, false);
 
-        /**
-         * Main initialization function with dependency checks
-         */
-        async function initialize() {
-            try {
-                // ✅ P0 FIX: Check DOMPurify with friendly error
-                if (!checkDOMPurify()) {
-                    return; // Stop execution, error modal shown
-                }
-
-                // Wait for GameState
-                if (typeof GameState === 'undefined') {
-                    console.error('❌ GameState class not found!');
-
-                    if (window.NocapUtils && window.NocapUtils.showNotification) {
-                        window.NocapUtils.showNotification(
-                            'Fehler beim Laden der Spieldaten',
-                            'error'
-                        );
-                    }
-                    return;
-                }
-
-                // Initialize GameState FIRST
-                try {
-                    IndexPageModule.gameState = new GameState();
-
-                    if (IndexPageModule.isDevelopment) {
-                        console.log('✅ GameState initialized');
-                    }
-                } catch (error) {
-                    console.error('❌ GameState initialization failed:', error);
-
-                    if (window.NocapUtils && window.NocapUtils.showNotification) {
-                        window.NocapUtils.showNotification(
-                            'Fehler beim Laden der Spieldaten',
-                            'error'
-                        );
-                    }
-                    return;
-                }
-
-                // Check for existing age verification
-                if (loadVerification()) {
+                if (success) {
                     updateUIForVerification();
                     hideAgeModal();
                     animateCards();
 
-                    if (IndexPageModule.isDevelopment) {
-                        console.log('✅ Age verification restored from storage');
+                    if (window.NocapUtils && window.NocapUtils.showNotification) {
+                        window.NocapUtils.showNotification(
+                            'Jugendschutz-Modus aktiviert',
+                            'info',
+                            2000
+                        );
                     }
                 } else {
-                    showAgeModal();
+                    // Reset Button bei Fehler
+                    this.disabled = false;
+                    this.textContent = "Ich bin unter 18";
+                    const s = document.createElement("span");
+                    s.setAttribute("aria-hidden", "true");
+                    s.textContent = "👶 ";
+                    this.prepend(s);
+
+
+                    if (window.NocapUtils && window.NocapUtils.showNotification) {
+                        window.NocapUtils.showNotification(
+                            'Validierung fehlgeschlagen. Bitte versuche es später erneut.',
+                            'error',
+                            4000
+                        );
+                    }
                 }
+            });
+        }
 
-                // Setup event listeners
-                setupEventListeners();
+        // Game mode buttons
+        const btnSingle = document.getElementById('btn-single');
+        if (btnSingle) {
+            addTrackedEventListener(btnSingle, 'click', startSingleDevice);
+        }
 
-                // ✅ P1 UI/UX: Setup scroll-to-top button
-                setupScrollToTop();
+        const btnMulti = document.getElementById('btn-multi');
+        if (btnMulti) {
+            addTrackedEventListener(btnMulti, 'click', startMultiplayer);
+        }
 
-                // ✅ P1 UI/UX: Initialize lazy loading for heavy components
-                lazyLoadComponents();
+        const btnJoin = document.getElementById('btn-join');
+        if (btnJoin) {
+            addTrackedEventListener(btnJoin, 'click', joinGame);
+        }
 
-                // Initialize Firebase (async, non-blocking)
-                initializeFirebase().catch(error => {
-                    console.warn('⚠️ Firebase initialization error:', error);
-                    // Non-fatal - single-device mode still works
-                });
+        // Scroll indicator (Button - no need for click handler on div)
+        const scrollIndicator = document.getElementById('scroll-indicator');
+        if (scrollIndicator) {
+            addTrackedEventListener(scrollIndicator, 'click', function () {
+                smoothScrollTo('.game-modes');
+            });
+        }
+        if (IndexPageModule.isDevelopment) {
+            Logger.debug(`✅ ${IndexPageModule.state.eventListenerCleanup.length} event listeners registered`);
+        }
+    }
+    // ===================================
+// 🧹 CLEANUP
+// ===================================
+    function cleanup() {
+        if (IndexPageModule.state.directJoinInterval) {
+            clearInterval(IndexPageModule.state.directJoinInterval);
+            IndexPageModule.state.directJoinInterval = null;
+        }
 
-                // Handle direct game join via URL
-                handleDirectJoin();
+        IndexPageModule.state.eventListenerCleanup.forEach(({ element, event, handler, options }) => {
+            try { element.removeEventListener(event, handler, options); } catch (_) {}
+        });
+        IndexPageModule.state.eventListenerCleanup = [];
 
-                if (IndexPageModule.isDevelopment) {
-                    Logger.debug('%c✅ Index page initialized',
-                        'color: #4CAF50; font-weight: bold; font-size: 12px');
-                }
+        if (window.NocapUtils?.cleanupEventListeners) {
+            window.NocapUtils.cleanupEventListeners();
+        }
 
-            } catch (error) {
-                console.error('❌ Initialization error:', error);
+        const modal = document.getElementById('age-modal');
+        if (modal?._focusTrapCleanup) {
+            modal._focusTrapCleanup();
+            modal._focusTrapCleanup = null;
+        }
 
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        'Fehler beim Laden der Seite',
-                        'error'
-                    );
-                }
+        if (IndexPageModule.isDevelopment) {
+            Logger.debug('✅ Index page cleanup completed');
+        }
+    }
+
+    window.addEventListener('beforeunload', cleanup);
+
+// ===================================
+// 🚀 INITIALIZATION
+// ===================================
+    async function initialize() {
+        try {
+            if (IndexPageModule.state.initialized) return;
+            IndexPageModule.state.initialized = true;
+
+            if (!checkDOMPurify()) return;
+            initializeFirebase().catch(err => Logger.warn('⚠️ Firebase initialization error:', err));
+            if (typeof GameState === 'undefined') {
+                Logger.error('❌ GameState class not found!');
+                window.NocapUtils?.showNotification?.('Fehler beim Laden der Spieldaten', 'error');
+                return;
             }
-        }
 
-        // ===================================
-        // 🎬 DOM READY
-        // ===================================
+            IndexPageModule.gameState = new GameState();
+            if (IndexPageModule.isDevelopment) Logger.debug('✅ GameState initialized');
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initialize);
-        } else {
-            initialize();
+            if (loadVerification()) {
+                updateUIForVerification();
+                hideAgeModal();
+                animateCards();
+                if (IndexPageModule.isDevelopment) Logger.debug('✅ Age verification restored from storage');
+            } else {
+                showAgeModal();
+            }
+
+            setupEventListeners();
+            setupScrollToTop();
+            lazyLoadComponents();
+
+            handleDirectJoin();
+
+            if (IndexPageModule.isDevelopment) Logger.debug('✅ Index page initialized');
+        } catch (err) {
+            Logger.error('❌ Initialization error:', err);
+            window.NocapUtils?.showNotification?.('Fehler beim Laden der Seite', 'error');
         }
+    }
+
+    // ===================================
+    // 🎬 DOM READY (NUR EINMAL!)
+    // ===================================
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+        initialize();
+    }
 })(window);

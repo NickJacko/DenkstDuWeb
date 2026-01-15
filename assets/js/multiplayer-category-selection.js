@@ -933,8 +933,11 @@
                 return true;
             }
 
-            const players = snapshot.val();
-            const playerList = Object.values(players);
+            const players = snapshot.val() || {};
+            const playerList = Object.entries(players)
+                .filter(([key, p]) => p && typeof p === 'object')
+                .map(([key, p]) => ({ key, ...p }));
+
 
             const allReady = playerList.every(player => {
                 if (player.isHost) return true;
@@ -960,12 +963,33 @@
         try {
             if (typeof firebase === 'undefined' || !firebase.database) return;
 
-            const userId = firebase.auth()?.currentUser?.uid;
-            if (!userId) return;
+            async function markPlayerReady() {
+                if (!MultiplayerCategoryModule.gameState.gameId || MultiplayerCategoryModule.isHost) return;
 
-            const playerRef = firebase.database()
-                .ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players/${userId}/categoryReady`);
-            await playerRef.set(true);
+                try {
+                    if (typeof firebase === 'undefined' || !firebase.database) return;
+
+                    const playerKey = getPlayerKey();
+                    if (!playerKey) return;
+
+                    const playerRef = firebase.database()
+                        .ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players/${playerKey}`);
+
+                    // set "ready" + keep minimal player info in case it doesn't exist yet
+                    await playerRef.update({
+                        categoryReady: true,
+                        name: sanitizeText(MultiplayerCategoryModule.gameState.playerName || 'Spieler'),
+                        isHost: false,
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+
+                    Logger.debug('✅ Player marked as ready for category selection');
+
+                } catch (error) {
+                    Logger.error('❌ Mark ready error:', error);
+                }
+            }
+
 
             Logger.debug('✅ Player marked as ready for category selection');
 

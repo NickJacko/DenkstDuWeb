@@ -12,27 +12,26 @@
 (function(window) {
     'use strict';
 
-    // Get Logger from utils
     const Logger = window.NocapUtils?.Logger || {
-        debug: console.log,
-        info: console.log,
-        warn: console.warn,
-        error: console.error
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {}
     };
+
 
     // ===================================
     // GLOBAL STATE
     // ===================================
 
-    let currentUser = null;
-    let userFSKAccess = {
-        fsk0: true,
-        fsk16: false,
-        fsk18: false
+    const SettingsState = {
+        currentUser: null,
+        userFSKAccess: { fsk0: true, fsk16: false, fsk18: false },
+        functionsInstance: null,
+        eventCleanup: []
     };
+    Object.seal(SettingsState);
 
-    // ✅ FIX: Initialize Functions with correct region
-    let functionsInstance = null;
 
     // ===================================
     // INIT
@@ -51,14 +50,17 @@
 
         // ✅ FIX: Initialize Functions with europe-west1 region
         try {
-            functionsInstance = firebase.app().functions('europe-west1');
-            Logger.info('✅ Firebase Functions initialized (europe-west1)');
+            const { functions } = window.FirebaseConfig.getFirebaseInstances();
+            SettingsState.functionsInstance = functions;
+            Logger.info('✅ Firebase Functions ready (via FirebaseConfig)');
         } catch (error) {
             Logger.error('❌ Failed to initialize Functions:', error);
         }
 
-        // Listen to Auth State
-        firebase.auth().onAuthStateChanged(onAuthStateChanged);
+        const { auth } = window.FirebaseConfig.getFirebaseInstances();
+        const unsub = auth.onAuthStateChanged(onAuthStateChanged);
+        if (typeof unsub === 'function') SettingsState.eventCleanup.push(unsub);
+
 
         // Setup Event Listeners
         setupEventListeners();
@@ -71,7 +73,7 @@
     // ===================================
 
     function onAuthStateChanged(user) {
-        currentUser = user;
+        SettingsState.currentUser = user;
 
         if (user) {
             Logger.info('✅ User logged in:', user.uid);
@@ -86,36 +88,37 @@
     function showUserMenu() {
         const userMenuContainer = document.getElementById('user-menu-container');
         if (userMenuContainer) {
-            userMenuContainer.style.display = 'flex';
+            window.NocapUtils?.showElement
+                ? window.NocapUtils.showElement(userMenuContainer, 'flex')
+                : userMenuContainer.classList.remove('hidden');
         }
     }
 
     function hideUserMenu() {
         const userMenuContainer = document.getElementById('user-menu-container');
         if (userMenuContainer) {
-            userMenuContainer.style.display = 'none';
+            window.NocapUtils?.hideElement
+                ? window.NocapUtils.hideElement(userMenuContainer)
+                : userMenuContainer.classList.add('hidden');
         }
     }
-
     async function loadUserData() {
-        if (!currentUser) return;
+        if (!SettingsState.currentUser) return;
 
         try {
-            // Load display name
-            const displayName = currentUser.displayName || 'Gast';
+            const displayName = SettingsState.currentUser.displayName || 'Gast';
             updateDisplayName(displayName);
 
-            // Load FSK access from custom claims
-            const token = await currentUser.getIdTokenResult();
-            userFSKAccess = {
+            const tokenResult = await SettingsState.currentUser.getIdTokenResult();
+
+            SettingsState.userFSKAccess = {
                 fsk0: true,
-                fsk16: token.claims.fsk16 || false,
-                fsk18: token.claims.fsk18 || false
+                fsk16: tokenResult?.claims?.fsk16 === true,
+                fsk18: tokenResult?.claims?.fsk18 === true
             };
 
-            updateFSKBadges(userFSKAccess);
+            updateFSKBadges(SettingsState.userFSKAccess);
 
-            // ✅ NEW: Check for scheduled deletion
             await checkScheduledDeletion();
 
         } catch (error) {
@@ -123,35 +126,30 @@
         }
     }
 
+
     /**
      * ✅ NEW: Check if user has scheduled deletion
      */
     async function checkScheduledDeletion() {
-        if (!currentUser) return;
+        if (!SettingsState.currentUser) return;
 
         try {
-            const db = firebase.database();
-            const deletionRef = db.ref(`deletionRequests/${currentUser.uid}`);
+            const { database } = window.FirebaseConfig.getFirebaseInstances();
+            const deletionRef = database.ref(`deletionRequests/${SettingsState.currentUser.uid}`);
             const snapshot = await deletionRef.once('value');
 
             if (snapshot.exists()) {
                 const request = snapshot.val();
-
-                if (request.status === 'scheduled') {
-                    // Show cancellation option
-                    showCancellationOption(request);
-                } else {
-                    // Hide cancellation option
-                    hideCancellationOption();
-                }
+                if (request?.status === 'scheduled') showCancellationOption(request);
+                else hideCancellationOption();
             } else {
                 hideCancellationOption();
             }
-
         } catch (error) {
             Logger.error('Error checking scheduled deletion:', error);
         }
     }
+
 
     function showCancellationOption(request) {
         const cancelContainer = document.getElementById('cancel-deletion-container');
@@ -159,11 +157,15 @@
         const scheduledDateEl = document.getElementById('deletion-scheduled-date');
 
         if (cancelContainer) {
-            cancelContainer.style.display = 'block';
+            window.NocapUtils?.showElement
+                ? window.NocapUtils.showElement(cancelContainer, 'block')
+                : cancelContainer.classList.remove('hidden');
         }
 
         if (deleteContainer) {
-            deleteContainer.style.display = 'none';
+            window.NocapUtils?.hideElement
+                ? window.NocapUtils.hideElement(deleteContainer)
+                : deleteContainer.classList.add('hidden');
         }
 
         if (scheduledDateEl && request.scheduledFor) {
@@ -177,12 +179,17 @@
         const deleteContainer = document.getElementById('delete-account-container');
 
         if (cancelContainer) {
-            cancelContainer.style.display = 'none';
+            window.NocapUtils?.hideElement
+                ? window.NocapUtils.hideElement(cancelContainer)
+                : cancelContainer.classList.add('hidden');
         }
 
         if (deleteContainer) {
-            deleteContainer.style.display = 'block';
+            window.NocapUtils?.showElement
+                ? window.NocapUtils.showElement(deleteContainer, 'block')
+                : deleteContainer.classList.remove('hidden');
         }
+
     }
 
     function updateDisplayName(name) {
@@ -204,100 +211,135 @@
         const fsk18Badge = document.getElementById('fsk18-badge');
 
         if (fsk16Badge) {
-            fsk16Badge.style.display = fskAccess.fsk16 ? 'inline-block' : 'none';
+            if (fskAccess.fsk16) {
+                window.NocapUtils?.showElement
+                    ? window.NocapUtils.showElement(fsk16Badge, 'inline-block')
+                    : fsk16Badge.classList.remove('hidden');
+            } else {
+                window.NocapUtils?.hideElement
+                    ? window.NocapUtils.hideElement(fsk16Badge)
+                    : fsk16Badge.classList.add('hidden');
+            }
         }
 
         if (fsk18Badge) {
-            fsk18Badge.style.display = fskAccess.fsk18 ? 'inline-block' : 'none';
+            if (fskAccess.fsk18) {
+                window.NocapUtils?.showElement
+                    ? window.NocapUtils.showElement(fsk18Badge, 'inline-block')
+                    : fsk18Badge.classList.remove('hidden');
+            } else {
+                window.NocapUtils?.hideElement
+                    ? window.NocapUtils.hideElement(fsk18Badge)
+                    : fsk18Badge.classList.add('hidden');
+            }
         }
+
 
         // Settings badges
         const fsk16BadgeSettings = document.getElementById('fsk16-badge-settings');
         const fsk18BadgeSettings = document.getElementById('fsk18-badge-settings');
 
         if (fsk16BadgeSettings) {
-            fsk16BadgeSettings.style.display = fskAccess.fsk16 ? 'inline-block' : 'none';
+            if (fskAccess.fsk16) {
+                window.NocapUtils?.showElement
+                    ? window.NocapUtils.showElement(fsk16BadgeSettings, 'inline-block')
+                    : fsk16BadgeSettings.classList.remove('hidden');
+            } else {
+                window.NocapUtils?.hideElement
+                    ? window.NocapUtils.hideElement(fsk16BadgeSettings)
+                    : fsk16BadgeSettings.classList.add('hidden');
+            }
         }
 
         if (fsk18BadgeSettings) {
-            fsk18BadgeSettings.style.display = fskAccess.fsk18 ? 'inline-block' : 'none';
+            if (fskAccess.fsk18) {
+                window.NocapUtils?.showElement
+                    ? window.NocapUtils.showElement(fsk18BadgeSettings, 'inline-block')
+                    : fsk18BadgeSettings.classList.remove('hidden');
+            } else {
+                window.NocapUtils?.hideElement
+                    ? window.NocapUtils.hideElement(fsk18BadgeSettings)
+                    : fsk18BadgeSettings.classList.add('hidden');
+            }
         }
+
     }
 
     // ===================================
     // EVENT LISTENERS
     // ===================================
-
+    function addTrackedListener(el, type, fn, opts) {
+        if (!el) return;
+        el.addEventListener(type, fn, opts);
+        SettingsState.eventCleanup.push(() => {
+            try { el.removeEventListener(type, fn, opts); } catch (_) {}
+        });
+    }
     function setupEventListeners() {
         // Settings Button
         const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) {
-            settingsBtn.addEventListener('click', openSettings);
+            addTrackedListener(settingsBtn, 'click', openSettings);
         }
 
         // Close Settings
         const closeBtn = document.getElementById('settings-close-btn');
         if (closeBtn) {
-            closeBtn.addEventListener('click', closeSettings);
+            addTrackedListener(closeBtn, 'click', closeSettings);
         }
 
         // Save Display Name
         const saveNameBtn = document.getElementById('save-display-name-btn');
         if (saveNameBtn) {
-            saveNameBtn.addEventListener('click', saveDisplayName);
+            addTrackedListener(saveNameBtn, 'click', saveDisplayName);
         }
 
         // Verify Age
         const verifyAgeBtn = document.getElementById('verify-age-btn');
         if (verifyAgeBtn) {
-            verifyAgeBtn.addEventListener('click', verifyAge);
+            addTrackedListener(verifyAgeBtn, 'click', verifyAge);
         }
 
         // Export Data
         const exportBtn = document.getElementById('export-data-btn');
         if (exportBtn) {
-            exportBtn.addEventListener('click', exportMyData);
+            addTrackedListener(exportBtn, 'click', exportMyData)
         }
 
         // Delete Account
         const deleteBtn = document.getElementById('delete-account-btn');
         if (deleteBtn) {
-            deleteBtn.addEventListener('click', showDeleteAccountDialog);
+            addTrackedListener(deleteBtn, 'click', showDeleteAccountDialog);
         }
 
         // Cancel Deletion
         const cancelDeletionBtn = document.getElementById('cancel-deletion-btn');
         if (cancelDeletionBtn) {
-            cancelDeletionBtn.addEventListener('click', cancelAccountDeletion);
+            addTrackedListener(cancelDeletionBtn, 'click', cancelAccountDeletion);
         }
 
         // FSK Warning Modal
         const closeFSKModalBtn = document.getElementById('close-fsk-modal-btn');
         if (closeFSKModalBtn) {
-            closeFSKModalBtn.addEventListener('click', closeFSKModal);
+            addTrackedListener(closeFSKModalBtn, 'click', closeFSKModal);
         }
 
         const gotoAgeVerificationBtn = document.getElementById('goto-age-verification-btn');
         if (gotoAgeVerificationBtn) {
-            gotoAgeVerificationBtn.addEventListener('click', goToAgeVerification);
+            addTrackedListener(gotoAgeVerificationBtn, 'click', goToAgeVerification);
         }
 
         // Close modal on outside click
         const settingsModal = document.getElementById('settings-modal');
         if (settingsModal) {
-            settingsModal.addEventListener('click', (e) => {
-                if (e.target === settingsModal) {
-                    closeSettings();
-                }
+            addTrackedListener(settingsModal, 'click', (e) => {
+                if (e.target === settingsModal) closeSettings();
             });
         }
 
-        const fskWarningModal = document.getElementById('fsk-warning-modal');
         if (fskWarningModal) {
-            fskWarningModal.addEventListener('click', (e) => {
-                if (e.target === fskWarningModal) {
-                    closeFSKModal();
-                }
+            addTrackedListener(fskWarningModal, 'click', (e) => {
+                if (e.target === fskWarningModal) closeFSKModal();
             });
         }
     }
@@ -309,16 +351,22 @@
     function openSettings() {
         const modal = document.getElementById('settings-modal');
         if (modal) {
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+            window.NocapUtils?.showElement
+                ? window.NocapUtils.showElement(modal, 'flex')
+                : modal.classList.remove('hidden');
+
+            document.body.classList.add('modal-open');
         }
     }
 
     function closeSettings() {
         const modal = document.getElementById('settings-modal');
         if (modal) {
-            modal.style.display = 'none';
-            document.body.style.overflow = '';
+            window.NocapUtils?.hideElement
+                ? window.NocapUtils.hideElement(modal)
+                : modal.classList.add('hidden');
+
+            document.body.classList.remove('modal-open');
         }
     }
 
@@ -327,7 +375,7 @@
     // ===================================
 
     async function saveDisplayName() {
-        if (!currentUser) {
+        if (!SettingsState.currentUser) {
             showError('Bitte melde dich an');
             return;
         }
@@ -344,7 +392,7 @@
         setButtonLoading(btn, true);
 
         try {
-            await currentUser.updateProfile({
+            await SettingsState.currentUser.updateProfile({
                 displayName: newName
             });
 
@@ -379,7 +427,7 @@
     }
 
     async function verifyAge() {
-        if (!currentUser) {
+        if (!SettingsState.currentUser) {
             showError('Bitte melde dich an');
             return;
         }
@@ -403,11 +451,11 @@
         setButtonLoading(btn, true);
 
         try {
-            if (!functionsInstance) {
+            if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
 
-            const setAge = functionsInstance.httpsCallable('setAgeVerification');
+            const setAge = SettingsState.functionsInstance.httpsCallable('setAgeVerification');
             const result = await setAge({
                 ageLevel: age,
                 verificationMethod: 'birthdate-self-declaration'
@@ -416,11 +464,11 @@
             Logger.info('✅ Age verified:', result.data);
 
             // Update FSK Access
-            userFSKAccess = result.data.fskAccess;
-            updateFSKBadges(userFSKAccess);
+            SettingsState.userFSKAccess = result?.data?.fskAccess || SettingsState.userFSKAccess;
+            updateFSKBadges(SettingsState.userFSKAccess);
 
             // Force Token Refresh (wichtig für Custom Claims!)
-            await currentUser.getIdToken(true);
+            await SettingsState.currentUser.getIdToken(true);
 
             showSuccess('Altersverifikation erfolgreich!');
 
@@ -437,7 +485,7 @@
     // ===================================
 
     async function validateFSKAccess(category) {
-        if (!currentUser) {
+        if (!SettingsState.currentUser) {
             showError('Bitte melde dich an');
             return false;
         }
@@ -449,15 +497,20 @@
 
         try {
             // ✅ sicherstellen, dass Functions init ok ist
-            if (!functionsInstance) {
+            if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
 
             // ✅ Auth Token holen
-            const idToken = await currentUser.getIdToken();
+            const idToken = await SettingsState.currentUser.getIdToken();
 
             // ✅ HTTP onRequest Call
-            const response = await fetch('https://europe-west1-denkstduwebsite.cloudfunctions.net/validateFSKAccess', {
+            const endpoint =
+                window.FirebaseConfig?.getFunctionsBaseUrl?.('europe-west1')
+                    ? window.FirebaseConfig.getFunctionsBaseUrl('europe-west1') + '/validateFSKAccess'
+                    : 'https://europe-west1-denkstduwebsite.cloudfunctions.net/validateFSKAccess';
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -510,14 +563,18 @@
         }
 
         if (modal) {
-            modal.style.display = 'flex';
+            window.NocapUtils?.showElement
+                ? window.NocapUtils.showElement(modal, 'flex')
+                : modal.classList.remove('hidden');
         }
     }
 
     function closeFSKModal() {
         const modal = document.getElementById('fsk-warning-modal');
         if (modal) {
-            modal.style.display = 'none';
+            window.NocapUtils?.hideElement
+                ? window.NocapUtils.hideElement(modal)
+                : modal.classList.add('hidden');
         }
     }
 
@@ -540,7 +597,7 @@
     // ===================================
 
     async function exportMyData() {
-        if (!currentUser) {
+        if (!SettingsState.currentUser) {
             showError('Bitte melde dich an');
             return;
         }
@@ -552,11 +609,11 @@
             Logger.info('📥 Exporting user data...');
 
             // ✅ FIX: Use regionalized Functions instance
-            if (!functionsInstance) {
+            if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
 
-            const exportData = functionsInstance.httpsCallable('exportUserData');
+            const exportData = SettingsState.functionsInstance.httpsCallable('exportUserData');
             const result = await exportData();
 
             Logger.info('Export completed:', result.data);
@@ -610,7 +667,7 @@
     }
 
     async function scheduleAccountDeletion() {
-        if (!currentUser) {
+        if (!SettingsState.currentUser) {
             showError('Bitte melde dich an');
             return;
         }
@@ -622,12 +679,12 @@
             Logger.info('🗑️ Scheduling account deletion...');
 
             // ✅ FIX: Use regionalized Functions instance
-            if (!functionsInstance) {
+            if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
 
             // ✅ NEW: Use scheduleAccountDeletion with 48h grace period
-            const scheduleDelete = functionsInstance.httpsCallable('scheduleAccountDeletion');
+            const scheduleDelete = SettingsState.functionsInstance.httpsCallable('scheduleAccountDeletion');
             const result = await scheduleDelete({
                 confirmation: 'DELETE_MY_ACCOUNT'
             });
@@ -673,11 +730,11 @@
             Logger.info('↩️ Cancelling account deletion...');
 
             // ✅ FIX: Use regionalized Functions instance
-            if (!functionsInstance) {
+            if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
 
-            const cancelDelete = functionsInstance.httpsCallable('cancelAccountDeletion');
+            const cancelDelete = SettingsState.functionsInstance.httpsCallable('cancelAccountDeletion');
             const result = await cancelDelete();
 
             Logger.info('✅ Deletion cancelled:', result.data);
@@ -746,13 +803,17 @@
     // ===================================
     // PUBLIC API
     // ===================================
+    function cleanup() {
+        SettingsState.eventCleanup.forEach(fn => { try { fn(); } catch(_) {} });
+        SettingsState.eventCleanup = [];
+    }
+    window.addEventListener('beforeunload', cleanup);
 
-    // Export functions for use in other scripts
-    window.SettingsModule = {
+    window.SettingsModule = Object.freeze({
         validateFSKAccess,
         showFSKError,
         updateFSKBadges
-    };
+    });
 
     // Auto-initialize when DOM is ready
     if (document.readyState === 'loading') {

@@ -148,7 +148,6 @@ function addTrackedEventListener(element, event, handler, options = {}) {
 // CONSTANTS
 // ===========================
 const GAME_PROGRESS_KEY = 'nocap_game_progress';
-const QUESTION_CACHE_PREFIX = 'nocap_questions_';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 const REJOIN_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 const AUTO_SAVE_INTERVAL = 30 * 1000; // 30 seconds
@@ -257,27 +256,23 @@ async function initialize() {
             return;
         }
 
-        if (typeof GameplayModule.gameState === 'undefined') {
+        if (typeof window.GameState === 'undefined') {
             console.error('❌ GameplayModule.gameState not found');
             showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
             return;
         }
 
-        // Wait for dependencies
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            await window.NocapUtils.waitForDependencies(['GameplayModule.gameState']);
+            await window.NocapUtils.waitForDependencies(['GameState']);
         }
+        GameplayModule.gameState = new window.GameState();
 
-        GameplayModule.gameState = new GameplayModule.gameState();
-
-        // Check Firebase availability
-        if (window.GameplayModule.firebaseService) {
-            GameplayModule.firebaseService = window.GameplayModule.firebaseService;
-            if (GameplayModule.isDevelopment) {
-                console.log('✅ Firebase service available');
-            }
+        const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances?.();
+        if (firebaseInstances?.database) {
+            GameplayModule.firebaseService = firebaseInstances; // { database, auth, ... }
+            if (GameplayModule.isDevelopment) console.log('✅ Firebase instances available');
         } else {
-            console.warn('⚠️ Firebase service not available, using fallback');
+            console.warn('⚠️ Firebase not available, using fallback');
         }
 
         // ✅ P1 FIX: Validate device mode
@@ -332,7 +327,7 @@ async function initialize() {
         setupEventListeners();
 
         // Start first question
-        startNewQuestion();
+        await startNewQuestion();
 
         if (GameplayModule.isDevelopment) {
             console.log('✅ Game initialized successfully');
@@ -437,22 +432,10 @@ async function validateGameState() {
                     return false;
                 }
             } catch (serverError) {
-                // ✅ FALLBACK: If server validation fails, use local age verification
-                console.warn(`⚠️ Server FSK validation failed for ${category}, using local check:`, serverError);
-
-                const localAgeLevel = parseInt(localStorage.getItem('nocap_age_level'), 10) || 0;
-                const requiredAge = category === 'fsk18' ? 18 : category === 'fsk16' ? 16 : 0;
-
-                if (localAgeLevel < requiredAge) {
-                    console.error(`❌ Local check: insufficient age for ${category}`);
-                    showNotification(`Keine Berechtigung für ${category.toUpperCase()}!`, 'error');
-                    setTimeout(() => window.location.href = 'category-selection.html', 2000);
-                    return false;
-                }
-
-                if (GameplayModule.isDevelopment) {
-                    console.log(`✅ Local check passed for ${category} (age: ${localAgeLevel})`);
-                }
+                console.warn('⚠️ Server FSK validation failed, blocking restricted category:', serverError);
+                showNotification('Verifikation aktuell nicht möglich. Bitte später erneut versuchen.', 'error');
+                setTimeout(() => window.location.href = 'category-selection.html', 2000);
+                return false;
             }
         }
 
@@ -462,8 +445,9 @@ async function validateGameState() {
 
     } catch (error) {
         console.error('❌ FSK validation error:', error);
-        // Continue anyway in case of network issues, but log warning
-        console.warn('⚠️ Continuing with local validation due to error');
+        showNotification('Verifikation fehlgeschlagen. Bitte später erneut versuchen.', 'error');
+        setTimeout(() => window.location.href = 'category-selection.html', 2000);
+        return false;
     }
 
     return true;
@@ -595,7 +579,7 @@ async function attemptRejoin() {
 
         // Continue from where we left off
         if (GameplayModule.currentGame.currentPlayerIndex === 0) {
-            startNewQuestion();
+            await startNewQuestion();
         } else {
             // Mid-question rejoin
             const question = getNextQuestion();
@@ -642,7 +626,7 @@ function clearGameProgress() {
 
 function checkAlcoholMode() {
     try {
-        GameplayModule.alcoholMode = GameplayModule.gameState.GameplayModule.alcoholMode === true;
+        GameplayModule.alcoholMode = GameplayModule.gameState.alcoholMode === true;
 
         if (GameplayModule.isDevelopment) {
             console.log(`🍺 Alcohol mode: ${GameplayModule.alcoholMode}`);
@@ -682,7 +666,7 @@ async function loadQuestions() {
     }
 
     // Load from Firebase
-    if (GameplayModule.firebaseService && typeof firebase !== 'undefined' && firebase.database) {
+    if (GameplayModule.firebaseService?.database) {
         if (GameplayModule.isDevelopment) {
             console.log('🔥 Loading from Firebase...');
         }
@@ -723,9 +707,7 @@ async function loadQuestions() {
     if (GameplayModule.currentGame.allQuestions.length === 0) {
         console.error('❌ No questions loaded! Loading all fallbacks...');
         // Load all fallback categories as emergency
-        Object.keys(fallbackQuestionsDatabase).forEach(category => {
-            loadFallbackQuestions(category);
-        });
+        await Promise.all(Object.keys(fallbackQuestionsDatabase).map(c => loadFallbackQuestions(c)));
     }
 
     if (GameplayModule.isDevelopment) {
@@ -779,8 +761,8 @@ async function loadCategoryQuestions(category) {
     if (!GameplayModule.firebaseService) return null;
 
     try {
-        if (typeof firebase !== 'undefined' && firebase.database) {
-            const questionsRef = firebase.database().ref(`questions/${category}`);
+        if (GameplayModule.firebaseService?.database) {
+            const questionsRef = GameplayModule.firebaseService.database.ref(`questions/${category}`);
             const snapshot = await questionsRef.once('value');
 
             if (snapshot.exists()) {
@@ -1017,7 +999,7 @@ function loadQuestionsFromCache() {
             return null;
         }
         const now = Date.now();
-        const maxAge = 365 * 24 * 60 * 60 * 1000; // 365 days (1 year)
+        const maxAge = CACHE_DURATION;
 
         // Check if cache is valid
         if (now - cache.timestamp > maxAge) {
@@ -1102,7 +1084,7 @@ function shuffleArray(array) {
 // GAME FLOW
 // ===========================
 
-function startNewQuestion() {
+async function startNewQuestion() {
     if (GameplayModule.isDevelopment) {
         console.log(`🎲 Starting question ${GameplayModule.currentGame.currentQuestionNumber}`);
         console.log(`📊 Available questions: ${GameplayModule.currentGame.allQuestions.length}`);
@@ -1115,10 +1097,7 @@ function startNewQuestion() {
         // ✅ UI FEEDBACK: Zeige Nutzer dass Fallback-Fragen geladen werden
         showNotification('⚠️ Offline-Modus: Lade Ersatz-Fragen...', 'warning', 3000);
 
-        // Emergency: Load fallback questions
-        Object.keys(fallbackQuestionsDatabase).forEach(category => {
-            loadFallbackQuestions(category);
-        });
+        await Promise.all(Object.keys(fallbackQuestionsDatabase).map(c => loadFallbackQuestions(c)));
 
         if (GameplayModule.currentGame.allQuestions.length === 0) {
             showNotification('❌ Fehler: Keine Fragen verfügbar!', 'error');
@@ -1156,9 +1135,9 @@ function startNewQuestion() {
     saveGameProgress();
 }
 
-function nextQuestion() {
+async function nextQuestion() {
     GameplayModule.currentGame.currentQuestionNumber++;
-    startNewQuestion();
+    await startNewQuestion();
     showNotification('Neue Frage geladen! 🎮', 'success');
 }
 
@@ -1262,7 +1241,7 @@ function createNumberGrid() {
         numberBtn.textContent = i;
         numberBtn.id = `number-btn-${i}`;
         numberBtn.setAttribute('aria-label', `${i} Spieler schätzen`);
-        numberBtn.addEventListener('click', () => selectNumber(i));
+        addTrackedEventListener(numberBtn, 'click', () => selectNumber(i));
 
         numberGrid.appendChild(numberBtn);
     }
@@ -1290,10 +1269,8 @@ function updateSelectedNumber(number) {
 
     const selectionDisplay = document.querySelector('.selection-display');
     if (selectionDisplay) {
-        selectionDisplay.style.transform = 'scale(1.08)';
-        setTimeout(() => {
-            selectionDisplay.style.transform = 'scale(1)';
-        }, 300);
+        selectionDisplay.classList.add('pulse');
+        setTimeout(() => { selectionDisplay.classList.remove('pulse'); }, 300);
     }
 }
 
@@ -1796,11 +1773,9 @@ function showFinalResultsView() {
 
 function setupEventListeners() {
     // ✅ MEMORY LEAK FIX: Helper function to track event listeners
-    const addTrackedListener = (element, event, handler, options) => {
-        if (!element) return;
-        element.addEventListener(event, handler, options);
-        _eventListeners.push({ element, event, handler, options });
-    };
+    if (GameplayModule.state._listenersBound) return;
+    GameplayModule.state._listenersBound = true;
+    const addTrackedListener = addTrackedEventListener;
 
     // Answer buttons
     const yesBtn = document.getElementById('yes-btn');
@@ -1873,12 +1848,7 @@ function setupEventListeners() {
 // ===========================
 
 function setupPageLeaveProtection() {
-    // ✅ MEMORY LEAK FIX: Helper function to track event listeners
-    const addTrackedListener = (element, event, handler, options) => {
-        if (!element) return;
-        element.addEventListener(event, handler, options);
-        _eventListeners.push({ element, event, handler, options });
-    };
+    const addTrackedListener = addTrackedEventListener;
 
     const beforeunloadHandler = function(e) {
         if (!GameplayModule.isExitDialogShown) {
@@ -1981,15 +1951,17 @@ async function syncGameProgressToFirebase(progressData) {
         // Use a timestamp-based key to allow multiple saves
         const saveKey = `game_progress_${Date.now()}`;
 
-        await firebase.database()
+        await GameplayModule.firebaseService.database
             .ref(`users/${userId}/saved_games/${saveKey}`)
             .set({
                 ...progressData,
-                savedAt: firebase.database.ServerValue.TIMESTAMP
+                savedAt: window.Firebase?.database?.ServerValue?.TIMESTAMP
+                    ?? GameplayModule.firebaseService.database.ServerValue?.TIMESTAMP
+                    ?? Date.now()
             });
 
         // Keep only last 5 saves
-        const savedGamesRef = firebase.database().ref(`users/${userId}/saved_games`);
+        const savedGamesRef = GameplayModule.firebaseService.database.ref(`users/${userId}/saved_games`);
         const snapshot = await savedGamesRef.orderByChild('savedAt').limitToLast(5).once('value');
 
         if (GameplayModule.isDevelopment) {
@@ -2061,16 +2033,6 @@ function cleanup() {
     // ✅ P2 PERFORMANCE: Stop auto-save first
     stopAutoSave();
 
-    // Remove all tracked event listeners
-    _eventListeners.forEach(({ element, event, handler, options }) => {
-        try {
-            element.removeEventListener(event, handler, options);
-        } catch (error) {
-            console.warn('Error removing event listener:', error);
-        }
-    });
-    _eventListeners.length = 0;
-
     // ✅ P2 PERFORMANCE: Clear any remaining timers
     // Remove tracked event listeners
     GameplayModule.state.eventListenerCleanup.forEach(({element, event, handler, options}) => {
@@ -2080,7 +2042,7 @@ function cleanup() {
             // Element may have been removed from DOM
         }
     });
-    GameplayModule.state.eventListenerCleanup = [];
+    GameplayModule.state.eventListenerCleanup.length = 0;
 
     // Clear auto-save timer
     if (GameplayModule.autoSaveTimer) {
@@ -2106,7 +2068,7 @@ function cleanup() {
 }
 
 // Auto-cleanup on page unload
-window.addEventListener('beforeunload', cleanup);
+window.addEventListener('pagehide', cleanup);
 
 // ===========================
 // INITIALIZATION

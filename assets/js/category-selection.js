@@ -14,13 +14,13 @@
 (function(window) {
     'use strict';
 
-    // Get Logger from utils
     const Logger = window.NocapUtils?.Logger || {
-        debug: (...args) => {},
-        info: (...args) => {},
-        warn: console.warn,
-        error: console.error
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {}
     };
+
 
     // ===========================
     // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
@@ -175,10 +175,8 @@
         const maxAttempts = 50; // 5 seconds max
 
         while (attempts < maxAttempts) {
-            if (window.firebaseInitialized) {
-                return true;
-            }
-            await new Promise(resolve => setTimeout(resolve, 100));
+            if (window.FirebaseConfig?.isInitialized?.()) return true;
+            await new Promise(r => setTimeout(r, 100));
             attempts++;
         }
 
@@ -206,8 +204,12 @@
                 return;
             }
 
-            // ✅ FIX: Wait for Firebase to be initialized
-            await waitForFirebase();
+            const firebaseReady = await waitForFirebase();
+            if (!firebaseReady) {
+                hideLoading();
+                showNotification('Firebase konnte nicht geladen werden. Bitte lade die Seite neu.', 'error');
+                return;
+            }
 
             // Wait for utils if available
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
@@ -221,13 +223,13 @@
             Logger.debug('📱 Setting device mode: single');
             CategorySelectionModule.gameState.setDeviceMode('single');
 
-            // Validate game state
             if (!validateGameState()) {
+                hideLoading();
                 return;
             }
 
-            // Check age verification
             if (!checkAgeVerification()) {
+                hideLoading();
                 return;
             }
 
@@ -297,12 +299,13 @@
                 if (now - verification.timestamp > expirationTime) {
                     Logger.warn('⚠️ Age verification expired');
                     clearAgeVerification();
+                    hideLoading();
                     window.location.href = 'index.html';
                     return false;
                 }
             } else {
-                // No valid verification
                 Logger.warn('⚠️ No age verification found');
+                hideLoading();
                 window.location.href = 'index.html';
                 return false;
             }
@@ -316,6 +319,7 @@
 
         } catch (error) {
             Logger.error('❌ Error checking age verification:', error);
+            hideLoading();
             window.location.href = 'index.html';
             return false;
         }
@@ -452,24 +456,15 @@
 
     async function loadQuestionCounts() {
         try {
-            // ✅ FIX: Check if Firebase is initialized
-            if (!window.firebaseInitialized || typeof firebase === 'undefined' || !firebase.database) {
-                Logger.warn('⚠️ Firebase not available, using fallback counts');
-                useFallbackCounts();
-                return;
-            }
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
 
-            // ✅ FIX: Get Firebase instances from FirebaseConfig
-            const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances();
-            if (!firebaseInstances || !firebaseInstances.database) {
+            if (!window.FirebaseConfig?.isInitialized?.() || !database?.ref) {
                 Logger.warn('⚠️ Firebase database not available, using fallback counts');
                 useFallbackCounts();
                 return;
             }
 
-            const { database } = firebaseInstances;
-
-            // ✅ FIX: Use database reference from initialized instance
             const questionsRef = database.ref('questions');
             const snapshot = await questionsRef.once('value');
 
@@ -548,7 +543,7 @@
             selected.forEach(category => {
                 // Validate category exists
                 if (!categoryData[category]) {
-                    console.warn(`⚠️ Invalid category in GameState: ${category}`);
+                    Logger.warn('⚠️ Invalid category in GameState:', category);
                     return;
                 }
 
@@ -571,7 +566,7 @@
 
         // Validate category exists
         if (!categoryData[category]) {
-            console.error(`❌ Invalid category: ${category}`);
+            Logger.error('❌ Invalid category:', category);
             return;
         }
 
@@ -701,7 +696,7 @@
             continueHint.textContent = `${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''} ausgewählt`;
 
             // Build list safely with DOM manipulation (no innerHTML)
-            categoriesListElement.innerHTML = '';
+            categoriesListElement.replaceChildren();
 
             selectedCategories.forEach(category => {
                 const rawData = categoryData[category];
@@ -778,36 +773,35 @@
      */
     async function purchasePremium() {
         showNotification('Premium-Kauf wird vorbereitet...', 'info');
-
+        if (!CategorySelectionModule.isDevelopment) {
+            showNotification('Premium-Kauf ist aktuell nicht verfügbar.', 'error');
+            return;
+        }
         try {
-            if (typeof firebase === 'undefined' || !firebase.database) {
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
+
+            if (!window.FirebaseConfig?.isInitialized?.() || !database?.ref) {
                 showNotification('Firebase nicht verfügbar', 'error');
                 return;
             }
 
-            if (!window.FirebaseService) {
-                showNotification('Bitte warte, Firebase lädt...', 'warning');
-                return;
-            }
+            const auth = instances?.auth;
+            const userId = auth?.currentUser?.uid;
 
-            await window.FirebaseService.waitForFirebase();
-
-            const userId = window.FirebaseService.getCurrentUserId();
             if (!userId) {
                 showNotification('Bitte erstelle zuerst einen Account', 'warning');
                 return;
             }
 
-            // TODO: Replace with real payment gateway (Stripe, PayPal, etc.)
-            const purchaseRef = firebase.database().ref(`users/${userId}/purchases/special`);
+            const purchaseRef = database.ref(`users/${userId}/purchases/special`);
             await purchaseRef.set({
                 id: 'special_edition',
                 name: 'Special Edition',
                 price: 2.99,
                 currency: 'EUR',
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                // TODO: Add payment verification token
-                verified: false // Should be set by Cloud Function after payment
+                timestamp: Date.now(),
+                verified: false
             });
 
             // Unlock special category
@@ -828,11 +822,11 @@
             showNotification('Premium freigeschaltet! 🎉', 'success', 3000);
 
             if (CategorySelectionModule.isDevelopment) {
-                console.log('✅ Premium purchased (client-side only - NOT verified)');
+                Logger.debug('✅ Premium purchased (client-side only - NOT verified)');
             }
 
         } catch (error) {
-            console.error('❌ Purchase error:', error);
+            Logger.error('❌ Purchase error:', error);
             showNotification('Fehler beim Kauf', 'error');
         }
     }
@@ -914,7 +908,7 @@
         }
 
         if (CategorySelectionModule.isDevelopment) {
-            console.log('🚀 Proceeding with categories:', selectedCategories);
+            Logger.debug('🚀 Proceeding with categories:', selectedCategories);
         }
 
         showLoading();
@@ -924,7 +918,7 @@
             // Prüfe Firebase & Auth
             if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
                 if (CategorySelectionModule.isDevelopment) {
-                    console.log('⚠️ Firebase not initialized, skipping server validation');
+                    Logger.debug('⚠️ Firebase not initialized, skipping server validation');
                 }
                 // Fallback: Weiter ohne Validierung (nur für Development)
                 setTimeout(() => {
@@ -938,7 +932,7 @@
             // Prüfe ob Functions verfügbar (benötigt Blaze-Plan)
             if (!instances || !instances.functions) {
                 if (CategorySelectionModule.isDevelopment) {
-                    console.log('⚠️ Firebase Functions not available (Blaze plan required), skipping server validation');
+                    Logger.debug('⚠️ Firebase Functions not available (Blaze plan required), skipping server validation');
                 }
                 // Fallback: Weiter ohne serverseitige Validierung
                 setTimeout(() => {
@@ -969,7 +963,7 @@
                     }
 
                     if (CategorySelectionModule.isDevelopment) {
-                        console.log(`✅ Server validated access to ${categoryId}`);
+                        Logger.debug(`✅ Server validated access to ${categoryId}`);
                     }
 
                 } catch (error) {
@@ -994,7 +988,7 @@
                         return;
                     }
 
-                    console.error(`❌ Server validation failed for ${categoryId}:`, error);
+                    Logger.error('❌ Server validation failed for category:', categoryId, error);
                     showNotification('Fehler bei der Validierung. Bitte versuche es erneut.', 'error');
                     return;
                 }
@@ -1002,7 +996,7 @@
 
             // Alle Kategorien erfolgreich validiert
             if (CategorySelectionModule.isDevelopment) {
-                console.log('✅ All categories validated successfully');
+                Logger.debug('✅ All categories validated successfully');
             }
 
             setTimeout(() => {
@@ -1011,7 +1005,7 @@
 
         } catch (error) {
             hideLoading();
-            console.error('❌ Category validation error:', error);
+            Logger.error('❌ Category validation error:', error);
             showNotification('Fehler beim Fortfahren. Bitte versuche es erneut.', 'error');
         }
     }

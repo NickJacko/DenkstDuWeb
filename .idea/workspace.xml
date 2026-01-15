@@ -4,16 +4,41 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Claude changes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/GameState.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/GameState.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/cookie-banner.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/cookie-banner.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-auth.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-auth.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-config.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-credentials.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-init.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-init.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-service.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-results.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-results.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/player-setup.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/privacy.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/privacy.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/utils.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/functions/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/join-game.html" beforeDir="false" afterPath="$PROJECT_DIR$/join-game.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-gameplay.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-lobby.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-lobby.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-results.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-results.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/player-setup.html" beforeDir="false" afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -160,23 +185,8 @@
       <workItem from="1767865110916" duration="17234000" />
       <workItem from="1767952682710" duration="30595000" />
       <workItem from="1768167037940" duration="13518000" />
-      <workItem from="1768215061185" duration="5357000" />
-    </task>
-    <task id="LOCAL-00059" summary="Change from html to js &amp; html">
-      <option name="closed" value="true" />
-      <created>1763732853614</created>
-      <option name="number" value="00059" />
-      <option name="presentableId" value="LOCAL-00059" />
-      <option name="project" value="LOCAL" />
-      <updated>1763732853614</updated>
-    </task>
-    <task id="LOCAL-00060" summary="Change from html to js &amp; html">
-      <option name="closed" value="true" />
-      <created>1763977483749</created>
-      <option name="number" value="00060" />
-      <option name="presentableId" value="LOCAL-00060" />
-      <option name="project" value="LOCAL" />
-      <updated>1763977483749</updated>
+      <workItem from="1768215061185" duration="14448000" />
+      <workItem from="1768323670735" duration="7628000" />
     </task>
     <task id="LOCAL-00061" summary="Change from html to js &amp; html">
       <option name="closed" value="true" />
@@ -554,7 +564,23 @@
       <option name="project" value="LOCAL" />
       <updated>1768219637837</updated>
     </task>
-    <option name="localTasksCounter" value="108" />
+    <task id="LOCAL-00108" summary="Claude changes">
+      <option name="closed" value="true" />
+      <created>1768222599350</created>
+      <option name="number" value="00108" />
+      <option name="presentableId" value="LOCAL-00108" />
+      <option name="project" value="LOCAL" />
+      <updated>1768222599350</updated>
+    </task>
+    <task id="LOCAL-00109" summary="Claude changes">
+      <option name="closed" value="true" />
+      <created>1768222944456</created>
+      <option name="number" value="00109" />
+      <option name="presentableId" value="LOCAL-00109" />
+      <option name="project" value="LOCAL" />
+      <updated>1768222944456</updated>
+    </task>
+    <option name="localTasksCounter" value="110" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -575,7 +601,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Join-Game edit" />
     <MESSAGE value="Lobby update" />
     <MESSAGE value="Lobby auto load" />
     <MESSAGE value="Lobby auto load fixed users" />
@@ -600,7 +625,8 @@
     <MESSAGE value="Enhance security by adding domain whitelist public key and private key exclusions; implement real-time security functions for game updates and violations; improve event listener management in multiplayer gameplay" />
     <MESSAGE value="Refactor multiplayer gameplay, lobby, and results modules for improved event listener management; replace custom event listener functions with standard addEventListener; enhance code readability and maintainability" />
     <MESSAGE value="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions" />
-    <option name="LAST_COMMIT_MESSAGE" value="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions" />
+    <MESSAGE value="Claude changes" />
+    <option name="LAST_COMMIT_MESSAGE" value="Claude changes" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

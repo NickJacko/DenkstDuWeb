@@ -151,29 +151,34 @@
             if (typeof DOMPurify === 'undefined') {
                 console.error('❌ CRITICAL: DOMPurify not loaded!');
                 alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
+                hideLoading();
                 return;
             }
 
             // Check for required dependencies
-            if (typeof GameState === 'undefined') {
+            if (typeof window.GameState === 'undefined') {
                 console.error('❌ PlayerSetupModule.gameState not found');
                 showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
+                hideLoading();
                 return;
             }
 
-            // ✅ FIX: Wait for Firebase to be initialized
-            await waitForFirebase();
+            const firebaseReady = await waitForFirebase();
+            if (!firebaseReady && !PlayerSetupModule.isDevelopment) {
+                showOfflineMode();
+            }
 
             // Wait for dependencies
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-                await window.NocapUtils.waitForDependencies(['PlayerSetupModule.gameState']);
+                await window.NocapUtils.waitForDependencies(['GameState']);
             }
 
             // Use central PlayerSetupModule.gameState
-            PlayerSetupModule.gameState = new GameState();
+            PlayerSetupModule.gameState = new window.GameState();
 
             // ✅ P1 FIX: Validate device mode
             if (!validateDeviceMode()) {
+                hideLoading();
                 return;
             }
 
@@ -182,6 +187,7 @@
 
             // Validate prerequisites
             if (!validatePrerequisites()) {
+                hideLoading();
                 return;
             }
 
@@ -274,7 +280,16 @@
     function checkAlcoholMode() {
         try {
             PlayerSetupModule.alcoholMode = PlayerSetupModule.gameState.alcoholMode === true;
-
+            if (PlayerSetupModule.alcoholMode) {
+                const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+                if (ageLevel < 18) {
+                    PlayerSetupModule.alcoholMode = false;
+                    if (typeof PlayerSetupModule.gameState.setAlcoholMode === 'function') {
+                        PlayerSetupModule.gameState.setAlcoholMode(false);
+                    }
+                    showNotification('Alkohol-Modus nur für 18+', 'warning', 2500);
+                }
+            }
             const difficultyIcon = document.getElementById('difficulty-icon');
             if (difficultyIcon) {
                 difficultyIcon.textContent = PlayerSetupModule.alcoholMode ? '🍺' : '💧';
@@ -358,7 +373,11 @@
             const response = await fetch('/assets/data/questions-backup.json');
             if (response.ok) {
                 const backup = await response.json();
-                PlayerSetupModule.questionCounts = backup.counts || useFallbackCounts();
+                if (backup.counts) {
+                    Object.assign(PlayerSetupModule.state.questionCounts, backup.counts);
+                } else {
+                    useFallbackCounts();
+                }
                 updateTotalQuestions();
 
                 if (PlayerSetupModule.isDevelopment) {
@@ -394,12 +413,9 @@
     }
 
     function useFallbackCounts() {
-        PlayerSetupModule.questionCounts = {
-            fsk0: 200,
-            fsk16: 300,
-            fsk18: 250,
-            special: 150
-        };
+        Object.assign(PlayerSetupModule.state.questionCounts, {
+            fsk0: 200, fsk16: 300, fsk18: 250, special: 150
+        });
         updateTotalQuestions();
     }
 
@@ -469,7 +485,7 @@
      */
     function initializePlayerInputs() {
         // Check if players exist in PlayerSetupModule.gameState
-        const savedPlayers = PlayerSetupModule.gameState.get('players');
+        const savedPlayers = PlayerSetupModule.gameState.players || PlayerSetupModule.gameState.get?.('players');
 
         if (savedPlayers && Array.isArray(savedPlayers) && savedPlayers.length > 0) {
             if (PlayerSetupModule.isDevelopment) {
@@ -524,8 +540,13 @@
     function updatePlayersFromInputs() {
         const players = getPlayersList();
 
-        // ✅ FIX: Directly set players array to avoid prototype pollution detection
-        PlayerSetupModule.gameState.players = players;
+        if (typeof PlayerSetupModule.gameState.setPlayers === 'function') {
+            PlayerSetupModule.gameState.setPlayers(players);
+        } else if (typeof PlayerSetupModule.gameState.set === 'function') {
+            PlayerSetupModule.gameState.set('players', players);
+        } else {
+            PlayerSetupModule.gameState.players = players;
+        }
 
         // Only save if we have valid players
         if (players.length > 0) {
@@ -787,11 +808,17 @@
             });
 
             // Clear PlayerSetupModule.gameState
-            PlayerSetupModule.gameState.players = [];
+            if (typeof PlayerSetupModule.gameState.setPlayers === 'function') {
+                PlayerSetupModule.gameState.setPlayers([]);
+            } else if (typeof PlayerSetupModule.gameState.set === 'function') {
+                PlayerSetupModule.gameState.set('players', []);
+            } else {
+                PlayerSetupModule.gameState.players = [];
+            }
             PlayerSetupModule.gameState.save();
 
             // Clear undo stack
-            PlayerSetupModule.undoStack = [];
+            PlayerSetupModule.state.undoStack.length = 0;
 
             // Clear any avatar data from localStorage
             for (let i = 0; i < localStorage.length; i++) {
@@ -871,7 +898,7 @@
         if (players.length > 0) {
             // ✅ CSP FIX: Use CSS class instead of inline style
             preview.classList.remove('hidden');
-            playersOrder.innerHTML = '';
+            while (playersOrder.firstChild) playersOrder.removeChild(playersOrder.firstChild);
 
             players.forEach((name, index) => {
                 const item = document.createElement('div');
@@ -1257,7 +1284,7 @@
                 }
             }
         };
-        addTrackedEventListener(document, 'keypress', keypressHandler);
+        addTrackedEventListener(document, 'keydown', keypressHandler);
 
         if (PlayerSetupModule.isDevelopment) {
             console.log(`✅ Setup ${PlayerSetupModule.state.eventListenerCleanup.length} tracked event listeners`);
@@ -1346,9 +1373,20 @@
 
         showLoading();
 
-        // ✅ P1 FIX: Save to PlayerSetupModule.gameState and set game phase
-        PlayerSetupModule.gameState.players = players;
-        PlayerSetupModule.gameState.gamePhase = 'playing';
+        if (typeof PlayerSetupModule.gameState.setPlayers === 'function') {
+            PlayerSetupModule.gameState.setPlayers(players);
+        } else if (typeof PlayerSetupModule.gameState.set === 'function') {
+            PlayerSetupModule.gameState.set('players', players);
+        } else {
+            PlayerSetupModule.gameState.players = players;
+        }
+        if (typeof PlayerSetupModule.gameState.setGamePhase === 'function') {
+            PlayerSetupModule.gameState.setGamePhase('playing');
+        } else if (typeof PlayerSetupModule.gameState.set === 'function') {
+            PlayerSetupModule.gameState.set('gamePhase', 'playing');
+        } else {
+            PlayerSetupModule.gameState.gamePhase = 'playing';
+        }
         PlayerSetupModule.gameState.save(true); // Immediate save
 
         showNotification('Spiel wird gestartet...', 'success', 1500);
@@ -1376,7 +1414,13 @@
         const players = getPlayersList();
 
         if (players.length > 0) {
-            PlayerSetupModule.gameState.players = players;
+            if (typeof PlayerSetupModule.gameState.setPlayers === 'function') {
+                PlayerSetupModule.gameState.setPlayers(players);
+            } else if (typeof PlayerSetupModule.gameState.set === 'function') {
+                PlayerSetupModule.gameState.set('players', players);
+            } else {
+                PlayerSetupModule.gameState.players = players;
+            }
             PlayerSetupModule.gameState.save();
 
             if (PlayerSetupModule.isDevelopment) {
@@ -1431,7 +1475,7 @@
         }
     }
 
-    window.addEventListener('beforeunload', cleanup);
+    addTrackedEventListener(window, 'beforeunload', cleanup);
 
     // ===========================
     // INITIALIZATION
@@ -1439,11 +1483,11 @@
 
     async function startApp() {
         const firebaseReady = await waitForFirebase();
-        if (firebaseReady) {
-            await initialize();
-        } else {
-            showNotification('Firebase konnte nicht geladen werden. Bitte lade die Seite neu.', 'error');
+        if (!firebaseReady) {
+            showOfflineMode();
+            showNotification('Offline-Modus: Firebase nicht verfügbar.', 'warning', 3000);
         }
+        await initialize();
     }
 
     if (document.readyState === 'loading') {
