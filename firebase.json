@@ -109,6 +109,30 @@
         ]
       },
       {
+        "source": "/assets/js/firebase-config.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      },
+      {
+        "source": "/assets/js/firebase-auth.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      },
+      {
+        "source": "/assets/js/firebase-service.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      },
+      {
+        "source": "/assets/js/utils.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      },
+      {
+        "source": "/assets/js/index.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      },
+      {
+        "source": "/assets/js/settings.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      },
+      {
         "source": "**/*.@(js|mjs)",
         "headers": [
           {

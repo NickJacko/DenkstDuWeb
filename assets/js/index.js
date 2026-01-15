@@ -420,8 +420,8 @@
             const {functions} = window.FirebaseConfig.getFirebaseInstances();
             if (!functions) throw new Error("Firebase Functions not available");
 
-            const verifyAge = functions.httpsCallable("verifyAge");
-            const result = await verifyAge({ageLevel, consent: true});
+            const verifyAge = functions.httpsCallable("setAgeVerification");
+            const result = await verifyAge({ ageLevel, verificationMethod: "self-declaration" });
 
             if (result?.data?.success) {
                 if (window.NocapUtils?.showNotification) {

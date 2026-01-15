@@ -259,6 +259,7 @@ exports.validateFSKAccess = functions
         memory: '256MB',
         timeoutSeconds: 10
     })
+
     .https.onRequest(async (req, res) => {
         const functionName = 'validateFSKAccess';
 
@@ -386,6 +387,80 @@ exports.validateFSKAccess = functions
             logger.error(functionName, 'FSK validation error', error);
             res.status(500).json({ error: 'Fehler bei der FSK-Validierung' });
         }
+    });
+/**
+ * ✅ Callable Variante (kein CORS-Problem im Browser)
+ * Frontend ruft: functions.httpsCallable('validateFSKAccessCallable')
+ */
+exports.validateFSKAccessCallable = functions
+    .region('europe-west1')
+    .runWith({
+        memory: '256MB',
+        timeoutSeconds: 10
+    })
+    .https.onCall(async (data, context) => {
+        const functionName = 'validateFSKAccessCallable';
+
+        // ✅ Auth required
+        if (!context.auth) {
+            throw new functions.https.HttpsError(
+                'unauthenticated',
+                'Authentifizierung erforderlich'
+            );
+        }
+
+        const uid = context.auth.uid;
+        const category = data?.category;
+
+        // Input validation
+        if (!category || typeof category !== 'string') {
+            throw new functions.https.HttpsError(
+                'invalid-argument',
+                'Kategorie ist erforderlich'
+            );
+        }
+
+        logger.info(functionName, 'FSK validation request (callable)', { uid, category });
+
+        // FSK0 / special always allowed
+        if (category === 'fsk0' || category === 'special') {
+            return { allowed: true, category };
+        }
+
+        // Get user age verification
+        const userSnapshot = await admin.database()
+            .ref(`users/${uid}`)
+            .once('value');
+
+        const userData = userSnapshot.val();
+
+        if (!userData || !userData.ageVerified) {
+            return {
+                allowed: false,
+                reason: 'age_not_verified',
+                message: 'Altersverifikation erforderlich'
+            };
+        }
+
+        const ageLevel = userData.ageLevel || 0;
+
+        if (category === 'fsk16' && ageLevel < 16) {
+            return {
+                allowed: false,
+                reason: 'age_too_young',
+                message: 'FSK 16 erforderlich'
+            };
+        }
+
+        if (category === 'fsk18' && ageLevel < 18) {
+            return {
+                allowed: false,
+                reason: 'age_too_young',
+                message: 'FSK 18 erforderlich'
+            };
+        }
+
+        return { allowed: true, category };
     });
 
 /**

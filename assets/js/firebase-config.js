@@ -879,15 +879,16 @@
                 window.firebaseDatabase = firebase.database();
 
                 try {
-                    if (typeof firebase.functions === 'function') {
-                        // ✅ compat-correct: region über app().functions(...)
-                        window.firebaseFunctions = firebase.app().functions('europe-west1');
+                    if (firebase?.functions) {
+                        window.firebaseFunctions = firebase.app().functions("europe-west1");
                     } else {
                         window.firebaseFunctions = null;
                     }
                 } catch (e) {
                     window.firebaseFunctions = null;
+                    console.warn("Functions init failed:", e);
                 }
+
 
                 // Export to window (for backwards compatibility)
                 window.firebaseApp = app;

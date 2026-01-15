@@ -40,14 +40,6 @@
     async function init() {
         Logger.info('🚀 Initializing Settings Module...');
 
-// ✅ Robust: wait for FirebaseConfig itself (real readiness)
-        try {
-            await window.FirebaseConfig.waitForFirebase(10000);
-        } catch (e) {
-            Logger.error('❌ Firebase initialization timeout - Settings Module cannot start', e);
-            return;
-        }
-
         let instances;
         try {
             instances = window.FirebaseConfig.getFirebaseInstances();
@@ -506,48 +498,23 @@
         }
 
         try {
-            // ✅ sicherstellen, dass Functions init ok ist
             if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
 
-            // ✅ Auth Token holen
-            const idToken = await SettingsState.currentUser.getIdToken();
+            // ✅ CALLABLE statt fetch => kein CORS Preflight
+            const validate = SettingsState.functionsInstance.httpsCallable('validateFSKAccessCallable');
+            const result = await validate({ category });
 
-            // ✅ HTTP onRequest Call
-            const endpoint =
-                window.FirebaseConfig?.getFunctionsBaseUrl?.('europe-west1')
-                    ? window.FirebaseConfig.getFunctionsBaseUrl('europe-west1') + '/validateFSKAccess'
-                    : 'https://europe-west1-denkstduwebsite.cloudfunctions.net/validateFSKAccess';
-
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`
-                },
-                // ✅ simpler Payload (Backend unterstützt req.body oder req.body.data)
-                body: JSON.stringify({ category })
-            });
-
-            // ✅ Fehlertext lesbar machen
-            if (!response.ok) {
-                const text = await response.text().catch(() => '');
-                throw new Error(`HTTP ${response.status} ${response.statusText} ${text}`.trim());
-            }
-
-            const json = await response.json();
-
-            // Backend liefert: { result: { allowed, message, ... } }
-            const allowed = Boolean(json?.result?.allowed);
-            const message = json?.result?.message;
+            const allowed = Boolean(result?.data?.allowed);
+            const message = result?.data?.message;
 
             if (allowed) {
-                Logger.info('✅ FSK Access granted:', category);
+                Logger.info('✅ FSK Access granted (callable):', category);
                 return true;
             }
 
-            Logger.warn('❌ FSK Access denied:', message || 'Zugriff verweigert');
+            Logger.warn('❌ FSK Access denied (callable):', message || 'Zugriff verweigert');
             showFSKError(category, message);
             return false;
 
@@ -557,6 +524,7 @@
             return false;
         }
     }
+
 
 
     function showFSKError(fskLevel, message) {
@@ -827,14 +795,15 @@
 
     (async function boot() {
         try {
-            await window.FirebaseConfig.initialize();      // <- sorgt für Init
-            await window.FirebaseConfig.waitForFirebase(10000); // <- wartet bis ready
-            init(); // <- erst dann Settings starten
+            if (!window.FirebaseConfig?.isInitialized?.()) {
+                await window.FirebaseConfig.initialize();
+            }
+            await window.FirebaseConfig.waitForFirebase(10000);
+            await init();
         } catch (e) {
             Logger.error('❌ Settings boot failed (Firebase not ready):', e);
         }
     })();
-
 
 })(window);
 
