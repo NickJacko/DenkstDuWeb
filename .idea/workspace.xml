@@ -4,14 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Enhance Firebase App Check integration, improve FSK validation, and refactor privacy and UI logic&#10;&#10;- Add firebase-app-check-key meta tag to all HTML files; remove hardcoded fallback keys from JS configs&#10;- Update firebase-init.js and firebase-config.js to require App Check key via meta/env, improve error handling and logging&#10;- Refactor FSK validation in difficulty-selection.js for stricter server-side checks and better error feedback&#10;- Improve multiplayer-category-selection.js player readiness logic and player key handling&#10;- Refactor multiplayer-difficulty-selection.js for cleaner event listener management and dependency checks&#10;- Enhance join-game.js with robust Firebase readiness checks and improved FSK badge rendering&#10;- Update firebase-auth.js for safer initialization, promise handling, and redirect logic&#10;- Refactor privacy.js: use NocapCookies for consent, improve modal cleanup, TOC insertion, and section toggling&#10;- Improve 404.js and difficulty-selection.js for accessibility, reduced motion, and error handling&#10;- Add getPlayerKey utility, update event listener cleanup, and minor UI/UX improvements across modules">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions/test/index.test.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/test/index.test.js" afterDir="false" />
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor Cloud Functions tests for improved isolation and coverage; add proxyquire for dependency mocking, enhance FSK validation and privacy logic tests, and update dev dependencies">
+      <change afterPath="$PROJECT_DIR$/.github/workflows/firebase-hosting.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="GitHub Workflow" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -155,14 +161,6 @@
       <workItem from="1768167037940" duration="13518000" />
       <workItem from="1768215061185" duration="14448000" />
       <workItem from="1768323670735" duration="7628000" />
-    </task>
-    <task id="LOCAL-00063" summary="Audit changes/ Extract to css">
-      <option name="closed" value="true" />
-      <created>1763991464232</created>
-      <option name="number" value="00063" />
-      <option name="presentableId" value="LOCAL-00063" />
-      <option name="project" value="LOCAL" />
-      <updated>1763991464233</updated>
     </task>
     <task id="LOCAL-00064" summary="Audit changes/ Extract to css">
       <option name="closed" value="true" />
@@ -548,7 +546,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768492503160</updated>
     </task>
-    <option name="localTasksCounter" value="112" />
+    <task id="LOCAL-00112" summary="Refactor Cloud Functions tests for improved isolation and coverage; add proxyquire for dependency mocking, enhance FSK validation and privacy logic tests, and update dev dependencies">
+      <option name="closed" value="true" />
+      <created>1768493011145</created>
+      <option name="number" value="00112" />
+      <option name="presentableId" value="LOCAL-00112" />
+      <option name="project" value="LOCAL" />
+      <updated>1768493011145</updated>
+    </task>
+    <option name="localTasksCounter" value="113" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -569,7 +575,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Lobby auto load" />
     <MESSAGE value="Lobby auto load fixed users" />
     <MESSAGE value="Firebase fix" />
     <MESSAGE value="Backup" />
@@ -594,7 +599,8 @@
     <MESSAGE value="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions" />
     <MESSAGE value="Claude changes" />
     <MESSAGE value="Enhance Firebase App Check integration, improve FSK validation, and refactor privacy and UI logic&#10;&#10;- Add firebase-app-check-key meta tag to all HTML files; remove hardcoded fallback keys from JS configs&#10;- Update firebase-init.js and firebase-config.js to require App Check key via meta/env, improve error handling and logging&#10;- Refactor FSK validation in difficulty-selection.js for stricter server-side checks and better error feedback&#10;- Improve multiplayer-category-selection.js player readiness logic and player key handling&#10;- Refactor multiplayer-difficulty-selection.js for cleaner event listener management and dependency checks&#10;- Enhance join-game.js with robust Firebase readiness checks and improved FSK badge rendering&#10;- Update firebase-auth.js for safer initialization, promise handling, and redirect logic&#10;- Refactor privacy.js: use NocapCookies for consent, improve modal cleanup, TOC insertion, and section toggling&#10;- Improve 404.js and difficulty-selection.js for accessibility, reduced motion, and error handling&#10;- Add getPlayerKey utility, update event listener cleanup, and minor UI/UX improvements across modules" />
-    <option name="LAST_COMMIT_MESSAGE" value="Enhance Firebase App Check integration, improve FSK validation, and refactor privacy and UI logic&#10;&#10;- Add firebase-app-check-key meta tag to all HTML files; remove hardcoded fallback keys from JS configs&#10;- Update firebase-init.js and firebase-config.js to require App Check key via meta/env, improve error handling and logging&#10;- Refactor FSK validation in difficulty-selection.js for stricter server-side checks and better error feedback&#10;- Improve multiplayer-category-selection.js player readiness logic and player key handling&#10;- Refactor multiplayer-difficulty-selection.js for cleaner event listener management and dependency checks&#10;- Enhance join-game.js with robust Firebase readiness checks and improved FSK badge rendering&#10;- Update firebase-auth.js for safer initialization, promise handling, and redirect logic&#10;- Refactor privacy.js: use NocapCookies for consent, improve modal cleanup, TOC insertion, and section toggling&#10;- Improve 404.js and difficulty-selection.js for accessibility, reduced motion, and error handling&#10;- Add getPlayerKey utility, update event listener cleanup, and minor UI/UX improvements across modules" />
+    <MESSAGE value="Refactor Cloud Functions tests for improved isolation and coverage; add proxyquire for dependency mocking, enhance FSK validation and privacy logic tests, and update dev dependencies" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor Cloud Functions tests for improved isolation and coverage; add proxyquire for dependency mocking, enhance FSK validation and privacy logic tests, and update dev dependencies" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
