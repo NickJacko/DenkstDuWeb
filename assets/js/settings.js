@@ -40,24 +40,33 @@
     async function init() {
         Logger.info('🚀 Initializing Settings Module...');
 
-        // ✅ FIX: Use waitForFirebaseInit from utils.js to avoid retry loops
-        const firebaseReady = await window.NocapUtils.waitForFirebaseInit(10000);
-
-        if (!firebaseReady) {
-            Logger.error('❌ Firebase initialization timeout - Settings Module cannot start');
+// ✅ Robust: wait for FirebaseConfig itself (real readiness)
+        try {
+            await window.FirebaseConfig.waitForFirebase(10000);
+        } catch (e) {
+            Logger.error('❌ Firebase initialization timeout - Settings Module cannot start', e);
             return;
         }
 
-        // ✅ FIX: Initialize Functions with europe-west1 region
+        let instances;
         try {
-            const { functions } = window.FirebaseConfig.getFirebaseInstances();
-            SettingsState.functionsInstance = functions;
-            Logger.info('✅ Firebase Functions ready (via FirebaseConfig)');
+            instances = window.FirebaseConfig.getFirebaseInstances();
         } catch (error) {
-            Logger.error('❌ Failed to initialize Functions:', error);
+            Logger.error('❌ Failed to read Firebase instances:', error);
+            return;
         }
 
-        const { auth } = window.FirebaseConfig.getFirebaseInstances();
+        const { auth, functions } = instances;
+
+        if (!functions) {
+            Logger.error('❌ Firebase Functions not available (SDK missing or not initialized). Callable features disabled.');
+            // Optional: return; wenn Settings ohne Functions keinen Sinn macht
+            // return;
+        } else {
+            SettingsState.functionsInstance = functions;
+            Logger.info('✅ Firebase Functions ready (via FirebaseConfig)');
+        }
+
         const unsub = auth.onAuthStateChanged(onAuthStateChanged);
         if (typeof unsub === 'function') SettingsState.eventCleanup.push(unsub);
 
@@ -815,12 +824,16 @@
         updateFSKBadges
     });
 
-    // Auto-initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    (async function boot() {
+        try {
+            await window.FirebaseConfig.initialize();      // <- sorgt für Init
+            await window.FirebaseConfig.waitForFirebase(10000); // <- wartet bis ready
+            init(); // <- erst dann Settings starten
+        } catch (e) {
+            Logger.error('❌ Settings boot failed (Firebase not ready):', e);
+        }
+    })();
+
 
 })(window);
 

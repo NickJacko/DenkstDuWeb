@@ -802,11 +802,16 @@
                             // ✅ P1 STABILITY: Activate App Check with auto-refresh
                             const appCheck = firebase.appCheck();
 
-                            await appCheck.activate(
-                                appCheckKey,
-                                true // ✅ isTokenAutoRefreshEnabled: true
-                            );
+                            const DISABLE_APP_CHECK = true; // <- JETZT auf true
 
+                            if (!DISABLE_APP_CHECK && isProduction && firebase.appCheck && appCheckKey) {
+                                try {
+                                    const appCheck = firebase.appCheck();
+                                    await appCheck.activate(appCheckKey, true);
+                                } catch (e) {
+                                    console.warn('AppCheck failed:', e.message);
+                                }
+                            }
                             if (isDevelopment) {
                                 console.log('%c✅ App Check activated with auto-refresh',
                                     'color: #4CAF50; font-weight: bold');
@@ -876,7 +881,7 @@
                 try {
                     if (typeof firebase.functions === 'function') {
                         // Region must match your deployed functions (default is us-central1 unless set)
-                        window.firebaseFunctions = firebase.functions();
+                        window.firebaseFunctions = firebase.functions('europe-west1');
                     } else {
                         window.firebaseFunctions = null;
                     }
