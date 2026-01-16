@@ -390,8 +390,8 @@ exports.setAgeVerification = functions
     .https.onCall(async (data, context) => {
         const functionName = "setAgeVerification";
 
-        // Admin-only
-        requireClaims(context, ["admin"]);
+        // ✅ vorher: requireClaims(context, ["admin"]);
+        requireAuth(context);
 
         const uid = context.auth.uid;
         const { ageLevel, verificationMethod } = data || {};
@@ -408,6 +408,19 @@ exports.setAgeVerification = functions
                 ageVerificationMethod: String(verificationMethod || "unknown"),
                 ageVerifiedAt: admin.database.ServerValue.TIMESTAMP,
             });
+
+            // ✅ optional aber empfohlen: Claims mergen statt überschreiben
+            const user = await admin.auth().getUser(uid);
+            const existing = user.customClaims || {};
+            const nextClaims = { ...existing };
+
+            if (ageLevel >= 16) nextClaims.fsk16 = true;
+            else delete nextClaims.fsk16;
+
+            if (ageLevel >= 18) nextClaims.fsk18 = true;
+            else delete nextClaims.fsk18;
+
+            await admin.auth().setCustomUserClaims(uid, nextClaims);
 
             log.info(functionName, "Age verification set", { uid, ageLevel });
             return { success: true };
