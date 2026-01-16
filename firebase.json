@@ -6,7 +6,6 @@
       "database.rules.json",
       "database_rules.json",
       "database-debug.log",
-      "**/.*",
       "**/node_modules/**",
       "**/*.log",
       "**/denkstduwebsite-default-rtdb-export*.json",

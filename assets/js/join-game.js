@@ -1013,13 +1013,8 @@
         Logger.info('⏳ Waiting for Firebase initialization...');
 
         while (attempts < maxAttempts) {
-            const hasFirebaseInitialized = true;
-            if (hasFirebaseService && hasFirebaseGlobal) {
-                Logger.info('✅ Firebase scripts present after', attempts * 100, 'ms');
-                return true;
-            }
-
-            // ✅ BUGFIX: Check window.FirebaseService (not window.JoinGameModule.firebaseService)
+            // ✅ immer zuerst deklarieren/initialisieren
+            const hasFirebaseInitialized = window.firebaseInitialized === true;
             const hasFirebaseService = typeof window.FirebaseService !== 'undefined';
             const hasFirebaseGlobal = typeof firebase !== 'undefined';
 
@@ -1048,6 +1043,7 @@
         });
         return false;
     }
+
 
     async function startApp() {
         const firebaseReady = await waitForFirebase();
