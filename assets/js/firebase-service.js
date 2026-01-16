@@ -1910,7 +1910,7 @@
 
     if (typeof window.FirebaseService === 'undefined') {
         window.FirebaseService = new FirebaseGameService();
-
+        window.firebaseGameService = window.FirebaseService;
         const isDev = window.location.hostname === 'localhost' ||
             window.location.hostname === '127.0.0.1';
 

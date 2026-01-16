@@ -5,7 +5,7 @@
  */
 
 const admin = require("firebase-admin");
-const functions = require("firebase-functions"); // Gen1
+const functions = require("firebase-functions/v1"); // Gen1
 
 if (admin.apps.length === 0) admin.initializeApp();
 

@@ -1,6 +1,6 @@
 "use strict";
 
-const functions = require("firebase-functions"); // Gen1 only
+const functions = require("firebase-functions/v1"); // Gen1 only
 const admin = require("firebase-admin");
 
 if (admin.apps.length === 0) admin.initializeApp();

@@ -515,12 +515,20 @@
 
     async function loadQuestionCounts() {
         try {
-            if (!MultiplayerCategoryModule.firebaseService || typeof firebase === 'undefined') {
-                Logger.warn('⚠️ Firebase not available, using defaults');
+            // ✅ garantiert, dass eine Firebase App existiert
+            if (window.FirebaseConfig?.waitForFirebase) {
+                await window.FirebaseConfig.waitForFirebase(10000);
+            }
+
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
+
+            if (!database) {
+                Logger.warn('⚠️ Firebase DB not available, using defaults');
                 return;
             }
 
-            const questionsRef = firebase.database().ref('questions');
+            const questionsRef = database.ref('questions');
             const snapshot = await questionsRef.once('value');
 
             if (snapshot.exists()) {
@@ -534,12 +542,14 @@
                         }
                     }
                 });
-                Logger.debug('✅ Question counts loaded:', MultiplayerCategoryModule.questionCounts);
+
+                Logger.debug('✅ Question counts loaded:', MultiplayerCategoryModule.state.questionCounts);
             }
         } catch (error) {
             Logger.warn('⚠️ Question counts error:', error);
         }
     }
+
 
     // ===========================
     // HEADER INFO

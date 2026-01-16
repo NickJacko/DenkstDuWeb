@@ -170,9 +170,13 @@
 
 
         // P1 FIX: Wait for dependencies
-        if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            await window.NocapUtils.waitForDependencies(['MultiplayerLobbyModule.gameState', 'firebaseGameService', 'firebase']);
-        }
+        await window.NocapUtils.waitForDependencies([
+            'MultiplayerLobbyModule.gameState',
+            'FirebaseService',          // ✅ dein echtes Singleton
+            'firebaseGameService',      // ✅ fallback (falls irgendwo noch genutzt)
+            'firebase'
+        ]);
+
 
         // ✅ P0 FIX: Wait for Firebase App initialization using utility function
         if (window.NocapUtils && window.NocapUtils.waitForFirebaseInit) {
@@ -208,13 +212,15 @@
             return;
         }
 
-        if (window.firebaseGameService) {
-            MultiplayerLobbyModule.firebaseService = window.firebaseGameService;
-        } else {
+// ✅ Use the correct singleton name + fallback for older pages
+        MultiplayerLobbyModule.firebaseService = window.FirebaseService || window.firebaseGameService;
+
+        if (!MultiplayerLobbyModule.firebaseService) {
             showNotification('Firebase Game Service nicht verfügbar', 'error');
             setTimeout(() => window.location.href = 'index.html', 3000);
             return;
         }
+
 
 
         // ✅ FIX: Ensure Firebase Auth user exists (sign in anonymously if needed)
