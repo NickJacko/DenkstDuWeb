@@ -4,10 +4,141 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Update hosting public directory to 'public' and adjust ignore patterns in firebase.json">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Add 404 error page, multiplayer difficulty selection, and supporting config, styles, and data files; update firebase hosting config for root directory">
+      <change afterPath="$PROJECT_DIR$/.firebase/hosting..cache" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.firebase/hosting.cHVibGlj.cache" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/404.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/age-de.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/404.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/cookie-banner.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/difficulty-selection.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/error-modal.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/gameplay.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/imprint.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/index.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/join-game.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-gameplay.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-results.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/player-setup.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/privacy-toc.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/privacy.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/settings.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/css/styles.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/data/difficulty-limits.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/data/fallback-questions.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/data/questions-backup.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/data/questions.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/404.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/GameState.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/avatar-upload.example.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/cookie-banner.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/error-boundary.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/firebase-auth.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/firebase-init.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/firebase-service.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/gameplay.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-results.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/privacy.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/utils.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/lib/purify.min.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/imprint.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/join-game.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jugendschutz.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/multiplayer-gameplay.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/multiplayer-lobby.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/multiplayer-results.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/privacy-new-sections.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/privacy.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/purgecss.config.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/.firebaserc" beforeDir="false" afterPath="$PROJECT_DIR$/.firebaserc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/.well-known/age-de.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/404.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/404.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/category-selection.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/cookie-banner.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/difficulty-selection.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/error-modal.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/gameplay.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/imprint.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/index.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/join-game.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-category-selection.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-difficulty-selection.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-gameplay.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-lobby.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-results.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/player-setup.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/privacy-toc.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/privacy.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/settings.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/css/styles.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/data/difficulty-limits.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/data/fallback-questions.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/data/questions-backup.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/data/questions.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/404.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/GameState.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/avatar-upload.example.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/category-selection.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/cookie-banner.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/difficulty-selection.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/error-boundary.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/firebase-auth.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/firebase-config.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/firebase-init.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/firebase-service.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/gameplay.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/join-game.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-category-selection.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-gameplay.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-lobby.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-results.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/player-setup.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/privacy.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/settings.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/js/utils.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/assets/lib/purify.min.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/category-selection.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/difficulty-selection.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/gameplay.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/imprint.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/join-game.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/jugendschutz.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/multiplayer-category-selection.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/multiplayer-difficulty-selection.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/multiplayer-gameplay.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/multiplayer-lobby.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/multiplayer-results.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/player-setup.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/privacy-new-sections.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/privacy.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/purgecss.config.js" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -166,22 +297,6 @@
       <workItem from="1768323670735" duration="7628000" />
       <workItem from="1768554418204" duration="394000" />
       <workItem from="1768555261474" duration="25029000" />
-    </task>
-    <task id="LOCAL-00086" summary="Update script tags to use 'defer' for improved loading performance">
-      <option name="closed" value="true" />
-      <created>1767884254914</created>
-      <option name="number" value="00086" />
-      <option name="presentableId" value="LOCAL-00086" />
-      <option name="project" value="LOCAL" />
-      <updated>1767884254914</updated>
-    </task>
-    <task id="LOCAL-00087" summary="Update script tags to use 'defer' for improved loading performance">
-      <option name="closed" value="true" />
-      <created>1767886444116</created>
-      <option name="number" value="00087" />
-      <option name="presentableId" value="LOCAL-00087" />
-      <option name="project" value="LOCAL" />
-      <updated>1767886444116</updated>
     </task>
     <task id="LOCAL-00088" summary="Update script tags to use 'defer' for improved loading performance">
       <option name="closed" value="true" />
@@ -559,7 +674,23 @@
       <option name="project" value="LOCAL" />
       <updated>1768604020613</updated>
     </task>
-    <option name="localTasksCounter" value="135" />
+    <task id="LOCAL-00135" summary="Move firebase.json and .firebaserc to project root for improved configuration management">
+      <option name="closed" value="true" />
+      <created>1768604566929</created>
+      <option name="number" value="00135" />
+      <option name="presentableId" value="LOCAL-00135" />
+      <option name="project" value="LOCAL" />
+      <updated>1768604566929</updated>
+    </task>
+    <task id="LOCAL-00136" summary="Move config and metadata files from public to project root for improved organization">
+      <option name="closed" value="true" />
+      <created>1768604754486</created>
+      <option name="number" value="00136" />
+      <option name="presentableId" value="LOCAL-00136" />
+      <option name="project" value="LOCAL" />
+      <updated>1768604754486</updated>
+    </task>
+    <option name="localTasksCounter" value="137" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -580,9 +711,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Refactor showNotification function to simplify message handling" />
-    <MESSAGE value="Update script tags to use 'defer' for improved loading performance" />
-    <MESSAGE value="Update Firebase configuration in HTML files for security compliance" />
     <MESSAGE value="Enhance accessibility and security across HTML files with ARIA roles, improved error handling, and age verification features" />
     <MESSAGE value="Refactor HTML structure for category and difficulty selection, enhance accessibility with ARIA roles, and improve Firebase initialization error handling" />
     <MESSAGE value="Enhance privacy features with new privacy notice, update footer links, and improve cookie consent management; refactor HTML and CSS for better accessibility and structure" />
@@ -605,7 +733,10 @@
     <MESSAGE value="Improve Firebase initialization checks and add utility for dependency waiting across modules" />
     <MESSAGE value="add JMStV age rating file (.well-known/age-de.xml) and allow deployment" />
     <MESSAGE value="Update hosting public directory to 'public' and adjust ignore patterns in firebase.json" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update hosting public directory to 'public' and adjust ignore patterns in firebase.json" />
+    <MESSAGE value="Move firebase.json and .firebaserc to project root for improved configuration management" />
+    <MESSAGE value="Move config and metadata files from public to project root for improved organization" />
+    <MESSAGE value="Add 404 error page, multiplayer difficulty selection, and supporting config, styles, and data files; update firebase hosting config for root directory" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add 404 error page, multiplayer difficulty selection, and supporting config, styles, and data files; update firebase hosting config for root directory" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

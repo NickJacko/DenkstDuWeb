@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "public",
+    "public": ".",
     "ignore": [
       "firebase.json",
       "database.rules.json",
@@ -93,6 +93,13 @@
       }
     ],
     "headers": [
+      {
+        "source": "/age-de.xml",
+        "headers": [
+          { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
+          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+        ]
+      },
       {
         "source": "/assets/js/firebase-credentials.js",
         "headers": [
