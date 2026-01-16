@@ -169,13 +169,18 @@
         }
 
 
-        // P1 FIX: Wait for dependencies
-        await window.NocapUtils.waitForDependencies([
-            'MultiplayerLobbyModule.gameState',
-            'FirebaseService',          // ✅ dein echtes Singleton
-            'firebaseGameService',      // ✅ fallback (falls irgendwo noch genutzt)
-            'firebase'
-        ]);
+        // P1 FIX: Wait for dependencies (guarded)
+        if (window.NocapUtils && typeof window.NocapUtils.waitForDependencies === 'function') {
+            await window.NocapUtils.waitForDependencies([
+                'MultiplayerLobbyModule.gameState',
+                'FirebaseService',
+                'firebaseGameService',
+                'firebase'
+            ]);
+        } else if (MultiplayerLobbyModule.isDevelopment) {
+            console.warn('⚠️ NocapUtils.waitForDependencies missing - continuing without dependency wait');
+        }
+
 
 
         // ✅ P0 FIX: Wait for Firebase App initialization using utility function

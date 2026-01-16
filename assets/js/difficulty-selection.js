@@ -9,7 +9,28 @@
  * ✅ P0: Safe DOM manipulation (no innerHTML)
  * ✅ P1: Proper routing based on device mode
  */
+async function initialize() {
+    Logger.debug('🎯 Initializing difficulty selection...');
 
+    // ✅ P0 FIX: Firebase MUSS vorher initialisiert sein
+    if (!window.FirebaseConfig) {
+        Logger.error('❌ FirebaseConfig not loaded');
+        showNotification('Firebase nicht verfügbar', 'error');
+        return;
+    }
+
+    const firebaseReady = await window.FirebaseConfig.initialize?.()
+        ?? await window.FirebaseConfig.waitForFirebase?.(10000);
+
+    if (!firebaseReady || !window.FirebaseConfig.isInitialized()) {
+        Logger.error('❌ Firebase initialization failed');
+        showNotification('Firebase Initialisierung fehlgeschlagen', 'error');
+        return;
+    }
+
+    // ERST AB HIER weiter
+    await initializeGame();
+}
 (function(window) {
     'use strict';
 
@@ -277,6 +298,16 @@
      * @returns {Promise<boolean>} True if valid
      */
     async function validateGameState() {
+        if (!window.FirebaseConfig?.isInitialized?.()) {
+            Logger.warn('⚠️ Firebase not initialized – skipping server validation');
+            showNotification('Verbindungsfehler. Bitte neu laden.', 'error');
+            return false;
+        }    const { auth, database } = window.FirebaseConfig.getFirebaseInstances();
+        if (!auth || !database) {
+            Logger.error('❌ Firebase instances missing');
+            return false;
+        }
+
         if (!DifficultySelectionModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);

@@ -437,7 +437,45 @@
 
         return notification;
     }
+    /**
+     * ✅ P1 STABILITY: Wait for required globals to exist.
+     * Supports dot-paths like "FirebaseConfig.isInitialized" or
+     * "MultiplayerGameplayModule.gameState".
+     */
+    async function waitForDependencies(deps = [], maxWaitMs = 5000, intervalMs = 50) {
+        try {
+            if (!Array.isArray(deps) || deps.length === 0) return true;
 
+            const start = Date.now();
+
+            const getByPath = (root, path) => {
+                const parts = String(path).split('.').filter(Boolean);
+                let cur = root;
+                for (const p of parts) {
+                    if (cur == null) return undefined;
+                    cur = cur[p];
+                }
+                return cur;
+            };
+
+            const isPresent = (path) => {
+                const val = getByPath(window, path);
+                return typeof val !== 'undefined' && val !== null;
+            };
+
+            while (Date.now() - start < maxWaitMs) {
+                const missing = deps.filter(d => !isPresent(d));
+                if (missing.length === 0) return true;
+                await new Promise(r => setTimeout(r, intervalMs));
+            }
+
+            if (isDevelopment) Logger.warn('⚠️ waitForDependencies timeout', { deps, maxWaitMs });
+            return false;
+        } catch (e) {
+            if (isDevelopment) Logger.warn('waitForDependencies error', e);
+            return false;
+        }
+    }
     /**
      * Hide notification with animation
      * @param {HTMLElement} notification - Notification element to hide
@@ -2103,6 +2141,7 @@
         getFirebaseErrorMessage,
 
         // Firebase
+        waitForDependencies,
         waitForFirebaseInit,
 
         // Cleanup

@@ -251,20 +251,21 @@
             showLoading('Verbinde mit Server...');
 
             try {
-                if (!window.firebaseInitialized) {
-                    throw new Error('Firebase not initialized');
-                }
-
-                // ✅ BUGFIX: FirebaseService is already an instance on window
+                // Service instance holen
                 JoinGameModule.firebaseService = window.FirebaseService;
 
-                Logger.debug('✅ Firebase Service ready');
+                if (!JoinGameModule.firebaseService) {
+                    throw new Error('FirebaseService missing');
+                }
 
-                const currentUser = JoinGameModule.firebaseService.getCurrentUser();
-                if (currentUser) {
-                    Logger.debug('✅ User authenticated:', currentUser.uid);
-                } else {
-                    Logger.warn('⚠️ No authenticated user - some features may not work');
+                // ✅ WICHTIG: Service aktiv initialisieren (sonst bleibt isReady false)
+                if (!JoinGameModule.firebaseService.isInitialized) {
+                    await JoinGameModule.firebaseService.initialize();
+                }
+
+                // Optional: wenn du sicherstellen willst, dass ein User existiert
+                if (!JoinGameModule.firebaseService.getCurrentUser()) {
+                    await JoinGameModule.firebaseService.signInAnonymously();
                 }
 
                 Logger.debug('✅ Firebase ready:', JoinGameModule.firebaseService.getStatus());
@@ -1012,7 +1013,12 @@
         Logger.info('⏳ Waiting for Firebase initialization...');
 
         while (attempts < maxAttempts) {
-            const hasFirebaseInitialized = window.firebaseInitialized === true;
+            const hasFirebaseInitialized = true;
+            if (hasFirebaseService && hasFirebaseGlobal) {
+                Logger.info('✅ Firebase scripts present after', attempts * 100, 'ms');
+                return true;
+            }
+
             // ✅ BUGFIX: Check window.FirebaseService (not window.JoinGameModule.firebaseService)
             const hasFirebaseService = typeof window.FirebaseService !== 'undefined';
             const hasFirebaseGlobal = typeof firebase !== 'undefined';
