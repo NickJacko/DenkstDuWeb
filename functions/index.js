@@ -470,7 +470,91 @@ exports.checkPremiumStatus = functions
             throw new functions.https.HttpsError("internal", "Premium check failed");
         }
     });
+/**
+ * ✅ P0 SECURITY: Check access for a category (Gen1 Callable)
+ * Input: { categoryId: 'fsk0' | 'fsk16' | 'fsk18' | 'special' }
+ * Output: { allowed: boolean }
+ */
+exports.checkCategoryAccess = functions
+    .region("europe-west1")
+    .runWith({ memory: "256MB", timeoutSeconds: 10 })
+    .https.onCall(async (data, context) => {
+        const functionName = "checkCategoryAccess";
 
+        // ✅ nur eingeloggte Nutzer
+        requireAuth(context);
+
+        const categoryId = String(data?.categoryId || "").trim();
+
+        if (!categoryId) {
+            throw new functions.https.HttpsError("invalid-argument", "categoryId fehlt");
+        }
+
+        const allowedCategories = new Set(["fsk0", "fsk16", "fsk18", "special"]);
+        if (!allowedCategories.has(categoryId)) {
+            throw new functions.https.HttpsError("invalid-argument", "Unbekannte Kategorie");
+        }
+
+        try {
+            // 1) Schnell: Token-Claims
+            const token = context.auth.token || {};
+
+            // Premium (special)
+            const tokenPremium =
+                token.premium === true ||
+                token.stripeRole === "premium" ||
+                token.stripeRole === "pro";
+
+            // Age flags (je nachdem wie du sie setzt)
+            const tokenFsk18 = token.fsk18 === true;
+            const tokenFsk16 = token.fsk16 === true || tokenFsk18 === true; // 18 => auch 16
+
+            // fsk0 immer ok
+            if (categoryId === "fsk0") return { allowed: true };
+
+            // special nur mit premium
+            if (categoryId === "special") {
+                if (tokenPremium) return { allowed: true };
+                throw new functions.https.HttpsError("permission-denied", "Premium erforderlich");
+            }
+
+            // fsk18 nur wenn Claim vorhanden
+            if (categoryId === "fsk18") {
+                if (tokenFsk18) return { allowed: true };
+
+                // Fallback: frischeste Claims serverseitig holen (falls Token nicht refreshed)
+                const uid = context.auth.uid;
+                const user = await admin.auth().getUser(uid);
+                const claims = user.customClaims || {};
+
+                if (claims.fsk18 === true) return { allowed: true };
+                throw new functions.https.HttpsError("permission-denied", "FSK18 nicht erlaubt");
+            }
+
+            // fsk16
+            if (categoryId === "fsk16") {
+                if (tokenFsk16) return { allowed: true };
+
+                const uid = context.auth.uid;
+                const user = await admin.auth().getUser(uid);
+                const claims = user.customClaims || {};
+
+                if (claims.fsk16 === true || claims.fsk18 === true) return { allowed: true };
+                throw new functions.https.HttpsError("permission-denied", "FSK16 nicht erlaubt");
+            }
+
+            // default deny
+            return { allowed: false };
+        } catch (error) {
+            log.error(functionName, "Category access check failed", error, {
+                uid: context?.auth?.uid,
+                categoryId
+            });
+            // Falls es schon ein HttpsError ist, weiterwerfen, sonst internal
+            if (error instanceof functions.https.HttpsError) throw error;
+            throw new functions.https.HttpsError("internal", "Category access check failed");
+        }
+    });
 // --------------------
 // Re-exports (other files)
 // --------------------
