@@ -3,9 +3,13 @@
 const functions = require("firebase-functions/v1"); // Gen1 only
 const admin = require("firebase-admin");
 
-// Init Admin SDK exactly once
-if (admin.apps.length === 0) {
-    admin.initializeApp();
+// Init Admin SDK exactly once (robust for tests/stubs)
+const hasAppsArray = Array.isArray(admin.apps);
+
+if (!hasAppsArray || admin.apps.length === 0) {
+    if (typeof admin.initializeApp === 'function') {
+        admin.initializeApp();
+    }
 }
 
 // --------------------
