@@ -4,166 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor Cloud Functions to use europe-west1 region and enhance security logic&#10;&#10;- Set region to europe-west1 for all relevant Cloud Functions&#10;- Improve age verification checks for FSK categories using RTDB cache&#10;- Update account deletion logic for more robust data handling and audit trail&#10;- Enhance rapid update detection and violation logging in realtime-security&#10;- Improve error handling and logging for cleanup and notification functions&#10;- Update settings to refresh and display FSK access badges after age verification">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Improve Firebase initialization checks and add utility for dependency waiting across modules">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/firebase-hosting.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/firebase-hosting.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ALLES_FERTIG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/EXECUTIVE_SUMMARY_PRODUCTION_HARDENING.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/FIREBASE_CONFIG_README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/GIT_COMMIT_TEMPLATE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/KEYS_ERSTELLT_NAECHSTE_SCHRITTE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PHASE_2_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PRODUCTION_HARDENING_CHANGE_LOG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/PRODUCTION_HARDENING_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/QUICK_REFERENCE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README_UPDATE_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SCRIPT_REPARIERT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SECURITY_TODOS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/add-app-check-sdk.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/add-firebase-meta-tags.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/check-recaptcha-domain.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deploy.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deploy.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dev-server.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/404_HTML_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/404_HTML_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/404_OPTIMIZATION_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/404_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/ACCOUNT_DELETION_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/ACCOUNT_DELETION_QUICKSTART.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/ALL_ERRORS_FIXED_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/APP_CHECK_QUICK_FIX.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/APP_CHECK_RECAPTCHA_SETUP.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/CATEGORY_DIFFICULTY_HARDENING_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/CATEGORY_SELECTION_HTML_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/CLIENT_INTEGRATION_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/COOKIE_BANNER_FINAL_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/COOKIE_BANNER_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/COOKIE_BANNER_JS_V3_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/COOKIE_CONSENT_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/CSS_OPTIMIZATION_CHANGELOG_v4.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/CSS_OPTIMIZATION_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/CSS_PURGECSS_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DARK_MODE_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DATABASE_RULES_FIX.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DEPLOYMENT_CHECKLIST.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DEPLOYMENT_LOG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DEPLOYMENT_QUICK_REFERENCE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DEPLOYMENT_SUCCESS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DEPLOYMENT_TROUBLESHOOTING.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DIFFICULTY_SELECTION_HTML_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DIFFICULTY_SELECTION_JS_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DIFFICULTY_SELECTION_JS_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/DOT_ENV_PROBLEM_SOLVED.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/EMAIL_TEMPLATES_DSGVO.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/EMULATOR_FIX.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/ERROR_BOUNDARY_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/ERROR_BOUNDARY_JS_V2_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/ERROR_FIXES_QUICK_REF.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/EXECUTIVE_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FINAL_COMPLETE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FINAL_IMPLEMENTATION_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FINAL_STATUS_MULTIPLAYER_AUDITS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_APP_CHECK_SECRET_KEY_FIX.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_AUTH_JS_V5_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_CONFIG_ANLEITUNG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_CONFIG_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_CONFIG_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_CONFIG_HARDENING_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_CONFIG_HARDENING_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_CONFIG_JS_V8_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_CONFIG_ZUSAMMENFASSUNG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_CORS_INIT_FIXES.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_FUNCTIONS_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_INIT_RACE_CONDITION_FIX.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_JSON_CHANGES_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_JSON_SECURITY_UPDATE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_SECURITY_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_SERVICE_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_SERVICE_COMPLETE_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_SERVICE_FINAL_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_SERVICE_IMPLEMENTATION_PLAN.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIREBASE_SERVICE_JS_V7_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/FIX_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/GAMEPLAY_HARDENING_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/GAMEPLAY_HTML_JS_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/GAMEPLAY_JS_VERSION_5_CHANGELOG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/GAMEPLAY_OPTIMIZATION_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/GAMESTATE_JS_V9_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/GAMESTATE_PROTOTYPE_POLLUTION_FIX.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/GESAMTSTATUS_ALLE_AUDITS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/IMPLEMENTATION_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/IMPRESSUM_AUSFUELLEN.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/IMPRESSUM_FINAL_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/IMPRINT_DEPLOYMENT_CHECKLIST.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/IMPRINT_HTML_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/IMPRINT_IMPLEMENTATION_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/INDEX_HTML_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/INDEX_HTML_OPTIMIZATION_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/INDEX_HTML_QUICK_REF.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/INDEX_JS_KERN_HARDENING.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/INDEX_JS_V7_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/IP_LOGGING_DSGVO.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/JOIN_GAME_HTML_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/JOIN_GAME_JS_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/JOIN_GAME_OPTIMIZATION_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/JS_KERN_FINAL_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/JS_KERN_HARDENING_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/JS_KERN_QUICK_IMPLEMENTATION.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/LEGAL_COMPLIANCE_CHECKLIST.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/LEGAL_IMPLEMENTATION_STATUS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_CATEGORY_SELECTION_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_CATEGORY_SELECTION_PLAN.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_DIFFICULTY_SELECTION_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_DIFFICULTY_SELECTION_JS_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_GAMEPLAY_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_GAMEPLAY_COMPLETE_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_GAMEPLAY_IMPLEMENTATION_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_GAMEPLAY_IMPROVEMENTS_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_GAMEPLAY_OPTIMIZATION_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_LOBBY_AUDIT_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_LOBBY_FINAL_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_RESULTS_IMPLEMENTATION_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_RESULTS_IMPROVEMENTS_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/MULTIPLAYER_RESULTS_JS_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/OPTIMIZATION_DATABASE_RULES.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/OPTIMIZATION_FIREBASE_CONFIG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/OPTIMIZATION_FIREBASE_JSON.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/OPTIMIZATION_FUNCTIONS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/OPTIMIZATION_GAMEPLAY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/OPTIMIZATION_LEGAL_PAGES.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/OPTIMIZATION_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/P1_COMPLETE_FINAL_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PLAYER_SETUP_HTML_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PLAYER_SETUP_JS_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PLAYER_SETUP_JS_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PLAYER_SETUP_OPTIMIZATION_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PLAYER_SETUP_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PRIVACY_DEPLOYMENT_CHECKLIST.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PRIVACY_HTML_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PRIVACY_JS_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PRIVACY_JS_V3_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PRIVACY_UPDATE_REPORT.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/PROJECT_STATUS_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/QUICK_REFERENCE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/RECAPTCHA_FIX_ANLEITUNG.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/SECURITY_HEADERS_REFERENCE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/SETTINGS_IMPLEMENTATION_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/STORAGE_CLOUD_FUNCTIONS_INTEGRATION.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/STORAGE_RULES_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/STORAGE_RULES_HARDENING_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/STORAGE_RULES_QUICK_REFERENCE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/STRIPE_ACTIVATION_GUIDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/UTILS_JS_V7_FINAL.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions/account-deletion.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/account-deletion.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/functions/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/functions/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions/realtime-security.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/realtime-security.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/js-kern-auto-update.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/js-kern-hardening-scan.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup-firebase-signing.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/update-all-html.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/update-html-scripts.ps1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/functions/test/index.test.js" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -320,63 +164,7 @@
       <workItem from="1768215061185" duration="14448000" />
       <workItem from="1768323670735" duration="7628000" />
       <workItem from="1768554418204" duration="394000" />
-      <workItem from="1768555261474" duration="17602000" />
-    </task>
-    <task id="LOCAL-00074" summary="Update index.html">
-      <option name="closed" value="true" />
-      <created>1766347041224</created>
-      <option name="number" value="00074" />
-      <option name="presentableId" value="LOCAL-00074" />
-      <option name="project" value="LOCAL" />
-      <updated>1766347041224</updated>
-    </task>
-    <task id="LOCAL-00075" summary="Update index.html">
-      <option name="closed" value="true" />
-      <created>1767778324282</created>
-      <option name="number" value="00075" />
-      <option name="presentableId" value="LOCAL-00075" />
-      <option name="project" value="LOCAL" />
-      <updated>1767778324283</updated>
-    </task>
-    <task id="LOCAL-00076" summary="Update index.html">
-      <option name="closed" value="true" />
-      <created>1767788689456</created>
-      <option name="number" value="00076" />
-      <option name="presentableId" value="LOCAL-00076" />
-      <option name="project" value="LOCAL" />
-      <updated>1767788689456</updated>
-    </task>
-    <task id="LOCAL-00077" summary="Update index.html">
-      <option name="closed" value="true" />
-      <created>1767795112058</created>
-      <option name="number" value="00077" />
-      <option name="presentableId" value="LOCAL-00077" />
-      <option name="project" value="LOCAL" />
-      <updated>1767795112058</updated>
-    </task>
-    <task id="LOCAL-00078" summary="Update credentials">
-      <option name="closed" value="true" />
-      <created>1767796910588</created>
-      <option name="number" value="00078" />
-      <option name="presentableId" value="LOCAL-00078" />
-      <option name="project" value="LOCAL" />
-      <updated>1767796910588</updated>
-    </task>
-    <task id="LOCAL-00079" summary="Update credentials">
-      <option name="closed" value="true" />
-      <created>1767797600536</created>
-      <option name="number" value="00079" />
-      <option name="presentableId" value="LOCAL-00079" />
-      <option name="project" value="LOCAL" />
-      <updated>1767797600536</updated>
-    </task>
-    <task id="LOCAL-00080" summary="Update credentials">
-      <option name="closed" value="true" />
-      <created>1767798031291</created>
-      <option name="number" value="00080" />
-      <option name="presentableId" value="LOCAL-00080" />
-      <option name="project" value="LOCAL" />
-      <updated>1767798031291</updated>
+      <workItem from="1768555261474" duration="21707000" />
     </task>
     <task id="LOCAL-00081" summary="Refactor showNotification function to simplify message handling">
       <option name="closed" value="true" />
@@ -714,7 +502,63 @@
       <option name="project" value="LOCAL" />
       <updated>1768512279067</updated>
     </task>
-    <option name="localTasksCounter" value="123" />
+    <task id="LOCAL-00123" summary="Update account deletion logic for improved reliability and dependency management&#10;&#10;- Update firebase-admin and firebase-functions dependencies to latest versions&#10;- Set deploy and logs npm scripts to use --project prod for production safety&#10;- Refactor account-deletion.js for clearer logic, improved error handling, and concise logging&#10;- Simplify authorization and email notification flows in account deletion functions&#10;- Enhance scheduled deletion processing and cleanup routines for better maintainability">
+      <option name="closed" value="true" />
+      <created>1768573814338</created>
+      <option name="number" value="00123" />
+      <option name="presentableId" value="LOCAL-00123" />
+      <option name="project" value="LOCAL" />
+      <updated>1768573814338</updated>
+    </task>
+    <task id="LOCAL-00124" summary="Update age verification logic to require authentication and merge custom claims">
+      <option name="closed" value="true" />
+      <created>1768574204974</created>
+      <option name="number" value="00124" />
+      <option name="presentableId" value="LOCAL-00124" />
+      <option name="project" value="LOCAL" />
+      <updated>1768574204974</updated>
+    </task>
+    <task id="LOCAL-00125" summary="Add Cloud Function to check user premium status with token and server-side claims">
+      <option name="closed" value="true" />
+      <created>1768574530320</created>
+      <option name="number" value="00125" />
+      <option name="presentableId" value="LOCAL-00125" />
+      <option name="project" value="LOCAL" />
+      <updated>1768574530320</updated>
+    </task>
+    <task id="LOCAL-00126" summary="Add Cloud Function to check user access for content categories based on claims">
+      <option name="closed" value="true" />
+      <created>1768575095931</created>
+      <option name="number" value="00126" />
+      <option name="presentableId" value="LOCAL-00126" />
+      <option name="project" value="LOCAL" />
+      <updated>1768575095931</updated>
+    </task>
+    <task id="LOCAL-00127" summary="Update Firebase imports to use v1 API and improve multiplayer module initialization logic">
+      <option name="closed" value="true" />
+      <created>1768576310176</created>
+      <option name="number" value="00127" />
+      <option name="presentableId" value="LOCAL-00127" />
+      <option name="project" value="LOCAL" />
+      <updated>1768576310176</updated>
+    </task>
+    <task id="LOCAL-00128" summary="Improve Firebase initialization checks and add utility for dependency waiting across modules">
+      <option name="closed" value="true" />
+      <created>1768577307921</created>
+      <option name="number" value="00128" />
+      <option name="presentableId" value="LOCAL-00128" />
+      <option name="project" value="LOCAL" />
+      <updated>1768577307921</updated>
+    </task>
+    <task id="LOCAL-00129" summary="Improve Firebase initialization checks and add utility for dependency waiting across modules">
+      <option name="closed" value="true" />
+      <created>1768577701200</created>
+      <option name="number" value="00129" />
+      <option name="presentableId" value="LOCAL-00129" />
+      <option name="project" value="LOCAL" />
+      <updated>1768577701200</updated>
+    </task>
+    <option name="localTasksCounter" value="130" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -735,12 +579,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="new changes after audit" />
-    <MESSAGE value="Audit changes/ Extract to css" />
-    <MESSAGE value="Update Hash" />
-    <MESSAGE value="Update Hash/ joingame/ mcs/ mds/ ml" />
-    <MESSAGE value="Update all atleast but not the 4 failed" />
-    <MESSAGE value="Update Device Mode" />
     <MESSAGE value="Update index.html" />
     <MESSAGE value="Update credentials" />
     <MESSAGE value="Refactor showNotification function to simplify message handling" />
@@ -760,7 +598,13 @@
     <MESSAGE value="Update Firebase deployment step to use --force flag in GitHub Actions workflow" />
     <MESSAGE value="Improve Firebase initialization robustness and set Functions region to europe-west1" />
     <MESSAGE value="Refactor Cloud Functions to use europe-west1 region and enhance security logic&#10;&#10;- Set region to europe-west1 for all relevant Cloud Functions&#10;- Improve age verification checks for FSK categories using RTDB cache&#10;- Update account deletion logic for more robust data handling and audit trail&#10;- Enhance rapid update detection and violation logging in realtime-security&#10;- Improve error handling and logging for cleanup and notification functions&#10;- Update settings to refresh and display FSK access badges after age verification" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor Cloud Functions to use europe-west1 region and enhance security logic&#10;&#10;- Set region to europe-west1 for all relevant Cloud Functions&#10;- Improve age verification checks for FSK categories using RTDB cache&#10;- Update account deletion logic for more robust data handling and audit trail&#10;- Enhance rapid update detection and violation logging in realtime-security&#10;- Improve error handling and logging for cleanup and notification functions&#10;- Update settings to refresh and display FSK access badges after age verification" />
+    <MESSAGE value="Update account deletion logic for improved reliability and dependency management&#10;&#10;- Update firebase-admin and firebase-functions dependencies to latest versions&#10;- Set deploy and logs npm scripts to use --project prod for production safety&#10;- Refactor account-deletion.js for clearer logic, improved error handling, and concise logging&#10;- Simplify authorization and email notification flows in account deletion functions&#10;- Enhance scheduled deletion processing and cleanup routines for better maintainability" />
+    <MESSAGE value="Update age verification logic to require authentication and merge custom claims" />
+    <MESSAGE value="Add Cloud Function to check user premium status with token and server-side claims" />
+    <MESSAGE value="Add Cloud Function to check user access for content categories based on claims" />
+    <MESSAGE value="Update Firebase imports to use v1 API and improve multiplayer module initialization logic" />
+    <MESSAGE value="Improve Firebase initialization checks and add utility for dependency waiting across modules" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improve Firebase initialization checks and add utility for dependency waiting across modules" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

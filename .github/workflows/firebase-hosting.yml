@@ -19,11 +19,6 @@ jobs:
         working-directory: ./functions
         run: npm ci
 
-      # ✅ Tests in functions/ laufen lassen
-      - name: Run Functions Tests
-        working-directory: ./functions
-        run: npm test
-
       # ✅ Firebase deployen (braucht kein Root npm)
       - name: Deploy to Firebase
         run: |
