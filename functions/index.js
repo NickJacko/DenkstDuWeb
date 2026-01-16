@@ -429,6 +429,47 @@ exports.setAgeVerification = functions
             throw new functions.https.HttpsError("internal", "Fehler bei der Altersverifikation");
         }
     });
+/**
+ * ✅ P0 SECURITY: Check premium status (Gen1 Callable)
+ * Returns { hasPremium: boolean }
+ */
+exports.checkPremiumStatus = functions
+    .region("europe-west1")
+    .runWith({ memory: "256MB", timeoutSeconds: 10 })
+    .https.onCall(async (data, context) => {
+        const functionName = "checkPremiumStatus";
+
+        // ✅ nur eingeloggte Nutzer
+        requireAuth(context);
+
+        try {
+            // 1) Erst Token-Claims prüfen (schnell)
+            const token = context.auth.token || {};
+            const tokenPremium =
+                token.premium === true ||
+                token.stripeRole === "premium" ||
+                token.stripeRole === "pro";
+
+            if (tokenPremium) {
+                return { hasPremium: true };
+            }
+
+            // 2) Falls Token noch nicht refreshed: serverseitig aktuellste Claims holen
+            const uid = context.auth.uid;
+            const user = await admin.auth().getUser(uid);
+            const claims = user.customClaims || {};
+
+            const hasPremium =
+                claims.premium === true ||
+                claims.stripeRole === "premium" ||
+                claims.stripeRole === "pro";
+
+            return { hasPremium: hasPremium === true };
+        } catch (error) {
+            log.error(functionName, "Premium check failed", error, { uid: context?.auth?.uid });
+            throw new functions.https.HttpsError("internal", "Premium check failed");
+        }
+    });
 
 // --------------------
 // Re-exports (other files)
