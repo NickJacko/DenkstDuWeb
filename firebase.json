@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": ".",
+    "public": "public",
     "ignore": [
       "firebase.json",
       "database.rules.json",
@@ -16,7 +16,6 @@
       "**/.idea/**",
       "**/*.iml",
       "**/functions/**",
-      "**/_*",
       "**/package*.json",
       "**/.DS_Store",
       "**/Thumbs.db",
