@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>No-Cap - Multiplayer Lobby</title>
+
+    <!-- ? SECURITY: Security Headers -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+    <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
+    <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
+    <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
+    <meta name="firebase-project-id" content="denkstduwebsite">
+    <meta name="firebase-storage-bucket" content="denkstduwebsite.firebasestorage.app">
+    <meta name="firebase-messaging-sender-id" content="27029260611">
+    <meta name="firebase-app-id" content="1:27029260611:web:3c7da4db0bf92e8ce247f6">
+    <meta name="firebase-measurement-id" content="G-BNKNW95HK8">
+    <meta name="firebase-app-check-key" content="6LeSPUQsAAAAANnUhOAey-M8Mgr0eeT9-inR7wKZ">
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/multiplayer-lobby.css">
+
+    <!-- ? SECURITY: DOMPurify lokal gehostet -->
+    <script src="/assets/lib/purify.min.js"></script>
+
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
+    <!-- QRCode.js for QR Code Generation -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+            integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
+    <script defer src="/assets/js/GameState.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/firebase-service.js"></script>
+    <script defer src="/assets/js/multiplayer-lobby.js"></script>
+
+
+</head>
+<body>
+<!-- Background Particles -->
+<div class="background-particles" aria-hidden="true">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
+
+<!-- Loading Spinner -->
+<div class="loading" id="loading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-text">Verbinde mit Firebase...</p>
+</div>
+
+<!-- App Container -->
+<div class="app-container">
+    <h1 class="screen-title">🎮 Multiplayer Lobby</h1>
+
+    <div class="glass-card">
+        <!-- Game Info Section -->
+        <section class="game-info" role="region" aria-labelledby="game-info-title">
+            <h2 id="game-info-title" class="sr-only">Spiel-Beitrittsinformationen</h2>
+
+            <div class="info-grid">
+                <!-- ? P1 UI/UX: Enhanced Game Code Display with Copy Button -->
+                <div class="info-item">
+                    <div class="info-label" id="game-code-label">Spiel-Code</div>
+                    <div class="game-code-wrapper">
+                        <!-- ? P0 SECURITY: textContent only, no innerHTML -->
+                        <div class="info-value game-code"
+                             id="game-code-display"
+                             aria-live="polite"
+                             aria-labelledby="game-code-label"
+                             role="status">
+                            Lädt...
+                        </div>
+                        <!-- ? P1 UI/UX: Copy to Clipboard Button -->
+                        <button class="copy-code-btn"
+                                id="copy-code-btn"
+                                type="button"
+                                aria-label="Spiel-Code in Zwischenablage kopieren"
+                                disabled>
+                            <span class="copy-icon" aria-hidden="true">📋</span>
+                            <span class="copy-text">Kopieren</span>
+                        </button>
+                    </div>
+                    <div class="code-hint" id="code-hint" aria-live="polite">
+                        <small>Teile diesen Code mit deinen Freunden</small>
+                    </div>
+                </div>
+
+                <!-- ? P1 UI/UX: Enhanced QR Code with ARIA Labels -->
+                <div class="info-item">
+                    <div class="info-label" id="qr-code-label">QR-Code scannen</div>
+                    <div class="qr-code-wrapper">
+                        <!-- ? P1 UI/UX: QR Code Container with proper ARIA -->
+                        <div class="qr-code-container"
+                             id="qr-code"
+                             role="img"
+                             aria-labelledby="qr-code-label qr-code-description">
+                            <div class="qr-loading" aria-hidden="true">
+                                <div class="spinner-small"></div>
+                                <span>Generiere QR-Code...</span>
+                            </div>
+                        </div>
+                        <!-- ? P1 UI/UX: QR Code Description for Accessibility -->
+                        <div id="qr-code-description" class="qr-description">
+                            <small>Scannen Sie den QR-Code mit Ihrem Smartphone, um dem Spiel beizutreten</small>
+                        </div>
+                        <!-- ? P1 UI/UX: Alternative Text Code Display -->
+                        <div class="qr-text-code" id="qr-text-code" aria-live="polite">
+                            <span class="code-prefix">Code:</span>
+                            <span class="code-value" id="qr-code-text">------</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Game Settings -->
+        <aside class="game-settings" role="region" aria-labelledby="settings-title">
+            <h2 id="settings-title" class="settings-title">⚙️ Einstellungen</h2>
+
+            <div class="setting-row">
+                <div class="setting-header">Schwierigkeit</div>
+                <div class="setting-content" id="difficulty-display" aria-live="polite">Lädt...</div>
+            </div>
+
+            <!-- ? P1 DSGVO: Categories with FSK Badges -->
+            <div class="setting-row">
+                <div class="setting-header">Kategorien</div>
+                <div class="categories-tags" id="selected-categories-display" role="list" aria-live="polite">
+                    <span class="loading-text-muted">Lädt...</span>
+                </div>
+            </div>
+
+            <!-- ? P1 DSGVO: Privacy Notice for Players -->
+            <div class="privacy-notice" role="note" aria-labelledby="privacy-notice-title">
+                <div class="privacy-notice-icon" aria-hidden="true">ℹ️</div>
+                <div class="privacy-notice-content">
+                    <strong id="privacy-notice-title">Datenschutzhinweis</strong>
+                    <p>
+                        Dein Name und deine Antworten werden während des Spiels temporär gespeichert
+                        und nach Beendigung automatisch gelöscht.
+                        <a href="privacy.html" class="privacy-link-inline" target="_blank" rel="noopener">
+                            Mehr erfahren
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <button class="edit-settings-btn host-only"
+                    id="edit-settings-btn"
+                    type="button"
+                    aria-label="Spieleinstellungen bearbeiten">
+                ⚙️ Einstellungen ändern
+            </button>
+        </aside>
+
+        <!-- Players Section -->
+        <section class="players-section">
+            <div class="players-header">
+                <h2 class="players-title">👥 Spieler</h2>
+                <div class="player-count" id="player-count" aria-live="polite">0/8 Spieler</div>
+            </div>
+            <div class="players-list" id="players-list" role="list">
+                <div class="empty-players">Lade Spieler...</div>
+            </div>
+        </section>
+
+        <!-- Join Info -->
+        <aside class="join-info host-only">
+            <div class="join-title">📲 Andere einladen</div>
+            <div class="join-description">
+                Teile den Spielcode oder QR-Code mit deinen Freunden, damit sie direkt beitreten können.
+            </div>
+        </aside>
+
+        <!-- Controls -->
+        <div class="controls" role="group" aria-label="Lobby-Steuerung">
+            <button class="btn-ready guest-only"
+                    id="ready-btn"
+                    type="button"
+                    aria-label="Als bereit markieren">
+                <span aria-hidden="true">?</span> Bereit
+            </button>
+            <button class="btn-start host-only"
+                    id="start-btn"
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    aria-label="Spiel starten (erst wenn alle bereit sind)">
+                <span aria-hidden="true">🎮</span> Spiel starten
+            </button>
+            <button class="btn-leave"
+                    id="leave-btn"
+                    type="button"
+                    aria-label="Lobby verlassen">
+                <span aria-hidden="true">?</span> Lobby verlassen
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ? P1 STABILITY: Leave Confirmation Dialog for Host -->
+<div class="confirmation-dialog"
+     id="leave-confirmation"
+     role="alertdialog"
+     aria-modal="true"
+     aria-labelledby="leave-dialog-title"
+     aria-describedby="leave-dialog-desc"
+     aria-hidden="true"
+     hidden>
+    <div class="dialog-overlay" aria-hidden="true"></div>
+    <div class="dialog-content">
+        <h2 id="leave-dialog-title" class="dialog-title">
+            <span aria-hidden="true">🚪</span> Lobby verlassen?
+        </h2>
+        <p id="leave-dialog-desc" class="dialog-description">
+            <span id="leave-message-host" class="host-only">
+                <strong>Als Host verlassen:</strong><br>
+                <span id="connected-players-count">0 Spieler</span> sind verbunden.
+                Wenn du die Lobby verlässt, wird das Spiel für alle beendet.
+            </span>
+            <span id="leave-message-guest" class="guest-only">
+                Möchtest du die Lobby wirklich verlassen?
+            </span>
+        </p>
+        <div class="dialog-buttons" role="group" aria-label="Bestätigungsoptionen">
+            <button class="btn-cancel"
+                    id="cancel-leave-btn"
+                    type="button"
+                    aria-label="In der Lobby bleiben">
+                Abbrechen
+            </button>
+            <button class="btn-confirm"
+                    id="confirm-leave-btn"
+                    type="button"
+                    aria-label="Lobby jetzt verlassen">
+                Verlassen
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Footer -->
+<div class="privacy-footer">
+    <a href="privacy.html"
+       class="privacy-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Datenschutzerklärung öffnen">
+        Datenschutz
+    </a>
+    <span class="footer-separator" aria-hidden="true">•</span>
+    <a href="imprint.html"
+       class="privacy-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Impressum öffnen">
+        Impressum
+    </a>
+</div>
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
+    <script src="/assets/js/error-boundary.js"></script>
+
+</body>
+</html>

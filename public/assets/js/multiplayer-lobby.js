@@ -163,18 +163,25 @@
             return;
         }
 
+
         if (!window.gameState && !window.GameState) {
             showNotification('Fehler: GameState nicht geladen', 'error');
             return;
         }
 
+        MultiplayerLobbyModule.gameState = window.gameState || (window.GameState ? new window.GameState() : null);
+
+        if (!MultiplayerLobbyModule.gameState) {
+            showNotification('GameState nicht verfügbar', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return;
+        }
 
         // P1 FIX: Wait for dependencies (guarded)
         if (window.NocapUtils && typeof window.NocapUtils.waitForDependencies === 'function') {
             await window.NocapUtils.waitForDependencies([
-                'MultiplayerLobbyModule.gameState',
+                'GameState',
                 'FirebaseService',
-                'firebaseGameService',
                 'firebase'
             ]);
         } else if (MultiplayerLobbyModule.isDevelopment) {
@@ -201,14 +208,6 @@
                 setTimeout(() => window.location.href = 'index.html', 3000);
                 return;
             }
-        }
-
-        MultiplayerLobbyModule.gameState = window.gameState || (window.GameState ? new window.GameState() : null);
-
-        if (!MultiplayerLobbyModule.gameState) {
-            showNotification('GameState nicht verfügbar', 'error');
-            setTimeout(() => window.location.href = 'index.html', 2000);
-            return;
         }
 
 
@@ -1550,8 +1549,6 @@
                 }
             }
         });
-
-        addTrackedEventListener(window, 'beforeunload', cleanup);
 
         if (MultiplayerLobbyModule.isDevelopment) {
             console.log('✅ Event listeners setup');

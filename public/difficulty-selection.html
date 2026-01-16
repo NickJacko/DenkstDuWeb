@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>No-Cap - Schwierigkeit wählen</title>
+
+    <!-- ? Security Headers -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
+    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+    <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
+    <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
+    <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
+    <meta name="firebase-project-id" content="denkstduwebsite">
+    <meta name="firebase-storage-bucket" content="denkstduwebsite.firebasestorage.app">
+    <meta name="firebase-messaging-sender-id" content="27029260611">
+    <meta name="firebase-app-id" content="1:27029260611:web:3c7da4db0bf92e8ce247f6">
+    <meta name="firebase-measurement-id" content="G-BNKNW95HK8">
+    <meta name="firebase-app-check-key" content="6LeSPUQsAAAAANnUhOAey-M8Mgr0eeT9-inR7wKZ">
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+
+    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
+    <link rel="stylesheet" href="/assets/css/styles.css?v=2.0">
+    <link rel="stylesheet" href="/assets/css/difficulty-selection.css?v=2.0">
+
+    <!-- ? SECURITY: DOMPurify lokal gehostet -->
+    <script src="/assets/lib/purify.min.js"></script>
+
+    <!-- ? SECURITY: Firebase SDK with crossorigin -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
+    <!-- ? SECURITY: Core Scripts in correct dependency order -->
+    <script defer src="/assets/js/GameState.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/firebase-auth.js"></script>
+    <script defer src="/assets/js/settings.js"></script>
+    <script defer src="/assets/js/difficulty-selection.js"></script>
+
+
+</head>
+<body>
+<!-- Background Particles -->
+<div class="background-particles" aria-hidden="true">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
+
+<!-- Back Button -->
+<button class="back-button" id="back-btn" type="button" aria-label="Zurück zur Kategorieauswahl">
+    ← Zurück
+</button>
+
+<!-- Loading Spinner -->
+<div class="loading" id="loading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-text">Lädt...</p>
+</div>
+
+<!-- App Container -->
+<div class="app-container">
+    <h1 class="screen-title">⚙️ Schwierigkeit wählen</h1>
+
+    <div class="glass-card">
+        <p class="selection-description">
+            Wie hart soll es werden?<br>
+            <small id="description-subtitle">Bestimmt die Konsequenz bei falschen Schätzungen</small>
+        </p>
+
+        <div class="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad auswählen" aria-required="true">
+                <!-- ? P1 UI/UX: Semantic button elements with radio group behavior -->
+
+                <!-- Easy -->
+                <button type="button"
+                        class="difficulty-card easy"
+                        data-difficulty="easy"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Entspannt, Leicht, 1 Grundpunkt bei falscher Antwort, perfekt für entspannte Runden">
+                    <div class="difficulty-header">
+                        <div class="difficulty-left">
+                            <div class="sips-indicator" id="easy-icon" aria-hidden="true">🍹</div>
+                            <div class="difficulty-info">
+                                <h2>Entspannt</h2>
+                                <div class="difficulty-badge easy-badge" role="img" aria-label="Leichter Schwierigkeitsgrad">LEICHT</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sips-explanation">
+                        <div class="base-sips" id="easy-base">1 Grundpunkt bei falscher Antwort</div>
+                        <div class="sips-formula" id="easy-formula">
+                            <div>Punkte = Abweichung der Schätzung</div>
+                            <div>Perfekt für entspannte Runden</div>
+                        </div>
+                    </div>
+
+                    <div class="difficulty-description">
+                        Für gemütliche Runden mit Familie und Freunden.
+                        Weniger Bestrafung, mehr Spaß am Raten und Kennenlernen.
+                    </div>
+                </button>
+
+                <!-- Medium -->
+                <button type="button"
+                        class="difficulty-card medium"
+                        data-difficulty="medium"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Normal, Mittel, Abweichung gleich Punkte, der Standard für lustige Partyabende">
+                    <div class="difficulty-header">
+                        <div class="difficulty-left">
+                            <div class="sips-indicator" id="medium-icon" aria-hidden="true">🍺</div>
+                            <div class="difficulty-info">
+                                <h2>Normal</h2>
+                                <div class="difficulty-badge medium-badge" role="img" aria-label="Mittlerer Schwierigkeitsgrad">MITTEL</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sips-explanation">
+                        <div class="base-sips" id="medium-base">Abweichung = Punkte</div>
+                        <div class="sips-formula" id="medium-formula">
+                            <div>Punkte = Abweichung der Schätzung</div>
+                            <div>Der Standard für lustige Partyabende</div>
+                        </div>
+                    </div>
+
+                    <div class="difficulty-description">
+                        Die perfekte Balance zwischen Spaß und Herausforderung.
+                        Ideal für die meisten Partys und Spieleabende.
+                    </div>
+                </button>
+
+                <!-- Hard -->
+                <button type="button"
+                        class="difficulty-card hard"
+                        data-difficulty="hard"
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Hardcore, Schwer, doppelte Abweichung, nur für erfahrene Spieler, kann FSK 18 Inhalte mit Alkohol-Modus enthalten">
+                    <div class="difficulty-header">
+                        <div class="difficulty-left">
+                            <div class="sips-indicator" id="hard-icon" aria-hidden="true">🍻</div>
+                            <div class="difficulty-info">
+                                <h2>Hardcore</h2>
+                                <div class="difficulty-badge hard-badge" role="img" aria-label="Schwerer Schwierigkeitsgrad">SCHWER</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sips-explanation">
+                        <div class="base-sips" id="hard-base">Doppelte Abweichung!</div>
+                        <div class="sips-formula" id="hard-formula">
+                            <div>Punkte = Abweichung × 2</div>
+                            <div>Nur für erfahrene Spieler!</div>
+                        </div>
+                    </div>
+
+                    <div class="difficulty-description">
+                        Für Profis und mutige Gruppen. Hohe Strafen machen jede
+                        falsche Schätzung richtig teuer - seid ihr bereit?
+                    </div>
+                </button>
+            </div>
+
+            <div class="controls">
+                <button class="btn-continue"
+                        id="continue-btn"
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        aria-label="Weiter zum Spiel (erst nach Schwierigkeitsauswahl aktiviert)">
+                    Schwierigkeitsgrad wählen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
+    <script src="/assets/js/error-boundary.js"></script>
+
+</body>
+</html>
