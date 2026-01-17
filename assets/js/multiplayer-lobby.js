@@ -399,35 +399,42 @@
         try {
             showNotification('Erstelle Spiel...', 'info', 500);
 
-            // P0 FIX: Generate game code locally
-            const gameId = generateGameCode();
+// ✅ NEW: Create game securely via Cloud Function (Option A)
+            const createGameFn = firebase.functions().httpsCallable('createGameSecure');
+
+            const selectedCategories = MultiplayerLobbyModule.gameState.selectedCategories || [];
+            const difficulty = MultiplayerLobbyModule.gameState.difficulty || 'medium';
+            const alcoholMode = Boolean(MultiplayerLobbyModule.gameState.alcoholMode); // falls du hast, sonst false
+
+            const res = await createGameFn({
+                playerName: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
+                difficulty,
+                alcoholMode,
+                selectedCategories
+            });
+
+            const { gameId, gameCode } = res.data;
+
+// ✅ Save IDs
             currentGameId = gameId;
 
-            const settings = {
-                categories: MultiplayerLobbyModule.gameState.selectedCategories || [],
-                difficulty: MultiplayerLobbyModule.gameState.difficulty || 'medium'
-            };
+// ✅ Update GameState
+            MultiplayerLobbyModule.gameState.gameId = gameId;
+            MultiplayerLobbyModule.gameState.gameCode = gameCode; // neu (falls GameState das nicht kennt, ist trotzdem ok)
+            MultiplayerLobbyModule.gameState.isHost = true;
 
-            const gameData = {
-                gameId: gameId,
-                hostId: currentUserId,
-                hostName: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
-                settings: settings,
-                players: {
-                    [getPlayerKey()]: {
-                        id: getPlayerKey(),
-                        name: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
-                        isHost: true,
-                        isReady: true, // Host is always ready
-                        joinedAt: Date.now()
-                    }
-                },
-                status: 'lobby',
-                createdAt: Date.now(),
-                lastActivity: Date.now()
-            };
+// ✅ Use gameCode for display/QR (NOT gameId)
+            displayGameCode(gameCode);
+            displayQRCode(gameCode);
 
-            const gameRef = firebase.database().ref(`games/${gameId}`);
+// ✅ Show settings locally (or read from DB)
+            displaySettings({ categories: selectedCategories, difficulty });
+
+// ✅ Listen to the real game by gameId
+            setupGameListener(gameId);
+
+            showNotification('Spiel erstellt!', 'success', 800);
+
             await gameRef.set(gameData);
 
             MultiplayerLobbyModule.gameState.gameId = gameId;
@@ -462,23 +469,26 @@
             }
 
             const game = snapshot.val();
+            const codeToShow = game.gameCode || MultiplayerLobbyModule.gameState.gameCode || currentGameId;
 
-            displayGameCode(currentGameId);
-            displayQRCode(currentGameId);
+            displayGameCode(codeToShow);
+            displayQRCode(codeToShow);
             displaySettings(game.settings);
 
-            // ✅ FIX: Don't add player if already joined via join-game.html
-            // join-game.html already adds the player via MultiplayerLobbyModule.firebaseService.joinGame()
-            // Just verify player exists
+            // ✅ Option A: Spieler wird ausschließlich serverseitig via joinGameSecure angelegt.
             const playerExists = !!game.players?.[getPlayerKey()];
 
             if (!playerExists && !isHost) {
-                // Only add if player truly doesn't exist (shouldn't happen normally)
-                console.warn('⚠️ Player not found in game, adding...');
-                await addPlayerToGame(currentGameId);
-            } else if (MultiplayerLobbyModule.isDevelopment && !isHost) {
-                console.log('✅ Player already in game, skipping add');
+                console.warn('⚠️ Player not found in game (should not happen). Redirect to join...');
+                showNotification('Bitte erneut über den Join-Code beitreten', 'warning', 1500);
+                setTimeout(() => window.location.href = 'join-game.html', 1200);
+                return;
             }
+
+            if (MultiplayerLobbyModule.isDevelopment && !isHost) {
+                console.log('✅ Player exists in game');
+            }
+
 
             setupGameListener(currentGameId);
 

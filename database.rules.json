@@ -5,15 +5,11 @@
 
     "games": {
       "$gameId": {
-        ".read": "auth != null && (
-          data.child('players').child(auth.uid).exists() ||
-          data.child('hostId').val() === auth.uid
-        )",
+        ".read": "auth != null && (data.child('players').child(auth.uid).exists() || data.child('hostId').val() === auth.uid)",
 
-        ".write": "auth != null && (
-          !data.exists() ||
-          data.child('hostId').val() === auth.uid
-        )",
+        // ✅ Option A: Clients dürfen KEINE Games erstellen/überschreiben.
+        // Games werden nur via Cloud Functions (Admin SDK) erstellt/gejoint.
+        ".write": false,
 
         "hostId": {
           ".validate": "newData.isString() && newData.val().length > 0"
@@ -23,14 +19,32 @@
           ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)"
         },
 
+        // ⚠️ Du nutzt in deinem Code "status", nicht "phase".
+        // Ich lasse phase drin, aber ergänze status weiter unten.
         "phase": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isString() && (
-            newData.val() === 'lobby' ||
-            newData.val() === 'playing' ||
-            newData.val() === 'results' ||
-            newData.val() === 'finished'
-          )"
+          ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'results' || newData.val() === 'finished')"
+        },
+
+        // ✅ Host darf status setzen (z.B. startGame -> 'playing')
+        "status": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'results' || newData.val() === 'finished')"
+        },
+
+        "startedAt": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber()"
+        },
+
+        "currentRound": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber() && newData.val() >= 1"
+        },
+
+        "lastUpdate": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber()"
         },
 
         "currentQuestionIndex": {
@@ -43,50 +57,64 @@
         },
 
         "difficulty": {
-          ".validate": "newData.isString() && (
-            newData.val() === 'easy' ||
-            newData.val() === 'medium' ||
-            newData.val() === 'hard'
-          )"
+          ".validate": "newData.isString() && (newData.val() === 'easy' || newData.val() === 'medium' || newData.val() === 'hard')"
         },
 
         "alcoholMode": {
           ".validate": "newData.isBoolean()"
         },
 
+        // ✅ Clients dürfen Kategorien NICHT setzen (nur validate für server writes)
         "selectedCategories": {
+          ".write": false,
           ".validate": "newData.hasChildren()",
           "$category": {
-            ".validate": "newData.isString() && (
-              newData.val() === 'fsk0' ||
-              newData.val() === 'fsk16' ||
-              newData.val() === 'fsk18' ||
-              newData.val() === 'special'
-            )"
+            ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special')"
           }
         },
 
         "players": {
           "$playerId": {
-            ".write": "auth != null && (
-              $playerId === auth.uid ||
-              root.child('games').child($gameId).child('hostId').val() === auth.uid
-            )",
+            // ✅ Option A: Kein Client darf Player-Objekte anlegen/ändern (join passiert per Function)
+            ".write": false,
 
+            // ✅ Client darf NUR seine eigenen Presence/Ready Felder updaten,
+            // und nur wenn er bereits Teilnehmer ist.
+            "isReady": {
+              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+              ".validate": "newData.isBoolean()"
+            },
+
+            "lastSeen": {
+              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+              ".validate": "newData.isNumber()"
+            },
+
+            "online": {
+              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+              ".validate": "newData.isBoolean()"
+            },
+
+            "disconnectedAt": {
+              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+              ".validate": "newData.isNumber()"
+            },
+
+            "rejoinDeadline": {
+              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+              ".validate": "newData.isNumber() || newData.val() === null"
+            },
+
+            // ✅ server-only fields (validate only)
             "name": {
               ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 15"
             },
 
             "isPremium": {
-              ".write": "auth != null && $playerId === auth.uid",
               ".validate": "newData.isBoolean()"
             },
 
             "isHost": {
-              ".validate": "newData.isBoolean()"
-            },
-
-            "isReady": {
               ".validate": "newData.isBoolean()"
             },
 
@@ -101,6 +129,8 @@
         },
 
         "lastActivity": {
+          // optional: wenn du lastActivity clientseitig updatest -> host write erlauben
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
           ".validate": "newData.isNumber()"
         },
 
@@ -110,10 +140,46 @@
       }
     },
 
+    "gameCodes": {
+      "$code": {
+        ".read": "auth != null",
+
+        // ✅ Option A: Mapping wird nur von Cloud Functions geschrieben
+        ".write": false,
+
+        "hostId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+
+        "gameId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+
+        "status": {
+          ".validate": "newData.isString()"
+        },
+
+        "maxPlayers": {
+          ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 8"
+        },
+
+        "categories": {
+          ".validate": "newData.hasChildren()"
+        },
+
+        "difficulty": {
+          ".validate": "newData.isString() && (newData.val() === 'easy' || newData.val() === 'medium' || newData.val() === 'hard')"
+        },
+
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+
     "questions": {
       ".read": "auth != null",
       ".write": false,
-
       "$category": {
         ".validate": "$category === 'fsk0' || $category === 'fsk16' || $category === 'fsk18' || $category === 'special'"
       }
@@ -170,4 +236,3 @@
     }
   }
 }
-

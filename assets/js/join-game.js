@@ -540,58 +540,54 @@
                 }
             }
 
-            const gameRef = JoinGameModule.firebaseService.database.ref(`games/${gameCode}`);
-            const snapshot = await gameRef.once('value');
+// 1) Mapping holen: gameCodes/{gameCode} -> { gameId, status, categories, difficulty, maxPlayers }
+            const codeRef = JoinGameModule.firebaseService.database.ref(`gameCodes/${gameCode}`);
+            const codeSnap = await codeRef.once('value');
 
-            if (!snapshot.exists()) {
+            if (!codeSnap.exists()) {
                 throw new Error('Spiel nicht gefunden');
             }
 
-            const gameData = snapshot.val();
-            const gameStatus = gameData.status || gameData.gameState;
+            const codeData = codeSnap.val() || {};
+            const gameId = codeData.gameId;
 
-            if (gameStatus === 'finished') {
-                throw new Error('Spiel bereits beendet');
+            if (!gameId) {
+                throw new Error('Spiel nicht gefunden');
             }
 
-            if (gameStatus === 'playing') {
-                throw new Error('Spiel läuft bereits');
-            }
+            const status = String(codeData.status || 'lobby');
+            if (status === 'finished') throw new Error('Spiel bereits beendet');
+            if (status === 'playing') throw new Error('Spiel läuft bereits');
 
-            Logger.debug('✅ Game status OK for joining:', gameStatus);
+            // categories: object -> array
+            const categories = codeData.categories ? Object.values(codeData.categories) : [];
 
-            // Check FSK restrictions
-            const ageVerification = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
-                : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
+            // UX-FSK Check (server enforced beim Join sowieso)
+            const userAgeLevel = JoinGameModule.gameState.userAgeLevel || 0;
+            if (categories.includes('fsk18') && userAgeLevel < 18) throw new Error('Du musst mindestens 18 Jahre alt sein für dieses Spiel');
+            if (categories.includes('fsk16') && userAgeLevel < 16) throw new Error('Du musst mindestens 16 Jahre alt sein für dieses Spiel');
 
-            const userAgeLevel = (ageVerification && ageVerification.isAdult) ? 18 : 0;
-            const categories = gameData.settings?.categories || gameData.selectedCategories || [];
+            const maxPlayers = Number(codeData.maxPlayers || 8);
 
-            const hasFSK18 = categories.includes('fsk18');
-            const hasFSK16 = categories.includes('fsk16');
+            // Preview-Objekt so bauen, dass joinGame() später settings lesen kann
+            const previewGameData = {
+                _gameId: gameId,
+                _gameCode: gameCode,
+                status,
+                settings: {
+                    categories,
+                    difficulty: codeData.difficulty || 'medium',
+                    maxPlayers
+                }
+            };
 
-            if (hasFSK18 && userAgeLevel < 18) {
-                throw new Error('Du musst mindestens 18 Jahre alt sein für dieses Spiel');
-            }
+            JoinGameModule.currentGameData = previewGameData;
+            displayGameInfo(previewGameData);
 
-            if (hasFSK16 && userAgeLevel < 16) {
-                throw new Error('Du musst mindestens 16 Jahre alt sein für dieses Spiel');
-            }
-
-            const playerCount = gameData.players ? Object.keys(gameData.players).length : 0;
-            const maxPlayers = gameData.settings?.maxPlayers || 8;
-
-            if (playerCount >= maxPlayers) {
-                throw new Error(`Spiel ist voll (${maxPlayers}/${maxPlayers})`);
-            }
-
-            // Success
-            JoinGameModule.currentGameData = gameData;
-            displayGameInfo(gameData);
             input.classList.add('valid');
             input.setAttribute('aria-invalid', 'false');
             showNotification('Spiel gefunden!', 'success', 2000);
+
 
             setTimeout(() => {
                 const playerNameInput = document.getElementById('player-name');
@@ -827,17 +823,24 @@
         showLoading('Trete Spiel bei...');
 
         try {
-            const result = await JoinGameModule.firebaseService.joinGame(gameCode, {
-                name: playerName
+// ✅ NEW: Join securely via Cloud Function
+            const joinGameFn = firebase.functions().httpsCallable('joinGameSecure');
+
+            const res = await joinGameFn({
+                gameCode,        // 6-stellig
+                playerName
             });
 
-            Logger.debug('✅ Join successful:', result);
+            const { gameId } = res.data;
 
-            JoinGameModule.gameState.gameId = gameCode;
+// ✅ Save GameState (IMPORTANT: gameId ist die echte DB-ID)
+            JoinGameModule.gameState.gameId = gameId;
+            JoinGameModule.gameState.gameCode = gameCode; // optional
             JoinGameModule.gameState.playerId =
                 (JoinGameModule.firebaseService?.getCurrentUser?.()?.uid) ||
                 (firebase?.auth?.()?.currentUser?.uid) ||
-                result.playerId;
+                JoinGameModule.gameState.playerId;
+
             JoinGameModule.gameState.authUid = JoinGameModule.gameState.playerId;
             JoinGameModule.gameState.setPlayerName(playerName);
 
@@ -845,25 +848,13 @@
             JoinGameModule.gameState.isHost = false;
             JoinGameModule.gameState.isGuest = true;
 
-            const settings = result.gameData.settings || {};
-            const categories = settings.categories || result.gameData.selectedCategories || [];
+// ✅ categories/difficulty aus der vorherigen checkGameExists()-Antwort ziehen
+            const gameData = JoinGameModule.currentGameData || {};
+            const settings = gameData.settings || {};
+            const categories = settings.categories || [];
 
-            categories.forEach(cat => {
-                JoinGameModule.gameState.addCategory(cat);
-            });
-
+            categories.forEach(cat => JoinGameModule.gameState.addCategory(cat));
             JoinGameModule.gameState.setDifficulty(settings.difficulty || 'medium');
-
-            Logger.debug('✅ Game state configured:', {
-                gameId: JoinGameModule.gameState.gameId,
-                playerId: JoinGameModule.gameState.playerId,
-                playerName: JoinGameModule.gameState.playerName,
-                deviceMode: JoinGameModule.gameState.deviceMode,
-                isHost: JoinGameModule.gameState.isHost,
-                isGuest: JoinGameModule.gameState.isGuest,
-                categories: JoinGameModule.gameState.selectedCategories,
-                difficulty: JoinGameModule.gameState.difficulty
-            });
 
             hideLoading();
             showNotification('Erfolgreich beigetreten!', 'success', 500);
@@ -871,6 +862,7 @@
             setTimeout(() => {
                 window.location.href = 'multiplayer-lobby.html';
             }, 300);
+
 
         } catch (error) {
             Logger.error('❌ Join failed:', error);

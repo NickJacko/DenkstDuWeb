@@ -559,6 +559,299 @@ exports.checkCategoryAccess = functions
             throw new functions.https.HttpsError("internal", "Category access check failed");
         }
     });
+
+// --------------------
+// SECURE MULTIPLAYER: create/join via Callable
+// --------------------
+
+// helper: random game code (6 chars A-Z0-9)
+function generateGameCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusing I/O/1/0
+    let out = "";
+    for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+}
+
+// helper: normalize & validate categories
+function normalizeCategories(input) {
+    const allowed = new Set(["fsk0", "fsk16", "fsk18", "special"]);
+    const arr = Array.isArray(input) ? input : [];
+    const cleaned = arr.map(v => String(v || "").trim()).filter(Boolean);
+
+    if (!cleaned.length) throw new functions.https.HttpsError("invalid-argument", "selectedCategories darf nicht leer sein");
+
+    for (const c of cleaned) {
+        if (!allowed.has(c)) {
+            throw new functions.https.HttpsError("invalid-argument", `Unbekannte Kategorie: ${c}`);
+        }
+    }
+
+    // de-dupe
+    return Array.from(new Set(cleaned));
+}
+
+// helper: enforce category access (uses token claims, with fallback to latest claims)
+async function assertCategoryAllowed(categoryId, context) {
+    // fsk0 always ok
+    if (categoryId === "fsk0") return true;
+
+    const token = context.auth?.token || {};
+
+    const tokenPremium =
+        token.premium === true ||
+        token.stripeRole === "premium" ||
+        token.stripeRole === "pro";
+
+    const tokenFsk18 = token.fsk18 === true;
+    const tokenFsk16 = token.fsk16 === true || tokenFsk18 === true; // 18 implies 16
+
+    if (categoryId === "special") {
+        if (tokenPremium) return true;
+
+        // fallback: latest server claims
+        const user = await admin.auth().getUser(context.auth.uid);
+        const claims = user.customClaims || {};
+        const hasPremium =
+            claims.premium === true ||
+            claims.stripeRole === "premium" ||
+            claims.stripeRole === "pro";
+        if (hasPremium) return true;
+
+        throw new functions.https.HttpsError("permission-denied", "Premium erforderlich");
+    }
+
+    if (categoryId === "fsk18") {
+        if (tokenFsk18) return true;
+
+        const user = await admin.auth().getUser(context.auth.uid);
+        const claims = user.customClaims || {};
+        if (claims.fsk18 === true) return true;
+
+        throw new functions.https.HttpsError("permission-denied", "FSK18 nicht erlaubt");
+    }
+
+    if (categoryId === "fsk16") {
+        if (tokenFsk16) return true;
+
+        const user = await admin.auth().getUser(context.auth.uid);
+        const claims = user.customClaims || {};
+        if (claims.fsk16 === true || claims.fsk18 === true) return true;
+
+        throw new functions.https.HttpsError("permission-denied", "FSK16 nicht erlaubt");
+    }
+
+    // default deny
+    throw new functions.https.HttpsError("permission-denied", "Kategorie nicht erlaubt");
+}
+
+/**
+ * ✅ Secure: Create multiplayer game (Gen1 Callable)
+ * Input:
+ *  {
+ *    playerName: string,
+ *    difficulty: 'easy'|'medium'|'hard',
+ *    alcoholMode: boolean,
+ *    selectedCategories: string[]  // e.g. ['fsk0','fsk16']
+ *  }
+ * Output: { gameId, gameCode }
+ */
+exports.createGameSecure = functions
+    .region("europe-west1")
+    .runWith({ memory: "256MB", timeoutSeconds: 10 })
+    .https.onCall(async (data, context) => {
+        const functionName = "createGameSecure";
+        requireAuth(context);
+
+        const uid = context.auth.uid;
+        const playerName = String(data?.playerName || "").trim();
+        const difficulty = String(data?.difficulty || "easy").trim();
+        const alcoholMode = Boolean(data?.alcoholMode);
+
+        if (playerName.length < 2 || playerName.length > 15) {
+            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-15 Zeichen haben");
+        }
+
+        if (!["easy", "medium", "hard"].includes(difficulty)) {
+            throw new functions.https.HttpsError("invalid-argument", "Ungültige difficulty");
+        }
+
+        const selectedCategories = normalizeCategories(data?.selectedCategories);
+
+        // ✅ enforce access for each selected category
+        for (const c of selectedCategories) {
+            await assertCategoryAllowed(c, context);
+        }
+
+        const db = admin.database();
+        const now = Date.now();
+        const ttl = now + 24 * 60 * 60 * 1000;
+
+        // create unique gameId
+        const gameRef = db.ref("games").push();
+        const gameId = gameRef.key;
+
+        // ensure unique gameCode (try a few times)
+        let gameCode = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const candidate = generateGameCode();
+            const snap = await db.ref(`gameCodes/${candidate}`).once("value");
+            if (!snap.exists()) {
+                gameCode = candidate;
+                break;
+            }
+        }
+        if (!gameCode) {
+            log.error(functionName, "Could not generate unique gameCode", null, { uid });
+            throw new functions.https.HttpsError("internal", "GameCode konnte nicht erzeugt werden");
+        }
+
+        // RTDB arrays are objects -> {0:'fsk0',1:'fsk16'}
+        const categoriesObj = {};
+        selectedCategories.forEach((c, i) => (categoriesObj[String(i)] = c));
+
+        // best-effort premium flag (token)
+        const token = context.auth.token || {};
+        const isPremium =
+            token.premium === true ||
+            token.stripeRole === "premium" ||
+            token.stripeRole === "pro";
+
+        const settings = {
+            categories: selectedCategories, // ✅ als Array fürs Frontend
+            difficulty,
+            alcoholMode,
+            maxPlayers: 8
+        };
+
+        const gameData = {
+            hostId: uid,
+            gameCode,
+
+            // ✅ einheitlich
+            status: "lobby",
+            phase: "lobby", // optional, falls alte Stellen noch phase lesen
+
+            // ✅ kompatibel fürs Frontend
+            settings,
+
+            // optional: wenn du es noch irgendwo nutzt
+            selectedCategories: categoriesObj,
+
+            createdAt: now,
+            lastActivity: now,
+            ttl,
+            players: {
+                [uid]: {
+                    name: playerName,
+                    isHost: true,
+                    isReady: false,
+                    isPremium: Boolean(isPremium),
+                    joinedAt: now
+                }
+            }
+        };
+
+
+        await gameRef.set(gameData);
+        await db.ref(`gameCodes/${gameCode}`).set({
+            gameId,
+            hostId: uid,
+            status: "lobby",
+            maxPlayers: 8,
+            categories: categoriesObj,
+            difficulty,
+            createdAt: now
+        });
+
+        log.info(functionName, "Game created", { uid, gameId, gameCode, selectedCategories });
+        return { gameId, gameCode };
+    });
+
+/**
+ * ✅ Secure: Join multiplayer game via code (Gen1 Callable)
+ * Input: { gameCode: string, playerName: string }
+ * Output: { gameId }
+ */
+exports.joinGameSecure = functions
+    .region("europe-west1")
+    .runWith({ memory: "256MB", timeoutSeconds: 10 })
+    .https.onCall(async (data, context) => {
+        const functionName = "joinGameSecure";
+        requireAuth(context);
+
+        const uid = context.auth.uid;
+        const gameCode = String(data?.gameCode || "").trim().toUpperCase();
+        const playerName = String(data?.playerName || "").trim();
+
+        if (!gameCode || !/^[A-Z0-9]{6}$/.test(gameCode)) {
+            throw new functions.https.HttpsError("invalid-argument", "Ungültiger gameCode");
+        }
+        if (playerName.length < 2 || playerName.length > 15) {
+            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-15 Zeichen haben");
+        }
+
+        const db = admin.database();
+
+// 1) code -> gameId
+        const codeSnap = await db.ref(`gameCodes/${gameCode}`).once("value");
+        if (!codeSnap.exists()) {
+            throw new functions.https.HttpsError("not-found", "Spiel nicht gefunden");
+        }
+
+        const codeData = codeSnap.val();
+        const gameId = codeData.gameId;
+        if (!gameId) {
+            throw new functions.https.HttpsError("not-found", "Spiel nicht gefunden");
+        }
+
+// 2) game laden
+        const gameSnap = await db.ref(`games/${gameId}`).once("value");
+        if (!gameSnap.exists()) {
+            throw new functions.https.HttpsError("not-found", "Spiel nicht gefunden");
+        }
+        const game = gameSnap.val() || {};
+
+// Kategorien aus settings (neu) oder fallback selectedCategories (alt)
+        const categories = Array.isArray(game.settings?.categories)
+            ? game.settings.categories
+            : (game.selectedCategories ? Object.values(game.selectedCategories) : []);
+
+// ✅ enforce access
+        for (const c of categories) {
+            await assertCategoryAllowed(String(c), context);
+        }
+
+// ✅ Lobby-Status prüfen (status oder phase)
+        const status = String(game.status || game.phase || "lobby");
+        if (status !== "lobby") {
+            throw new functions.https.HttpsError("failed-precondition", "Beitritt nur in der Lobby möglich");
+        }
+
+
+        const now = Date.now();
+
+        const token = context.auth.token || {};
+        const isPremium =
+            token.premium === true ||
+            token.stripeRole === "premium" ||
+            token.stripeRole === "pro";
+
+        // write player
+        await db.ref(`games/${gameId}/players/${uid}`).set({
+            name: playerName,
+            isHost: false,
+            isReady: false,
+            isPremium: Boolean(isPremium),
+            joinedAt: now
+        });
+
+        // update activity
+        await db.ref(`games/${gameId}/lastActivity`).set(now);
+
+        log.info(functionName, "Player joined", { uid, gameId, gameCode });
+        return { gameId };
+    });
+
 // --------------------
 // Re-exports (other files)
 // --------------------
