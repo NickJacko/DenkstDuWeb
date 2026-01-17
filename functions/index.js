@@ -856,16 +856,34 @@ exports.joinGameSecure = functions
 // Re-exports (other files)
 // --------------------
 
-// account-deletion exports
-exports.scheduleAccountDeletion = require("./account-deletion").scheduleAccountDeletion;
-exports.cancelAccountDeletion = require("./account-deletion").cancelAccountDeletion;
-exports.processScheduledDeletions = require("./account-deletion").processScheduledDeletions;
+// --------------------
+// Lazy-load (prevents deploy discovery timeout)
+// --------------------
 
-// realtime-security exports
-exports.validateGameUpdate = require("./realtime-security").validateGameUpdate;
-exports.detectRapidUpdates = require("./realtime-security").detectRapidUpdates;
-exports.monitorGameDeletion = require("./realtime-security").monitorGameDeletion;
-exports.cleanupOldViolations = require("./realtime-security").cleanupOldViolations;
+// account-deletion (lazy)
+exports.scheduleAccountDeletion = (data, context) =>
+    require("./account-deletion").scheduleAccountDeletion(data, context);
+
+exports.cancelAccountDeletion = (data, context) =>
+    require("./account-deletion").cancelAccountDeletion(data, context);
+
+exports.processScheduledDeletions = (context) =>
+    require("./account-deletion").processScheduledDeletions(context);
+
+
+// realtime-security (lazy)
+// NOTE: If these are RTDB/Firestore triggers (change, context) keep signature (change, context).
+exports.validateGameUpdate = (change, context) =>
+    require("./realtime-security").validateGameUpdate(change, context);
+
+exports.detectRapidUpdates = (snap, context) =>
+    require("./realtime-security").detectRapidUpdates(snap, context);
+
+exports.monitorGameDeletion = (snap, context) =>
+    require("./realtime-security").monitorGameDeletion(snap, context);
+
+exports.cleanupOldViolations = (context) =>
+    require("./realtime-security").cleanupOldViolations(context);
 
 /**
  * ✅ Simple health-check endpoint (Gen1)

@@ -114,14 +114,18 @@
         const getLS = (k) => window.NocapUtils?.getLocalStorage
             ? window.NocapUtils.getLocalStorage(k)
             : localStorage.getItem(k);
+
         const rawVerified = getLS('nocap_age_verification');
         const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
-        Logger.debug('🔞 Settings age check:', getSettingsAge());
-        const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+
+        const rawAge = getLS('nocap_age_level');
+        const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
+
+        Logger.debug('🔞 Settings age check:', { rawVerified, verified, rawAge, ageLevel });
 
         return { verified, ageLevel };
-
     }
+
 
     function requireAgeVerifiedOrRedirect() {
         const { verified } = getSettingsAge();

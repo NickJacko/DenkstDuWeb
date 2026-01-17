@@ -357,24 +357,25 @@
 
     function openSettings() {
         const modal = document.getElementById('settings-modal');
-        if (modal) {
-            window.NocapUtils?.showElement
-                ? window.NocapUtils.showElement(modal, 'flex')
-                : modal.classList.remove('hidden');
+        if (!modal) return;
 
-            document.body.classList.add('modal-open');
-        }
+        // sichtbar machen
+        modal.classList.remove('hidden');
+        modal.classList.add('d-flex');
+        modal.setAttribute('aria-hidden', 'false');
+
+        document.body.classList.add('modal-open');
     }
 
     function closeSettings() {
         const modal = document.getElementById('settings-modal');
-        if (modal) {
-            window.NocapUtils?.hideElement
-                ? window.NocapUtils.hideElement(modal)
-                : modal.classList.add('hidden');
+        if (!modal) return;
 
-            document.body.classList.remove('modal-open');
-        }
+        modal.setAttribute('aria-hidden', 'true');
+        modal.classList.add('hidden');
+        modal.classList.remove('d-flex');
+
+        document.body.classList.remove('modal-open');
     }
 
     // ===================================
@@ -555,8 +556,6 @@
         }
     }
 
-
-
     function showFSKError(fskLevel, message) {
         const messages = {
             'fsk16': 'Dieser Inhalt ist ab 16 Jahren freigegeben.',
@@ -571,19 +570,19 @@
         }
 
         if (modal) {
-            window.NocapUtils?.showElement
-                ? window.NocapUtils.showElement(modal, 'flex')
-                : modal.classList.remove('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('d-flex');
+            modal.setAttribute('aria-hidden', 'false');
         }
     }
 
     function closeFSKModal() {
         const modal = document.getElementById('fsk-warning-modal');
-        if (modal) {
-            window.NocapUtils?.hideElement
-                ? window.NocapUtils.hideElement(modal)
-                : modal.classList.add('hidden');
-        }
+        if (!modal) return;
+
+        modal.setAttribute('aria-hidden', 'true');
+        modal.classList.add('hidden');
+        modal.classList.remove('d-flex');
     }
 
     function goToAgeVerification() {

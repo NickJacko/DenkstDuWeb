@@ -654,7 +654,7 @@ async function initialize() {
             const card = document.querySelector(`[data-difficulty="${DifficultySelectionModule.gameState.difficulty}"]`);
             if (card) {
                 card.classList.add('selected');
-                card.setAttribute('aria-pressed', 'true');
+                card.setAttribute('aria-checked', 'true');
                 updateContinueButton();
             }
         }
@@ -673,15 +673,14 @@ async function initialize() {
             return;
         }
 
-        // Remove previous selection
         document.querySelectorAll('.difficulty-card').forEach(card => {
             card.classList.remove('selected');
-            card.setAttribute('aria-pressed', 'false');
+            card.setAttribute('aria-checked', 'false');
         });
 
-        // Add selection
         element.classList.add('selected');
-        element.setAttribute('aria-pressed', 'true');
+        element.setAttribute('aria-checked', 'true');
+
 
         // Save directly to GameState
         DifficultySelectionModule.gameState.setDifficulty(difficulty);
@@ -702,13 +701,16 @@ async function initialize() {
         if (difficulty) {
             continueBtn.disabled = false;
             continueBtn.setAttribute('aria-disabled', 'false');
+            continueBtn.classList.add('enabled');      // ✅ wichtig wegen pointer-events
             continueBtn.textContent = 'Weiter';
         } else {
             continueBtn.disabled = true;
             continueBtn.setAttribute('aria-disabled', 'true');
+            continueBtn.classList.remove('enabled');   // ✅ wichtig
             continueBtn.textContent = 'Schwierigkeitsgrad wählen';
         }
     }
+
 
     // ===========================
     // EVENT LISTENERS

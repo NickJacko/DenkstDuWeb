@@ -211,20 +211,38 @@
                 isGuest: JoinGameModule.gameState.isGuest
             });
 
-            // Age verification check
-            let ageVerification = null;
-            if (window.NocapUtils) {
-                ageVerification = window.NocapUtils.getLocalStorage('nocap_age_verification');
-            } else {
-                try {
-                    ageVerification = JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
-                } catch (e) {
-                    console.warn('[WARNING] Invalid age verification data in localStorage:', e.message);
-                    ageVerification = null;
-                }
+// Age verification check (accepts legacy "true" AND object format)
+            const readLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
+
+            const writeLS = (k, v) => window.NocapUtils?.setLocalStorage
+                ? window.NocapUtils.setLocalStorage(k, v)
+                : localStorage.setItem(k, v);
+
+            const removeLS = (k) => window.NocapUtils?.removeLocalStorage
+                ? window.NocapUtils.removeLocalStorage(k)
+                : localStorage.removeItem(k);
+
+            const raw = readLS('nocap_age_verification');
+
+// legacy: "true"/true  | new: { verified:true, timestamp: ... }
+            const verified =
+                raw === true ||
+                raw === 'true' ||
+                (raw && typeof raw === 'object' && raw.verified === true);
+
+            let timestamp =
+                (raw && typeof raw === 'object' && Number(raw.timestamp)) ||
+                Number(readLS('nocap_age_verification_ts') || 0);
+
+            if (verified && !timestamp) {
+                // first time we see legacy verified -> create timestamp so expiry works
+                timestamp = Date.now();
+                writeLS('nocap_age_verification_ts', String(timestamp));
             }
 
-            if (!ageVerification || typeof ageVerification !== 'object') {
+            if (!verified) {
                 Logger.warn('⚠️ No age verification found - redirecting to age gate');
                 showNotification('⚠️ Altersverifikation erforderlich', 'warning', 3000);
 
@@ -237,20 +255,14 @@
                 return;
             }
 
-            // Check timestamp expiry (24 hours)
+// Check timestamp expiry (24 hours) – only if we have a timestamp
             const AGE_VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000;
-            const now = Date.now();
-            const verificationAge = now - (ageVerification.timestamp || 0);
-
-            if (verificationAge > AGE_VERIFICATION_EXPIRY) {
+            if (timestamp && (Date.now() - timestamp) > AGE_VERIFICATION_EXPIRY) {
                 Logger.warn('⚠️ Age verification expired');
                 showNotification('⚠️ Altersverifikation abgelaufen. Bitte erneut bestätigen.', 'warning', 3000);
 
-                if (window.NocapUtils && window.NocapUtils.removeLocalStorage) {
-                    window.NocapUtils.removeLocalStorage('nocap_age_verification');
-                } else {
-                    localStorage.removeItem('nocap_age_verification');
-                }
+                removeLS('nocap_age_verification');
+                removeLS('nocap_age_verification_ts');
 
                 const currentUrl = window.location.href;
                 sessionStorage.setItem('nocap_return_url', currentUrl);
@@ -260,6 +272,7 @@
                 }, 2000);
                 return;
             }
+
             const userAgeLevel = Math.max(
                 0,
                 Number(ageVerification.ageLevel ?? ageVerification.userAgeLevel ?? (ageVerification.isAdult ? 18 : 0)) || 0
