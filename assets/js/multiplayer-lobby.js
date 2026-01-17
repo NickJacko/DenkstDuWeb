@@ -164,6 +164,38 @@
         }
 
         MultiplayerLobbyModule.gameState = window.gameState || (window.GameState ? new window.GameState() : null);
+// ✅ P0 FIX: Normalize multiplayer state EARLY (prevents instant redirect on join)
+        (function normalizeMultiplayerState() {
+            try {
+                // Always enforce multiplayer pages => deviceMode = 'multi'
+                if (!MultiplayerLobbyModule.gameState.deviceMode) {
+                    if (typeof MultiplayerLobbyModule.gameState.setDeviceMode === 'function') {
+                        MultiplayerLobbyModule.gameState.setDeviceMode('multi');
+                    } else {
+                        MultiplayerLobbyModule.gameState.deviceMode = 'multi';
+                    }
+                } else if (MultiplayerLobbyModule.gameState.deviceMode !== 'multi') {
+                    // Hard-correct (avoid redirect loops when join-game forgot it)
+                    if (typeof MultiplayerLobbyModule.gameState.setDeviceMode === 'function') {
+                        MultiplayerLobbyModule.gameState.setDeviceMode('multi');
+                    } else {
+                        MultiplayerLobbyModule.gameState.deviceMode = 'multi';
+                    }
+                }
+
+                // Role: do NOT guess here, just keep what join/host pages set
+                // But if gameId is set and isHost is not true => treat as guest
+                if (MultiplayerLobbyModule.gameState.gameId && MultiplayerLobbyModule.gameState.isHost !== true) {
+                    MultiplayerLobbyModule.gameState.isHost = false;
+                    MultiplayerLobbyModule.gameState.isGuest = true;
+                }
+
+                // Persist quickly
+                MultiplayerLobbyModule.gameState.save?.(true);
+            } catch (e) {
+                // non-fatal
+            }
+        })();
 
         if (!MultiplayerLobbyModule.gameState) {
             showNotification('GameState nicht verfügbar', 'error');
@@ -279,20 +311,24 @@
             MultiplayerLobbyModule.gameState.save?.(true);
         } catch (e) {}
 
-        // ✅ P1 STABILITY: Setup presence system
-        setupPresenceSystem();
-
-        // Determine if creating or joining
         if (MultiplayerLobbyModule.gameState.gameId) {
             currentGameId = MultiplayerLobbyModule.gameState.gameId;
-            isHost = MultiplayerLobbyModule.gameState.isHost || false;
-            // Re-setup presence
-            setupPresenceSystem();
+            isHost = MultiplayerLobbyModule.gameState.isHost === true;
+
             await loadExistingGame();
+
+            // ✅ P0 FIX: Start presence only AFTER game loaded & player exists
+            setupPresenceSystem();
+
         } else if (MultiplayerLobbyModule.gameState.isHost) {
             isHost = true;
+
             await createNewGame();
-        } else {
+
+            // ✅ P0 FIX: Start presence only AFTER game created
+            setupPresenceSystem();
+        }
+            else {
             showNotification('Keine Game-ID gefunden', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return;
@@ -377,12 +413,26 @@
             console.log('🔍 Validating game state...');
         }
 
-        if (!MultiplayerLobbyModule.gameState || MultiplayerLobbyModule.gameState.deviceMode !== 'multi') {
-            console.error('❌ Wrong device mode:', MultiplayerLobbyModule.gameState?.deviceMode);
-            showNotification('Falscher Spielmodus', 'error');
+// ✅ P0 FIX: Never hard-kick guests because deviceMode wasn't set in time
+        if (!MultiplayerLobbyModule.gameState) {
+            showNotification('GameState nicht verfügbar', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
+
+        if (MultiplayerLobbyModule.gameState.deviceMode !== 'multi') {
+            console.warn('⚠️ deviceMode was not multi - auto-fixing:', MultiplayerLobbyModule.gameState.deviceMode);
+            try {
+                if (typeof MultiplayerLobbyModule.gameState.setDeviceMode === 'function') {
+                    MultiplayerLobbyModule.gameState.setDeviceMode('multi');
+                } else {
+                    MultiplayerLobbyModule.gameState.deviceMode = 'multi';
+                }
+                MultiplayerLobbyModule.gameState.save?.(true);
+            } catch (e) {}
+        }
+
+
 
         if (!MultiplayerLobbyModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
@@ -390,12 +440,14 @@
             return false;
         }
 
-        if (!MultiplayerLobbyModule.gameState.playerName) {
-            console.error('❌ No player name');
-            showNotification('Kein Spielername gesetzt', 'error');
-            setTimeout(() => window.location.href = 'index.html', 2000);
+// ✅ P0 FIX: Do not hard-kick immediately; allow join-game to be source of truth
+        if (!MultiplayerLobbyModule.gameState.playerName || !String(MultiplayerLobbyModule.gameState.playerName).trim()) {
+            console.warn('⚠️ No playerName in GameState - redirect to join-game (not index)');
+            showNotification('Bitte setze deinen Spielernamen erneut.', 'warning', 1500);
+            setTimeout(() => window.location.href = 'join-game.html', 1200);
             return false;
         }
+
 
         if (MultiplayerLobbyModule.isDevelopment) {
             console.log('✅ Game state valid');
@@ -501,10 +553,20 @@
 // ✅ Option A: Spieler wird serverseitig via joinGameSecure angelegt.
 // ABER: Direkt nach Redirect kann der Player-Eintrag noch nicht im Snapshot sein.
 // Deshalb: kurz warten/pollen statt sofort redirect.
+// ✅ P0 FIX: Ensure we have a stable player key before checking player existence
+            const ensurePlayerKey = async (timeoutMs = 3000, intervalMs = 50) => {
+                const start = Date.now();
+                while (Date.now() - start < timeoutMs) {
+                    const k = getPlayerKey();
+                    if (k) return k;
+                    await new Promise(r => setTimeout(r, intervalMs));
+                }
+                return null;
+            };
 
             const waitForPlayer = async (timeoutMs = 5000, intervalMs = 250) => {
                 const start = Date.now();
-                const key = getPlayerKey();
+                const key = await ensurePlayerKey();
                 if (!key) return false;
 
                 while (Date.now() - start < timeoutMs) {
@@ -519,7 +581,8 @@
                 return false;
             };
 
-            const key = getPlayerKey();
+            const key = await ensurePlayerKey();
+
             let playerExists = !!(key && game.players?.[key]);
 
 
@@ -1166,7 +1229,13 @@
      * - Removes player after buffer expires
      */
     function setupPresenceSystem() {
-        if (!firebase.database) {
+        // ✅ P0 FIX: Prevent duplicate presence listeners (always)
+        if (connectedRef) {
+            try { connectedRef.off(); } catch (e) {}
+            connectedRef = null;
+        }
+
+        if (!firebase?.database) {
             console.warn('⚠️ Firebase database not available for presence');
             return;
         }
@@ -1187,13 +1256,16 @@
         }
     }
 
+
     /**
      * ✅ P1 STABILITY: Handle connection established
      */
     function onConnectionEstablished() {
-        if (!currentGameId || !currentUserId) return;
+        const key = getPlayerKey();
+        if (!currentGameId || !currentUserId || !key) return;
 
-        presenceRef = firebase.database().ref(`games/${currentGameId}/players/${getPlayerKey()}`);
+
+        presenceRef = firebase.database().ref(`games/${currentGameId}/players/${key}`);
 
         // Set online status
         presenceRef.update({
@@ -1671,6 +1743,17 @@
                 console.log('✅ Heartbeat interval cleared');
             }
         }
+// ✅ P0 FIX: Cleanup presence listeners
+        try {
+            if (connectedRef) {
+                connectedRef.off();
+                connectedRef = null;
+            }
+            if (presenceRef) {
+                // presenceRef listener itself isn't used (only onDisconnect), but null it to avoid reuse
+                presenceRef = null;
+            }
+        } catch (e) {}
 
         // ✅ P2 PERFORMANCE: Cleanup event listeners
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
