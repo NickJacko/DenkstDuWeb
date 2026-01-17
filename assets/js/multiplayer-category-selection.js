@@ -257,10 +257,10 @@
             return;
         }
 
-        // P0 FIX: Check age verification with expiration
-        if (!checkAgeVerification()) {
-            return;
-        }
+// ✅ Kein Hard-Gate beim Laden!
+// Altersstatus wird nur genutzt, um Karten zu locken.
+// Die echte "Settings öffnen"-Logik passiert erst beim Klick auf FSK16/FSK18.
+        checkAgeVerification(); // optional: nur Status loggen
 
         // Validate game state
         if (!validateGameState()) {
@@ -455,23 +455,22 @@
             const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
             const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
 
-            // ✅ settings-only: Wenn nicht verifiziert -> zurück zur index/settings
+// ✅ Beim Laden NICHT nerven/redirecten.
+// Nur "Status zurückgeben", damit die UI locken kann.
             if (!verified) {
-                Logger.warn('⚠️ No age verification (settings-only)');
-                showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
-                setTimeout(() => window.location.href = 'index.html', 2000);
+                Logger.debug('ℹ️ Age not verified yet (no redirect on load)');
                 return false;
             }
+
 
             Logger.debug(`✅ Age verification OK (settings-only): ageLevel=${ageLevel}`);
             return true;
 
         } catch (error) {
-            Logger.error('❌ Age verification error (settings-only):', error);
-            showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
-            setTimeout(() => window.location.href = 'index.html', 2000);
+            Logger.error('❌ Age verification error:', error);
             return false;
         }
+
     }
 
     // ===========================
@@ -694,12 +693,16 @@
                 addTrackedEventListener(card, 'click', () => {
                     showNotification('Nur der Host kann Kategorien auswählen', 'info');
                 });
-            } else if (key === 'fsk18' && (!verified || ageLevel < 18)) {
-                addTrackedEventListener(card, 'click', () =>
-                    showNotification(!verified ? 'Bitte erst in den Settings dein Alter bestätigen' : 'Du musst 18+ sein', 'warning'));
-            } else if (key === 'fsk16' && (!verified || ageLevel < 16)) {
-                addTrackedEventListener(card, 'click', () =>
-                    showNotification(!verified ? 'Bitte erst in den Settings dein Alter bestätigen' : 'Du musst 16+ sein', 'warning'));
+            } else if (key === 'fsk18' || key === 'fsk16') {
+                // ✅ locked FSK klickt trotzdem → zentrale Logik in toggleCategory
+                addTrackedEventListener(card, 'click', () => toggleCategory(key));
+                addTrackedEventListener(card, 'keypress', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleCategory(key);
+                    }
+                });
+
             } else if (key === 'special') {
                 addTrackedEventListener(card, 'click', (e) => {
                     if (e.target.closest('.unlock-btn')) {
@@ -827,10 +830,50 @@
     // ===========================
     // CATEGORY SELECTION
     // ===========================
-
     function toggleCategory(key) {
         const card = document.querySelector(`[data-category="${key}"]`);
-        if (!card || card.classList.contains('locked')) return;
+        if (!card) return;
+
+        // ✅ Wenn gelocked: NICHT einfach abbrechen → erklär/Settings
+        if (card.classList.contains('locked')) {
+
+            // Premium
+            if (key === 'special') {
+                showPremiumInfo();
+                return;
+            }
+
+            // FSK16/FSK18
+            if (key === 'fsk16' || key === 'fsk18') {
+                const requiredAge = key === 'fsk18' ? 18 : 16;
+
+                const getLS = (k) => window.NocapUtils?.getLocalStorage
+                    ? window.NocapUtils.getLocalStorage(k)
+                    : localStorage.getItem(k);
+
+                const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
+                const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+
+                // ➜ nicht verifiziert: Settings öffnen / Hinweis
+                if (!verified) {
+                    // TODO: wenn du eine settings.html hast, hier statt Notification hin:
+                    // window.location.href = 'settings.html';
+                    showNotification('Bitte bestätige dein Alter in den Settings', 'warning');
+                    return;
+                }
+
+                // ➜ verifiziert aber zu jung
+                if (ageLevel < requiredAge) {
+                    showNotification(`Du musst ${requiredAge}+ sein`, 'warning');
+                    return;
+                }
+
+                // Falls locked war aber eigentlich erlaubt → einfach raus
+                return;
+            }
+
+            return;
+        }
 
         if (!categoryData[key]) {
             Logger.error(`❌ Invalid category: ${key}`);

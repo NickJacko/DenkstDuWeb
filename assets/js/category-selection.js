@@ -52,6 +52,12 @@
 
     // Prevent tampering
     Object.seal(CategorySelectionModule.state);
+// ===========================
+// 🔞 AGE VERIFICATION FLOW (AUTO-RESUME)
+// ===========================
+
+// Merkt sich die Kategorie, die vor Altersprüfung geklickt wurde
+    let pendingCategoryAfterAgeVerification = null;
 
     // ===========================
     // 🛠️ PERFORMANCE UTILITIES
@@ -548,20 +554,38 @@
         const data = categoryData[category];
 
         if (element.classList.contains('locked')) {
+
+            // 🔒 Premium bleibt wie gehabt
             if (data.requiresPremium) {
                 showPremiumInfo();
                 return;
             }
 
+            // 🔞 Altersbeschränkung → Kategorie merken & Settings öffnen
             if (data.requiresAge > 0) {
+
+                // ⭐ WICHTIG: Merken, was der User eigentlich wollte
+                pendingCategoryAfterAgeVerification = {
+                    element,
+                    category,
+                    data
+                };
+
+                Logger.debug('⏸️ Category pending until age verification:', category);
+
                 if (window.SettingsModule && typeof window.SettingsModule.showFSKError === 'function') {
-                    window.SettingsModule.showFSKError(category, `Du musst ${data.requiresAge}+ sein für diese Kategorie`);
+                    window.SettingsModule.showFSKError(
+                        category,
+                        `Du musst ${data.requiresAge}+ sein für diese Kategorie`
+                    );
                 } else {
                     showNotification(`Du musst ${data.requiresAge}+ sein für diese Kategorie`, 'warning');
                 }
             }
+
             return;
         }
+
 
         // ✅ NEW: FSK-Validierung via Cloud Function für fsk16/fsk18
         if (category === 'fsk16' || category === 'fsk18') {
@@ -888,6 +912,45 @@
                 }, 300);
             });
         }
+        // 🔁 Nach erfolgreicher Altersverifikation automatisch fortsetzen
+        addTrackedEventListener(window, 'nocap:age-verified', (e) => {
+            const ageLevel = e?.detail?.ageLevel ?? (
+                window.NocapUtils
+                    ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
+                    : parseInt(localStorage.getItem('nocap_age_level')) || 0
+            );
+
+            Logger.debug('🔄 Age verified event received:', ageLevel);
+
+            // Locks neu berechnen
+            updateCategoryLocks(ageLevel);
+
+            if (!pendingCategoryAfterAgeVerification) return;
+
+            const { element, category, data } = pendingCategoryAfterAgeVerification;
+
+            // Sicherheitscheck
+            if (!element || !category || !data) {
+                pendingCategoryAfterAgeVerification = null;
+                return;
+            }
+
+            if (data.requiresAge <= ageLevel) {
+                // give UI + storage a tiny moment (Token refresh / UI update)
+                setTimeout(() => {
+                    // Locks nochmal neu (falls CSS/DOM laggt)
+                    updateCategoryLocks(ageLevel);
+
+                    if (!element.classList.contains('locked')) {
+                        Logger.debug('✅ Auto-selecting category after age verification:', category);
+                        performToggle(element, category, data);
+                    }
+                }, 200);
+            }
+
+            pendingCategoryAfterAgeVerification = null;
+        });
+
     }
 
     // ===========================

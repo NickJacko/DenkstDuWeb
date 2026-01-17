@@ -477,18 +477,25 @@
                 updateFSKBadges(SettingsState.userFSKAccess);
             }
 
-            // ✅ Lokaler Cache für andere Seiten (Settings-only read path)
+// ✅ Lokaler Cache für andere Seiten (Settings-only read path)
+            const ts = Date.now();
+
             if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
                 window.NocapUtils.setLocalStorage('nocap_age_level', String(ageLevel));
                 window.NocapUtils.setLocalStorage('nocap_is_adult', String(ageLevel >= 18));
-
-                // optional (hilft Debug & Ablauf): “verified” Flag wie andere Stellen es prüfen
                 window.NocapUtils.setLocalStorage('nocap_age_verification', 'true');
+
+                // ✅ wichtig: Timestamp (damit Seiten nicht “komisch” erneut fragen)
+                window.NocapUtils.setLocalStorage('nocap_age_verification_ts', String(ts));
             } else {
                 localStorage.setItem('nocap_age_level', String(ageLevel));
                 localStorage.setItem('nocap_is_adult', String(ageLevel >= 18));
                 localStorage.setItem('nocap_age_verification', 'true');
+
+                // ✅ wichtig: Timestamp (damit Seiten nicht “komisch” erneut fragen)
+                localStorage.setItem('nocap_age_verification_ts', String(ts));
             }
+
 
 
             // ✅ Force Token Refresh (Custom Claims werden erst danach sicher sichtbar)
@@ -504,6 +511,18 @@
             updateFSKBadges(SettingsState.userFSKAccess);
 
             showSuccess('Altersverifikation erfolgreich!');
+            // ✅ UI: Modals sauber schließen (sonst bleibt schwarzer Screen / Overlay hängen)
+            closeFSKModal();   // falls das FSK-Modal offen war
+            closeSettings();   // Settings modal schließen
+
+// ✅ UX: anderen Seiten sagen “Alter ist jetzt verifiziert”
+// (damit category-selection den Klick automatisch fortsetzen kann)
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('nocap:age-verified', {
+                    detail: { ageLevel }
+                }));
+            }, 0);
+
 
         } catch (error) {
             Logger.error('❌ Error verifying age:', error);

@@ -273,6 +273,11 @@
             console.error('❌ No user ID after auth');
             return;
         }
+        try {
+            MultiplayerLobbyModule.gameState.playerId = currentUserId;
+            MultiplayerLobbyModule.gameState.authUid = currentUserId;
+            MultiplayerLobbyModule.gameState.save?.(true);
+        } catch (e) {}
 
         // ✅ P1 STABILITY: Setup presence system
         setupPresenceSystem();
@@ -281,6 +286,8 @@
         if (MultiplayerLobbyModule.gameState.gameId) {
             currentGameId = MultiplayerLobbyModule.gameState.gameId;
             isHost = MultiplayerLobbyModule.gameState.isHost || false;
+            // Re-setup presence
+            setupPresenceSystem();
             await loadExistingGame();
         } else if (MultiplayerLobbyModule.gameState.isHost) {
             isHost = true;
@@ -491,15 +498,44 @@
             displaySettings({ categories, difficulty });
 
 
-            // ✅ Option A: Spieler wird ausschließlich serverseitig via joinGameSecure angelegt.
-            const playerExists = !!game.players?.[getPlayerKey()];
+// ✅ Option A: Spieler wird serverseitig via joinGameSecure angelegt.
+// ABER: Direkt nach Redirect kann der Player-Eintrag noch nicht im Snapshot sein.
+// Deshalb: kurz warten/pollen statt sofort redirect.
+
+            const waitForPlayer = async (timeoutMs = 5000, intervalMs = 250) => {
+                const start = Date.now();
+                const key = getPlayerKey();
+                if (!key) return false;
+
+                while (Date.now() - start < timeoutMs) {
+                    try {
+                        const pSnap = await firebase.database().ref(`games/${currentGameId}/players/${key}`).once('value');
+                        if (pSnap.exists()) return true;
+                    } catch (e) {
+                        // Ignorieren (z.B. kurze Auth/Netzwerk-Phase)
+                    }
+                    await new Promise(r => setTimeout(r, intervalMs));
+                }
+                return false;
+            };
+
+            const key = getPlayerKey();
+            let playerExists = !!(key && game.players?.[key]);
+
 
             if (!playerExists && !isHost) {
-                console.warn('⚠️ Player not found in game (should not happen). Redirect to join...');
-                showNotification('Bitte erneut über den Join-Code beitreten', 'warning', 1500);
-                setTimeout(() => window.location.href = 'join-game.html', 1200);
-                return;
+                // ✅ Warte kurz, ob der Player-Eintrag noch nachkommt
+                const ok = await waitForPlayer(5000, 250);
+                playerExists = ok;
+
+                if (!playerExists) {
+                    console.warn('⚠️ Player not found after wait - redirect to join');
+                    showNotification('Beitritt nicht bestätigt. Bitte erneut über den Join-Code beitreten.', 'warning', 2000);
+                    setTimeout(() => window.location.href = 'join-game.html', 1500);
+                    return;
+                }
             }
+
 
             if (MultiplayerLobbyModule.isDevelopment && !isHost) {
                 console.log('✅ Player exists in game');
@@ -517,30 +553,6 @@
             console.error('❌ Load game error:', error);
             showNotification('Fehler beim Laden', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
-        }
-    }
-
-    async function addPlayerToGame(gameId) {
-        try {
-            const playerData = {
-                id: getPlayerKey(),
-                name: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
-                isHost: false,
-                isReady: false,
-                joinedAt: Date.now()
-            };
-
-            const playerRef = firebase.database().ref(`games/${gameId}/players/${getPlayerKey()}`);
-            await playerRef.update(playerData);
-
-
-            if (MultiplayerLobbyModule.isDevelopment) {
-                console.log('✅ Player added to game');
-            }
-
-        } catch (error) {
-            console.error('❌ Add player error:', error);
-            throw error;
         }
     }
 
@@ -767,8 +779,7 @@
         if (typeof QRCode !== 'undefined') {
             // ✅ P0 SECURITY: Don't expose gameId in URL parameter directly
             // Instead use the join page which will handle validation
-            const joinUrl = `${window.location.origin}/join-game.html?code=${gameId}`;
-
+            const joinUrl = `${window.location.origin}/join-game.html?code=${encodeURIComponent(gameId)}`;
             try {
                 new QRCode(qrContainer, {
                     text: joinUrl,
@@ -1279,9 +1290,6 @@
                 rejoinedAt: firebase.database.ServerValue.TIMESTAMP,
                 rejoinDeadline: null // Clear deadline
             });
-
-            // Re-setup presence
-            setupPresenceSystem();
 
             showNotification('Erfolgreich wieder verbunden!', 'success');
 

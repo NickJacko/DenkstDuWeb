@@ -980,6 +980,16 @@
             const { gameId } = (res && res.data) ? res.data : {};
             if (!gameId) throw new Error('Join erfolgreich, aber gameId fehlt');
 
+// ✅ HARD UID SYNC (verhindert playerId-null/alt -> Lobby "Player not found")
+            const uid =
+                (window.firebase?.auth?.()?.currentUser?.uid) ||
+                (JoinGameModule.firebaseService?.auth?.currentUser?.uid) ||
+                null;
+
+            if (uid) {
+                JoinGameModule.gameState.playerId = uid;
+                JoinGameModule.gameState.authUid = uid;
+            }
 
 // ✅ Save GameState (IMPORTANT: gameId ist die echte DB-ID)
             JoinGameModule.gameState.gameId = gameId;
@@ -1000,12 +1010,25 @@
             const gameData = JoinGameModule.currentGameData || {};
             const settings = gameData.settings || {};
             const categories = settings.categories || [];
+// ✅ Reset categories first (sonst bleiben alte Kategorien im State)
+            try {
+                if (typeof JoinGameModule.gameState.clearCategories === 'function') {
+                    JoinGameModule.gameState.clearCategories();
+                } else {
+                    JoinGameModule.gameState.selectedCategories = [];
+                }
+            } catch (e) {}
 
+// ✅ Apply server preview categories
             categories.forEach(cat => JoinGameModule.gameState.addCategory(cat));
+
+// ✅ Apply difficulty
             JoinGameModule.gameState.setDifficulty(settings.difficulty || 'medium');
 
             hideLoading();
             showNotification('Erfolgreich beigetreten!', 'success', 500);
+// ✅ Persist state before redirect (wichtig für Lobby)
+            try { JoinGameModule.gameState.save?.(true); } catch (e) {}
 
             setTimeout(() => {
                 window.location.href = 'multiplayer-lobby.html';
