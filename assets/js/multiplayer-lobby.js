@@ -164,6 +164,36 @@
         }
 
         MultiplayerLobbyModule.gameState = window.gameState || (window.GameState ? new window.GameState() : null);
+        // ✅ P0 FIX: Recover gameId from URL/session/localStorage BEFORE any redirects
+        (function recoverGameId() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const urlGameId = params.get('gameId');
+
+                const lsGameId = (() => {
+                    try { return localStorage.getItem('nocap_game_id'); } catch (e) { return null; }
+                })();
+
+                const ssGameId = (() => {
+                    try { return sessionStorage.getItem('nocap_game_id'); } catch (e) { return null; }
+                })();
+
+                const recovered = urlGameId || ssGameId || lsGameId;
+
+                if (recovered && !MultiplayerLobbyModule.gameState.gameId) {
+                    MultiplayerLobbyModule.gameState.gameId = String(recovered);
+                    MultiplayerLobbyModule.gameState.save?.(true);
+                }
+
+                // also keep module-level currentGameId in sync if possible
+                if (recovered && !currentGameId) {
+                    currentGameId = String(recovered);
+                }
+            } catch (e) {
+                // ignore
+            }
+        })();
+
 // ✅ P0 FIX: Normalize multiplayer state EARLY (prevents instant redirect on join)
         (function normalizeMultiplayerState() {
             try {
@@ -327,12 +357,37 @@
 
             // ✅ P0 FIX: Start presence only AFTER game created
             setupPresenceSystem();
-        }
-            else {
-            showNotification('Keine Game-ID gefunden', 'error');
-            setTimeout(() => window.location.href = 'index.html', 2000);
+    } else {
+        // ✅ P0 FIX: Give 1s to recover gameId (storage/URL)
+        showNotification('Game-ID wird geladen...', 'info', 800);
+
+        await new Promise(r => setTimeout(r, 800));
+
+        const params = new URLSearchParams(window.location.search);
+        const recovered =
+            params.get('gameId') ||
+            sessionStorage.getItem('nocap_game_id') ||
+            localStorage.getItem('nocap_game_id');
+
+        if (recovered) {
+            MultiplayerLobbyModule.gameState.gameId = String(recovered);
+            currentGameId = String(recovered);
+            MultiplayerLobbyModule.gameState.save?.(true);
+
+            isHost = MultiplayerLobbyModule.gameState.isHost === true;
+            await loadExistingGame();
+            setupPresenceSystem();
+
+            setupEventListeners();
+            updateUIForRole();
             return;
         }
+
+        showNotification('Keine Game-ID gefunden', 'error');
+        setTimeout(() => window.location.href = 'index.html', 2000);
+        return;
+    }
+
 
         setupEventListeners();
         updateUIForRole();

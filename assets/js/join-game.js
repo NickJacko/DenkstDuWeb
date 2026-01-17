@@ -979,6 +979,13 @@
 
             const { gameId } = (res && res.data) ? res.data : {};
             if (!gameId) throw new Error('Join erfolgreich, aber gameId fehlt');
+// ✅ P0 FIX: Persist gameId immediately (independent of GameState implementation)
+            try {
+                localStorage.setItem('nocap_game_id', String(gameId));
+                sessionStorage.setItem('nocap_game_id', String(gameId));
+            } catch (e) {
+                // ignore
+            }
 
 // ✅ HARD UID SYNC (verhindert playerId-null/alt -> Lobby "Player not found")
             const uid =
@@ -1027,12 +1034,42 @@
 
             hideLoading();
             showNotification('Erfolgreich beigetreten!', 'success', 500);
-// ✅ Persist state before redirect (wichtig für Lobby)
+// ✅ P0 FIX: Persist EVERYTHING before redirect (triple redundancy)
+            try {
+                const uid =
+                    (window.firebase?.auth?.()?.currentUser?.uid) ||
+                    (JoinGameModule.firebaseService?.getCurrentUser?.()?.uid) ||
+                    JoinGameModule.gameState.playerId ||
+                    null;
+
+                const stateToSave = {
+                    gameId: String(gameId),
+                    gameCode: String(gameCode),
+                    deviceMode: 'multi',
+                    isHost: false,
+                    isGuest: true,
+                    playerId: uid,
+                    authUid: uid,
+                    playerName: playerName,
+                    selectedCategories: (JoinGameModule.currentGameData?.settings?.categories) || [],
+                    difficulty: (JoinGameModule.currentGameData?.settings?.difficulty) || 'medium'
+                };
+
+                localStorage.setItem('nocap_game_id', String(gameId));
+                sessionStorage.setItem('nocap_game_id', String(gameId));
+                localStorage.setItem('nocap_game_state', JSON.stringify(stateToSave));
+                sessionStorage.setItem('nocap_game_state', JSON.stringify(stateToSave));
+            } catch (e) {
+                // ignore
+            }
+
+// Save GameState too (optional, but keep it)
             try { JoinGameModule.gameState.save?.(true); } catch (e) {}
 
+// ✅ P0 FIX: Pass gameId in URL as final fallback
             setTimeout(() => {
-                window.location.href = 'multiplayer-lobby.html';
-            }, 300);
+                window.location.href = 'multiplayer-lobby.html?gameId=' + encodeURIComponent(String(gameId));
+            }, 50);
 
 
         } catch (error) {
