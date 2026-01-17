@@ -449,7 +449,7 @@
 
             // Check each field
             for (const [key, validator] of Object.entries(typeChecks)) {
-                if (state.hasOwnProperty(key)) {
+                if (Object.prototype.hasOwnProperty.call(state, key)) {
                     try {
                         if (!validator(state[key])) {
                             this.log(`❌ Validation failed: ${key} has invalid type/value`, 'error');
@@ -484,13 +484,13 @@
                             this.log(`❌ Validation failed: invalid player object`, 'error');
                             return false;
                         }
-                        // Check for prototype pollution in player objects
                         for (const key of dangerousKeys) {
-                            if (key in player) {
+                            if (Object.prototype.hasOwnProperty.call(player, key)) {
                                 this.log(`❌ Validation failed: dangerous key in player object`, 'error');
                                 return false;
                             }
                         }
+
                     } else {
                         this.log(`❌ Validation failed: invalid player type`, 'error');
                         return false;
@@ -1125,11 +1125,13 @@
 
             const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
             for (const key of dangerousKeys) {
-                if (key in players) {
+                // ✅ only block if the array/object has the key as an OWN property
+                if (Object.prototype.hasOwnProperty.call(players, key)) {
                     this.log('❌ setPlayers: Prototype pollution attempt detected', 'error');
                     return;
                 }
             }
+
 
             const sanitized = players
                 .map(p => {

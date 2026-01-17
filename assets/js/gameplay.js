@@ -41,6 +41,7 @@ const GameplayModule = {
         autoSaveTimer: null,
         networkErrorCount: 0,
         eventListenerCleanup: [],
+        _listenersBound: false, // ✅ add this BEFORE seal
 
         currentGame: {
             players: [],
@@ -267,14 +268,31 @@ async function initialize() {
         }
         GameplayModule.gameState = new window.GameState();
 
-        const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances?.();
-        if (window.FirebaseConfig?.isInitialized?.() && firebaseInstances?.database?.ref) {
-            GameplayModule.firebaseService = firebaseInstances; // { database, auth, functions, ... }
-            if (GameplayModule.isDevelopment) console.log('✅ Firebase instances available');
-        } else {
+// ✅ P0 FIX: Ensure Firebase is initialized BEFORE accessing instances (with fallback)
+        try {
+            if (window.FirebaseConfig) {
+                if (!window.FirebaseConfig.isInitialized()) {
+                    await window.FirebaseConfig.initialize();
+                }
+
+                if (typeof window.FirebaseConfig.waitForFirebase === 'function') {
+                    await window.FirebaseConfig.waitForFirebase(10000);
+                }
+
+                const instances = window.FirebaseConfig.getFirebaseInstances();
+                GameplayModule.firebaseService = instances;
+                if (GameplayModule.isDevelopment) console.log('✅ Firebase instances ready in gameplay');
+
+            } else {
+                GameplayModule.firebaseService = null;
+                console.warn('⚠️ FirebaseConfig missing, using fallback mode');
+            }
+        } catch (e) {
             GameplayModule.firebaseService = null;
-            console.warn('⚠️ Firebase not available, using fallback');
+            console.warn('⚠️ Firebase init failed, using fallback mode:', e?.message || e);
         }
+
+
 
 
         // ✅ P1 FIX: Validate device mode
@@ -718,19 +736,19 @@ async function loadQuestions() {
                     if (GameplayModule.isDevelopment) {
                         console.log(`⚠️ No Firebase questions for ${category}, using fallback`);
                     }
-                    loadFallbackQuestions(category);
+                    await loadFallbackQuestions(category);
                 }
             } catch (error) {
                 console.warn(`⚠️ Error loading ${category}:`, error);
-                loadFallbackQuestions(category);
+                await loadFallbackQuestions(category);
             }
         }
     } else {
         // No Firebase - use fallback
         console.warn('⚠️ Firebase not available, using fallback questions');
-        GameplayModule.gameState.selectedCategories.forEach(category => {
-            loadFallbackQuestions(category);
-        });
+        for (const category of GameplayModule.gameState.selectedCategories) {
+            await loadFallbackQuestions(category);
+        }
     }
 
 

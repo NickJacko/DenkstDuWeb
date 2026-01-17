@@ -212,13 +212,23 @@
             });
 
 // Age verification check (accepts legacy "true" AND object format)
-            const readLS = (k) => window.NocapUtils?.getLocalStorage
-                ? window.NocapUtils.getLocalStorage(k)
-                : localStorage.getItem(k);
+            const readLS = (k) => {
+                try {
+                    if (window.NocapUtils?.getLocalStorage) {
+                        return window.NocapUtils.getLocalStorage(k);
+                    }
+                    const v = localStorage.getItem(k);
+                    if (v === null) return null;
+                    try { return JSON.parse(v); } catch (_) { return v; }
+                } catch (e) {
+                    return null;
+                }
+            };
+
 
             const writeLS = (k, v) => window.NocapUtils?.setLocalStorage
                 ? window.NocapUtils.setLocalStorage(k, v)
-                : localStorage.setItem(k, v);
+                : localStorage.setItem(k, (typeof v === 'string' ? v : JSON.stringify(v)));
 
             const removeLS = (k) => window.NocapUtils?.removeLocalStorage
                 ? window.NocapUtils.removeLocalStorage(k)
@@ -272,14 +282,25 @@
                 }, 2000);
                 return;
             }
+// Build a normalized ageVerification object (legacy: string/boolean -> empty object)
+            const ageVerification = (raw && typeof raw === 'object') ? raw : {};
 
+// Prefer stored age level key (single source of truth)
             const userAgeLevel = Math.max(
                 0,
-                Number(ageVerification.ageLevel ?? ageVerification.userAgeLevel ?? (ageVerification.isAdult ? 18 : 0)) || 0
+                Number(
+                    ageVerification.ageLevel ??
+                    ageVerification.userAgeLevel ??
+                    readLS('nocap_age_level') ??
+                    (ageVerification.isAdult ? 18 : 0)
+                ) || 0
             );
 
             Logger.debug(`✅ Age verification valid: ${userAgeLevel}+`);
             JoinGameModule.gameState.userAgeLevel = userAgeLevel;
+            // keep single source of truth
+            writeLS('nocap_age_level', String(userAgeLevel));
+
 // ✅ Content settings (user must explicitly allow 16+/18+ categories)
             const allowFSK16 = readBoolFlag('nocap_allow_fsk16');
             const allowFSK18 = readBoolFlag('nocap_allow_fsk18');
