@@ -9,28 +9,7 @@
  * ✅ P0: Safe DOM manipulation (no innerHTML)
  * ✅ P1: Proper routing based on device mode
  */
-async function initialize() {
-    Logger.debug('🎯 Initializing difficulty selection...');
 
-    // ✅ P0 FIX: Firebase MUSS vorher initialisiert sein
-    if (!window.FirebaseConfig) {
-        Logger.error('❌ FirebaseConfig not loaded');
-        showNotification('Firebase nicht verfügbar', 'error');
-        return;
-    }
-
-    const firebaseReady = await window.FirebaseConfig.initialize?.()
-        ?? await window.FirebaseConfig.waitForFirebase?.(10000);
-
-    if (!firebaseReady || !window.FirebaseConfig.isInitialized()) {
-        Logger.error('❌ Firebase initialization failed');
-        showNotification('Firebase Initialisierung fehlgeschlagen', 'error');
-        return;
-    }
-
-    // ERST AB HIER weiter
-    await initializeGame();
-}
 (function(window) {
     'use strict';
 
@@ -137,10 +116,11 @@ async function initialize() {
     // INITIALIZATION
     // ===========================
 
-    function initialize() {
+async function initialize() {
         Logger.debug('⚡ Initializing difficulty selection...');
 
         showLoading();
+    // ✅ P0 FIX: Wait for Firebase init (must be ready before server validation)
 
         // Check DOMPurify
         if (typeof DOMPurify === 'undefined') {
