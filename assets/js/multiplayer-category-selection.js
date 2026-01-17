@@ -166,6 +166,15 @@
             showNotification('Fehler beim Laden', 'error');
             return;
         }
+// ✅ Ensure Firebase is initialized
+        try {
+            if (!window.FirebaseConfig?.isInitialized?.()) {
+                await window.FirebaseConfig.initialize();
+            }
+            await window.FirebaseConfig.waitForFirebase(10000);
+        } catch (e) {
+            Logger.warn('⚠️ Firebase not ready yet:', e);
+        }
 
         // P1 FIX: Wait for dependencies
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
@@ -275,7 +284,7 @@
         await loadQuestionCounts();
 
         // Render categories
-        renderCategoryCards();
+        await renderCategoryCards();
 
         // Setup event listeners
         setupEventListeners();
@@ -439,35 +448,27 @@
 
     function checkAgeVerification() {
         try {
-            const verification = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
-                : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
+            const getLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
 
-            if (!verification || typeof verification !== 'object') {
-                Logger.error('❌ No age verification found');
-                showNotification('Altersverifizierung erforderlich!', 'warning');
+            const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
+            const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+
+            // ✅ settings-only: Wenn nicht verifiziert -> zurück zur index/settings
+            if (!verified) {
+                Logger.warn('⚠️ No age verification (settings-only)');
+                showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
                 setTimeout(() => window.location.href = 'index.html', 2000);
                 return false;
             }
 
-            // Check if verification is recent (1 year)
-            const now = Date.now();
-            const maxAge = 365 * 24 * 60 * 60 * 1000;
-
-            if (verification.timestamp && now - verification.timestamp > maxAge) {
-                Logger.warn('⚠️ Age verification expired');
-                showNotification('Altersverifizierung abgelaufen - bitte neu bestätigen', 'warning');
-                setTimeout(() => window.location.href = 'index.html', 2000);
-                return false;
-            }
-
-            const ageLevel = verification.isAdult ? 18 : 0;
-            Logger.debug(`✅ Age verification: ${ageLevel}+`);
+            Logger.debug(`✅ Age verification OK (settings-only): ageLevel=${ageLevel}`);
             return true;
 
         } catch (error) {
-            Logger.error('❌ Age verification error:', error);
-            showNotification('Altersverifizierung erforderlich!', 'warning');
+            Logger.error('❌ Age verification error (settings-only):', error);
+            showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
@@ -642,10 +643,13 @@
 
         grid.innerHTML = '';
 
-        let ageLevel = 0;
-        if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-            ageLevel = parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0;
-        }
+        const getLS = (k) => window.NocapUtils?.getLocalStorage
+            ? window.NocapUtils.getLocalStorage(k)
+            : localStorage.getItem(k);
+
+        const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
+        const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+
 
         const hasPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
 
@@ -659,9 +663,10 @@
 
             const isGuest = !MultiplayerCategoryModule.isHost;
             const locked = isGuest ||
-                (key === 'fsk18' && ageLevel < 18) ||
-                (key === 'fsk16' && ageLevel < 16) ||
+                (key === 'fsk18' && (!verified || ageLevel < 18)) ||
+                (key === 'fsk16' && (!verified || ageLevel < 16)) ||
                 (key === 'special' && !hasPremium);
+
 
             if (locked) {
                 card.classList.add('locked');
@@ -673,7 +678,8 @@
                 card.setAttribute('aria-label', `${cat.name} (Nur Host kann auswählen)`);
             }
 
-            buildCategoryCard(card, key, cat, locked, ageLevel, isGuest);
+            buildCategoryCard(card, key, cat, locked, ageLevel, verified, isGuest);
+
 
             // Event listeners
             if (!locked && !isGuest) {
@@ -688,12 +694,12 @@
                 addTrackedEventListener(card, 'click', () => {
                     showNotification('Nur der Host kann Kategorien auswählen', 'info');
                 });
-            } else if (key === 'fsk18' && ageLevel < 18) {
+            } else if (key === 'fsk18' && (!verified || ageLevel < 18)) {
                 addTrackedEventListener(card, 'click', () =>
-                    showNotification('Du musst 18+ sein', 'warning'));
-            } else if (key === 'fsk16' && ageLevel < 16) {
+                    showNotification(!verified ? 'Bitte erst in den Settings dein Alter bestätigen' : 'Du musst 18+ sein', 'warning'));
+            } else if (key === 'fsk16' && (!verified || ageLevel < 16)) {
                 addTrackedEventListener(card, 'click', () =>
-                    showNotification('Du musst 16+ sein', 'warning'));
+                    showNotification(!verified ? 'Bitte erst in den Settings dein Alter bestätigen' : 'Du musst 16+ sein', 'warning'));
             } else if (key === 'special') {
                 addTrackedEventListener(card, 'click', (e) => {
                     if (e.target.closest('.unlock-btn')) {
@@ -709,7 +715,8 @@
         Logger.debug(`✅ Cards rendered (${MultiplayerCategoryModule.isHost ? 'Host' : 'Guest'} mode)`);
     }
 
-    function buildCategoryCard(card, key, cat, locked, ageLevel, isGuest = false) {
+    function buildCategoryCard(card, key, cat, locked, ageLevel, verified, isGuest = false) {
+
         // Locked overlay
         if (locked) {
             const overlay = document.createElement('div');
@@ -725,10 +732,10 @@
 
             if (isGuest) {
                 lockMessage.textContent = 'Nur Host kann auswählen';
-            } else if (key === 'fsk18' && ageLevel < 18) {
-                lockMessage.textContent = 'Nur für Erwachsene (18+)';
-            } else if (key === 'fsk16' && ageLevel < 16) {
-                lockMessage.textContent = 'Ab 16 Jahren';
+            } else if (key === 'fsk18' && (!verified || ageLevel < 18)) {
+                lockMessage.textContent = !verified ? 'Bitte Alter in Settings bestätigen' : 'Nur für Erwachsene (18+)';
+            } else if (key === 'fsk16' && (!verified || ageLevel < 16)) {
+                lockMessage.textContent = !verified ? 'Bitte Alter in Settings bestätigen' : 'Ab 16 Jahren';
             } else if (key === 'special') {
                 lockMessage.textContent = 'Premium Inhalt';
 
@@ -912,51 +919,49 @@
     }
 
     async function syncWithFirebase() {
-        if (!MultiplayerCategoryModule.firebaseService ||
-            !MultiplayerCategoryModule.gameState.gameId) return;
+        if (!MultiplayerCategoryModule.gameState?.gameId) return;
 
         try {
-            const gameRef = firebase.database()
-                .ref(`games/${MultiplayerCategoryModule.gameState.gameId}/settings/categories`);
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
+
+            if (!database?.ref) return;
+
+            const gameRef = database.ref(`games/${MultiplayerCategoryModule.gameState.gameId}/settings/categories`);
             await gameRef.set(MultiplayerCategoryModule.gameState.selectedCategories);
+
         } catch (error) {
             Logger.error('❌ Sync error:', error);
         }
     }
 
     async function checkAllPlayersReady() {
-        if (!MultiplayerCategoryModule.gameState.gameId) {
-            return true;
-        }
+        if (!MultiplayerCategoryModule.gameState?.gameId) return true;
 
         try {
-            if (typeof firebase === 'undefined' || !firebase.database) {
-                Logger.warn('⚠️ Firebase not available for ready check');
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
+            if (!database?.ref) {
+                Logger.warn('⚠️ Firebase DB not available for ready check');
                 return true;
             }
 
-            const gameRef = firebase.database()
-                .ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players`);
+            const gameRef = database.ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players`);
             const snapshot = await gameRef.once('value');
 
-            if (!snapshot.exists()) {
-                return true;
-            }
+            if (!snapshot.exists()) return true;
 
             const players = snapshot.val() || {};
             const playerList = Object.entries(players)
-                .filter(([key, p]) => p && typeof p === 'object')
+                .filter(([_, p]) => p && typeof p === 'object')
                 .map(([key, p]) => ({ key, ...p }));
-
 
             const allReady = playerList.every(player => {
                 if (player.isHost) return true;
                 return player.categoryReady === true;
             });
 
-            Logger.debug(`✅ Ready check: ${playerList.filter(p =>
-                p.categoryReady || p.isHost).length}/${playerList.length} players ready`);
-
+            Logger.debug(`✅ Ready check: ${playerList.filter(p => p.categoryReady || p.isHost).length}/${playerList.length} players ready`);
             return allReady;
 
         } catch (error) {
@@ -966,40 +971,32 @@
         }
     }
 
+
     async function markPlayerReady() {
-        if (!MultiplayerCategoryModule.gameState.gameId ||
-            MultiplayerCategoryModule.isHost) return;
+        if (!MultiplayerCategoryModule.gameState?.gameId) return;
+        if (MultiplayerCategoryModule.isHost) return;
 
         try {
-            if (typeof firebase === 'undefined' || !firebase.database) return;
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
+            if (!database?.ref) return;
 
-            async function markPlayerReady() {
-                if (!MultiplayerCategoryModule.gameState.gameId || MultiplayerCategoryModule.isHost) return;
-
-                try {
-                    if (typeof firebase === 'undefined' || !firebase.database) return;
-
-                    const playerKey = getPlayerKey();
-                    if (!playerKey) return;
-
-                    const playerRef = firebase.database()
-                        .ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players/${playerKey}`);
-
-                    // set "ready" + keep minimal player info in case it doesn't exist yet
-                    await playerRef.update({
-                        categoryReady: true,
-                        name: sanitizeText(MultiplayerCategoryModule.gameState.playerName || 'Spieler'),
-                        isHost: false,
-                        updatedAt: firebase.database.ServerValue.TIMESTAMP
-                    });
-
-                    Logger.debug('✅ Player marked as ready for category selection');
-
-                } catch (error) {
-                    Logger.error('❌ Mark ready error:', error);
-                }
+            let playerKey = MultiplayerCategoryModule.gameState.playerId;
+            if (!playerKey) {
+                // ✅ Fallback: eindeutige ID erzeugen, damit Gäste sich nicht überschreiben
+                playerKey = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                MultiplayerCategoryModule.gameState.playerId = playerKey;
+                MultiplayerCategoryModule.gameState.save(true);
             }
 
+            const playerRef = database.ref(`games/${MultiplayerCategoryModule.gameState.gameId}/players/${playerKey}`);
+
+            await playerRef.update({
+                categoryReady: true,
+                name: sanitizeText(MultiplayerCategoryModule.gameState.playerName || 'Spieler'),
+                isHost: false,
+                updatedAt: Date.now()
+            });
 
             Logger.debug('✅ Player marked as ready for category selection');
 
@@ -1007,6 +1004,7 @@
             Logger.error('❌ Mark ready error:', error);
         }
     }
+
 
     // ===========================
     // NAVIGATION
@@ -1020,7 +1018,7 @@
             return;
         }
 
-        if (MultiplayerCategoryModule.isHost && MultiplayerCategoryModule.gameState.gameId) {
+        if (MultiplayerCategoryModule.gameState.isHost === true && MultiplayerCategoryModule.gameState.gameId) {
             const allReady = await checkAllPlayersReady();
             if (!allReady) {
                 showNotification(
@@ -1047,6 +1045,9 @@
             MultiplayerCategoryModule.gameState.selectedCategories = [];
             MultiplayerCategoryModule.gameState.playerName = '';
             MultiplayerCategoryModule.gameState.gameId = null;
+            MultiplayerCategoryModule.gameState.playerId = null;
+            MultiplayerCategoryModule.gameState.isGuest = false;
+            MultiplayerCategoryModule.gameState.isHost = false;
 
             if (window.NocapUtils && window.NocapUtils.removeLocalStorage) {
                 window.NocapUtils.removeLocalStorage('nocap_player_name');

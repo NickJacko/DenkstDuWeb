@@ -277,53 +277,28 @@
      */
     function checkAgeVerification() {
         try {
-            // Get age level
+            // ✅ Settings-only: wir nutzen nur den Cache wie in settings.js
             const ageLevel = window.NocapUtils
                 ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
                 : parseInt(localStorage.getItem('nocap_age_level')) || 0;
 
-            // Get verification object
-            const verificationStr = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
-                : localStorage.getItem('nocap_age_verification');
+            Logger.debug(`✅ Age cache level: ${ageLevel}+`);
 
-            const verification = verificationStr
-                ? (typeof verificationStr === 'string' ? JSON.parse(verificationStr) : verificationStr)
-                : null;
-
-            // Check expiration
-            if (verification && verification.timestamp) {
-                const now = Date.now();
-                const expirationTime = 24 * 60 * 60 * 1000; // 24 hours
-
-                if (now - verification.timestamp > expirationTime) {
-                    Logger.warn('⚠️ Age verification expired');
-                    clearAgeVerification();
-                    hideLoading();
-                    window.location.href = 'index.html';
-                    return false;
-                }
-            } else {
-                Logger.warn('⚠️ No age verification found');
-                hideLoading();
-                window.location.href = 'index.html';
-                return false;
-            }
-
-            Logger.debug(`✅ Age verification: ${ageLevel}+`);
-
-            // Lock categories based on age
+            // Lock categories based on cached age
             updateCategoryLocks(ageLevel);
 
+            // ✅ Kein Redirect mehr! User kann bei Klick die Altersprüfung starten.
             return true;
 
         } catch (error) {
-            Logger.error('❌ Error checking age verification:', error);
-            hideLoading();
-            window.location.href = 'index.html';
-            return false;
+            Logger.error('❌ Error checking age cache:', error);
+
+            // Fail-safe: alles locken außer fsk0 + special (special wird später per premium geprüft)
+            updateCategoryLocks(0);
+            return true;
         }
     }
+
 
     function clearAgeVerification() {
         if (window.NocapUtils) {
@@ -572,19 +547,18 @@
 
         const data = categoryData[category];
 
-        // Check if locked
         if (element.classList.contains('locked')) {
-            if (data.requiresAge > 0) {
-                const ageLevel = window.NocapUtils
-                    ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
-                    : parseInt(localStorage.getItem('nocap_age_level')) || 0;
-
-                showNotification(
-                    `Du musst ${data.requiresAge}+ sein für diese Kategorie`,
-                    'warning'
-                );
-            } else if (data.requiresPremium) {
+            if (data.requiresPremium) {
                 showPremiumInfo();
+                return;
+            }
+
+            if (data.requiresAge > 0) {
+                if (window.SettingsModule && typeof window.SettingsModule.showFSKError === 'function') {
+                    window.SettingsModule.showFSKError(category, `Du musst ${data.requiresAge}+ sein für diese Kategorie`);
+                } else {
+                    showNotification(`Du musst ${data.requiresAge}+ sein für diese Kategorie`, 'warning');
+                }
             }
             return;
         }
@@ -615,8 +589,15 @@
                     performToggle(element, category, data);
                 } else {
                     Logger.warn('❌ FSK access denied');
-                    // showFSKError already called by SettingsModule
+
+                    // ✅ Falls validateFSKAccess nicht selbst UI zeigt: erzwingen wir es hier
+                    if (window.SettingsModule && typeof window.SettingsModule.showFSKError === 'function') {
+                        window.SettingsModule.showFSKError(category, `Du musst ${data.requiresAge}+ sein für diese Kategorie`);
+                    } else {
+                        showNotification(`Du musst ${data.requiresAge}+ sein für diese Kategorie`, 'warning');
+                    }
                 }
+
             } else {
                 // Fallback to client-side check if SettingsModule not available
                 Logger.warn('⚠️ SettingsModule not available, using fallback');
@@ -893,6 +874,20 @@
                 closePremiumModal();
             }
         });
+// ✅ Re-check locks after age verification flow on this page
+        const verifyAgeBtn = document.getElementById('verify-age-btn');
+        if (verifyAgeBtn) {
+            addTrackedEventListener(verifyAgeBtn, 'click', () => {
+                // give settings.js a moment to write localStorage
+                setTimeout(() => {
+                    const ageLevel = window.NocapUtils
+                        ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
+                        : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+
+                    updateCategoryLocks(ageLevel);
+                }, 300);
+            });
+        }
     }
 
     // ===========================

@@ -517,33 +517,40 @@ async function initialize() {
 
     function checkAlcoholMode() {
         try {
-            // ✅ BUGFIX: Korrekter Zugriff auf alcoholMode (nicht verschachtelt)
+            // ✅ keep current choice from GameState
             DifficultySelectionModule.alcoholMode = DifficultySelectionModule.gameState.alcoholMode === true;
 
-            // ✅ AUDIT FIX: Serverseitige FSK18-Validierung für Alkohol-Mode
-            if (DifficultySelectionModule.alcoholMode) {
-                // Prüfe ob User 18+ ist (aus Custom Claims oder LocalStorage)
-                const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+            if (!DifficultySelectionModule.alcoholMode) {
+                updateUIForAlcoholMode();
+                return;
+            }
 
-                if (ageLevel < 18) {
-                    Logger.warn('⚠️ Alcohol mode disabled: User under 18');
-                    DifficultySelectionModule.alcoholMode = false;
-                    DifficultySelectionModule.gameState.setAlcoholMode(false);
+            // ✅ Settings-only: always read the same cache key as settings.js
+            const ageLevel = window.NocapUtils
+                ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
+                : parseInt(localStorage.getItem('nocap_age_level')) || 0;
 
-                    showNotification(
-                        'Alkohol-Modus nur für 18+',
-                        'warning',
-                        3000
-                    );
-                }
+            if (ageLevel < 18) {
+                Logger.warn('⚠️ Alcohol mode disabled: User under 18');
+                DifficultySelectionModule.alcoholMode = false;
+                DifficultySelectionModule.gameState.setAlcoholMode(false);
+
+                // if toggle exists, force UI off
+                const alcoholToggle = document.getElementById('alcohol-toggle');
+                if (alcoholToggle) alcoholToggle.checked = false;
+
+                showNotification('Alkohol-Modus nur für 18+', 'warning', 3000);
             }
 
             Logger.debug(`🍺 Alcohol mode: ${DifficultySelectionModule.alcoholMode}`);
-
             updateUIForAlcoholMode();
         } catch (error) {
             Logger.error('❌ Error checking alcohol mode:', error);
             DifficultySelectionModule.alcoholMode = false;
+
+            const alcoholToggle = document.getElementById('alcohol-toggle');
+            if (alcoholToggle) alcoholToggle.checked = false;
+
             updateUIForAlcoholMode();
         }
     }
@@ -767,7 +774,10 @@ async function initialize() {
         const isEnabled = event.target.checked;
 
         // Check age requirement
-        const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+        const ageLevel = window.NocapUtils
+            ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
+            : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+
         if (isEnabled && ageLevel < 18) {
             event.target.checked = false;
             showNotification('Alkohol-Modus nur für 18+', 'warning');

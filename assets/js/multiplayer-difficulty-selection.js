@@ -106,7 +106,33 @@
         fsk18: 'Heiß & Gewagt',
         special: 'Special Edition'
     };
+// ===========================
+// 🔞 SETTINGS-ONLY AGE HELPERS
+// ===========================
 
+    function getSettingsAge() {
+        const getLS = (k) => window.NocapUtils?.getLocalStorage
+            ? window.NocapUtils.getLocalStorage(k)
+            : localStorage.getItem(k);
+        const rawVerified = getLS('nocap_age_verification');
+        const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
+        Logger.debug('🔞 Settings age check:', getSettingsAge());
+        const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+
+        return { verified, ageLevel };
+
+    }
+
+    function requireAgeVerifiedOrRedirect() {
+        const { verified } = getSettingsAge();
+        if (!verified) {
+            Logger.warn('⚠️ No age verification (settings-only)');
+            showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return false;
+        }
+        return true;
+    }
     // ===========================
     // INITIALIZATION
     // ===========================
@@ -121,6 +147,21 @@
                 showNotification('Fehler: GameState nicht gefunden', 'error');
                 return;
             }
+
+            // ✅ Ensure Firebase is initialized (guarded)
+            try {
+                if (!window.FirebaseConfig) {
+                    Logger.warn('⚠️ FirebaseConfig missing - firebase-config.js not loaded?');
+                } else {
+                    if (!window.FirebaseConfig.isInitialized?.()) {
+                        await window.FirebaseConfig.initialize();
+                    }
+                    await window.FirebaseConfig.waitForFirebase(10000);
+                }
+            } catch (e) {
+                Logger.warn('⚠️ Firebase not ready yet:', e);
+            }
+
 
             // Wait for dependencies
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
@@ -138,7 +179,12 @@
                 return;
             }
 
-            // Check alcohol mode
+            // ✅ Settings-only age verification required for multiplayer flow
+            if (!requireAgeVerifiedOrRedirect()) {
+                return;
+            }
+
+            // Check alcohol mode (now depends on age)
             checkAlcoholMode();
             updateAlcoholModeUI();
 
@@ -194,7 +240,8 @@
             return false;
         }
 
-        if (!MultiplayerDifficultyModule.gameState.checkValidity()) {
+        if (typeof MultiplayerDifficultyModule.gameState.checkValidity === 'function' &&
+            !MultiplayerDifficultyModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -216,6 +263,29 @@
             setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
             return false;
         }
+// ✅ Settings-only FSK validation (hard gate)
+        const { verified, ageLevel } = getSettingsAge();
+        if (!verified) {
+            Logger.error('❌ Age not verified (settings-only)');
+            showNotification('Altersverifizierung erforderlich!', 'warning');
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return false;
+        }
+
+        const selected = MultiplayerDifficultyModule.gameState.selectedCategories || [];
+        if (selected.includes('fsk18') && ageLevel < 18) {
+            Logger.error('❌ Selected fsk18 but user < 18');
+            showNotification('Du musst 18+ sein für diese Kategorie', 'warning');
+            setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
+            return false;
+        }
+
+        if (selected.includes('fsk16') && ageLevel < 16) {
+            Logger.error('❌ Selected fsk16 but user < 16');
+            showNotification('Du musst 16+ sein für diese Kategorie', 'warning');
+            setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
+            return false;
+        }
 
         Logger.debug('✅ Game state valid');
         return true;
@@ -227,11 +297,33 @@
 
     function checkAlcoholMode() {
         try {
-            if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-                const alcoholModeStr = window.NocapUtils.getLocalStorage('nocap_alcohol_mode');
-                MultiplayerDifficultyModule.alcoholMode = alcoholModeStr === 'true';
+            const { verified, ageLevel } = getSettingsAge();
+
+            // Default: false
+            MultiplayerDifficultyModule.alcoholMode = false;
+
+            // If not verified -> keep false (redirect handled earlier)
+            if (!verified) {
+                Logger.warn('⚠️ Alcohol mode disabled: not verified (settings-only)');
+                return;
             }
-            Logger.debug(`🍺 Alcohol mode: ${MultiplayerDifficultyModule.alcoholMode}`);
+
+            // Alcohol only allowed for 18+
+            if (ageLevel < 18) {
+                Logger.warn('⚠️ Alcohol mode disabled: User under 18');
+                MultiplayerDifficultyModule.alcoholMode = false;
+                return;
+            }
+
+            // Read toggle (only meaningful if 18+)
+            const getLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
+
+            const alcoholModeStr = String(getLS('nocap_alcohol_mode') || 'false');
+            MultiplayerDifficultyModule.alcoholMode = alcoholModeStr === 'true';
+
+            Logger.debug(`🍺 Alcohol mode: ${MultiplayerDifficultyModule.alcoholMode} (ageLevel=${ageLevel})`);
         } catch (error) {
             Logger.error('❌ Error checking alcohol mode:', error);
             MultiplayerDifficultyModule.alcoholMode = false;
@@ -493,8 +585,15 @@
     }
 
     function goBack() {
+        try {
+            if (MultiplayerDifficultyModule.gameState) {
+                MultiplayerDifficultyModule.gameState.difficulty = null;
+                MultiplayerDifficultyModule.gameState.save?.(true);
+            }
+        } catch (e) {}
         window.location.href = 'multiplayer-category-selection.html';
     }
+
 
     // ===========================
     // INPUT SANITIZATION

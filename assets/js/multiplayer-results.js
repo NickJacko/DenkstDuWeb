@@ -49,10 +49,9 @@
     // UTILITIES
     // ===========================
     function getFirebaseService() {
-        return window.FirebaseService || null;
+        return window.FirebaseService || window.firebaseGameService || window.FirebaseGameService || null;
     }
 
-    let firebaseUnsubscribers = [];
 
     function throttle(func, wait = 100) {
         let timeout = null;
@@ -103,7 +102,7 @@
     const AUTO_REDIRECT_DELAY = 60000; // 60 seconds
     const COUNTDOWN_INTERVAL = 1000; // 1 second
 
-    // ✅ P1 DSGVO: Auto-delete results after 24 hours
+// ✅ P1 Privacy: Client-side cleanup hint (NOT guaranteed if user closes the tab)
     const RESULTS_RETENTION_TIME = 24 * 60 * 60 * 1000; // 24 hours
 
     // ===========================
@@ -133,11 +132,27 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
         try {
+            showLoading();
             if (typeof DOMPurify === 'undefined') {
                 Logger.warn('⚠️ DOMPurify not loaded - continuing (textContent-only rendering)');
             }
 
-            // ✅ P0 SECURITY: Verify user authentication
+// ✅ Ensure Firebase is initialized (consistent with other pages)
+            try {
+                if (!window.FirebaseConfig) {
+                    throw new Error('FirebaseConfig missing - firebase-config.js not loaded?');
+                }
+                if (!window.FirebaseConfig.isInitialized?.()) {
+                    await window.FirebaseConfig.initialize();
+                }
+                if (window.FirebaseConfig.waitForFirebase) {
+                    await window.FirebaseConfig.waitForFirebase(10000);
+                }
+            } catch (e) {
+                Logger.warn('⚠️ Firebase not ready (results page can still work with local data):', e);
+            }
+
+// ✅ P0 SECURITY: Verify user authentication
             await verifyUserAuthentication();
 
             // Load game results
@@ -157,7 +172,7 @@
             // Start auto-redirect timer
             startAutoRedirectTimer();
 
-            // ✅ P1 DSGVO: Schedule auto-deletion
+            // ✅ Privacy: Client-side attempt to delete after 24h (NOT guaranteed)
             scheduleResultsDeletion();
 
             hideLoading();
@@ -708,6 +723,8 @@
     }
 
     function redirectToMenu() {
+        // only now we clear stored results
+        try { localStorage.removeItem('nocap_game_results'); } catch (e) {}
         cleanup();
         window.location.href = 'index.html';
     }
@@ -717,8 +734,10 @@
     // ===========================
 
     /**
-     * ✅ P1 DSGVO: Schedule automatic deletion of results after 24 hours
+     * ✅ Privacy: Client-side attempt to delete after 24h (NOT guaranteed)
+     * For real retention enforcement use a Cloud Function / scheduled job.
      */
+
     function scheduleResultsDeletion() {
         const svc = getFirebaseService();
         if (!currentGameId || !svc?.database) return;
@@ -1330,16 +1349,13 @@
     function cleanup() {
         cancelAutoRedirect();
 
-        firebaseUnsubscribers.forEach(unsub => {
-            try { unsub(); } catch (e) {}
+        // ✅ Remove tracked DOM listeners
+        MultiplayerResultsModule.state.eventListenerCleanup.forEach(({ element, event, handler, options }) => {
+            try {
+                element?.removeEventListener?.(event, handler, options);
+            } catch (e) {}
         });
-        firebaseUnsubscribers = [];
-
-        // Clear game data from storage
-        localStorage.removeItem('nocap_game_results');
-        localStorage.removeItem('nocap_game_id');
-        sessionStorage.removeItem('nocap_game_id');
-
+        MultiplayerResultsModule.state.eventListenerCleanup = [];
         console.log('✅ Cleanup completed');
     }
 

@@ -364,15 +364,6 @@
             notificationContainer.setAttribute('aria-atomic', 'true');
             document.body.appendChild(notificationContainer);
         }
-        function getPlayerKey() {
-            try {
-                const auth = firebase && firebase.auth ? firebase.auth() : null;
-                const uid = auth && auth.currentUser ? auth.currentUser.uid : null;
-                return uid || MultiplayerCategoryModule.gameState?.playerId || null;
-            } catch (e) {
-                return MultiplayerCategoryModule.gameState?.playerId || null;
-            }
-        }
 
         // Remove old notifications of same type (prevent spam)
         const existingNotifications = notificationContainer.querySelectorAll(`.notification.${type}`);
@@ -1576,7 +1567,25 @@
             return setTimeout(callback, 16);
         }
     }
+    function readBoolFlag(key) {
+        try {
+            const v = getLocalStorage(key);
+            if (typeof v === 'boolean') return v;
+            if (typeof v === 'string') return v === 'true';
+            if (typeof v === 'number') return v === 1;
+        } catch (e) {}
 
+        try {
+            const raw = localStorage.getItem(key);
+            if (raw === null) return false;
+            if (raw === 'true') return true;
+            if (raw === 'false') return false;
+            // JSON fallback (z.B. "true")
+            return Boolean(JSON.parse(raw));
+        } catch (e) {
+            return false;
+        }
+    }
     // ============================================================================
     // ♿ ACCESSIBILITY UTILITIES
     // ============================================================================
@@ -1586,6 +1595,7 @@
      * @param {HTMLElement} element - Element to trap focus in
      * @returns {Function|null} Cleanup function
      */
+
     function trapFocus(element) {
         if (!element) return null;
 
@@ -1641,7 +1651,6 @@
         announcement.setAttribute('aria-live', priority);
         announcement.setAttribute('aria-atomic', 'true');
         announcement.className = 'sr-only';
-        announcement.style.cssText = 'position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;';
 
         document.body.appendChild(announcement);
 
@@ -1897,11 +1906,26 @@
                 };
             }
 
-            let data;
-            try {
-                data = JSON.parse(token);
-            } catch (error) {
-                Logger.warn('⚠️ Invalid age verification token format');
+            let data = token;
+
+// Backward compatibility: falls alte Version noch String gespeichert hat
+            if (typeof data === 'string') {
+                try {
+                    data = JSON.parse(data);
+                } catch (error) {
+                    Logger.warn('⚠️ Invalid age verification token format');
+                    removeLocalStorage('nocap_age_verification');
+                    return {
+                        isValid: false,
+                        age: null,
+                        expiresAt: null,
+                        reason: 'INVALID_FORMAT'
+                    };
+                }
+            }
+
+            if (!data || typeof data !== 'object') {
+                Logger.warn('⚠️ Invalid age verification token type');
                 removeLocalStorage('nocap_age_verification');
                 return {
                     isValid: false,
@@ -1910,6 +1934,7 @@
                     reason: 'INVALID_FORMAT'
                 };
             }
+
 
             if (!data.age || !data.verifiedAt || !data.expiresAt) {
                 Logger.warn('⚠️ Incomplete age verification data');
@@ -2002,7 +2027,7 @@
                 version: '1.0'
             };
 
-            setLocalStorage('nocap_age_verification', JSON.stringify(token));
+            setLocalStorage('nocap_age_verification', token);
             Logger.info(`✅ Age verification set: ${ageNum} years (expires in 7 days)`);
             return true;
 

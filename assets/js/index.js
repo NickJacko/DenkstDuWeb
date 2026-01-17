@@ -44,7 +44,6 @@
             isAdult: false,
             alcoholMode: false,
             gameState: null,
-            directJoinInterval: null,
             eventListenerCleanup: [],
             scrollThrottle: null,
             initialized: false,
@@ -205,351 +204,30 @@
     // ===================================
     // 🔐 AGE VERIFICATION
     // ===================================
-
-    /**
-     * ✅ P1 FIX: Show age verification modal with centralized auth check
-     * Uses Firebase Custom Claims instead of local state
-     */
-    function showAgeModal() {
-        const modal = document.getElementById('age-modal');
-        const mainApp = document.getElementById('main-app');
-
-        if (modal && mainApp) {
-            // ✅ CSP-FIX: Use CSS classes instead of inline styles
-            if (window.NocapUtils && window.NocapUtils.showElement) {
-                window.NocapUtils.showElement(modal, 'flex');
-            } else {
-                modal.classList.remove('hidden');
-                modal.classList.add('d-flex');
-            }
-            modal.removeAttribute('aria-hidden');
-
-            mainApp.classList.add('modal-open-blur');
-            mainApp.setAttribute('aria-hidden', 'true');
-
-            // Focus trap for accessibility
-            if (window.NocapUtils && window.NocapUtils.trapFocus) {
-                const cleanup = window.NocapUtils.trapFocus(modal);
-                modal._focusTrapCleanup = cleanup;
-            }
-
-            // Focus first interactive element
-            const firstButton = modal.querySelector('button, input[type="checkbox"]');
-            if (firstButton) {
-                setTimeout(() => firstButton.focus(), 100);
-            }
-
-            // Announce to screen readers
-            if (window.NocapUtils && window.NocapUtils.announceToScreenReader) {
-                window.NocapUtils.announceToScreenReader(
-                    'Altersverifikation erforderlich. Bitte bestätige dein Alter.',
-                    'assertive'
-                );
-            }
-        }
-    }
-
-    /**
-     * Hide age verification modal with cleanup
-     */
-    function hideAgeModal() {
-        const modal = document.getElementById('age-modal');
-        const mainApp = document.getElementById('main-app');
-
-        if (modal && mainApp) {
-            // ✅ CSP-FIX: Use CSS classes instead of inline styles
-            if (window.NocapUtils && window.NocapUtils.hideElement) {
-                window.NocapUtils.hideElement(modal);
-            } else {
-                modal.classList.add('hidden');
-            }
-            modal.setAttribute('aria-hidden', 'true');
-
-            mainApp.classList.remove('modal-open-blur');
-            mainApp.removeAttribute('aria-hidden');
-
-            // Cleanup focus trap
-            if (modal._focusTrapCleanup && typeof modal._focusTrapCleanup === 'function') {
-                modal._focusTrapCleanup();
-                modal._focusTrapCleanup = null;
-            }
-
-            // ✅ FIX: Check if user came from join-game or other page
-            const returnUrl = sessionStorage.getItem('nocap_return_url');
-            if (returnUrl) {
-                sessionStorage.removeItem('nocap_return_url');
-
-                if (IndexPageModule.isDevelopment) {
-                    Logger.debug('↩️ Returning to:', returnUrl);
-                }
-
-                // Show smooth transition notification
-                if (window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        '✓ Altersverifikation abgeschlossen - kehre zurück...',
-                        'success',
-                        1000
-                    );
-                }
-
-                // Immediate redirect (no visible flash to index page)
-                window.location.replace(returnUrl);
-                return;
-            }
-
-            // Return focus to main content
-            const mainContent = document.getElementById('main-content');
-            if (mainContent) {
-                mainContent.focus();
-            }
-        }
-    }
-
-    /**
-     * ✅ P0 FIX: Save age verification with MANDATORY server validation
-     * ✅ P1 FIX: Synchronizes with central FirebaseAuth Custom Claims
-     * @param {boolean} isAdultUser - Whether user is 18+
-     * @param {boolean} allowAlcohol - Whether alcohol mode is allowed
-     * @returns {Promise<boolean>} Success status
-     */
-    async function saveVerification(isAdultUser, allowAlcohol) {
-        try {
-            const ageLevel = isAdultUser ? 18 : 0;
-
-            const serverVerified = await updateFirebaseAgeVerification(ageLevel);
-
-            // ✅ PROD: must be verified, DEV: allow local-only
-            if (!serverVerified && !IndexPageModule.isDevelopment) {
-                Logger.error("❌ Server verification failed (prod) - age not saved");
-                return false;
-            }
-
-            const verification = {
-                ageVerified: true,
-                isAdult: isAdultUser === true,
-                alcoholMode: allowAlcohol === true,
-                timestamp: Date.now(),
-                serverVerified: serverVerified === true
-            };
-
-
-            // Use safe storage helpers
-            if (window.NocapUtils) {
-                window.NocapUtils.setLocalStorage('nocap_age_level', ageLevel);
-                window.NocapUtils.setLocalStorage('nocap_age_verification', verification);
-            } else {
-                localStorage.setItem('nocap_age_level', ageLevel.toString());
-                localStorage.setItem('nocap_age_verification', JSON.stringify(verification));
-            }
-
-            // ✅ Update module state
-            IndexPageModule.ageVerified = true;
-            IndexPageModule.isAdult = isAdultUser;
-            IndexPageModule.alcoholMode = allowAlcohol;
-
-            if (IndexPageModule.isDevelopment) {
-                Logger.debug(
-                    serverVerified
-                        ? '✅ Age verification saved (server-validated)'
-                        : '⚠️ Age verification saved (LOCAL ONLY - not server verified)',
-                    {ageLevel, alcoholMode, serverVerified}
-                );
-            }
-
-            return true;
-
-        } catch (error) {
-            Logger.error('❌ Could not save age verification:', error);
-
-            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                window.NocapUtils.showNotification(
-                    'Fehler beim Speichern der Altersverifikation',
-                    'error'
-                );
-            }
-
-            return false;
-        }
-    }
-
-    /**
-     * ✅ P0 FIX: Update Firebase with age verification (async, non-blocking)
-     * Server-side validierung via Cloud Function mit Custom Claims
-     * @param {number} ageLevel - Age verification level (0 or 18)
-     * @returns {Promise<boolean>} Success status
-     */
-    async function updateFirebaseAgeVerification(ageLevel) {
-        const dev = IndexPageModule.isDevelopment;
-
-        // ✅ PRODUCTION: server verification is mandatory
-        if (!dev) {
-            // Must have Firebase + user + functions
-            if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
-                Logger.error("❌ Firebase not initialized in production - cannot verify age server-side");
-                if (window.NocapUtils?.showNotification) {
-                    window.NocapUtils.showNotification(
-                        "Server-Verifizierung nicht möglich. Bitte Seite neu laden.",
-                        "error",
-                        4000
-                    );
-                }
-                return false;
-            }
-
-            const userId = window.FirebaseConfig.getCurrentUserId();
-            if (!userId) {
-                Logger.error("❌ No userId in production - cannot verify age server-side");
-                if (window.NocapUtils?.showNotification) {
-                    window.NocapUtils.showNotification(
-                        "Anmeldung nicht bereit. Bitte kurz warten und erneut versuchen.",
-                        "error",
-                        3500
-                    );
-                }
-                return false;
-            }
-        }
-
-        // ✅ DEV: allow local-only fallback (but return false for 'serverVerified')
-        if (dev && (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized())) {
-            Logger.warn("⚠️ DEV: Firebase not initialized - skipping server verification");
-            return false; // important: NOT server verified
-        }
-
-        try {
-            const {functions} = window.FirebaseConfig.getFirebaseInstances();
-            if (!functions) throw new Error("Firebase Functions not available");
-
-            const verifyAge = functions.httpsCallable("setAgeVerification");
-            const result = await verifyAge({ ageLevel, verificationMethod: "self-declaration" });
-
-            if (result?.data?.success) {
-                if (window.NocapUtils?.showNotification) {
-                    window.NocapUtils.showNotification(
-                        "✓ Altersverifikation gespeichert",
-                        "success",
-                        2000
-                    );
-                }
-                return true; // ✅ server verified
-            }
-
-            throw new Error("Server verification failed");
-        } catch (err) {
-            Logger.error("❌ Server-side age verification failed:", err);
-
-            if (dev) {
-                // DEV: allow continuation locally, but mark NOT verified
-                if (window.NocapUtils?.showNotification) {
-                    window.NocapUtils.showNotification(
-                        "⚠️ DEV: Altersverifikation nur lokal (kein Server-Verify)",
-                        "warning",
-                        3000
-                    );
-                }
-                return false;
-            }
-
-            // PROD: block
-            if (window.NocapUtils?.showNotification) {
-                window.NocapUtils.showNotification(
-                    "Server-Validierung fehlgeschlagen. Bitte später erneut versuchen.",
-                    "error",
-                    4000
-                );
-            }
-            return false;
-        }
-    }
-
-
     /**
      * ✅ P0 SECURITY: Load age verification with validation and expiry check
      * Sanitizes all data from localStorage before use
      * @returns {boolean} True if valid verification found
      */
     function loadVerification() {
+        // ✅ Only read from Settings cache (no gating, no modal, no server requirement)
         try {
-            const saved = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
-                : localStorage.getItem('nocap_age_verification');
+            const ageLevelRaw = localStorage.getItem('nocap_age_level');
+            const ageLevel = parseInt(ageLevelRaw, 10) || 0;
 
-            if (!saved) {
-                return false;
-            }
+            IndexPageModule.ageVerified = ageLevel > 0;
+            IndexPageModule.isAdult = ageLevel >= 18;
 
-            const verification = typeof saved === 'string' ? JSON.parse(saved) : saved;
+            // alcoholMode is only allowed for 18+, otherwise force off
+            IndexPageModule.alcoholMode = ageLevel >= 18;
 
-            // ✅ P0 SECURITY: Validate structure and sanitize all string values
-            if (!verification || typeof verification !== 'object') {
-                clearVerification();
-                return false;
-            }
-
-            // ✅ P0 SECURITY: Validate and sanitize timestamp
-            const timestamp = parseInt(verification.timestamp);
-            if (isNaN(timestamp) || timestamp < 0 || timestamp > Date.now()) {
-                Logger.warn('⚠️ Invalid timestamp in age verification');
-                clearVerification();
-                return false;
-            }
-
-            const now = Date.now();
-            const oneDay = 24 * 60 * 60 * 1000;
-
-            if (timestamp && now - timestamp < oneDay) {
-                const isDev = IndexPageModule.isDevelopment;
-
-                // ✅ PROD: only accept verification if serverVerified === true
-                const isServerVerified = verification.serverVerified === true;
-
-                if (!isDev && !isServerVerified) {
-                    Logger.warn("⚠️ Ignoring local age verification in production (not server verified)");
-                    clearVerification();
-                    return false;
-                }
-
-                IndexPageModule.ageVerified = verification.ageVerified === true;
-                IndexPageModule.isAdult = verification.isAdult === true;
-                IndexPageModule.alcoholMode = verification.alcoholMode === true;
-
-
-                if (IndexPageModule.isDevelopment) {
-                    Logger.debug('✅ Age verification loaded from storage');
-                }
-
-                return true;
-            } else {
-                // Expired - clear it
-                if (IndexPageModule.isDevelopment) {
-                    Logger.info('ℹ️ Age verification expired (>24h)');
-                }
-                clearVerification();
-                return false;
-            }
-
-        } catch (error) {
-            Logger.error('❌ Could not load age verification:', error);
-            clearVerification();
+            return ageLevel > 0;
+        } catch (e) {
+            IndexPageModule.ageVerified = false;
+            IndexPageModule.isAdult = false;
+            IndexPageModule.alcoholMode = false;
             return false;
         }
-    }
-
-    /**
-     * Clear verification from storage
-     */
-    function clearVerification() {
-        if (window.NocapUtils) {
-            window.NocapUtils.removeLocalStorage('nocap_age_verification');
-            window.NocapUtils.removeLocalStorage('nocap_age_level');
-        } else {
-            localStorage.removeItem('nocap_age_verification');
-            localStorage.removeItem('nocap_age_level');
-        }
-
-        IndexPageModule.ageVerified = false;
-        IndexPageModule.isAdult = false;
-        IndexPageModule.alcoholMode = false;
     }
 
     /**
@@ -625,29 +303,12 @@
      * @returns {boolean} True if valid
      */
     function validateGameState() {
-        if (!IndexPageModule.ageVerified) {
-            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                window.NocapUtils.showNotification(
-                    'Bitte bestätige zuerst dein Alter',
-                    'warning'
-                );
-            }
-            showAgeModal();
-            return false;
-        }
-
+        // ✅ No age gate on landing. Only ensure GameState exists.
         if (!IndexPageModule.gameState) {
             Logger.error('❌ GameState not initialized');
-
-            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                window.NocapUtils.showNotification(
-                    'Fehler beim Laden der Spieldaten',
-                    'error'
-                );
-            }
+            window.NocapUtils?.showNotification?.('Fehler beim Laden der Spieldaten', 'error');
             return false;
         }
-
         return true;
     }
 
@@ -841,49 +502,6 @@
             Logger.debug('✅ Scroll-to-top button initialized (throttled)');
         }
     }
-
-    /**
-     * ✅ P1 UI/UX: Lazy load modals and heavy components
-     */
-    function lazyLoadComponents() {
-        // Lazy load age modal content (only when needed)
-        const ageModal = document.getElementById('age-modal');
-
-        if (ageModal && !ageModal.dataset.loaded) {
-            // Mark as loaded
-            ageModal.dataset.loaded = 'true';
-
-            // Add intersection observer for future lazy-loaded images
-            if ('IntersectionObserver' in window) {
-                const imageObserver = new IntersectionObserver((entries, observer) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const img = entry.target;
-
-                            if (img.dataset.src) {
-                                img.src = img.dataset.src;
-                                img.removeAttribute('data-src');
-                            }
-
-                            observer.unobserve(img);
-                        }
-                    });
-                }, {
-                    rootMargin: '50px' // Load 50px before entering viewport
-                });
-
-                // Observe all lazy images
-                document.querySelectorAll('img[data-src]').forEach(img => {
-                    imageObserver.observe(img);
-                });
-
-                if (IndexPageModule.isDevelopment) {
-                    Logger.debug('✅ Image lazy loading initialized');
-                }
-            }
-        }
-    }
-
     /**
      * ✅ AUDIT FIX: Animate mode cards via CSS classes (respects prefers-reduced-motion)
      */
@@ -945,82 +563,28 @@
     }
 
 
-    // ===================================
-    // 🔗 URL PARAMETER HANDLING
-    // ===================================
-
-    /**
-     * ✅ AUDIT FIX: Handle direct game join with STRICT validation
-     * Only allows exactly 6 alphanumeric characters [A-Z0-9]{6}
-     */
     function handleDirectJoin() {
         const urlParams = new URLSearchParams(window.location.search);
         const gameId = urlParams.get('gameId');
 
-        if (!gameId) {
-            return;
-        }
+        if (!gameId) return;
 
-        // ✅ STRICT VALIDATION: Only [A-Z0-9]{6}
         const strictPattern = /^[A-Z0-9]{6}$/i;
 
-        // Validate length and pattern
         if (gameId.length !== 6 || !strictPattern.test(gameId)) {
             Logger.warn('⚠️ Invalid gameId format (must be exactly 6 alphanumeric chars):', gameId);
+            window.NocapUtils?.showNotification?.(
+                'Ungültiger Spiel-Code. Muss 6 Zeichen sein (A-Z, 0-9)',
+                'error'
+            );
 
-            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                window.NocapUtils.showNotification(
-                    'Ungültiger Spiel-Code. Muss 6 Zeichen sein (A-Z, 0-9)',
-                    'error'
-                );
-            }
-
-            // Clear invalid parameter from URL
             const cleanUrl = window.location.pathname;
             window.history.replaceState({}, document.title, cleanUrl);
             return;
         }
 
-        // Sanitize with DOMPurify AND uppercase
         const sanitizedGameId = DOMPurify.sanitize(gameId.toUpperCase().trim());
-        // If user came via direct join link, trigger age modal immediately
-        if (!IndexPageModule.ageVerified) {
-            showAgeModal();
-        }
-
-        // Clear any existing interval
-        if (IndexPageModule.state.directJoinInterval) {
-            clearInterval(IndexPageModule.state.directJoinInterval);
-        }
-
-        // Wait for age verification
-        let attempts = 0;
-        const maxAttempts = 100; // 10 seconds
-
-        IndexPageModule.state.directJoinInterval = setInterval(() => {
-            attempts++;
-
-            if (IndexPageModule.ageVerified) {
-                clearInterval(IndexPageModule.state.directJoinInterval);
-                IndexPageModule.state.directJoinInterval = null;
-
-                // Use encodeURIComponent for safe URL parameter
-                window.location.href = `join-game.html?gameId=${encodeURIComponent(sanitizedGameId)}`;
-            }
-
-            // Timeout after 10 seconds
-            if (attempts >= maxAttempts) {
-                clearInterval(IndexPageModule.state.directJoinInterval);
-                IndexPageModule.state.directJoinInterval = null;
-
-                if (!IndexPageModule.ageVerified && window.NocapUtils && window.NocapUtils.showNotification) {
-                    window.NocapUtils.showNotification(
-                        'Altersverifikation erforderlich zum Beitreten',
-                        'warning'
-                    );
-                }
-            }
-        }, 100);
+        window.location.href = `join-game.html?gameId=${encodeURIComponent(sanitizedGameId)}`;
     }
 
     // ===================================
@@ -1045,121 +609,6 @@
      * Setup all event listeners with proper cleanup tracking
      */
     function setupEventListeners() {
-        // ✅ AUDIT FIX: ESC-Taste schließt Age-Modal (falls bereits verifiziert)
-        const ageModal = document.getElementById("age-modal");
-        if (ageModal) {
-            addTrackedEventListener(document, "keydown", (e) => {
-                if (e.key === "Escape" && IndexPageModule.ageVerified) {
-                    hideAgeModal();
-                }
-            });
-        }
-
-        // Age checkbox
-        const ageCheckbox = document.getElementById('age-checkbox');
-        const btn18Plus = document.getElementById('btn-18plus');
-
-        if (ageCheckbox && btn18Plus) {
-            addTrackedEventListener(ageCheckbox, 'change', function () {
-                const isChecked = this.checked;
-                btn18Plus.disabled = !isChecked;
-                btn18Plus.setAttribute('aria-disabled', !isChecked);
-
-                if (isChecked) {
-                    btn18Plus.classList.add('enabled');
-                } else {
-                    btn18Plus.classList.remove('enabled');
-                }
-            });
-        }
-
-        // 18+ button
-        if (btn18Plus) {
-            addTrackedEventListener(btn18Plus, 'click', async function () {
-                const checkbox = document.getElementById('age-checkbox');
-                if (checkbox && checkbox.checked) {
-                    // ✅ P0 FIX: Warte auf serverseitige Validierung
-                    this.disabled = true;
-                    this.textContent = '⏳ Validiere...';
-
-                    const success = await saveVerification(true, true);
-
-                    if (success) {
-                        updateUIForVerification();
-                        hideAgeModal();
-                        animateCards();
-
-                        if (window.NocapUtils && window.NocapUtils.showNotification) {
-                            window.NocapUtils.showNotification(
-                                'Spiel mit allen Inhalten verfügbar',
-                                'success',
-                                2000
-                            );
-                        }
-                    } else {
-                        // Reset Button bei Fehler
-                        this.disabled = false;
-                        this.textContent = "Weiter (18+)";
-                        const s = document.createElement("span");
-                        s.setAttribute("aria-hidden", "true");
-                        s.textContent = "🔞 ";
-                        this.prepend(s);
-
-
-                        if (window.NocapUtils && window.NocapUtils.showNotification) {
-                            window.NocapUtils.showNotification(
-                                'Validierung fehlgeschlagen. Bitte versuche es später erneut.',
-                                'error',
-                                4000
-                            );
-                        }
-                    }
-                }
-            });
-        }
-
-        // Under 18 button
-        const btnUnder18 = document.getElementById('btn-under-18');
-        if (btnUnder18) {
-            addTrackedEventListener(btnUnder18, 'click', async function () {
-                // ✅ P0 FIX: Auch unter-18 Validierung serverseitig
-                this.disabled = true;
-                this.textContent = '⏳ Speichere...';
-
-                const success = await saveVerification(false, false);
-
-                if (success) {
-                    updateUIForVerification();
-                    hideAgeModal();
-                    animateCards();
-
-                    if (window.NocapUtils && window.NocapUtils.showNotification) {
-                        window.NocapUtils.showNotification(
-                            'Jugendschutz-Modus aktiviert',
-                            'info',
-                            2000
-                        );
-                    }
-                } else {
-                    // Reset Button bei Fehler
-                    this.disabled = false;
-                    this.textContent = "Ich bin unter 18";
-                    const s = document.createElement("span");
-                    s.setAttribute("aria-hidden", "true");
-                    s.textContent = "👶 ";
-                    this.prepend(s);
-
-
-                    if (window.NocapUtils && window.NocapUtils.showNotification) {
-                        window.NocapUtils.showNotification(
-                            'Validierung fehlgeschlagen. Bitte versuche es später erneut.',
-                            'error',
-                            4000
-                        );
-                    }
-                }
-            });
-        }
 
         // Game mode buttons
         const btnSingle = document.getElementById('btn-single');
@@ -1192,10 +641,6 @@
 // 🧹 CLEANUP
 // ===================================
     function cleanup() {
-        if (IndexPageModule.state.directJoinInterval) {
-            clearInterval(IndexPageModule.state.directJoinInterval);
-            IndexPageModule.state.directJoinInterval = null;
-        }
 
         IndexPageModule.state.eventListenerCleanup.forEach(({ element, event, handler, options }) => {
             try { element.removeEventListener(event, handler, options); } catch (_) {}
@@ -1204,12 +649,6 @@
 
         if (window.NocapUtils?.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();
-        }
-
-        const modal = document.getElementById('age-modal');
-        if (modal?._focusTrapCleanup) {
-            modal._focusTrapCleanup();
-            modal._focusTrapCleanup = null;
         }
 
         if (IndexPageModule.isDevelopment) {
@@ -1237,19 +676,12 @@
 
             IndexPageModule.gameState = new GameState();
             if (IndexPageModule.isDevelopment) Logger.debug('✅ GameState initialized');
-
-            if (loadVerification()) {
-                updateUIForVerification();
-                hideAgeModal();
-                animateCards();
-                if (IndexPageModule.isDevelopment) Logger.debug('✅ Age verification restored from storage');
-            } else {
-                showAgeModal();
-            }
-
+            // ✅ Settings-only: just read cached age level (if any) and adjust UI
+            loadVerification();
+            updateUIForVerification();
+            animateCards();
             setupEventListeners();
             setupScrollToTop();
-            lazyLoadComponents();
 
             handleDirectJoin();
 

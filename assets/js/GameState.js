@@ -894,7 +894,6 @@
          */
         async isPremiumUser(forceRefresh = false) {
             try {
-                // ✅ OPTIMIZATION: Check session cache first (5 min TTL)
                 const now = Date.now();
                 const cacheAge = now - this._sessionCache.premiumCheckedAt;
 
@@ -905,40 +904,21 @@
                     return this._sessionCache.premiumStatus;
                 }
 
-                // ✅ P0 FIX: MANDATORY server-side validation via Cloud Function
-                if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
-                    this.log('⚠️ Firebase not initialized, cannot verify premium status', 'warning');
-                    return false;
-                }
+                // ✅ Settings-only premium flag (set this somewhere on purchase success)
+                const getLS = (k) => window.NocapUtils?.getLocalStorage
+                    ? window.NocapUtils.getLocalStorage(k)
+                    : localStorage.getItem(k);
 
-                const { functions } = window.FirebaseConfig.getFirebaseInstances();
-                if (!functions) {
-                    this.log('⚠️ Firebase Functions not available', 'warning');
-                    return false;
-                }
+                const premium = String(getLS('nocap_is_premium') || 'false') === 'true';
 
-                // Call server-side validation
-                const checkPremium = functions.httpsCallable('checkPremiumStatus');
-                const result = await checkPremium();
+                this._sessionCache.premiumStatus = premium;
+                this._sessionCache.premiumCheckedAt = now;
 
-                if (result.data) {
-                    const isPremium = result.data.hasPremium === true;
-
-                    // ✅ OPTIMIZATION: Cache result
-                    this._sessionCache.premiumStatus = isPremium;
-                    this._sessionCache.premiumCheckedAt = now;
-
-                    this.log(`✅ Premium status verified & cached: ${isPremium}`, 'info');
-                    return isPremium;
-                }
-
-                // Server validation failed - default to false (no premium access)
-                this.log('❌ Premium validation failed - denying access', 'error');
-                return false;
+                this.log(`✅ Premium status set (settings-only): ${premium}`, 'info');
+                return premium;
 
             } catch (error) {
-                this.log(`❌ Premium check failed: ${error.message}`, 'error');
-                // ✅ P0 FIX: FAIL SECURE - deny access on error
+                this.log(`❌ Premium check failed (settings-only): ${error.message}`, 'error');
                 return false;
             }
         }
@@ -969,19 +949,24 @@
          */
         async canAccessFSK(level, forceRefresh = false) {
             try {
-                // ✅ OPTIMIZATION: Check session cache first (5 min TTL)
                 const now = Date.now();
                 const cached = this._sessionCache.fskLevels[level];
 
+                // ✅ Cache (5min)
                 if (!forceRefresh && cached && (now - cached.checkedAt) < this._sessionCache.cacheTTL) {
                     this.log(`✅ FSK ${level} from cache: ${cached.allowed} (age: ${Math.floor((now - cached.checkedAt) / 1000)}s)`, 'debug');
                     return cached.allowed;
                 }
 
-                // ✅ OPTIMIZATION: Check local age level first
-                const localAgeLevel = parseInt(localStorage.getItem('nocap_age_level'), 10) || 0;
-                const levelMap = { fsk0: 0, fsk16: 16, fsk18: 18 };
+                // ✅ Settings-only Source of Truth
+                const getLS = (k) => window.NocapUtils?.getLocalStorage
+                    ? window.NocapUtils.getLocalStorage(k)
+                    : localStorage.getItem(k);
 
+                const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
+                const localAgeLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+
+                const levelMap = { fsk0: 0, fsk16: 16, fsk18: 18 };
                 if (!Object.prototype.hasOwnProperty.call(levelMap, level)) {
                     this.log(`❌ Unknown FSK level: ${level}`, 'warning');
                     this._sessionCache.fskLevels[level] = { allowed: false, checkedAt: now };
@@ -990,71 +975,29 @@
 
                 const requiredAge = levelMap[level];
 
-
-                if (localAgeLevel < requiredAge) {
-                    this.log(`❌ FSK ${level} denied: age ${localAgeLevel} < required ${requiredAge}`, 'warning');
-                    this._sessionCache.fskLevels[level] = { allowed: false, checkedAt: now };
-                    return false;
+                // fsk0 immer ok
+                if (requiredAge === 0) {
+                    this._sessionCache.fskLevels[level] = { allowed: true, checkedAt: now };
+                    return true;
                 }
 
+                // ✅ Verified + Age required
+                const allowed = verified && localAgeLevel >= requiredAge;
 
-                // ✅ Try server-side validation for authoritative check
-                if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
-                    this.log(`⚠️ Firebase not available - using local FSK check for ${level}`, 'warning');
+                this._sessionCache.fskLevels[level] = { allowed, checkedAt: now };
 
-                    const allowedLocal = localAgeLevel >= requiredAge;
-                    this._sessionCache.fskLevels[level] = { allowed: allowedLocal, checkedAt: now };
-                    return allowedLocal;
+                this.log(
+                    allowed
+                        ? `✅ FSK ${level} granted (settings-only)`
+                        : `❌ FSK ${level} denied (settings-only): verified=${verified}, age=${localAgeLevel}, required=${requiredAge}`,
+                    allowed ? 'info' : 'warning'
+                );
 
-                }
-
-                // ✅ Server-side validation (authoritative)
-                try {
-                    // SettingsModule muss existieren
-                    if (!window.SettingsModule || typeof window.SettingsModule.validateFSKAccess !== 'function') {
-                        this.log(`⚠️ SettingsModule not available - using local FSK check for ${level}`, 'warning');
-                        const allowedLocal = localAgeLevel >= requiredAge;
-                        this._sessionCache.fskLevels[level] = { allowed: allowedLocal, checkedAt: now };
-                        return allowedLocal;
-                    }
-
-                    // Server entscheidet (boolean)
-                    const allowedServer = await window.SettingsModule.validateFSKAccess(level);
-
-                    // Cache server decision
-                    this._sessionCache.fskLevels[level] = { allowed: allowedServer, checkedAt: now };
-
-                    this.log(allowedServer ? `✅ FSK ${level} granted by server` : `⚠️ FSK ${level} denied by server`, allowedServer ? 'info' : 'warning');
-                    return allowedServer;
-
-
-                } catch (serverError) {
-                    // Server call failed - fallback to local
-                    this.log(`⚠️ Server check failed - using local age ${localAgeLevel} for ${level}`, 'warning');
-
-                    const allowedLocal = localAgeLevel >= requiredAge;
-                    this._sessionCache.fskLevels[level] = { allowed: allowedLocal, checkedAt: now };
-                    return allowedLocal;
-                }
+                return allowed;
 
             } catch (error) {
                 this.log(`❌ FSK check error: ${error.message}`, 'error');
-
-                // ✅ FALLBACK: Try local check on any error
-                try {
-                    const localAgeLevel = parseInt(localStorage.getItem('nocap_age_level'), 10) || 0;
-                    const map = { fsk0: 0, fsk16: 16, fsk18: 18 };
-                    if (!Object.prototype.hasOwnProperty.call(map, level)) return false;
-                    const requiredAge = map[level];
-
-                    const allowed = localAgeLevel >= requiredAge;
-
-                    // Cache fallback result
-                    this._sessionCache.fskLevels[level] = { allowed, checkedAt: Date.now() };
-                    return allowed;
-                } catch (fallbackError) {
-                    return false;
-                }
+                return false; // fail secure
             }
         }
 
@@ -1067,7 +1010,12 @@
         canAccessFSKCached(level) {
 
             try {
-                const ageLevel = parseInt(localStorage.getItem('nocap_age_level'), 10) || 0;
+                const getLS = (k) => window.NocapUtils?.getLocalStorage
+                    ? window.NocapUtils.getLocalStorage(k)
+                    : localStorage.getItem(k);
+
+                const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
+                const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
                 const now = Date.now();
                 const levelMap = {
                     'fsk0': 0,
@@ -1083,8 +1031,7 @@
 
                 const requiredAge = levelMap[level];
 
-                const hasAccess = ageLevel >= requiredAge;
-
+                const hasAccess = requiredAge === 0 ? true : (verified && ageLevel >= requiredAge);
                 if (!hasAccess) {
                     this.log(`ℹ️ FSK ${level} cached check: denied (user age: ${ageLevel})`, 'info');
                 }

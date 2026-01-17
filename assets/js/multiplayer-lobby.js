@@ -158,12 +158,6 @@
             return;
         }
 
-        // P0 FIX: Check age verification first
-        if (!checkAgeVerification()) {
-            return;
-        }
-
-
         if (!window.gameState && !window.GameState) {
             showNotification('Fehler: GameState nicht geladen', 'error');
             return;
@@ -174,6 +168,10 @@
         if (!MultiplayerLobbyModule.gameState) {
             showNotification('GameState nicht verfügbar', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
+            return;
+        }
+        // ✅ Settings-only Age Verification (must be available before lobby)
+        if (!checkAgeVerification()) {
             return;
         }
 
@@ -190,25 +188,22 @@
 
 
 
-        // ✅ P0 FIX: Wait for Firebase App initialization using utility function
-        if (window.NocapUtils && window.NocapUtils.waitForFirebaseInit) {
-            const firebaseReady = await window.NocapUtils.waitForFirebaseInit(10000);
-
-            if (!firebaseReady) {
-                console.error('❌ Firebase App not initialized');
-                showNotification('Firebase Initialisierung fehlgeschlagen', 'error');
-                setTimeout(() => window.location.href = 'index.html', 3000);
-                return;
+        // ✅ Ensure Firebase is initialized (same pattern as other pages)
+        try {
+            if (!window.FirebaseConfig) {
+                throw new Error('FirebaseConfig missing - firebase-config.js not loaded?');
             }
-        } else {
-            // Fallback: Manual Firebase init check
-            if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
-                console.error('❌ Firebase SDK not loaded or not initialized');
-                showNotification('Firebase nicht verfügbar', 'error');
-                setTimeout(() => window.location.href = 'index.html', 3000);
-                return;
+            if (!window.FirebaseConfig.isInitialized?.()) {
+                await window.FirebaseConfig.initialize();
             }
+            await window.FirebaseConfig.waitForFirebase(10000);
+        } catch (e) {
+            console.error('❌ Firebase not initialized:', e);
+            showNotification('Firebase nicht verfügbar', 'error');
+            setTimeout(() => window.location.href = 'index.html', 3000);
+            return;
         }
+
 
 
         // P0 FIX: Validate game state
@@ -313,52 +308,62 @@
      */
     function checkAgeVerification() {
         try {
-            // ✅ Load from nocap_age_verification (consistent with index.js)
-            const verification = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
-                : JSON.parse(localStorage.getItem('nocap_age_verification') || 'null');
+            const getLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
 
-            if (!verification || typeof verification !== 'object') {
-                console.error('❌ No age verification found');
-                showNotification('Altersverifizierung erforderlich!', 'warning');
+            const rawVerified = getLS('nocap_age_verification');
+            const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
+            const rawAge = getLS('nocap_age_level');
+            const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
+            if (MultiplayerLobbyModule.isDevelopment) {
+                console.log('🔞 Age settings read:', {
+                    rawVerified,
+                    verified,
+                    rawAge,
+                    ageLevel,
+                    rawSelected: MultiplayerLobbyModule.gameState?.selectedCategories
+                });
+            }
+
+            if (!verified) {
+                console.error('❌ No age verification found (settings-only)');
+                showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
                 setTimeout(() => window.location.href = 'index.html', 2000);
                 return false;
             }
 
-            // NOTE: We don't check timestamp expiry - once verified, always verified
-            // This prevents players from being kicked out
+            const rawSelected = MultiplayerLobbyModule.gameState?.selectedCategories || [];
+            const selected = Array.isArray(rawSelected)
+                ? rawSelected
+                : (rawSelected ? Object.values(rawSelected) : []);
 
-            // Get age level from verification
-            const ageLevel = verification.isAdult ? 18 : 0;
+            const hasInvalidCategory = selected.some(cat => {
+                if (cat === 'fsk18' && ageLevel < 18) return true;
+                if (cat === 'fsk16' && ageLevel < 16) return true;
+                return false;
+            });
 
-            // P0 FIX: Validate FSK access
-            if (MultiplayerLobbyModule.gameState && MultiplayerLobbyModule.gameState.selectedCategories && MultiplayerLobbyModule.gameState.selectedCategories.length > 0) {
-                const hasInvalidCategory = MultiplayerLobbyModule.gameState.selectedCategories.some(cat => {
-                    if (cat === 'fsk18' && ageLevel < 18) return true;
-                    if (cat === 'fsk16' && ageLevel < 16) return true;
-                    return false;
-                });
-
-                if (hasInvalidCategory) {
-                    console.error('❌ Invalid categories for age level');
-                    showNotification('Ungültige Kategorien für dein Alter!', 'error');
-                    setTimeout(() => window.location.href = 'index.html', 2000);
-                    return false;
-                }
+            if (hasInvalidCategory) {
+                console.error('❌ Invalid categories for age level (settings-only)', { ageLevel, selected });
+                showNotification('Ungültige Kategorien für dein Alter!', 'error');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return false;
             }
 
             if (MultiplayerLobbyModule.isDevelopment) {
-                console.log(`✅ Age verification: ${ageLevel}+`);
+                console.log(`✅ Age verification OK (settings-only): ageLevel=${ageLevel}`);
             }
             return true;
 
         } catch (error) {
-            console.error('❌ Age verification error:', error);
-            showNotification('Altersverifizierung erforderlich!', 'warning');
+            console.error('❌ Age verification error (settings-only):', error);
+            showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
     }
+
 
     function validateGameState() {
         if (MultiplayerLobbyModule.isDevelopment) {
@@ -399,8 +404,17 @@
         try {
             showNotification('Erstelle Spiel...', 'info', 500);
 
-// ✅ NEW: Create game securely via Cloud Function (Option A)
-            const createGameFn = firebase.app().functions('europe-west1').httpsCallable('createGameSecure');
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const functionsInstance =
+                instances?.functions ||
+                (firebase?.app?.().functions ? firebase.app().functions('europe-west1') : null);
+
+            if (!functionsInstance || typeof functionsInstance.httpsCallable !== 'function') {
+                throw new Error('Firebase Functions not available (functionsInstance missing)');
+            }
+
+            const createGameFn = functionsInstance.httpsCallable('createGameSecure');
+
 
             const selectedCategories = MultiplayerLobbyModule.gameState.selectedCategories || [];
             const difficulty = MultiplayerLobbyModule.gameState.difficulty || 'medium';
@@ -427,9 +441,12 @@
             displayGameCode(gameCode);
             displayQRCode(gameCode);
 
-// ✅ Show settings locally (or read from DB)
-            displaySettings({ categories: selectedCategories, difficulty });
+            const categoriesForUI = Array.isArray(selectedCategories)
+                ? selectedCategories
+                : (selectedCategories ? Object.values(selectedCategories) : []);
 
+            displaySettings({ categories: categoriesForUI, difficulty });
+            try { MultiplayerLobbyModule.gameState.save?.(true); } catch (e) {}
 // ✅ Listen to the real game by gameId
             setupGameListener(gameId);
 
@@ -460,7 +477,19 @@
 
             displayGameCode(codeToShow);
             displayQRCode(codeToShow);
-            displaySettings(game.settings);
+            // ✅ Display settings (supports both: game.settings OR direct fields)
+            const categories = game.settings?.categories
+                || (game.selectedCategories ? Object.values(game.selectedCategories) : [])
+                || MultiplayerLobbyModule.gameState.selectedCategories
+                || [];
+
+            const difficulty = game.settings?.difficulty
+                || game.difficulty
+                || MultiplayerLobbyModule.gameState.difficulty
+                || 'medium';
+
+            displaySettings({ categories, difficulty });
+
 
             // ✅ Option A: Spieler wird ausschließlich serverseitig via joinGameSecure angelegt.
             const playerExists = !!game.players?.[getPlayerKey()];
@@ -595,7 +624,9 @@
         updateStartButton(gameData.players);
 
         // If game starts and we're not host, redirect to gameplay
-        if (gameData.status === 'playing' && !isHost) {
+        const state = String(gameData.status || gameData.phase || '');
+        if (state === 'playing' && !isHost) {
+
             // ✅ CRITICAL FIX: Save MultiplayerLobbyModule.gameState for guests BEFORE redirect - TRIPLE REDUNDANCY!
             MultiplayerLobbyModule.gameState.gamePhase = 'playing';
             MultiplayerLobbyModule.gameState.gameId = currentGameId;
@@ -651,7 +682,7 @@
         }
 
         // If game starts and we're host, redirect after update
-        if (gameData.status === 'playing' && isHost) {
+        if (state === 'playing' && isHost) {
             // Host already triggered the redirect in startGame()
         }
     }

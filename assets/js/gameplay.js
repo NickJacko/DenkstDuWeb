@@ -268,12 +268,14 @@ async function initialize() {
         GameplayModule.gameState = new window.GameState();
 
         const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances?.();
-        if (firebaseInstances?.database) {
-            GameplayModule.firebaseService = firebaseInstances; // { database, auth, ... }
+        if (window.FirebaseConfig?.isInitialized?.() && firebaseInstances?.database?.ref) {
+            GameplayModule.firebaseService = firebaseInstances; // { database, auth, functions, ... }
             if (GameplayModule.isDevelopment) console.log('✅ Firebase instances available');
         } else {
+            GameplayModule.firebaseService = null;
             console.warn('⚠️ Firebase not available, using fallback');
         }
+
 
         // ✅ P1 FIX: Validate device mode
         if (!validateDeviceMode()) {
@@ -415,40 +417,45 @@ async function validateGameState() {
         return false;
     }
 
-    // ✅ P0 FIX: Server-side FSK validation with fallback
+// ✅ Settings-only FSK validation (NO server/Firebase)
     try {
+        const getLS = (key) => window.NocapUtils?.getLocalStorage
+            ? window.NocapUtils.getLocalStorage(key)
+            : localStorage.getItem(key);
+
+        const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
+        const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+
         for (const category of GameplayModule.gameState.selectedCategories) {
-            // Skip FSK0 - always allowed
             if (category === 'fsk0') continue;
 
-            // ✅ P0 FIX: Try server-side validation first
-            try {
-                const hasAccess = await GameplayModule.gameState.canAccessFSK(category);
-
-                if (!hasAccess) {
-                    console.error(`❌ Server denied access to category: ${category}`);
-                    showNotification(`Keine Berechtigung für ${category.toUpperCase()}!`, 'error');
-                    setTimeout(() => window.location.href = 'category-selection.html', 2000);
+            if (category === 'fsk16') {
+                if (!verified || ageLevel < 16) {
+                    showNotification('Du musst 16+ sein für diese Kategorie', 'warning', 2500);
+                    setTimeout(() => window.location.href = 'category-selection.html', 800);
                     return false;
                 }
-            } catch (serverError) {
-                console.warn('⚠️ Server FSK validation failed, blocking restricted category:', serverError);
-                showNotification('Verifikation aktuell nicht möglich. Bitte später erneut versuchen.', 'error');
-                setTimeout(() => window.location.href = 'category-selection.html', 2000);
-                return false;
+            }
+
+            if (category === 'fsk18') {
+                if (!verified || ageLevel < 18) {
+                    showNotification('Du musst 18+ sein für diese Kategorie', 'warning', 2500);
+                    setTimeout(() => window.location.href = 'category-selection.html', 800);
+                    return false;
+                }
             }
         }
 
         if (GameplayModule.isDevelopment) {
-            console.log('✅ All categories validated');
+            console.log('✅ All categories validated (settings-only)', { verified, ageLevel });
         }
-
     } catch (error) {
-        console.error('❌ FSK validation error:', error);
-        showNotification('Verifikation fehlgeschlagen. Bitte später erneut versuchen.', 'error');
-        setTimeout(() => window.location.href = 'category-selection.html', 2000);
+        console.error('❌ Settings-only FSK validation error:', error);
+        showNotification('Verifikation fehlgeschlagen. Bitte erneut versuchen.', 'error');
+        setTimeout(() => window.location.href = 'category-selection.html', 1000);
         return false;
     }
+
 
     return true;
 }
@@ -508,7 +515,8 @@ function saveGameProgress() {
         }
 
         // ✅ P1 STABILITY: Try Firebase sync (non-blocking)
-        if (GameplayModule.firebaseService && GameplayModule.firebaseService.isReady) {
+        if (GameplayModule.firebaseService?.database?.ref) {
+
             syncGameProgressToFirebase(progressData).catch(error => {
                 console.warn('⚠️ Firebase sync failed (non-critical):', error);
                 GameplayModule.networkErrorCount++;
@@ -628,6 +636,28 @@ function checkAlcoholMode() {
     try {
         GameplayModule.alcoholMode = GameplayModule.gameState.alcoholMode === true;
 
+        if (GameplayModule.alcoholMode) {
+            const ageLevelStr = window.NocapUtils
+                ? window.NocapUtils.getLocalStorage('nocap_age_level')
+                : localStorage.getItem('nocap_age_level');
+
+            const ageLevel = parseInt(ageLevelStr, 10) || 0;
+
+            if (ageLevel < 18) {
+                GameplayModule.alcoholMode = false;
+
+                if (typeof GameplayModule.gameState.setAlcoholMode === 'function') {
+                    GameplayModule.gameState.setAlcoholMode(false);
+                } else if (typeof GameplayModule.gameState.set === 'function') {
+                    GameplayModule.gameState.set('alcoholMode', false);
+                } else {
+                    GameplayModule.gameState.alcoholMode = false;
+                }
+
+                showNotification('Alkohol-Modus nur für 18+', 'warning', 2500);
+            }
+        }
+
         if (GameplayModule.isDevelopment) {
             console.log(`🍺 Alcohol mode: ${GameplayModule.alcoholMode}`);
         }
@@ -636,6 +666,7 @@ function checkAlcoholMode() {
         GameplayModule.alcoholMode = false;
     }
 }
+
 
 // ===========================
 // QUESTION LOADING WITH CACHING
@@ -664,9 +695,8 @@ async function loadQuestions() {
         hideLoading(); // ✅ Hide loading when done
         return;
     }
-
-    // Load from Firebase
-    if (GameplayModule.firebaseService?.database) {
+// Load from Firebase
+    if (GameplayModule.firebaseService?.database?.ref) {
         if (GameplayModule.isDevelopment) {
             console.log('🔥 Loading from Firebase...');
         }
@@ -702,6 +732,7 @@ async function loadQuestions() {
             loadFallbackQuestions(category);
         });
     }
+
 
     // ✅ FIX: Ensure we have at least some questions
     if (GameplayModule.currentGame.allQuestions.length === 0) {
@@ -1937,12 +1968,12 @@ function generateSessionId() {
  * ✅ P1 STABILITY: Sync game progress to Firebase (non-blocking)
  */
 async function syncGameProgressToFirebase(progressData) {
-    if (!GameplayModule.firebaseService || !GameplayModule.firebaseService.isReady) {
+    if (!GameplayModule.firebaseService?.database?.ref) {
         throw new Error('Firebase not ready');
     }
 
     try {
-        const userId = GameplayModule.firebaseService.getCurrentUserId();
+        const userId = GameplayModule.firebaseService?.auth?.currentUser?.uid || null;
         if (!userId) {
             console.warn('⚠️ No user ID, skipping Firebase sync');
             return;

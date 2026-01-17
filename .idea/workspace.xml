@@ -4,141 +4,25 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Add 404 error page, multiplayer difficulty selection, and supporting config, styles, and data files; update firebase hosting config for root directory">
-      <change afterPath="$PROJECT_DIR$/.firebase/hosting..cache" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.firebase/hosting.cHVibGlj.cache" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/404.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/age-de.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/404.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/cookie-banner.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/difficulty-selection.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/error-modal.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/gameplay.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/imprint.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/index.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/join-game.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-gameplay.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/multiplayer-results.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/player-setup.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/privacy-toc.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/privacy.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/settings.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/css/styles.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/data/difficulty-limits.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/data/fallback-questions.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/data/questions-backup.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/data/questions.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/404.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/GameState.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/avatar-upload.example.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/cookie-banner.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/error-boundary.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/firebase-auth.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/firebase-config.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/firebase-init.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/firebase-service.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/gameplay.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/multiplayer-results.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/privacy.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/utils.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/lib/purify.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/imprint.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/join-game.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jugendschutz.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/multiplayer-gameplay.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/multiplayer-lobby.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/multiplayer-results.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/privacy-new-sections.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/privacy.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/purgecss.config.js" afterDir="false" />
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Improve Firebase initialization handling for difficulty selection and update Cloud Function region in multiplayer lobby&#10;&#10;- Add explicit wait for Firebase initialization before proceeding with difficulty selection logic to ensure server-side validation reliability&#10;- Refactor dependency loading and error handling in difficulty-selection.js for robustness&#10;- Update multiplayer-lobby.js to call Cloud Function in specified region ('europe-west1') for secure game creation&#10;- Remove redundant legacy code from multiplayer lobby game creation flow">
+      <change beforePath="$PROJECT_DIR$/.firebase/hosting..cache" beforeDir="false" afterPath="$PROJECT_DIR$/.firebase/hosting..cache" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/.well-known/age-de.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/404.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/404.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/category-selection.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/cookie-banner.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/difficulty-selection.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/error-modal.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/gameplay.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/imprint.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/index.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/join-game.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-category-selection.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-difficulty-selection.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-gameplay.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-lobby.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/multiplayer-results.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/player-setup.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/privacy-toc.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/privacy.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/settings.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/css/styles.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/data/difficulty-limits.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/data/fallback-questions.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/data/questions-backup.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/data/questions.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/404.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/GameState.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/avatar-upload.example.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/category-selection.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/cookie-banner.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/difficulty-selection.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/error-boundary.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/firebase-auth.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/firebase-config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/firebase-init.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/firebase-service.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/gameplay.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/index.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/join-game.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-category-selection.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-gameplay.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-lobby.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/multiplayer-results.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/player-setup.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/privacy.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/settings.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/js/utils.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/assets/lib/purify.min.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/category-selection.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/difficulty-selection.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/gameplay.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/imprint.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/join-game.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/jugendschutz.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/multiplayer-category-selection.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/multiplayer-difficulty-selection.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/multiplayer-gameplay.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/multiplayer-lobby.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/multiplayer-results.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/player-setup.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/privacy-new-sections.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/privacy.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/purgecss.config.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/GameState.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/GameState.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-results.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-results.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/player-setup.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/utils.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -297,46 +181,6 @@
       <workItem from="1768323670735" duration="7628000" />
       <workItem from="1768554418204" duration="394000" />
       <workItem from="1768555261474" duration="25029000" />
-    </task>
-    <task id="LOCAL-00088" summary="Update script tags to use 'defer' for improved loading performance">
-      <option name="closed" value="true" />
-      <created>1767953085967</created>
-      <option name="number" value="00088" />
-      <option name="presentableId" value="LOCAL-00088" />
-      <option name="project" value="LOCAL" />
-      <updated>1767953085967</updated>
-    </task>
-    <task id="LOCAL-00089" summary="Update Firebase configuration in HTML files for security compliance">
-      <option name="closed" value="true" />
-      <created>1767956300297</created>
-      <option name="number" value="00089" />
-      <option name="presentableId" value="LOCAL-00089" />
-      <option name="project" value="LOCAL" />
-      <updated>1767956300297</updated>
-    </task>
-    <task id="LOCAL-00090" summary="Update Firebase configuration in HTML files for security compliance">
-      <option name="closed" value="true" />
-      <created>1767958672809</created>
-      <option name="number" value="00090" />
-      <option name="presentableId" value="LOCAL-00090" />
-      <option name="project" value="LOCAL" />
-      <updated>1767958672809</updated>
-    </task>
-    <task id="LOCAL-00091" summary="Update Firebase configuration in HTML files for security compliance">
-      <option name="closed" value="true" />
-      <created>1767959439633</created>
-      <option name="number" value="00091" />
-      <option name="presentableId" value="LOCAL-00091" />
-      <option name="project" value="LOCAL" />
-      <updated>1767959439633</updated>
-    </task>
-    <task id="LOCAL-00092" summary="Update Firebase configuration in HTML files for security compliance">
-      <option name="closed" value="true" />
-      <created>1767960237492</created>
-      <option name="number" value="00092" />
-      <option name="presentableId" value="LOCAL-00092" />
-      <option name="project" value="LOCAL" />
-      <updated>1767960237493</updated>
     </task>
     <task id="LOCAL-00093" summary="Update Firebase configuration in HTML files for security compliance">
       <option name="closed" value="true" />
@@ -690,7 +534,47 @@
       <option name="project" value="LOCAL" />
       <updated>1768604754486</updated>
     </task>
-    <option name="localTasksCounter" value="137" />
+    <task id="LOCAL-00137" summary="Add 404 error page, multiplayer difficulty selection, and supporting config, styles, and data files; update firebase hosting config for root directory">
+      <option name="closed" value="true" />
+      <created>1768605699015</created>
+      <option name="number" value="00137" />
+      <option name="presentableId" value="LOCAL-00137" />
+      <option name="project" value="LOCAL" />
+      <updated>1768605699015</updated>
+    </task>
+    <task id="LOCAL-00138" summary="Add German age rating XML file with content rating 18">
+      <option name="closed" value="true" />
+      <created>1768606188571</created>
+      <option name="number" value="00138" />
+      <option name="presentableId" value="LOCAL-00138" />
+      <option name="project" value="LOCAL" />
+      <updated>1768606188571</updated>
+    </task>
+    <task id="LOCAL-00139" summary="Implement secure multiplayer game creation and joining via Cloud Functions; update database rules and client logic for server-side enforcement">
+      <option name="closed" value="true" />
+      <created>1768640235684</created>
+      <option name="number" value="00139" />
+      <option name="presentableId" value="LOCAL-00139" />
+      <option name="project" value="LOCAL" />
+      <updated>1768640235684</updated>
+    </task>
+    <task id="LOCAL-00140" summary="Add Firebase Functions integration to multiplayer and setup pages; refactor difficulty selection initialization for improved server-side validation">
+      <option name="closed" value="true" />
+      <created>1768641433839</created>
+      <option name="number" value="00140" />
+      <option name="presentableId" value="LOCAL-00140" />
+      <option name="project" value="LOCAL" />
+      <updated>1768641433839</updated>
+    </task>
+    <task id="LOCAL-00141" summary="Improve Firebase initialization handling for difficulty selection and update Cloud Function region in multiplayer lobby&#10;&#10;- Add explicit wait for Firebase initialization before proceeding with difficulty selection logic to ensure server-side validation reliability&#10;- Refactor dependency loading and error handling in difficulty-selection.js for robustness&#10;- Update multiplayer-lobby.js to call Cloud Function in specified region ('europe-west1') for secure game creation&#10;- Remove redundant legacy code from multiplayer lobby game creation flow">
+      <option name="closed" value="true" />
+      <created>1768642492204</created>
+      <option name="number" value="00141" />
+      <option name="presentableId" value="LOCAL-00141" />
+      <option name="project" value="LOCAL" />
+      <updated>1768642492204</updated>
+    </task>
+    <option name="localTasksCounter" value="142" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -711,10 +595,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Enhance accessibility and security across HTML files with ARIA roles, improved error handling, and age verification features" />
-    <MESSAGE value="Refactor HTML structure for category and difficulty selection, enhance accessibility with ARIA roles, and improve Firebase initialization error handling" />
-    <MESSAGE value="Enhance privacy features with new privacy notice, update footer links, and improve cookie consent management; refactor HTML and CSS for better accessibility and structure" />
-    <MESSAGE value="Implement FSK validation and user settings management; enhance security with rate limiting and logging; add age verification features and user account management" />
     <MESSAGE value="Enhance security by adding domain whitelist public key and private key exclusions; implement real-time security functions for game updates and violations; improve event listener management in multiplayer gameplay" />
     <MESSAGE value="Refactor multiplayer gameplay, lobby, and results modules for improved event listener management; replace custom event listener functions with standard addEventListener; enhance code readability and maintainability" />
     <MESSAGE value="Enhance Firebase integration by ensuring proper initialization before setting persistence; add validation rules for deletion requests in database; create quick reference for error fixes and deployment instructions" />
@@ -736,7 +616,11 @@
     <MESSAGE value="Move firebase.json and .firebaserc to project root for improved configuration management" />
     <MESSAGE value="Move config and metadata files from public to project root for improved organization" />
     <MESSAGE value="Add 404 error page, multiplayer difficulty selection, and supporting config, styles, and data files; update firebase hosting config for root directory" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add 404 error page, multiplayer difficulty selection, and supporting config, styles, and data files; update firebase hosting config for root directory" />
+    <MESSAGE value="Add German age rating XML file with content rating 18" />
+    <MESSAGE value="Implement secure multiplayer game creation and joining via Cloud Functions; update database rules and client logic for server-side enforcement" />
+    <MESSAGE value="Add Firebase Functions integration to multiplayer and setup pages; refactor difficulty selection initialization for improved server-side validation" />
+    <MESSAGE value="Improve Firebase initialization handling for difficulty selection and update Cloud Function region in multiplayer lobby&#10;&#10;- Add explicit wait for Firebase initialization before proceeding with difficulty selection logic to ensure server-side validation reliability&#10;- Refactor dependency loading and error handling in difficulty-selection.js for robustness&#10;- Update multiplayer-lobby.js to call Cloud Function in specified region ('europe-west1') for secure game creation&#10;- Remove redundant legacy code from multiplayer lobby game creation flow" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improve Firebase initialization handling for difficulty selection and update Cloud Function region in multiplayer lobby&#10;&#10;- Add explicit wait for Firebase initialization before proceeding with difficulty selection logic to ensure server-side validation reliability&#10;- Refactor dependency loading and error handling in difficulty-selection.js for robustness&#10;- Update multiplayer-lobby.js to call Cloud Function in specified region ('europe-west1') for secure game creation&#10;- Remove redundant legacy code from multiplayer lobby game creation flow" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

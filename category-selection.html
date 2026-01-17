@@ -305,6 +305,46 @@
         </div>
     </div>
 </div>
+<!-- FSK Warning Modal (used by SettingsModule) -->
+<div class="modal hidden" id="fsk-warning-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="fsk-modal-title">🔞 Altersverifikation erforderlich</h3>
+            <button class="close-btn" id="close-fsk-modal-btn" type="button" aria-label="Modal schließen">×</button>
+        </div>
+
+        <div class="modal-body">
+            <p id="fsk-message">Dieser Inhalt ist altersbeschränkt.</p>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="goto-age-verification-btn" type="button">Zur Altersverifikation</button>
+        </div>
+    </div>
+</div>
+<!-- Settings Modal (minimal, required for age verification on this page) -->
+<div class="modal hidden" id="settings-modal" role="dialog" aria-labelledby="settings-title" aria-modal="true">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="settings-title">⚙️ Einstellungen</h3>
+            <button class="close-btn" id="settings-close-btn" type="button" aria-label="Einstellungen schließen">×</button>
+        </div>
+
+        <div class="modal-body">
+            <section aria-labelledby="age-verification-title">
+                <h4 id="age-verification-title">🔞 Altersverifikation</h4>
+
+                <label for="birthdate-input">Geburtsdatum</label>
+                <input id="birthdate-input" type="date" autocomplete="bday" />
+
+                <button class="btn btn-primary" id="verify-age-btn" type="button">
+                    Alter bestätigen
+                </button>
+            </section>
+        </div>
+    </div>
+</div>
+
     <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
     <script src="/assets/js/error-boundary.js"></script>
 

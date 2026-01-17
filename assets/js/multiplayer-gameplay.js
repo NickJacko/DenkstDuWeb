@@ -150,7 +150,6 @@
     };
 
     // ✅ P2 PERFORMANCE: Track event listeners for cleanup
-    const _eventListeners = [];
     const _phaseListeners = new Map(); // Listeners specific to each phase
 
     // ✅ P1 STABILITY: Reconnection and offline support
@@ -475,10 +474,29 @@
             setTimeout(() => window.location.href = 'index.html', 2000);
             return;
         }
+// ✅ Ensure Firebase is initialized (consistent with other pages)
+        try {
+            if (!window.FirebaseConfig) {
+                throw new Error('FirebaseConfig missing - firebase-config.js not loaded?');
+            }
+            if (!window.FirebaseConfig.isInitialized?.()) {
+                await window.FirebaseConfig.initialize();
+            }
+            if (window.FirebaseConfig.waitForFirebase) {
+                await window.FirebaseConfig.waitForFirebase(10000);
+            }
+
+        } catch (e) {
+            console.error('❌ Firebase not initialized:', e);
+            showNotification('Firebase nicht verfügbar', 'error');
+            hideLoading();
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return;
+        }
 
         // P1 FIX: Wait for dependencies
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            await window.NocapUtils.waitForDependencies(['MultiplayerGameplayModule.gameState', 'firebaseGameService', 'firebase']);
+            await window.NocapUtils.waitForDependencies(['GameState', 'FirebaseConfig', 'firebase']);
         }
 
         MultiplayerGameplayModule.gameState = new window.GameState();
@@ -646,82 +664,52 @@
             return false;
         }
 
-        // P0 FIX: Validate age verification with expiration
+        // ✅ Settings-only age verification (consistent with lobby/difficulty)
         let ageLevel = 0;
-        let ageTimestamp = 0;
 
-        // Read age verification object (correct structure!)
-        let ageVerification = null;
-        if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-            ageVerification = window.NocapUtils.getLocalStorage('nocap_age_verification');
-            // Fallback: try to read age_level separately
-            const storedAgeLevel = window.NocapUtils.getLocalStorage('nocap_age_level');
-            if (storedAgeLevel) {
-                ageLevel = parseInt(storedAgeLevel) || 0;
-            }
-        } else {
-            try {
-                const stored = localStorage.getItem('nocap_age_verification');
-                if (stored) {
-                    ageVerification = JSON.parse(stored);
-                }
-                const storedAgeLevel = localStorage.getItem('nocap_age_level');
-                if (storedAgeLevel) {
-                    ageLevel = parseInt(storedAgeLevel) || 0;
-                }
-            } catch (e) {
-                console.warn('⚠️ Could not parse age verification:', e);
-            }
-        }
+        try {
+            const getLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
 
-        // Extract values from verification object
-        if (ageVerification && typeof ageVerification === 'object') {
-            ageTimestamp = ageVerification.timestamp || 0;
-            if (ageVerification.isAdult) {
-                ageLevel = 18;
-            }
+            const rawVerified = getLS('nocap_age_verification');
+            const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
+
+            const rawAge = getLS('nocap_age_level');
+            ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
+
+            if (!verified) ageLevel = 0;
 
             if (MultiplayerGameplayModule.isDevelopment) {
-                console.log('✅ Age verification found:', { ageLevel, timestamp: ageTimestamp });
+                console.log('🔞 Age settings:', {verified, rawAge, ageLevel});
             }
-        } else {
-            // NOTE: No age verification found (e.g. Incognito mode)
-            // We allow gameplay but assume FSK0 only
-            console.warn('⚠️ No age verification found - assuming FSK0 access only');
+        } catch (e) {
+            console.warn('⚠️ Could not read age settings:', e);
             ageLevel = 0;
         }
 
-        // NOTE: We don't check timestamp expiry anymore - once verified, always verified
-        // This prevents players from being kicked out during gameplay
+        // ✅ Normalize selectedCategories to array (prevents .length/.forEach crashes)
+        const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
+        const selectedCategories = Array.isArray(rawSelected)
+            ? rawSelected
+            : (rawSelected ? Object.values(rawSelected) : []);
 
-        // P0 FIX: Validate FSK access for selected categories
-        if (MultiplayerGameplayModule.gameState.selectedCategories && MultiplayerGameplayModule.gameState.selectedCategories.length > 0) {
-            const hasInvalidCategory = MultiplayerGameplayModule.gameState.selectedCategories.some(cat => {
-                if (cat === 'fsk18' && ageLevel < 18) {
-                    console.warn(`⚠️ FSK18 category but age level ${ageLevel} - allowing anyway for multiplayer`);
-                    return false; // Allow in multiplayer to not kick players
-                }
-                if (cat === 'fsk16' && ageLevel < 16) {
-                    console.warn(`⚠️ FSK16 category but age level ${ageLevel} - allowing anyway for multiplayer`);
-                    return false; // Allow in multiplayer to not kick players
-                }
-                return false;
-            });
-
-            if (hasInvalidCategory) {
-                console.error('❌ Invalid categories for age level');
-                showNotification('Ungültige Kategorien für dein Alter!', 'error');
-                setTimeout(() => window.location.href = 'index.html', 2000);
-                return false;
+        // ✅ Multiplayer: Don't kick players out. We just log.
+        selectedCategories.forEach(cat => {
+            if (cat === 'fsk18' && ageLevel < 18) {
+                console.warn(`⚠️ Selected FSK18 but age ${ageLevel} - allowed in multiplayer, will block questions`);
             }
-        }
+            if (cat === 'fsk16' && ageLevel < 16) {
+                console.warn(`⚠️ Selected FSK16 but age ${ageLevel} - allowed in multiplayer, will block questions if needed`);
+            }
+        });
 
         if (MultiplayerGameplayModule.isDevelopment) {
-            console.log('✅ Game state valid - age level:', ageLevel);
+            console.log('✅ Game state valid');
         }
+
         return true;
     }
-
     // ===========================
     // EVENT LISTENERS
     // ===========================
@@ -1135,26 +1123,21 @@
     function verifyAgeForQuestion(category) {
         if (category !== 'fsk18') return true;
 
-        let ageVerification = null;
-        if (window.NocapUtils && window.NocapUtils.getLocalStorage) {
-            ageVerification = window.NocapUtils.getLocalStorage('nocap_age_verification');
-        } else {
-            try {
-                const stored = localStorage.getItem('nocap_age_verification');
-                if (stored) {
-                    ageVerification = JSON.parse(stored);
-                }
-            } catch (e) {
-                console.warn('⚠️ Could not parse age verification:', e);
-            }
-        }
+        try {
+            const getLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
 
-        if (!ageVerification || !ageVerification.isAdult) {
-            console.warn('⚠️ FSK18 question blocked - user not verified');
+            const rawVerified = getLS('nocap_age_verification');
+            const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
+
+            const rawAge = getLS('nocap_age_level');
+            const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
+
+            return verified && ageLevel >= 18;
+        } catch {
             return false;
         }
-
-        return true;
     }
 
     // ===========================
@@ -1519,7 +1502,12 @@
     function generateRandomQuestion() {
         const availableQuestions = [];
 
-        if (!MultiplayerGameplayModule.gameState.selectedCategories || MultiplayerGameplayModule.gameState.selectedCategories.length === 0) {
+        const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
+        const selected = Array.isArray(rawSelected)
+            ? rawSelected
+            : (rawSelected ? Object.values(rawSelected) : []);
+
+        if (selected.length === 0) {
             // Fallback to all categories
             Object.keys(questionsDatabase).forEach(category => {
                 questionsDatabase[category].forEach(q => {
@@ -1530,7 +1518,7 @@
                 });
             });
         } else {
-            MultiplayerGameplayModule.gameState.selectedCategories.forEach(category => {
+            selected.forEach(category => {
                 if (questionsDatabase[category]) {
                     questionsDatabase[category].forEach(q => {
                         availableQuestions.push({
@@ -2378,6 +2366,13 @@
     function cleanup() {
         // ✅ P1 UI/UX: Stop timers
         stopTimer();
+        // ✅ Remove tracked DOM listeners
+        MultiplayerGameplayModule.state.eventListenerCleanup.forEach(({ element, event, handler, options }) => {
+            try {
+                element?.removeEventListener?.(event, handler, options);
+            } catch (e) {}
+        });
+        MultiplayerGameplayModule.state.eventListenerCleanup = [];
 
         // Clean up game listener using stored reference
         if (gameListener) {

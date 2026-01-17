@@ -114,7 +114,9 @@
             const displayName = SettingsState.currentUser.displayName || 'Gast';
             updateDisplayName(displayName);
 
+            await SettingsState.currentUser.getIdToken(true);
             const tokenResult = await SettingsState.currentUser.getIdTokenResult();
+
 
             SettingsState.userFSKAccess = {
                 fsk0: true,
@@ -446,11 +448,12 @@
         }
 
         const age = calculateAge(birthdate);
-
         if (age < 0 || age > 120) {
             showError('Ungültiges Geburtsdatum');
             return;
         }
+        const ageLevel = age >= 18 ? 18 : (age >= 16 ? 16 : 0);
+
 
         const btn = document.getElementById('verify-age-btn');
         setButtonLoading(btn, true);
@@ -462,19 +465,36 @@
 
             const setAge = SettingsState.functionsInstance.httpsCallable('setAgeVerification');
             const result = await setAge({
-                ageLevel: age,
+                ageLevel: ageLevel,
                 verificationMethod: 'birthdate-self-declaration'
             });
 
             Logger.info('✅ Age verified:', result.data);
+            // Optional: sofortiges UI-Update aus Response (falls Claims minimal verzögert)
+            if (result?.data?.fskAccess) {
+                SettingsState.userFSKAccess = result.data.fskAccess;
+                updateFSKBadges(SettingsState.userFSKAccess);
+            }
 
-            // Update FSK Access
-            SettingsState.userFSKAccess = result?.data?.fskAccess || SettingsState.userFSKAccess;
-            updateFSKBadges(SettingsState.userFSKAccess);
+            // ✅ Lokaler Cache für andere Seiten (Settings-only read path)
+            if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
+                window.NocapUtils.setLocalStorage('nocap_age_level', String(ageLevel));
+                window.NocapUtils.setLocalStorage('nocap_is_adult', String(ageLevel >= 18));
 
-            // Force Token Refresh (wichtig für Custom Claims!)
+                // optional (hilft Debug & Ablauf): “verified” Flag wie andere Stellen es prüfen
+                window.NocapUtils.setLocalStorage('nocap_age_verification', 'true');
+            } else {
+                localStorage.setItem('nocap_age_level', String(ageLevel));
+                localStorage.setItem('nocap_is_adult', String(ageLevel >= 18));
+                localStorage.setItem('nocap_age_verification', 'true');
+            }
+
+
+            // ✅ Force Token Refresh (Custom Claims werden erst danach sicher sichtbar)
             await SettingsState.currentUser.getIdToken(true);
-            const refreshed = await SettingsState.currentUser.getIdTokenResult(true);
+            const refreshed = await SettingsState.currentUser.getIdTokenResult();
+
+            // ✅ Claims sind Source of Truth
             SettingsState.userFSKAccess = {
                 fsk0: true,
                 fsk16: refreshed?.claims?.fsk16 === true,

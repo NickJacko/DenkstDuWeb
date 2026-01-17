@@ -128,7 +128,9 @@
         const maxAttempts = 50; // 5 seconds max
 
         while (attempts < maxAttempts) {
-            if (window.firebaseInitialized) {
+
+            if (window.FirebaseConfig?.isInitialized?.()) {
+
                 return true;
             }
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -280,8 +282,13 @@
     function checkAlcoholMode() {
         try {
             PlayerSetupModule.alcoholMode = PlayerSetupModule.gameState.alcoholMode === true;
+
             if (PlayerSetupModule.alcoholMode) {
-                const ageLevel = parseInt(localStorage.getItem('nocap_age_level')) || 0;
+                // ✅ Settings-only: same read path as settings.js
+                const ageLevel = window.NocapUtils
+                    ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
+                    : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+
                 if (ageLevel < 18) {
                     PlayerSetupModule.alcoholMode = false;
                     if (typeof PlayerSetupModule.gameState.setAlcoholMode === 'function') {
@@ -290,6 +297,7 @@
                     showNotification('Alkohol-Modus nur für 18+', 'warning', 2500);
                 }
             }
+
             const difficultyIcon = document.getElementById('difficulty-icon');
             if (difficultyIcon) {
                 difficultyIcon.textContent = PlayerSetupModule.alcoholMode ? '🍺' : '💧';
@@ -301,8 +309,14 @@
         } catch (error) {
             console.error('Error checking alcohol mode:', error);
             PlayerSetupModule.alcoholMode = false;
+
+            const difficultyIcon = document.getElementById('difficulty-icon');
+            if (difficultyIcon) {
+                difficultyIcon.textContent = '💧';
+            }
         }
     }
+
 
     // ===========================
     // QUESTION COUNTS FROM FIREBASE
@@ -313,25 +327,16 @@
             if (PlayerSetupModule.isDevelopment) {
                 console.log('📊 Loading question counts...');
             }
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
 
-            // ✅ P1 STABILITY: Check if Firebase is initialized
-            if (!window.firebaseInitialized || typeof firebase === 'undefined' || !firebase.database) {
-                console.warn('⚠️ Firebase not available, using offline mode');
+            if (!window.FirebaseConfig?.isInitialized?.() || !database?.ref) {
+                Logger.warn('⚠️ Firebase not available, using offline mode');
                 showOfflineMode();
                 await loadLocalBackup();
                 return;
             }
 
-            // ✅ FIX: Get Firebase instances from FirebaseConfig
-            const firebaseInstances = window.FirebaseConfig?.getFirebaseInstances();
-            if (!firebaseInstances || !firebaseInstances.database) {
-                console.warn('⚠️ Firebase database not available, using offline mode');
-                showOfflineMode();
-                await loadLocalBackup();
-                return;
-            }
-
-            const { database } = firebaseInstances;
             const categories = ['fsk0', 'fsk16', 'fsk18', 'special'];
 
             for (const category of categories) {
@@ -1316,10 +1321,16 @@
 
         if (requiredAge > 0) {
             // Check if user has verified age
-            const ageVerification = localStorage.getItem('nocap_age_verification');
-            const ageLevel = localStorage.getItem('nocap_age_level');
+            const ageVerification = window.NocapUtils
+                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
+                : localStorage.getItem('nocap_age_verification');
 
-            if (!ageVerification || !ageLevel) {
+            const ageLevel = window.NocapUtils
+                ? window.NocapUtils.getLocalStorage('nocap_age_level')
+                : localStorage.getItem('nocap_age_level');
+
+
+            if (String(ageVerification) !== 'true' || !ageLevel) {
                 showNotification('Altersverifikation erforderlich!', 'error');
                 setTimeout(() => {
                     window.location.href = 'index.html';
