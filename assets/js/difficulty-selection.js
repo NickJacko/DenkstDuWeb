@@ -132,11 +132,10 @@ async function initialize() {
 // ✅ P0 FIX: Wait for Firebase init (must be ready before server validation)
     const firebaseReady = await waitForFirebaseInit();
     if (!firebaseReady) {
-        hideLoading();
-        Logger.error('❌ FirebaseConfig did not initialize in time');
-        showNotification('Server nicht erreichbar. Bitte neu laden.', 'error', 4000);
-        return;
+        Logger.warn('⚠️ Firebase not ready – continuing in offline mode (UI still works)');
+        // NICHT returnen – UI muss trotzdem klickbar sein
     }
+
         // Check DOMPurify
         if (typeof DOMPurify === 'undefined') {
             hideLoading();
@@ -173,36 +172,22 @@ async function initialize() {
             // ✅ BUGFIX: Use window.GameState (constructor) not DifficultySelectionModule.gameState
             DifficultySelectionModule.gameState = new window.GameState();
 
-            // ✅ P1 FIX: Validate device mode FIRST
-            if (!validateDeviceMode()) {
-                hideLoading();
-                return;
-            }
+            // ✅ UI sofort klickbar machen
+            setupEventListeners();
+            initializeSelection();
+            updateContinueButton();
+            hideLoading(); // ✅ HIERHIN (immer)
+
+            // ✅ Ab hier darf Validation/Network auch failen - UI bleibt trotzdem bedienbar
+            if (!validateDeviceMode()) return;
 
             const isValid = await validateGameState();
-            if (!isValid) {
-                hideLoading();
-                return;
-            }
+            if (!isValid) return;
 
-
-            // Check alcohol mode
             checkAlcoholMode();
-
-            // ✅ P1 STABILITY: Load question counts with fallback
             await loadQuestionCounts();
 
-            // Load difficulty from GameState
-            initializeSelection();
-
-            // Setup event listeners
-            setupEventListeners();
-
-            hideLoading();
-
             Logger.debug('✅ Difficulty selection initialized');
-            Logger.debug('Game State:', DifficultySelectionModule.gameState.getDebugInfo());
-
         } catch (error) {
             Logger.error('❌ Initialization error:', error);
             hideLoading();
@@ -293,11 +278,50 @@ async function initialize() {
      * @returns {Promise<boolean>} True if valid
      */
     async function validateGameState() {
-        if (!window.FirebaseConfig?.isInitialized?.()) {
-            Logger.warn('⚠️ Firebase not initialized – skipping server validation');
-            showNotification('Verbindungsfehler. Bitte neu laden.', 'error');
+// ✅ Offline-first: only require Firebase for server-side checks
+        const firebaseOk = !!window.FirebaseConfig?.isInitialized?.();
+
+        if (!DifficultySelectionModule.gameState.checkValidity()) {
+            showNotification('Ungültiger Spielzustand', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
+
+        if (!DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
+            Logger.warn('⚠️ No categories selected');
+            showNotification('Keine Kategorien ausgewählt!', 'warning');
+
+            const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
+                ? 'multiplayer-category-selection.html'
+                : 'category-selection.html';
+
+            setTimeout(() => window.location.href = redirectUrl, 2000);
+            return false;
+        }
+
+// ✅ If Firebase not ready: local age fallback for fsk16/fsk18
+        if (!firebaseOk) {
+            const getLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
+
+            const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+
+            for (const category of DifficultySelectionModule.gameState.selectedCategories) {
+                if (category === 'fsk18' && ageLevel < 18) {
+                    showNotification('🔞 FSK18 nur ab 18. Bitte verifizieren.', 'warning', 3000);
+                    return false;
+                }
+                if (category === 'fsk16' && ageLevel < 16) {
+                    showNotification('🔞 FSK16 nur ab 16. Bitte verifizieren.', 'warning', 3000);
+                    return false;
+                }
+            }
+
+            Logger.warn('⚠️ Firebase offline – local age checks passed, continuing');
+            return true;
+        }
+
 
         const instances = window.FirebaseConfig?.getFirebaseInstances?.();
         const auth = instances?.auth;
@@ -497,17 +521,6 @@ async function initialize() {
             if (countEl) {
                 countEl.textContent = `${totalQuestions} Fragen verfügbar`;
             }
-
-            // Disable if insufficient questions
-            if (hasInsufficientQuestions || totalQuestions < 20) {
-                card.classList.add('disabled');
-                card.setAttribute('aria-disabled', 'true');
-
-                const reasonEl = card.querySelector('.disabled-reason');
-                if (reasonEl) {
-                    reasonEl.textContent = 'Zu wenige Fragen in dieser Kategorie';
-                }
-            }
         });
     }
 
@@ -681,8 +694,6 @@ async function initialize() {
         element.classList.add('selected');
         element.setAttribute('aria-checked', 'true');
 
-
-        // Save directly to GameState
         DifficultySelectionModule.gameState.setDifficulty(difficulty);
 
         updateContinueButton();
@@ -701,12 +712,12 @@ async function initialize() {
         if (difficulty) {
             continueBtn.disabled = false;
             continueBtn.setAttribute('aria-disabled', 'false');
-            continueBtn.classList.add('enabled');      // ✅ wichtig wegen pointer-events
+            continueBtn.classList.add('enabled');   // ✅ wichtig
             continueBtn.textContent = 'Weiter';
         } else {
             continueBtn.disabled = true;
             continueBtn.setAttribute('aria-disabled', 'true');
-            continueBtn.classList.remove('enabled');   // ✅ wichtig
+            continueBtn.classList.remove('enabled'); // ✅ wichtig
             continueBtn.textContent = 'Schwierigkeitsgrad wählen';
         }
     }
@@ -732,6 +743,11 @@ async function initialize() {
         // Difficulty cards with keyboard support
         const difficultyCards = document.querySelectorAll('.difficulty-card');
         difficultyCards.forEach((card, index) => {
+            card.setAttribute('tabindex', '0');         // ✅ sicher fokusierbar
+            card.setAttribute('role', 'radio');         // ✅ konsistent
+            if (!card.hasAttribute('aria-checked')) {
+                card.setAttribute('aria-checked', 'false');
+            }
             addTrackedEventListener(card, 'click', function() {
                 if (!this.classList.contains('disabled')) {
                     selectDifficulty(this);
@@ -974,16 +990,22 @@ async function initialize() {
     // UTILITY FUNCTIONS (use NocapUtils)
     // ===========================
 
+
+
     const showLoading = window.NocapUtils?.showLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) loading.classList.add('show');
+        if (loading) {
+            loading.style.display = 'flex';
+            loading.classList.add('show');
+        }
     };
-
     const hideLoading = window.NocapUtils?.hideLoading || function() {
         const loading = document.getElementById('loading');
-        if (loading) loading.classList.remove('show');
+        if (loading) {
+            loading.classList.remove('show');
+            loading.style.display = 'none'; // ✅ hard-stop click-blocker
+        }
     };
-
     const showNotification = window.NocapUtils?.showNotification || function(message) {
         alert(String(message)); // Fallback
     };
