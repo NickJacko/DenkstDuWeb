@@ -441,6 +441,39 @@ body {
 .hard-badge {
     background: linear-gradient(135deg, #F44336, #d32f2f);
 }
+/* ============================================================================
+   BUGFIX: Text wird abgeschnitten (globales nowrap / overflow)
+   ============================================================================ */
+
+.difficulty-card,
+.difficulty-card * {
+    white-space: normal;          /* überschreibt globales nowrap */
+}
+
+.difficulty-description,
+.sips-explanation,
+.sips-formula,
+.sips-formula div,
+.base-sips {
+    overflow-wrap: anywhere;      /* bricht auch lange Wörter sauber */
+    word-break: break-word;
+    hyphens: auto;
+}
+
+/* Badge soll weiterhin in einer Zeile bleiben */
+.difficulty-badge {
+    white-space: nowrap;
+}
+
+/* Optional: Cards layout-stabiler (damit nix „quetscht“) */
+@media (min-width: 768px) {
+    .difficulty-card {
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+}
 
 /* ============================================================================
    CONTROLS
