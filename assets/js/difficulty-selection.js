@@ -115,13 +115,28 @@
     // ===========================
     // INITIALIZATION
     // ===========================
+    async function waitForFirebaseInit(timeoutMs = 8000) {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+            if (window.FirebaseConfig?.isInitialized?.()) return true;
+            await new Promise(r => setTimeout(r, 100));
+        }
+        return false;
+    }
 
 async function initialize() {
         Logger.debug('⚡ Initializing difficulty selection...');
 
         showLoading();
     // ✅ P0 FIX: Wait for Firebase init (must be ready before server validation)
-
+// ✅ P0 FIX: Wait for Firebase init (must be ready before server validation)
+    const firebaseReady = await waitForFirebaseInit();
+    if (!firebaseReady) {
+        hideLoading();
+        Logger.error('❌ FirebaseConfig did not initialize in time');
+        showNotification('Server nicht erreichbar. Bitte neu laden.', 'error', 4000);
+        return;
+    }
         // Check DOMPurify
         if (typeof DOMPurify === 'undefined') {
             hideLoading();
@@ -138,16 +153,16 @@ async function initialize() {
             return;
         }
 
-        // Wait for utils if available
+    try {
         if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            window.NocapUtils.waitForDependencies(['GameState']).then(() => {
-                initializeGame();
-            }).catch(() => {
-                initializeGame();
-            });
-        } else {
-            initializeGame();
+            await window.NocapUtils.waitForDependencies(['GameState']);
         }
+    } catch (e) {
+        // ignore and continue
+    }
+
+    await initializeGame();
+
     }
 
     /**
@@ -282,11 +297,17 @@ async function initialize() {
             Logger.warn('⚠️ Firebase not initialized – skipping server validation');
             showNotification('Verbindungsfehler. Bitte neu laden.', 'error');
             return false;
-        }    const { auth, database } = window.FirebaseConfig.getFirebaseInstances();
+        }
+
+        const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+        const auth = instances?.auth;
+        const database = instances?.database;
+
         if (!auth || !database) {
             Logger.error('❌ Firebase instances missing');
             return false;
         }
+
 
         if (!DifficultySelectionModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');

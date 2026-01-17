@@ -400,7 +400,7 @@
             showNotification('Erstelle Spiel...', 'info', 500);
 
 // ✅ NEW: Create game securely via Cloud Function (Option A)
-            const createGameFn = firebase.functions().httpsCallable('createGameSecure');
+            const createGameFn = firebase.app().functions('europe-west1').httpsCallable('createGameSecure');
 
             const selectedCategories = MultiplayerLobbyModule.gameState.selectedCategories || [];
             const difficulty = MultiplayerLobbyModule.gameState.difficulty || 'medium';
@@ -431,19 +431,6 @@
             displaySettings({ categories: selectedCategories, difficulty });
 
 // ✅ Listen to the real game by gameId
-            setupGameListener(gameId);
-
-            showNotification('Spiel erstellt!', 'success', 800);
-
-            await gameRef.set(gameData);
-
-            MultiplayerLobbyModule.gameState.gameId = gameId;
-            MultiplayerLobbyModule.gameState.isHost = true;
-
-            displayGameCode(gameId);
-            displayQRCode(gameId);
-            displaySettings(settings);
-
             setupGameListener(gameId);
 
             showNotification('Spiel erstellt!', 'success', 800);
