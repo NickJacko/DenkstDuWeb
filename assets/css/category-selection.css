@@ -499,28 +499,6 @@ body {
     text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
 }
 
-.category-examples {
-    margin-top: 15px;
-}
-
-.example-questions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.example-question {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08));
-    color: rgba(255, 255, 255, 0.95);
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    line-height: 1.4;
-    border-left: 3px solid rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
 .category-footer {
     display: flex;
     justify-content: space-between;
@@ -530,12 +508,21 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-.age-range,
 .question-count {
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 0.88rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* wenn gelockt, Count etwas “disabled” */
+.category-card.locked .question-count {
+    opacity: 0.7;
 }
 
 .loading-dots {

@@ -7,8 +7,6 @@
       "$gameId": {
         ".read": "auth != null && (data.child('players').child(auth.uid).exists() || data.child('hostId').val() === auth.uid)",
 
-        // ✅ Option A: Clients dürfen KEINE Games erstellen/überschreiben.
-        // Games werden nur via Cloud Functions (Admin SDK) erstellt/gejoint.
         ".write": false,
 
         "hostId": {
@@ -19,17 +17,14 @@
           ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{6}$/)"
         },
 
-        // ⚠️ Du nutzt in deinem Code "status", nicht "phase".
-        // Ich lasse phase drin, aber ergänze status weiter unten.
-        "phase": {
+        "status": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
           ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'results' || newData.val() === 'finished')"
         },
 
-        // ✅ Host darf status setzen (z.B. startGame -> 'playing')
-        "status": {
+        "phase": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'results' || newData.val() === 'finished')"
+          ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'results' || newData.val() === 'finished' || newData.val() === 'waiting' || newData.val() === 'question')"
         },
 
         "startedAt": {
@@ -37,14 +32,35 @@
           ".validate": "newData.isNumber()"
         },
 
-        "currentRound": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber() && newData.val() >= 1"
+        "createdAt": {
+          ".validate": "newData.isNumber()"
         },
 
         "lastUpdate": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
           ".validate": "newData.isNumber()"
+        },
+
+        "lastActivity": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber()"
+        },
+
+        "ttl": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "difficulty": {
+          ".validate": "newData.isString() && (newData.val() === 'easy' || newData.val() === 'medium' || newData.val() === 'hard')"
+        },
+
+        "alcoholMode": {
+          ".validate": "newData.isBoolean()"
+        },
+
+        "currentRound": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber() && newData.val() >= 1"
         },
 
         "currentQuestionIndex": {
@@ -56,62 +72,77 @@
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid"
         },
 
-        "difficulty": {
-          ".validate": "newData.isString() && (newData.val() === 'easy' || newData.val() === 'medium' || newData.val() === 'hard')"
+        "timerStartTime": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber()"
         },
 
-        "alcoholMode": {
+        "timerPaused": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
           ".validate": "newData.isBoolean()"
         },
 
-        // ✅ Clients dürfen Kategorien NICHT setzen (nur validate für server writes)
-        "selectedCategories": {
+        "timerRemaining": {
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+
+        "settings": {
+          ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
           ".write": false,
-          ".validate": "newData.hasChildren()",
-          "$category": {
-            ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special')"
+
+          "categories": {
+            ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+            ".validate": "newData.isArray() && newData.val().length > 0 && newData.val().length <= 4"
+          },
+
+          "difficulty": {
+            ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+            ".validate": "newData.isString() && (newData.val() === 'easy' || newData.val() === 'medium' || newData.val() === 'hard')"
+          },
+
+          "alcoholMode": {
+            ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+            ".validate": "newData.isBoolean()"
           }
         },
 
         "players": {
           "$playerId": {
-            // ✅ Option A: Kein Client darf Player-Objekte anlegen/ändern (join passiert per Function)
-            ".write": false,
+            ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
 
-            // ✅ Client darf NUR seine eigenen Presence/Ready Felder updaten,
-            // und nur wenn er bereits Teilnehmer ist.
+            ".write": "auth != null && ($playerId === auth.uid) && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+
             "isReady": {
-              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+              ".validate": "newData.isBoolean()"
+            },
+
+            "categoryReady": {
               ".validate": "newData.isBoolean()"
             },
 
             "lastSeen": {
-              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
               ".validate": "newData.isNumber()"
             },
 
             "online": {
-              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
               ".validate": "newData.isBoolean()"
             },
 
             "disconnectedAt": {
-              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
               ".validate": "newData.isNumber()"
             },
 
             "rejoinDeadline": {
-              ".write": "auth != null && $playerId === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
               ".validate": "newData.isNumber() || newData.val() === null"
             },
 
-            // ✅ server-only fields (validate only)
-            "name": {
-              ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 15"
+            "updatedAt": {
+              ".validate": "newData.isNumber()"
             },
 
-            "isPremium": {
-              ".validate": "newData.isBoolean()"
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 20"
             },
 
             "isHost": {
@@ -124,18 +155,37 @@
           }
         },
 
-        "createdAt": {
-          ".validate": "newData.isNumber()"
-        },
+        "rounds": {
+          "$roundId": {
+            ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
 
-        "lastActivity": {
-          // optional: wenn du lastActivity clientseitig updatest -> host write erlauben
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber()"
-        },
+            "question": {
+              ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+              ".validate": "newData.hasChildren(['text','category']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 300 && newData.child('category').isString()"
+            },
 
-        "ttl": {
-          ".validate": "newData.isNumber()"
+            "startedAt": {
+              ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+              ".validate": "newData.isNumber()"
+            },
+
+            "timerDuration": {
+              ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+              ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300"
+            },
+
+            "summary": {
+              ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+              ".validate": "newData.hasChildren(['totalAnswers','yesCount','aggregatedAt']) && newData.child('totalAnswers').isNumber() && newData.child('yesCount').isNumber() && newData.child('aggregatedAt').isNumber()"
+            },
+
+            "answers": {
+              "$uid": {
+                ".write": "auth != null && $uid === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+                ".validate": "newData.hasChildren(['answer','estimation','submittedAt']) && newData.child('answer').isBoolean() && newData.child('estimation').isNumber() && newData.child('estimation').val() >= 0 && newData.child('estimation').val() <= 50 && newData.child('submittedAt').isNumber()"
+              }
+            }
+          }
         }
       }
     },
@@ -143,34 +193,26 @@
     "gameCodes": {
       "$code": {
         ".read": "auth != null",
-
-        // ✅ Option A: Mapping wird nur von Cloud Functions geschrieben
         ".write": false,
 
         "hostId": {
           ".validate": "newData.isString() && newData.val().length > 0"
         },
-
         "gameId": {
           ".validate": "newData.isString() && newData.val().length > 0"
         },
-
         "status": {
           ".validate": "newData.isString()"
         },
-
         "maxPlayers": {
           ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 8"
         },
-
         "categories": {
           ".validate": "newData.hasChildren()"
         },
-
         "difficulty": {
           ".validate": "newData.isString() && (newData.val() === 'easy' || newData.val() === 'medium' || newData.val() === 'hard')"
         },
-
         "createdAt": {
           ".validate": "newData.isNumber()"
         }
@@ -193,19 +235,15 @@
         "isPremium": {
           ".validate": "newData.isBoolean()"
         },
-
         "ageVerified": {
           ".validate": "newData.isBoolean()"
         },
-
         "ageLevel": {
           ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 16 || newData.val() === 18)"
         },
-
         "createdAt": {
           ".validate": "newData.isNumber()"
         },
-
         "lastLogin": {
           ".validate": "newData.isNumber()"
         }
@@ -220,15 +258,12 @@
         "requestedAt": {
           ".validate": "newData.isNumber()"
         },
-
         "scheduledFor": {
           ".validate": "newData.isNumber()"
         },
-
         "gracePeriodHours": {
           ".validate": "newData.isNumber() && newData.val() > 0"
         },
-
         "status": {
           ".validate": "newData.isString() && (newData.val() === 'pending' || newData.val() === 'cancelled' || newData.val() === 'completed')"
         }

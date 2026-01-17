@@ -4,8 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Fix multiplayer lobby race conditions: normalize state early, improve deviceMode handling, and stabilize presence setup">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Fix multiplayer join/lobby desync: persist and recover gameId across storage and URL, improve state redundancy and fallback handling">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/difficulty-selection.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database.rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database.rules.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -164,14 +170,6 @@
       <workItem from="1768323670735" duration="7628000" />
       <workItem from="1768554418204" duration="394000" />
       <workItem from="1768555261474" duration="25029000" />
-    </task>
-    <task id="LOCAL-00100" summary="Refactor HTML structure for category and difficulty selection, enhance accessibility with ARIA roles, and improve Firebase initialization error handling">
-      <option name="closed" value="true" />
-      <created>1768148541231</created>
-      <option name="number" value="00100" />
-      <option name="presentableId" value="LOCAL-00100" />
-      <option name="project" value="LOCAL" />
-      <updated>1768148541231</updated>
     </task>
     <task id="LOCAL-00101" summary="Refactor HTML structure for category and difficulty selection, enhance accessibility with ARIA roles, and improve Firebase initialization error handling">
       <option name="closed" value="true" />
@@ -557,7 +555,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768665240740</updated>
     </task>
-    <option name="localTasksCounter" value="149" />
+    <task id="LOCAL-00149" summary="Fix multiplayer join/lobby desync: persist and recover gameId across storage and URL, improve state redundancy and fallback handling">
+      <option name="closed" value="true" />
+      <created>1768671020455</created>
+      <option name="number" value="00149" />
+      <option name="presentableId" value="LOCAL-00149" />
+      <option name="project" value="LOCAL" />
+      <updated>1768671020455</updated>
+    </task>
+    <option name="localTasksCounter" value="150" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -578,7 +584,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Update Firebase deployment step to use --force flag in GitHub Actions workflow" />
     <MESSAGE value="Improve Firebase initialization robustness and set Functions region to europe-west1" />
     <MESSAGE value="Refactor Cloud Functions to use europe-west1 region and enhance security logic&#10;&#10;- Set region to europe-west1 for all relevant Cloud Functions&#10;- Improve age verification checks for FSK categories using RTDB cache&#10;- Update account deletion logic for more robust data handling and audit trail&#10;- Enhance rapid update detection and violation logging in realtime-security&#10;- Improve error handling and logging for cleanup and notification functions&#10;- Update settings to refresh and display FSK access badges after age verification" />
     <MESSAGE value="Update account deletion logic for improved reliability and dependency management&#10;&#10;- Update firebase-admin and firebase-functions dependencies to latest versions&#10;- Set deploy and logs npm scripts to use --project prod for production safety&#10;- Refactor account-deletion.js for clearer logic, improved error handling, and concise logging&#10;- Simplify authorization and email notification flows in account deletion functions&#10;- Enhance scheduled deletion processing and cleanup routines for better maintainability" />
@@ -603,7 +608,8 @@
     <MESSAGE value="Improve age verification UX: auto-resume category selection, enhance multiplayer FSK handling, and persist verification state" />
     <MESSAGE value="Fix text truncation in difficulty cards; improve word wrapping and layout stability" />
     <MESSAGE value="Fix multiplayer lobby race conditions: normalize state early, improve deviceMode handling, and stabilize presence setup" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix multiplayer lobby race conditions: normalize state early, improve deviceMode handling, and stabilize presence setup" />
+    <MESSAGE value="Fix multiplayer join/lobby desync: persist and recover gameId across storage and URL, improve state redundancy and fallback handling" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix multiplayer join/lobby desync: persist and recover gameId across storage and URL, improve state redundancy and fallback handling" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

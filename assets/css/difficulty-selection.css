@@ -22,7 +22,9 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     overflow-x: hidden;
-    padding-top: 2rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
     color: white;
 }
 
@@ -104,7 +106,8 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start; /* ✅ statt center */
+    padding-top: max(70px, env(safe-area-inset-top)); /* ✅ Platz für Back-Button */
 }
 
 .glass-card {
@@ -135,6 +138,22 @@ body {
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
     z-index: 1000;
+}
+@media (max-width: 768px) {
+    .back-button {
+        top: max(12px, env(safe-area-inset-top));
+        left: 12px;
+        padding: 10px 14px;
+        font-size: 14px;
+        border-radius: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .back-button {
+        padding: 9px 12px;
+        font-size: 13px;
+    }
 }
 
 .back-button:hover {
@@ -648,7 +667,28 @@ body {
 
 @media (max-width: 768px) {
     body {
-        padding-top: 1rem;
+        padding-top: max(1rem, env(safe-area-inset-top));
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    .difficulty-card {
+        padding: 18px 16px;
+        border-radius: 18px;
+    }
+
+    .difficulty-description {
+        font-size: 0.95rem;
+    }
+
+    .difficulty-penalty,
+    .sips-explanation {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+
+    .difficulty-formula,
+    .sips-formula {
+        font-size: 0.82rem;
     }
 
     .screen-title {
@@ -658,10 +698,12 @@ body {
 
     .app-container {
         padding: 15px;
+        padding-top: max(70px, env(safe-area-inset-top));
     }
 
     .glass-card {
-        padding: 25px 20px;
+        padding: 22px 16px;
+        border-radius: 18px;
     }
 
     .difficulty-grid {
@@ -691,13 +733,14 @@ body {
     }
 
     .glass-card {
-        padding: 20px 15px;
+        padding: 20px 14px;   /* minimal tighter als 768px */
+        border-radius: 18px;  /* gleiche Rundung wie 768px */
     }
 
     .difficulty-card {
-        padding: 20px;
+        padding: 16px 14px;
+        border-radius: 18px;
     }
-
     .selection-description {
         font-size: 1rem;
     }
@@ -741,7 +784,20 @@ body {
         border: 3px solid #4CAF50;
     }
 }
+@media (hover: none) and (pointer: coarse) {
+    .difficulty-card:hover {
+        transform: none;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.25);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+    }
 
+    .btn-continue.enabled:hover,
+    .btn-primary:hover:not(:disabled) {
+        transform: none;
+    }
+}
 /* ============================================================================
    PRINT STYLES
    ============================================================================ */

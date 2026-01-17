@@ -140,34 +140,41 @@
 
         return sanitized;
     }
-
     const categoryData = {
         fsk0: {
             name: 'Familie & Freunde',
             icon: '👨‍👩‍👧‍👦',
             color: '#4CAF50',
-            requiresAge: 0
+            requiresAge: 0,
+            requiresPremium: false,
+            description: 'Lustige und harmlose Fragen für die ganze Familie'
         },
         fsk16: {
             name: 'Party Time',
             icon: '🎉',
             color: '#FF9800',
-            requiresAge: 16
+            requiresAge: 16,
+            requiresPremium: false,
+            description: 'Freche und witzige Fragen für Partys mit Freunden'
         },
         fsk18: {
             name: 'Heiß & Gewagt',
             icon: '🔥',
             color: '#F44336',
-            requiresAge: 18
+            requiresAge: 18,
+            requiresPremium: false,
+            description: 'Intime und pikante Fragen nur für Erwachsene'
         },
         special: {
             name: 'Special Edition',
             icon: '⭐',
             color: '#FFD700',
             requiresAge: 0,
-            requiresPremium: true
+            requiresPremium: true,
+            description: 'Exklusive Premium-Fragen für besondere Momente'
         }
     };
+
 
     // ===========================
     // INITIALIZATION
@@ -434,7 +441,6 @@
     // ===========================
     // QUESTION COUNTS
     // ===========================
-
     async function loadQuestionCounts() {
         try {
             const instances = window.FirebaseConfig?.getFirebaseInstances?.();
@@ -446,40 +452,45 @@
                 return;
             }
 
-            const questionsRef = database.ref('questions');
-            const snapshot = await questionsRef.once('value');
+            const categories = Object.keys(categoryData);
 
-            if (snapshot.exists()) {
-                const questions = snapshot.val();
+            // pro Kategorie separat laden (klein & stabil)
+            await Promise.all(categories.map(async (category) => {
+                try {
+                    const snap = await database.ref(`questions/${category}`).once('value');
 
-                Object.keys(categoryData).forEach(category => {
-                    const categoryQuestions = questions[category];
-                    if (categoryQuestions) {
-                        if (Array.isArray(categoryQuestions)) {
-                            CategorySelectionModule.questionCounts[category] = categoryQuestions.length;
-                        } else if (typeof categoryQuestions === 'object') {
-                            CategorySelectionModule.questionCounts[category] = Object.keys(categoryQuestions).length;
-                        } else {
-                            CategorySelectionModule.questionCounts[category] = getFallbackCount(category);
+                    let count = 0;
+                    if (snap.exists()) {
+                        const val = snap.val();
+
+                        if (Array.isArray(val)) {
+                            count = val.length;
+                        } else if (val && typeof val === 'object') {
+                            count = Object.keys(val).length;
                         }
                     } else {
-                        CategorySelectionModule.questionCounts[category] = getFallbackCount(category);
+                        count = getFallbackCount(category);
                     }
 
-                    updateQuestionCountUI(category, CategorySelectionModule.questionCounts[category]);
-                });
+                    CategorySelectionModule.questionCounts[category] = count;
+                    updateQuestionCountUI(category, count);
 
-                Logger.debug('✅ Question counts loaded:', CategorySelectionModule.questionCounts);
-            } else {
-                Logger.warn('⚠️ No questions found, using fallbacks');
-                useFallbackCounts();
-            }
+                } catch (err) {
+                    Logger.warn(`⚠️ Count load failed for ${category}, using fallback`, err);
+                    const fallback = getFallbackCount(category);
+                    CategorySelectionModule.questionCounts[category] = fallback;
+                    updateQuestionCountUI(category, fallback);
+                }
+            }));
+
+            Logger.debug('✅ Question counts loaded:', CategorySelectionModule.questionCounts);
 
         } catch (error) {
             Logger.warn('⚠️ Error loading question counts:', error);
             useFallbackCounts();
         }
     }
+
 
     function useFallbackCounts() {
         Object.keys(categoryData).forEach(category => {
