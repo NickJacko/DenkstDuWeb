@@ -93,8 +93,11 @@
 
           "categories": {
             ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-            ".validate": "newData.isArray() && newData.val().length > 0 && newData.val().length <= 4"
-          },
+            ".validate": "(newData.hasChildren(['0']) && newData.child('0').isString()) || (newData.child('fsk0').exists() || newData.child('fsk16').exists() || newData.child('fsk18').exists() || newData.child('special').exists())",
+            "$i": {
+            ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special')"
+                  }
+                        },
 
           "difficulty": {
             ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
