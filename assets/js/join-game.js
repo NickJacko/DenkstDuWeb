@@ -635,24 +635,12 @@
 // UX-FSK Check (server enforced beim Join sowieso)
             const userAgeLevel = JoinGameModule.gameState.userAgeLevel || 0;
 
-// ✅ MUST be explicitly enabled in settings
-            const allowFSK16 = JoinGameModule.gameState.allowFSK16 === true;
-            const allowFSK18 = JoinGameModule.gameState.allowFSK18 === true;
-
 // Age restriction
             if (categories.includes('fsk18') && userAgeLevel < 18) {
                 throw new Error('Du musst mindestens 18 Jahre alt sein für dieses Spiel');
             }
             if (categories.includes('fsk16') && userAgeLevel < 16) {
                 throw new Error('Du musst mindestens 16 Jahre alt sein für dieses Spiel');
-            }
-
-// Explicit opt-in restriction
-            if (categories.includes('fsk18') && !allowFSK18) {
-                throw new Error('FSK18 ist in deinen Einstellungen deaktiviert');
-            }
-            if (categories.includes('fsk16') && !allowFSK16) {
-                throw new Error('FSK16 ist in deinen Einstellungen deaktiviert');
             }
 
             const maxPlayers = Number(codeData.maxPlayers || 8);
