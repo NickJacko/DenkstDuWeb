@@ -916,20 +916,6 @@
                 showNotification('Du musst mindestens 18 Jahre alt sein für dieses Spiel', 'error');
                 return;
             }
-            if (!allowFSK18) {
-                showNotification('FSK18 ist in deinen Einstellungen deaktiviert', 'error');
-                return;
-            }
-        }
-        if (cats.includes('fsk16')) {
-            if (userAgeLevel < 16) {
-                showNotification('Du musst mindestens 16 Jahre alt sein für dieses Spiel', 'error');
-                return;
-            }
-            if (!allowFSK16) {
-                showNotification('FSK16 ist in deinen Einstellungen deaktiviert', 'error');
-                return;
-            }
         }
 
         if (!GAME_CODE_REGEX.test(gameCode)) {
