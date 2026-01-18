@@ -134,7 +134,7 @@
     let userAnswer = null;
     let userEstimation = null;
     let totalPlayers = 0;
-    let currentQuestionNumber = 1;
+    let currentQuestionNumber = 0;
     let currentPhase = 'question';
     let hasSubmittedThisRound = false; // P0: Anti-cheat
     let timerSyncRef = null;
@@ -1248,15 +1248,15 @@
                         return;
                     }
 
-                    // Round change
-                    if (
-                        currentGameData.currentRound &&
-                        currentGameData.currentRound !== currentQuestionNumber &&
-                        currentPhase !== 'overall-results'
-                    ) {
-                        handleNewRound(currentGameData.currentRound);
-                    }
+                    // ✅ Round sync (fix for guests loading before host sets currentRound)
+                    if (currentGameData.currentRound && currentPhase !== 'overall-results') {
+                        const round = Number(currentGameData.currentRound) || 0;
 
+                        // If we haven't loaded anything yet (e.g., guest joined early), force-load current round
+                        if (!currentQuestion || round !== currentQuestionNumber) {
+                            handleNewRound(round);
+                        }
+                    }
                 } catch (error) {
                     handleFirebaseError(error, 'Spiel-Update verarbeiten', false);
                 }
@@ -1310,14 +1310,19 @@
                 updatePlayersCount();
 
                 if (currentGameData.currentRound) {
-                    currentQuestionNumber = currentGameData.currentRound;
-                    updateGameDisplay();
-                    await loadRoundFromFirebase(currentQuestionNumber);
+                    // ✅ Always sync via handleNewRound (loads even if already same round but question missing)
+                    handleNewRound(currentGameData.currentRound);
                 } else if (MultiplayerGameplayModule.gameState.isHost) {
-                    // Host starts first round
-                    currentQuestionNumber = 1;
-                    await startNewRound();
+                    // ✅ Host starts first round
+                    currentQuestionNumber = 1;        // set round number
+                    await startNewRound();            // creates /rounds/round_1 + sets currentRound
+                } else {
+                    // ✅ Guest: wait until host sets currentRound (gameRef.on('value') will call handleNewRound)
+                    if (MultiplayerGameplayModule.isDevelopment) {
+                        console.log('⏳ Waiting for host to start the first round...');
+                    }
                 }
+
             } else {
                 console.error('❌ Game data not found');
                 showNotification('Spiel nicht gefunden!', 'error');
@@ -1346,6 +1351,10 @@
 
             if (snapshot.exists()) {
                 const roundData = snapshot.val();
+                if (!roundData || !roundData.question) {
+                    console.warn('⚠️ Round exists but no question yet - waiting...');
+                    return;
+                }
                 currentQuestion = roundData.question;
 
                 // ✅ P1 DSGVO/Jugendschutz: Verify age for loaded question
@@ -1420,22 +1429,35 @@
                     console.log(`📊 Round update: ${answerCount}/${playerCount} answers`);
                 }
 
-                // Update waiting status
+// ✅ Always update waiting UI when applicable
                 if (currentPhase === 'waiting') {
                     updateWaitingStatus(answers);
-
-                    // Check if all answered
-                    if (answerCount >= playerCount && playerCount >= 2) {
-                        if (MultiplayerGameplayModule.isDevelopment) {
-                            console.log('🎉 All players answered!');
-                        }
-                        setTimeout(() => {
-                            if (currentPhase === 'waiting') {
-                                calculateAndShowResults();
-                            }
-                        }, 300);
-                    }
                 }
+
+// ✅ CRITICAL: If I have submitted and all answers are in, show results (independent of currentPhase)
+                const myKey = getPlayerKey();
+                const iHaveAnswered = !!(myKey && answers && answers[myKey]);
+
+// ✅ recovery: if my answer exists in DB, treat as submitted (after reload)
+                if (iHaveAnswered && !hasSubmittedThisRound) {
+                    hasSubmittedThisRound = true;
+                    try { updateSubmitButton(); } catch(_) {}
+                }
+
+
+                if (hasSubmittedThisRound && iHaveAnswered && answerCount >= playerCount && playerCount >= 2) {
+                    currentRoundData = currentRoundData || {};
+                    currentRoundData.answers = answers;
+
+                    // small debounce to allow last write to settle
+                    setTimeout(() => {
+                        // don't block by phase — but avoid double-show
+                        if (currentPhase !== 'results' && currentPhase !== 'overall-results') {
+                            calculateAndShowResults();
+                        }
+                    }, 250);
+                }
+
             }
         });
 
@@ -1470,21 +1492,27 @@
             console.log('✅ Round listener active');
         }
     }
-
     function handleNewRound(roundNumber) {
-        if (roundNumber > currentQuestionNumber) {
-            currentQuestionNumber = roundNumber;
-            hasSubmittedThisRound = false; // Reset anti-cheat
+        const rn = Number(roundNumber) || 0;
+        if (rn <= 0) return;
 
-            // ✅ P1 UI/UX: Stop old timer
-            stopTimer();
+        const missingRoundData = !currentRoundData;
+        const missingQuestion = !currentQuestion || !currentQuestion.text;
+        const missingListener = !roundListenerRef;
 
-            updateGameDisplay();
-            loadRoundFromFirebase(roundNumber);
-            resetForNewQuestion();
-            showPhase('question');
-            showNotification('Neue Frage! 🎮', 'success', 2000);
-        }
+        const shouldLoad = (rn !== currentQuestionNumber) || missingQuestion || missingRoundData || missingListener;
+
+        if (!shouldLoad) return;
+
+        currentQuestionNumber = rn;
+        hasSubmittedThisRound = false;
+
+        stopTimer();
+        updateGameDisplay();
+        resetForNewQuestion();
+        showPhase('question');
+
+        loadRoundFromFirebase(rn);
     }
 
     // ===========================
@@ -1883,7 +1911,10 @@
                 ...answerData,
                 submittedAt: firebase.database.ServerValue.TIMESTAMP
             });
-
+// ✅ Ensure round listener exists (guest might have joined before round was loaded)
+            if (!roundListenerRef) {
+                setupRoundListener(currentQuestionNumber);
+            }
             // P0: Mark as submitted
             hasSubmittedThisRound = true;
 
