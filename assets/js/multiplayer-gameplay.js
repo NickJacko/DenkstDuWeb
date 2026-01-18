@@ -611,11 +611,35 @@
         // P0 FIX: Use global firebaseGameService
         if (typeof window.FirebaseService !== 'undefined') {
             MultiplayerGameplayModule.firebaseService = window.FirebaseService;
+
         } else {
             console.error('❌ Firebase service not available');
             showNotification('Firebase nicht verfügbar', 'error');
             hideLoading();
             return;
+        }
+        // ✅ Ensure auth is ready (otherwise currentUser can be null on first load)
+        await new Promise((resolve) => {
+            try {
+                const unsub = firebase.auth().onAuthStateChanged(() => {
+                    try { unsub(); } catch (_) {}
+                    resolve();
+                });
+                // safety timeout
+                setTimeout(resolve, 3000);
+            } catch (_) {
+                resolve();
+            }
+        });
+
+// ✅ FIX: Recover missing playerId from Firebase Auth (needed after sessionStorage recovery)
+        try {
+            const u = firebase.auth().currentUser;
+            if (u && u.uid) {
+                MultiplayerGameplayModule.gameState.playerId = u.uid;
+            }
+        } catch (e) {
+            console.warn('⚠️ Could not read firebase.auth().currentUser:', e.message);
         }
 
         // Setup Firebase listeners
@@ -1167,70 +1191,79 @@
                 try {
                     if (!snapshot.exists()) {
                         console.warn('⚠️ Game not found');
-                        handleFirebaseError(
-                            new Error('Game not found'),
-                            'Spiel-Synchronisation',
-                            false
-                        );
+                        handleFirebaseError(new Error('Game not found'), 'Spiel-Synchronisation', false);
                         cleanup();
                         setTimeout(() => window.location.href = 'index.html', 2000);
                         return;
                     }
 
                     currentGameData = snapshot.val();
-                    if (MultiplayerGameplayModule.isDevelopment) {
-                        console.log('🎮 Game update received');
-                    }
-
-                    // Update players
                     currentPlayers = currentGameData.players || {};
                     updatePlayersCount();
 
-                    // Check for overall results
+                    // ✅ FIX: Determine role from DB (source of truth) on EVERY update
+                    try {
+                        const uid = firebase.auth().currentUser?.uid || MultiplayerGameplayModule.gameState.playerId;
+                        if (uid && currentGameData.hostId) {
+                            const isHostNow = currentGameData.hostId === uid;
+                            MultiplayerGameplayModule.gameState.isHost = isHostNow;
+                            MultiplayerGameplayModule.gameState.isGuest = !isHostNow;
+                            MultiplayerGameplayModule.gameState.playerId = uid;
+
+                            // ✅ Persist (MERGE, not overwrite)
+                            try {
+                                const existing = JSON.parse(localStorage.getItem('nocap_game_state') || '{}');
+                                localStorage.setItem('nocap_game_state', JSON.stringify({
+                                    ...existing,
+                                    gameId: MultiplayerGameplayModule.gameState.gameId,
+                                    playerId: uid,
+                                    isHost: isHostNow,
+                                    isGuest: !isHostNow,
+                                    deviceMode: 'multi'
+                                }));
+                            } catch (_) {}
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Could not determine host role:', e.message);
+                    }
+
+                    // Overall results
                     if (currentGameData.showOverallResults && currentPhase !== 'overall-results') {
-                        if (MultiplayerGameplayModule.isDevelopment) {
-                            console.log('📊 Overall results triggered');
-                        }
-                        if (currentGameData.overallStats) {
-                            overallStats = currentGameData.overallStats;
-                        }
+                        if (currentGameData.overallStats) overallStats = currentGameData.overallStats;
                         displayOverallResults();
                     }
 
-                    // Check if results closed
+                    // Continue after overall
                     if (currentGameData.showOverallResults === false && currentPhase === 'overall-results') {
-                        if (MultiplayerGameplayModule.isDevelopment) {
-                            console.log('▶️ Game continues');
-                        }
                         handleNewRound(currentGameData.currentRound);
                     }
 
-                    // Check for game end
+                    // Game end
                     if (currentGameData.gameState === 'finished') {
-
-                        if (MultiplayerGameplayModule.isDevelopment) {
-                            console.log('🛑 Game finished');
-                        }
                         showNotification('Spiel beendet! 👋', 'info', 3000);
                         setTimeout(() => {
                             cleanup();
                             window.location.href = 'index.html';
                         }, 3000);
+                        return;
                     }
 
-                    // Check for round changes
-                    if (currentGameData.currentRound &&
+                    // Round change
+                    if (
+                        currentGameData.currentRound &&
                         currentGameData.currentRound !== currentQuestionNumber &&
-                        currentPhase !== 'overall-results') {
+                        currentPhase !== 'overall-results'
+                    ) {
                         handleNewRound(currentGameData.currentRound);
                     }
+
                 } catch (error) {
                     handleFirebaseError(error, 'Spiel-Update verarbeiten', false);
                 }
             }, (error) => {
-                // ✅ P1 STABILITY: Listener error callback
                 handleFirebaseError(error, 'Echtzeit-Synchronisation', true);
             });
+
 
             gameListener = gameRef;
 
@@ -1239,6 +1272,32 @@
             if (initialData.exists()) {
                 currentGameData = initialData.val();
                 currentPlayers = currentGameData.players || {};
+// ✅ FIX: Determine role from DB (source of truth) after recovery
+                try {
+                    const uid = firebase.auth().currentUser?.uid || MultiplayerGameplayModule.gameState.playerId;
+                    if (uid && currentGameData.hostId) {
+                        const isHostNow = currentGameData.hostId === uid;
+                        MultiplayerGameplayModule.gameState.isHost = isHostNow;
+                        MultiplayerGameplayModule.gameState.isGuest = !isHostNow;
+                        MultiplayerGameplayModule.gameState.playerId = uid;
+
+                        // Persist for next reload
+                        try {
+                            const existing = JSON.parse(localStorage.getItem('nocap_game_state') || '{}');
+                            localStorage.setItem('nocap_game_state', JSON.stringify({
+                                ...existing,
+                                gameId: MultiplayerGameplayModule.gameState.gameId,
+                                playerId: uid,
+                                isHost: isHostNow,
+                                isGuest: !isHostNow,
+                                deviceMode: 'multi'
+                            }));
+
+                        } catch (_) {}
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Could not determine host role:', e.message);
+                }
 
                 // Check if game is actually in playing status
                 if (currentGameData.status !== 'playing') {
