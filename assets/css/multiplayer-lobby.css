@@ -1,12 +1,11 @@
 /* ============================================================================
-   NO-CAP - MULTIPLAYER LOBBY STYLES
-   Version 1.0 - Extracted from inline styles
+   NO-CAP MULTIPLAYER-LOBBY.CSS - KOMPLETT NEU
+   Mobile-First, Ultra-Smooth, Production Ready
    ============================================================================ */
 
 /* ============================================================================
-   RESET & BASE STYLES
+   RESET & BASE
    ============================================================================ */
-
 * {
     margin: 0;
     padding: 0;
@@ -18,20 +17,16 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     overflow-x: hidden;
-    padding-top: 2rem;
+    padding-top: 1rem;
     color: white;
 }
 
 /* ============================================================================
-   ANIMATED BACKGROUND
+   BACKGROUND PARTICLES
    ============================================================================ */
-
 .background-particles {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     overflow: hidden;
     z-index: -1;
 }
@@ -43,58 +38,22 @@ body {
     animation: float 6s ease-in-out infinite;
 }
 
-.particle:nth-child(1) {
-    width: 60px;
-    height: 60px;
-    left: 10%;
-    animation-delay: 0s;
-}
-
-.particle:nth-child(2) {
-    width: 80px;
-    height: 80px;
-    left: 80%;
-    animation-delay: 1s;
-}
-
-.particle:nth-child(3) {
-    width: 40px;
-    height: 40px;
-    left: 30%;
-    animation-delay: 2s;
-}
-
-.particle:nth-child(4) {
-    width: 100px;
-    height: 100px;
-    left: 70%;
-    animation-delay: 3s;
-}
-
-.particle:nth-child(5) {
-    width: 50px;
-    height: 50px;
-    left: 50%;
-    animation-delay: 4s;
-}
+.particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
+.particle:nth-child(2) { width: 80px; height: 80px; left: 80%; animation-delay: 1s; }
+.particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 2s; }
+.particle:nth-child(4) { width: 100px; height: 100px; left: 70%; animation-delay: 3s; }
+.particle:nth-child(5) { width: 50px; height: 50px; left: 50%; animation-delay: 4s; }
 
 @keyframes float {
-    0%, 100% {
-        transform: translateY(0px) rotate(0deg);
-        opacity: 0.3;
-    }
-    50% {
-        transform: translateY(-30px) rotate(180deg);
-        opacity: 0.6;
-    }
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+    50% { transform: translateY(-30px) rotate(180deg); opacity: 0.6; }
 }
 
 /* ============================================================================
    LAYOUT
    ============================================================================ */
-
 .app-container {
-    padding: 20px;
+    padding: 1.25rem;
     max-width: 900px;
     margin: 0 auto;
     min-height: 100vh;
@@ -104,42 +63,41 @@ body {
 }
 
 .glass-card {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(20px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 40px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 1.25rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem 1.5rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================================================
    SCREEN TITLE
    ============================================================================ */
-
 .screen-title {
     color: white;
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 800;
     text-align: center;
-    margin-bottom: 2rem;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    margin-bottom: 1.5rem;
+    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================================================
    GAME INFO SECTION
    ============================================================================ */
-
 .game-info {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 30px;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .info-item {
@@ -147,23 +105,29 @@ body {
 }
 
 .info-label {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.75);
     font-size: 0.9rem;
     font-weight: 500;
-    margin-bottom: 10px;
+    margin-bottom: 0.75rem;
+}
+
+.game-code-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .info-value {
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    margin-bottom: 10px;
 }
 
 .game-code {
     font-family: 'Courier New', monospace;
     letter-spacing: 3px;
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     color: #4CAF50;
     text-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
 }
@@ -172,59 +136,119 @@ body {
     background: rgba(76, 175, 80, 0.2);
     border: 1px solid #4CAF50;
     color: white;
-    padding: 8px 15px;
-    border-radius: 10px;
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.copy-code-btn:hover {
+.copy-code-btn:active {
     background: rgba(76, 175, 80, 0.3);
-    transform: translateY(-2px);
+    transform: scale(0.98);
 }
 
-.copy-code-btn:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.copy-code-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.code-hint {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.qr-code-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .qr-code-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 200px;
+    min-height: 180px;
     background: white;
-    border-radius: 10px;
-    padding: 10px;
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    width: 100%;
+    max-width: 220px;
+}
+
+.qr-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    color: #667eea;
+}
+
+.spinner-small {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(102, 126, 234, 0.2);
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.qr-description {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.qr-text-code {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.code-prefix {
+    font-weight: 500;
+}
+
+.code-value {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    letter-spacing: 2px;
 }
 
 /* ============================================================================
    GAME SETTINGS
    ============================================================================ */
-
 .game-settings {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 30px;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .settings-title {
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    margin-bottom: 20px;
+    margin-bottom: 1.25rem;
     text-align: center;
 }
 
 .setting-row {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 15px 20px;
-    margin-bottom: 15px;
+    border-radius: 0.875rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
 }
 
 .setting-row:last-of-type {
@@ -237,18 +261,18 @@ body {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
 }
 
 .setting-content {
     color: white;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
 }
 
 .categories-tags {
     display: flex;
-    gap: 10px;
+    gap: 0.625rem;
     flex-wrap: wrap;
 }
 
@@ -256,17 +280,66 @@ body {
     background: rgba(76, 175, 80, 0.2);
     border: 1px solid #4CAF50;
     color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    border-radius: 1.25rem;
     font-size: 0.9rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
 .category-tag-icon {
     font-size: 1.1rem;
+}
+
+.loading-text-muted {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+.privacy-notice {
+    background: rgba(33, 150, 243, 0.1);
+    border: 1.5px solid rgba(33, 150, 243, 0.3);
+    border-radius: 0.875rem;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.privacy-notice-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.privacy-notice-content {
+    flex: 1;
+}
+
+.privacy-notice-content strong {
+    display: block;
+    color: white;
+    margin-bottom: 0.375rem;
+    font-size: 0.95rem;
+}
+
+.privacy-notice-content p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.privacy-link-inline {
+    color: #4facfe;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.privacy-link-inline:active {
+    color: #2196F3;
 }
 
 .edit-settings-btn {
@@ -274,44 +347,41 @@ body {
     background: rgba(33, 150, 243, 0.2);
     border: 1px solid #2196F3;
     color: white;
-    padding: 12px 20px;
-    border-radius: 12px;
+    padding: 0.875rem 1.25rem;
+    border-radius: 0.875rem;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 15px;
+    transition: all 0.2s;
+    margin-top: 1rem;
     font-family: inherit;
+    min-height: 54px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.edit-settings-btn:hover {
+.edit-settings-btn:active {
     background: rgba(33, 150, 243, 0.3);
-    transform: translateY(-2px);
-}
-
-.edit-settings-btn:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+    transform: scale(0.98);
 }
 
 /* ============================================================================
    PLAYERS SECTION
    ============================================================================ */
-
 .players-section {
-    margin-bottom: 30px;
+    margin-bottom: 2rem;
 }
 
 .players-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 1.25rem;
 }
 
 .players-title {
     color: white;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
@@ -319,16 +389,16 @@ body {
     background: rgba(76, 175, 80, 0.2);
     border: 1px solid #4CAF50;
     color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    border-radius: 1.25rem;
     font-size: 0.9rem;
     font-weight: 600;
 }
 
 .players-list {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 20px;
+    border-radius: 1rem;
+    padding: 1.25rem;
     min-height: 200px;
 }
 
@@ -336,43 +406,33 @@ body {
     text-align: center;
     color: rgba(255, 255, 255, 0.6);
     font-style: italic;
-    padding: 40px 20px;
+    padding: 2.5rem 1.25rem;
 }
 
 /* ============================================================================
    PLAYER ITEMS
-   ✅ P1 UI/UX: Enhanced host highlighting and player sorting
-   ✅ P1 STABILITY: Offline player indicators
    ============================================================================ */
-
 .player-item {
     display: flex;
     align-items: center;
-    gap: 15px;
-    padding: 15px 20px;
+    gap: 0.875rem;
+    padding: 0.875rem 1.25rem;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    margin-bottom: 10px;
-    transition: all 0.3s ease;
+    border-radius: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s;
     animation: slideIn 0.3s ease;
 }
 
 @keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
 }
 
 .player-item:last-child {
     margin-bottom: 0;
 }
 
-/* ✅ P1 UI/UX: Enhanced host highlighting - clearly visible */
 .player-item.host {
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(76, 175, 80, 0.15));
     border: 2px solid #4CAF50;
@@ -384,7 +444,6 @@ body {
     border: 1px solid #2196F3;
 }
 
-/* ✅ P1 STABILITY: Offline player styling */
 .player-item.offline {
     background: rgba(158, 158, 158, 0.2);
     border: 1px solid #9E9E9E;
@@ -400,7 +459,6 @@ body {
     color: rgba(255, 255, 255, 0.6);
 }
 
-/* ✅ P1 STABILITY: Offline status indicator */
 .player-status.offline-status {
     color: #FF9800;
     font-weight: 600;
@@ -408,23 +466,19 @@ body {
 }
 
 @keyframes blink {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 .player-avatar {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea, #764ba2);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: bold;
     color: white;
     flex-shrink: 0;
@@ -437,9 +491,9 @@ body {
 
 .player-name {
     color: white;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 0.25rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -447,10 +501,10 @@ body {
 
 .player-status {
     color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
 .status-indicator {
@@ -463,12 +517,8 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.6;
-    }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 .kick-btn {
@@ -478,43 +528,38 @@ body {
     width: 35px;
     height: 35px;
     border-radius: 50%;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     font-family: inherit;
+    touch-action: manipulation;
 }
 
-.kick-btn:hover {
+.kick-btn:active {
     background: rgba(244, 67, 54, 0.4);
-    transform: scale(1.1);
-}
-
-.kick-btn:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+    transform: scale(0.98);
 }
 
 /* ============================================================================
    JOIN INFO
    ============================================================================ */
-
 .join-info {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 20px;
-    margin-bottom: 30px;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
     text-align: center;
 }
 
 .join-title {
     color: white;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
 }
 
 .join-description {
@@ -526,29 +571,30 @@ body {
 /* ============================================================================
    CONTROLS
    ============================================================================ */
-
 .controls {
     display: flex;
-    gap: 15px;
-    justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .btn-start,
 .btn-ready,
 .btn-leave {
-    padding: 15px 30px;
-    border-radius: 15px;
-    font-weight: 600;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.875rem;
+    font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     border: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 180px;
+    gap: 0.5rem;
+    min-height: 54px;
     font-family: inherit;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-start {
@@ -563,14 +609,9 @@ body {
     pointer-events: auto;
 }
 
-.btn-start.enabled:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-}
-
-.btn-start:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.btn-start.enabled:active {
+    transform: scale(0.98);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .btn-ready {
@@ -582,18 +623,13 @@ body {
     background: linear-gradient(135deg, #4CAF50, #45a049);
 }
 
-.btn-ready:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(33, 150, 243, 0.4);
+.btn-ready:active {
+    transform: scale(0.98);
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
 }
 
-.btn-ready.ready:hover {
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-}
-
-.btn-ready:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.btn-ready.ready:active {
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .btn-leave {
@@ -602,52 +638,167 @@ body {
     color: white;
 }
 
-.btn-leave:hover {
+.btn-leave:active {
     background: rgba(244, 67, 54, 0.3);
-    transform: translateY(-2px);
+    transform: scale(0.98);
 }
 
-.btn-leave:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+/* ============================================================================
+   CONFIRMATION DIALOG
+   ============================================================================ */
+.confirmation-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+}
+
+.confirmation-dialog:not([hidden]) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dialog-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+}
+
+.dialog-content {
+    position: relative;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(25px);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 1.25rem;
+    padding: 2rem 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-title {
+    color: white;
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.dialog-description {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.dialog-description strong {
+    display: block;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+#connected-players-count {
+    color: #4CAF50;
+    font-weight: 700;
+}
+
+.dialog-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-cancel,
+.btn-confirm {
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: 0.875rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    min-height: 54px;
+    touch-action: manipulation;
+}
+
+.btn-cancel {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.btn-cancel:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.98);
+}
+
+.btn-confirm {
+    background: linear-gradient(135deg, #F44336, #D32F2F);
+    color: white;
+}
+
+.btn-confirm:active {
+    transform: scale(0.98);
+    box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
 }
 
 /* ============================================================================
    ROLE-BASED VISIBILITY
    ============================================================================ */
-
-.host-only {
-    display: none;
-}
-
+.host-only,
 .guest-only {
     display: none;
 }
 
-.host-only.show {
-    display: block;
-}
-
+.host-only.show,
 .guest-only.show {
     display: block;
 }
 
-/* For flex/inline-flex elements */
 .btn-start.host-only.show,
 .btn-ready.guest-only.show {
     display: inline-flex;
 }
 
 /* ============================================================================
-   LOADING SPINNER
+   PRIVACY FOOTER
    ============================================================================ */
+.privacy-footer {
+    text-align: center;
+    padding: 1.25rem;
+    margin-top: 2rem;
+}
 
+.privacy-link {
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.privacy-link:active {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.footer-separator {
+    margin: 0 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* ============================================================================
+   LOADING
+   ============================================================================ */
 .loading {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
@@ -656,7 +807,7 @@ body {
     z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
 }
 
 .loading.show {
@@ -677,55 +828,163 @@ body {
     color: white;
     font-size: 1.1rem;
     font-weight: 600;
-    margin-top: 20px;
+    margin-top: 1.25rem;
 }
 
 @keyframes spin {
-    0% {
-        transform: rotate(0deg);
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* ============================================================================
+   TABLET (640px+)
+   ============================================================================ */
+@media (min-width: 640px) {
+    .screen-title {
+        font-size: 2.25rem;
+        margin-bottom: 2rem;
     }
-    100% {
-        transform: rotate(360deg);
+
+    .glass-card {
+        padding: 2.5rem 2rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+
+    .controls {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .btn-start,
+    .btn-ready,
+    .btn-leave {
+        min-width: 180px;
+        flex: 0 0 auto;
+    }
+
+    .dialog-buttons {
+        flex-direction: row;
     }
 }
 
 /* ============================================================================
-   MOBILE RESPONSIVE
+   DESKTOP (1024px+)
    ============================================================================ */
-
-@media (max-width: 768px) {
-    body {
-        padding-top: 1rem;
-    }
-
+@media (min-width: 1024px) {
     .screen-title {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .app-container {
-        padding: 15px;
+        font-size: 2.5rem;
     }
 
     .glass-card {
-        padding: 25px 20px;
+        padding: 2.5rem;
     }
 
-    .info-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
+    /* Hover Effects */
+    .copy-code-btn:hover {
+        background: rgba(76, 175, 80, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .edit-settings-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .btn-start.enabled:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+
+    .btn-ready:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
+    }
+
+    .btn-ready.ready:hover {
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+
+    .btn-leave:hover {
+        background: rgba(244, 67, 54, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .kick-btn:hover {
+        background: rgba(244, 67, 54, 0.4);
+        transform: scale(1.1);
+    }
+
+    .privacy-link:hover {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .privacy-link-inline:hover {
+        color: #2196F3;
+    }
+}
+
+/* ============================================================================
+   SMALL MOBILE (480px and below)
+   ============================================================================ */
+@media (max-width: 480px) {
+    body {
+        padding-top: 0.75rem;
+    }
+
+    .screen-title {
+        font-size: 1.75rem;
+    }
+
+    .glass-card {
+        padding: 1.5rem 1rem;
+    }
+
+    .game-info {
+        padding: 1.25rem;
+    }
+
+    .game-code {
+        font-size: 1.4rem;
     }
 
     .qr-code-container {
         min-height: 150px;
+        max-width: 180px;
     }
 
-    .game-code {
-        font-size: 1.5rem;
+    .game-settings {
+        padding: 1.25rem;
     }
 
-    .players-title {
-        font-size: 1.1rem;
+    .players-list {
+        padding: 1rem;
+    }
+
+    .player-item {
+        padding: 0.75rem 1rem;
+        gap: 0.75rem;
     }
 
     .player-avatar {
@@ -738,49 +997,14 @@ body {
         font-size: 1rem;
     }
 
-    .controls {
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .btn-start,
-    .btn-ready,
-    .btn-leave {
-        min-width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .screen-title {
-        font-size: 1.8rem;
-    }
-
-    .glass-card {
-        padding: 20px 15px;
-    }
-
-    .game-info {
-        padding: 20px 15px;
-    }
-
-    .game-settings {
-        padding: 20px 15px;
-    }
-
-    .players-list {
-        padding: 15px;
-    }
-
-    .player-item {
-        padding: 12px 15px;
-        gap: 12px;
+    .players-title {
+        font-size: 1.1rem;
     }
 }
 
 /* ============================================================================
-   REDUCED MOTION SUPPORT
+   REDUCED MOTION
    ============================================================================ */
-
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -788,30 +1012,21 @@ body {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
     }
 
-    .particle {
-        animation: none;
-    }
-
-    .spinner {
-        animation: none;
-    }
-
-    .status-indicator {
-        animation: none;
-    }
-
-    .player-item {
-        animation: none;
+    .particle,
+    .spinner,
+    .spinner-small,
+    .status-indicator,
+    .player-item,
+    .offline-status {
+        animation: none !important;
     }
 }
 
 /* ============================================================================
-   HIGH CONTRAST MODE SUPPORT
+   HIGH CONTRAST
    ============================================================================ */
-
 @media (prefers-contrast: more) {
     .player-item,
     .btn-start,
@@ -829,13 +1044,14 @@ body {
 /* ============================================================================
    PRINT STYLES
    ============================================================================ */
-
 @media print {
     .background-particles,
     .loading,
     .controls,
     .edit-settings-btn,
-    .kick-btn {
+    .kick-btn,
+    .privacy-footer,
+    .confirmation-dialog {
         display: none !important;
     }
 

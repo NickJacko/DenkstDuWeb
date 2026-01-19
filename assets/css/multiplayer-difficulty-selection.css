@@ -1,12 +1,11 @@
 /* ============================================================================
-   NO-CAP - MULTIPLAYER DIFFICULTY SELECTION STYLES
-   Version 1.0 - Extracted from inline styles
+   NO-CAP MULTIPLAYER-DIFFICULTY-SELECTION.CSS - KOMPLETT NEU
+   Mobile-First, Ultra-Smooth, Production Ready
    ============================================================================ */
 
 /* ============================================================================
-   RESET & BASE STYLES
+   RESET & BASE
    ============================================================================ */
-
 * {
     margin: 0;
     padding: 0;
@@ -18,20 +17,16 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     overflow-x: hidden;
-    padding-top: 2rem;
+    padding-top: 1rem;
     color: white;
 }
 
 /* ============================================================================
-   ANIMATED BACKGROUND
+   BACKGROUND PARTICLES
    ============================================================================ */
-
 .background-particles {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     overflow: hidden;
     z-index: -1;
 }
@@ -43,58 +38,22 @@ body {
     animation: float 8s ease-in-out infinite;
 }
 
-.particle:nth-child(1) {
-    width: 80px;
-    height: 80px;
-    left: 10%;
-    animation-delay: 0s;
-}
-
-.particle:nth-child(2) {
-    width: 120px;
-    height: 120px;
-    left: 70%;
-    animation-delay: 2s;
-}
-
-.particle:nth-child(3) {
-    width: 60px;
-    height: 60px;
-    left: 30%;
-    animation-delay: 4s;
-}
-
-.particle:nth-child(4) {
-    width: 100px;
-    height: 100px;
-    left: 80%;
-    animation-delay: 1s;
-}
-
-.particle:nth-child(5) {
-    width: 40px;
-    height: 40px;
-    left: 50%;
-    animation-delay: 3s;
-}
+.particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+.particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 2s; }
+.particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 4s; }
+.particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 1s; }
+.particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 3s; }
 
 @keyframes float {
-    0%, 100% {
-        transform: translateY(0px) rotate(0deg);
-        opacity: 0.3;
-    }
-    50% {
-        transform: translateY(-50px) rotate(180deg);
-        opacity: 0.6;
-    }
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+    50% { transform: translateY(-50px) rotate(180deg); opacity: 0.6; }
 }
 
 /* ============================================================================
    LAYOUT
    ============================================================================ */
-
 .app-container {
-    padding: 20px;
+    padding: 1.25rem;
     max-width: 1000px;
     margin: 0 auto;
     min-height: 100vh;
@@ -104,85 +63,81 @@ body {
 }
 
 .glass-card {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(20px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 40px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 1.25rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem 1.5rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================================================
    BACK BUTTON
    ============================================================================ */
-
 .back-button {
     position: fixed;
-    top: 20px;
-    left: 20px;
-    background: rgba(255, 255, 255, 0.2);
+    top: max(1rem, env(safe-area-inset-top));
+    left: 1rem;
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     color: white;
-    padding: 12px 20px;
-    border-radius: 25px;
-    font-size: 16px;
+    padding: 0.75rem 1.25rem;
+    border-radius: 1.5rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     z-index: 1000;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.back-button:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-}
-
-.back-button:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.back-button:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.98);
 }
 
 /* ============================================================================
    SCREEN TITLE
    ============================================================================ */
-
 .screen-title {
     color: white;
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 800;
     text-align: center;
-    margin-bottom: 2rem;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    margin-bottom: 1.5rem;
+    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================================================
    MULTIPLAYER HEADER
    ============================================================================ */
-
 .multiplayer-header {
     background: rgba(255, 255, 255, 0.1);
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 30px;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
     text-align: center;
 }
 
 .host-info {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 1rem;
     align-items: center;
 }
 
 .host-details {
-    text-align: left;
+    text-align: center;
 }
 
 .host-name {
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 600;
-    margin-bottom: 5px;
+    margin-bottom: 0.375rem;
 }
 
 .host-indicator {
@@ -192,18 +147,18 @@ body {
 }
 
 .game-id-section {
-    text-align: right;
+    text-align: center;
 }
 
 .game-id-label {
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.9rem;
-    margin-bottom: 5px;
+    margin-bottom: 0.375rem;
 }
 
 .game-id-display {
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
     font-family: 'Courier New', monospace;
     letter-spacing: 2px;
@@ -212,12 +167,11 @@ body {
 /* ============================================================================
    DESCRIPTION
    ============================================================================ */
-
 .selection-description {
     color: rgba(255, 255, 255, 0.9);
     text-align: center;
-    margin-bottom: 30px;
-    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    font-size: 1.05rem;
     font-weight: 500;
     line-height: 1.5;
 }
@@ -225,19 +179,18 @@ body {
 /* ============================================================================
    SELECTED CATEGORIES SECTION
    ============================================================================ */
-
 .selected-categories-section {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 20px;
-    margin-bottom: 30px;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
 }
 
 .section-title {
     color: white;
     font-size: 1rem;
     font-weight: 600;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
     text-align: center;
 }
 
@@ -245,190 +198,213 @@ body {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
+    gap: 0.625rem;
 }
 
 .category-tag {
     background: rgba(76, 175, 80, 0.2);
     border: 1px solid #4CAF50;
     color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    border-radius: 1.25rem;
     font-size: 0.9rem;
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
 .tag-icon {
     font-size: 1.1rem;
 }
 
-.tag-name {
-    font-weight: 500;
-}
-
 /* ============================================================================
    DIFFICULTY GRID
    ============================================================================ */
-
 .difficulty-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-@media (min-width: 768px) {
-    .difficulty-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 25px;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
 }
 
 /* ============================================================================
    DIFFICULTY CARDS
    ============================================================================ */
-
 .difficulty-card {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
+    border-radius: 1rem;
     border: 2px solid rgba(255, 255, 255, 0.2);
-    padding: 25px;
+    padding: 1.5rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     position: relative;
     overflow: hidden;
     text-align: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.difficulty-card:hover {
-    transform: translateY(-5px);
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.difficulty-card:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.difficulty-card:active {
+    transform: scale(0.98);
 }
 
 .difficulty-card.selected {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 35px rgba(76, 175, 80, 0.3);
+    transform: scale(1.02);
 }
 
 /* Easy Card */
 .difficulty-card[data-difficulty="easy"] {
-    border-color: #4CAF50;
+    border-color: rgba(76, 175, 80, 0.5);
 }
 
 .difficulty-card[data-difficulty="easy"].selected {
     background: rgba(76, 175, 80, 0.2);
     border-color: #4CAF50;
-    box-shadow: 0 15px 35px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
 }
 
 /* Medium Card */
 .difficulty-card[data-difficulty="medium"] {
-    border-color: #FF9800;
+    border-color: rgba(255, 152, 0, 0.5);
 }
 
 .difficulty-card[data-difficulty="medium"].selected {
     background: rgba(255, 152, 0, 0.2);
     border-color: #FF9800;
-    box-shadow: 0 15px 35px rgba(255, 152, 0, 0.3);
+    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.3);
 }
 
 /* Hard Card */
 .difficulty-card[data-difficulty="hard"] {
-    border-color: #F44336;
+    border-color: rgba(244, 67, 54, 0.5);
 }
 
 .difficulty-card[data-difficulty="hard"].selected {
     background: rgba(244, 67, 54, 0.2);
     border-color: #F44336;
-    box-shadow: 0 15px 35px rgba(244, 67, 54, 0.3);
+    box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
 }
 
 /* ============================================================================
-   DIFFICULTY CARD CONTENT
+   DIFFICULTY CONTENT
    ============================================================================ */
-
 .difficulty-header {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
 }
 
 .difficulty-icon {
-    font-size: 3rem;
-    margin-bottom: 10px;
+    font-size: 2.5rem;
+    margin-bottom: 0.625rem;
 }
 
 .difficulty-name {
     color: white;
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
 }
 
 .difficulty-description {
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.9rem;
     line-height: 1.4;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
 }
 
 .difficulty-penalty {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 12px;
+    border-radius: 0.75rem;
+    padding: 0.875rem;
     color: white;
     font-weight: 600;
     font-size: 0.9rem;
-    margin-bottom: 8px;
+    margin-bottom: 0.625rem;
 }
 
 .difficulty-formula {
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 0.625rem;
+    padding: 0.625rem;
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.85rem;
     font-family: 'Courier New', monospace;
 }
 
 /* ============================================================================
+   PLAYERS STATUS SECTION
+   ============================================================================ */
+.players-status-section {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.status-title {
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.players-status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.loading-players {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 1rem;
+}
+
+.status-summary {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
+}
+
+/* ============================================================================
    CONTROLS
    ============================================================================ */
-
 .controls {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 15px;
+    gap: 1rem;
     text-align: center;
 }
 
 .btn-continue {
     width: 100%;
-    max-width: 400px;
+    max-width: 100%;
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
     border: none;
-    padding: 18px 30px;
-    border-radius: 15px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border-radius: 0.875rem;
+    font-size: 1.05rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     opacity: 0.5;
     pointer-events: none;
     font-family: inherit;
+    min-height: 54px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-continue.enabled {
@@ -436,14 +412,9 @@ body {
     pointer-events: auto;
 }
 
-.btn-continue.enabled:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-}
-
-.btn-continue:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.btn-continue.enabled:active {
+    transform: scale(0.98);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .btn-continue:disabled {
@@ -451,15 +422,161 @@ body {
 }
 
 /* ============================================================================
-   LOADING SPINNER
+   FSK CONFIRMATION DIALOG
    ============================================================================ */
+.fsk-confirmation-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+}
 
+.fsk-confirmation-dialog:not([hidden]) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dialog-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+}
+
+.dialog-content {
+    position: relative;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(25px);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 1.25rem;
+    padding: 2rem 1.5rem;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-title {
+    color: white;
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.dialog-description {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    text-align: center;
+}
+
+.dialog-description strong {
+    color: white;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.fsk-warning-box {
+    background: rgba(255, 152, 0, 0.15);
+    border: 1.5px solid rgba(255, 152, 0, 0.4);
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.warning-icon {
+    font-size: 1.25rem;
+}
+
+.fsk-warning-box span:last-child {
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.dialog-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-cancel,
+.btn-confirm-fsk {
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: 0.875rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    min-height: 54px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-cancel {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.btn-cancel:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.98);
+}
+
+.btn-confirm-fsk {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+}
+
+.btn-confirm-fsk:active {
+    transform: scale(0.98);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+/* ============================================================================
+   PRIVACY FOOTER
+   ============================================================================ */
+.privacy-footer {
+    text-align: center;
+    padding: 1.25rem;
+    margin-top: 2rem;
+}
+
+.privacy-link {
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.privacy-link:active {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.footer-separator {
+    margin: 0 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* ============================================================================
+   LOADING
+   ============================================================================ */
 .loading {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
@@ -468,7 +585,7 @@ body {
     z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
 }
 
 .loading.show {
@@ -489,83 +606,125 @@ body {
     color: white;
     font-size: 1.1rem;
     font-weight: 600;
-    margin-top: 20px;
+    margin-top: 1.25rem;
 }
 
 @keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* ============================================================================
-   MOBILE RESPONSIVE
+   TABLET (640px+)
    ============================================================================ */
-
-@media (max-width: 768px) {
-    body {
-        padding-top: 1rem;
-    }
-
+@media (min-width: 640px) {
     .screen-title {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .app-container {
-        padding: 15px;
+        font-size: 2.25rem;
+        margin-bottom: 2rem;
     }
 
     .glass-card {
-        padding: 25px 20px;
+        padding: 2.5rem 2rem;
+    }
+
+    .difficulty-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
     }
 
     .host-info {
-        flex-direction: column;
-        text-align: center;
-        gap: 15px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .host-details,
     .game-id-section {
-        text-align: center;
+        text-align: left;
     }
 
-    .game-id-display {
-        font-size: 1.2rem;
+    .game-id-section {
+        text-align: right;
+    }
+
+    .btn-continue {
+        max-width: 400px;
+    }
+
+    .dialog-buttons {
+        flex-direction: row;
+    }
+}
+
+/* ============================================================================
+   DESKTOP (1024px+)
+   ============================================================================ */
+@media (min-width: 1024px) {
+    .screen-title {
+        font-size: 2.5rem;
+    }
+
+    .glass-card {
+        padding: 2.5rem;
     }
 
     .difficulty-grid {
-        gap: 15px;
+        gap: 1.75rem;
+    }
+
+    /* Hover Effects */
+    .back-button:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .difficulty-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-continue.enabled:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+
+    .privacy-link:hover {
+        color: rgba(255, 255, 255, 0.9);
+    }
+}
+
+/* ============================================================================
+   SMALL MOBILE (480px and below)
+   ============================================================================ */
+@media (max-width: 480px) {
+    body {
+        padding-top: 0.75rem;
+    }
+
+    .screen-title {
+        font-size: 1.75rem;
+    }
+
+    .glass-card {
+        padding: 1.5rem 1rem;
+    }
+
+    .difficulty-card {
+        padding: 1.25rem;
     }
 
     .difficulty-icon {
-        font-size: 2.5rem;
+        font-size: 2.25rem;
     }
 
     .difficulty-name {
         font-size: 1.2rem;
     }
 
-    .btn-continue {
-        max-width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .screen-title {
-        font-size: 1.8rem;
-    }
-
-    .glass-card {
-        padding: 20px 15px;
-    }
-
-    .difficulty-card {
-        padding: 20px;
+    .game-id-display {
+        font-size: 1.2rem;
     }
 
     .selection-description {
@@ -574,9 +733,8 @@ body {
 }
 
 /* ============================================================================
-   REDUCED MOTION SUPPORT
+   REDUCED MOTION
    ============================================================================ */
-
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -584,22 +742,17 @@ body {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
     }
 
-    .particle {
-        animation: none;
-    }
-
+    .particle,
     .spinner {
-        animation: none;
+        animation: none !important;
     }
 }
 
 /* ============================================================================
-   HIGH CONTRAST MODE SUPPORT
+   HIGH CONTRAST
    ============================================================================ */
-
 @media (prefers-contrast: more) {
     .difficulty-card,
     .btn-continue {
@@ -614,11 +767,12 @@ body {
 /* ============================================================================
    PRINT STYLES
    ============================================================================ */
-
 @media print {
     .background-particles,
     .back-button,
-    .loading {
+    .loading,
+    .fsk-confirmation-dialog,
+    .privacy-footer {
         display: none !important;
     }
 

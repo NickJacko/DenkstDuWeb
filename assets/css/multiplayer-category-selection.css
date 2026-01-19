@@ -1,12 +1,11 @@
 /* ============================================================================
-   NO-CAP - MULTIPLAYER CATEGORY SELECTION STYLES
-   Version 1.0 - Extracted from inline styles
+   NO-CAP MULTIPLAYER-CATEGORY-SELECTION.CSS - KOMPLETT NEU
+   Mobile-First, Ultra-Smooth, Production Ready
    ============================================================================ */
 
 /* ============================================================================
-   RESET & BASE STYLES
+   RESET & BASE
    ============================================================================ */
-
 * {
     margin: 0;
     padding: 0;
@@ -18,20 +17,16 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     overflow-x: hidden;
-    padding-top: 2rem;
+    padding-top: 1rem;
     color: white;
 }
 
 /* ============================================================================
-   ANIMATED BACKGROUND
+   BACKGROUND PARTICLES
    ============================================================================ */
-
 .background-particles {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     overflow: hidden;
     z-index: -1;
 }
@@ -43,77 +38,34 @@ body {
     animation: float 6s ease-in-out infinite;
 }
 
-.particle:nth-child(1) {
-    width: 80px;
-    height: 80px;
-    left: 10%;
-    animation-delay: 0s;
-}
-
-.particle:nth-child(2) {
-    width: 120px;
-    height: 120px;
-    left: 70%;
-    animation-delay: 1s;
-}
-
-.particle:nth-child(3) {
-    width: 60px;
-    height: 60px;
-    left: 30%;
-    animation-delay: 2s;
-}
-
-.particle:nth-child(4) {
-    width: 100px;
-    height: 100px;
-    left: 80%;
-    animation-delay: 3s;
-}
-
-.particle:nth-child(5) {
-    width: 40px;
-    height: 40px;
-    left: 50%;
-    animation-delay: 4s;
-}
+.particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+.particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
+.particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
+.particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
+.particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
 
 @keyframes float {
-    0%, 100% {
-        transform: translateY(0px) rotate(0deg);
-        opacity: 0.3;
-    }
-    25% {
-        transform: translateY(-20px) rotate(90deg);
-        opacity: 0.6;
-    }
-    50% {
-        transform: translateY(0px) rotate(180deg);
-        opacity: 0.3;
-    }
-    75% {
-        transform: translateY(-10px) rotate(270deg);
-        opacity: 0.6;
-    }
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+    50% { transform: translateY(-30px) rotate(180deg); opacity: 0.6; }
 }
 
 /* ============================================================================
    LAYOUT
    ============================================================================ */
-
 .app-container {
-    padding: 20px;
+    padding: 1.25rem;
     max-width: 1200px;
     margin: 0 auto;
 }
 
 .glass-card {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(20px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 40px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 1.25rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem 1.5rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 1150px;
 }
@@ -121,75 +73,161 @@ body {
 /* ============================================================================
    BACK BUTTON
    ============================================================================ */
-
 .back-button {
     position: fixed;
-    top: 20px;
-    left: 20px;
-    background: rgba(255, 255, 255, 0.2);
+    top: max(1rem, env(safe-area-inset-top));
+    left: 1rem;
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     color: white;
-    padding: 12px 20px;
-    border-radius: 25px;
-    font-size: 16px;
+    padding: 0.75rem 1.25rem;
+    border-radius: 1.5rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     z-index: 1000;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.back-button:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-}
-
-.back-button:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.back-button:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.98);
 }
 
 /* ============================================================================
    SCREEN TITLE
    ============================================================================ */
-
 .screen-title {
     color: white;
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 800;
     text-align: center;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+   PLAYER NAME SECTION
+   ============================================================================ */
+.player-name-section {
+    max-width: 550px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem;
+    text-align: center;
+}
+
+.section-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+}
+
+.section-description {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.05rem;
+    line-height: 1.5;
     margin-bottom: 2rem;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    font-weight: 500;
+}
+
+.name-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.player-name-input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    min-height: 54px;
+    border-radius: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(15px);
+    font-size: 1.05rem;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    outline: none;
+    transition: all 0.2s;
+}
+
+.player-name-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+.player-name-input:focus {
+    border-color: rgba(79, 172, 254, 0.6);
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.2);
+    transform: translateY(-1px);
+}
+
+.confirm-name-btn {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    min-height: 54px;
+    border: none;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.confirm-name-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.confirm-name-btn:not(:disabled):active {
+    transform: scale(0.98);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.25);
 }
 
 /* ============================================================================
    MULTIPLAYER HEADER
    ============================================================================ */
-
 .multiplayer-header {
     background: rgba(255, 255, 255, 0.1);
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 30px;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
     text-align: center;
 }
 
 .host-info {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 1rem;
     align-items: center;
-    margin-bottom: 15px;
 }
 
 .host-details {
-    text-align: left;
+    text-align: center;
 }
 
 .host-name {
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 600;
-    margin-bottom: 5px;
+    margin-bottom: 0.375rem;
 }
 
 .host-indicator {
@@ -199,18 +237,18 @@ body {
 }
 
 .game-id-section {
-    text-align: right;
+    text-align: center;
 }
 
 .game-id-label {
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.9rem;
-    margin-bottom: 5px;
+    margin-bottom: 0.375rem;
 }
 
 .game-id-display {
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
     font-family: 'Courier New', monospace;
     letter-spacing: 2px;
@@ -219,12 +257,11 @@ body {
 /* ============================================================================
    DESCRIPTION
    ============================================================================ */
-
 .selection-description {
     color: rgba(255, 255, 255, 0.9);
     text-align: center;
-    margin-bottom: 40px;
-    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    font-size: 1.05rem;
     font-weight: 500;
     line-height: 1.5;
 }
@@ -232,93 +269,49 @@ body {
 /* ============================================================================
    CATEGORY GRID
    ============================================================================ */
-
 .category-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-@media (min-width: 768px) {
-    .category-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 25px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .category-grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr;
-        gap: 25px;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
 }
 
 /* ============================================================================
    CATEGORY CARDS
-   ✅ P1 UI/UX: Guest-disabled styles added
    ============================================================================ */
-
 .category-card {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
+    border-radius: 1rem;
     border: 2px solid rgba(255, 255, 255, 0.2);
-    padding: 25px;
+    padding: 1.5rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     position: relative;
     overflow: hidden;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.category-card:hover:not(.locked):not(.guest-disabled) {
-    transform: translateY(-5px);
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.15);
+.category-card:active:not(.locked):not(.guest-disabled) {
+    transform: scale(0.98);
 }
 
-.category-card:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
-}
-
-.category-card.locked {
+.category-card.locked,
+.category-card.guest-disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
 
-/* ✅ P1 UI/UX: Guest-disabled cards have distinct styling */
 .category-card.guest-disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
     background: rgba(158, 158, 158, 0.1);
     border: 2px dashed rgba(255, 255, 255, 0.3);
-}
-
-.category-card.guest-disabled:hover {
-    transform: none;
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(158, 158, 158, 0.15);
-}
-
-/* ✅ P1 UI/UX: Add subtle pulse animation for guest-disabled cards */
-.category-card.guest-disabled .locked-overlay {
-    animation: guestPulse 3s ease-in-out infinite;
-}
-
-@keyframes guestPulse {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.7;
-    }
 }
 
 .category-card.selected {
     background: rgba(76, 175, 80, 0.2);
     border-color: #4CAF50;
-    transform: translateY(-8px);
-    box-shadow: 0 15px 35px rgba(76, 175, 80, 0.3);
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
 }
 
 .category-card.fsk0.selected {
@@ -344,120 +337,87 @@ body {
 /* ============================================================================
    LOCKED OVERLAY
    ============================================================================ */
-
 .locked-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(5px);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border-radius: 15px;
+    border-radius: 1rem;
     z-index: 10;
-    gap: 10px;
+    gap: 0.625rem;
 }
 
 .lock-icon {
-    font-size: 3rem;
-    animation: shake 2s ease-in-out infinite;
-}
-
-@keyframes shake {
-    0%, 100% {
-        transform: rotate(0deg);
-    }
-    25% {
-        transform: rotate(-10deg);
-    }
-    75% {
-        transform: rotate(10deg);
-    }
+    font-size: 2.5rem;
 }
 
 .lock-message {
     color: white;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     text-align: center;
+    padding: 0 1rem;
 }
 
 .unlock-btn {
-    margin-top: 10px;
-    padding: 10px 20px;
+    margin-top: 0.625rem;
+    padding: 0.625rem 1.25rem;
     background: linear-gradient(45deg, #FFD700, #FFA500);
     border: none;
-    border-radius: 20px;
+    border-radius: 1.25rem;
     color: white;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     font-family: inherit;
+    touch-action: manipulation;
 }
 
-.unlock-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
-}
-
-.unlock-btn:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.unlock-btn:active {
+    transform: scale(0.98);
 }
 
 /* ============================================================================
    PREMIUM BADGE
    ============================================================================ */
-
 .premium-badge {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 0.625rem;
+    right: 0.625rem;
     background: linear-gradient(45deg, #FFD700, #FFA500);
     color: white;
-    padding: 5px 12px;
-    border-radius: 15px;
+    padding: 0.375rem 0.75rem;
+    border-radius: 1rem;
     font-size: 0.7rem;
     font-weight: 700;
     z-index: 5;
-    animation: pulse-premium 2s ease-in-out infinite;
-}
-
-@keyframes pulse-premium {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.05);
-    }
 }
 
 /* ============================================================================
-   CATEGORY CARD CONTENT
+   CATEGORY CONTENT
    ============================================================================ */
-
 .category-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
 }
 
 .category-icon {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
     line-height: 1;
 }
 
 .fsk-badge {
     background: rgba(255, 255, 255, 0.9);
     color: #333;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 1.25rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
 }
@@ -484,33 +444,33 @@ body {
 
 .category-title {
     color: white;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
 }
 
 .category-description {
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.9rem;
     line-height: 1.4;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
 }
 
 .category-examples {
-    margin-top: 15px;
+    margin-top: 1rem;
 }
 
 .example-questions {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
 .example-question {
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.9);
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
     font-size: 0.8rem;
     line-height: 1.3;
     border-left: 3px solid rgba(255, 255, 255, 0.3);
@@ -520,8 +480,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 20px;
-    padding-top: 15px;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -537,23 +497,18 @@ body {
 }
 
 @keyframes blink {
-    0%, 100% {
-        opacity: 0.3;
-    }
-    50% {
-        opacity: 1;
-    }
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
 }
 
 /* ============================================================================
    SELECTION SUMMARY
    ============================================================================ */
-
 .selection-summary {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 30px;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
     text-align: center;
     display: none;
 }
@@ -564,30 +519,30 @@ body {
 
 .summary-title {
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 600;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
 }
 
 .selected-categories {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 0.625rem;
+    margin-bottom: 1rem;
 }
 
 .selected-category-tag {
     background: rgba(76, 175, 80, 0.2);
     border: 1px solid #4CAF50;
     color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    border-radius: 1.25rem;
     font-size: 0.9rem;
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
 .total-questions {
@@ -596,23 +551,138 @@ body {
 }
 
 /* ============================================================================
+   FSK OPTIONS
+   ============================================================================ */
+.fsk-options {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.options-title {
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.option-item {
+    margin-bottom: 1rem;
+}
+
+.option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.option-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.25rem;
+    cursor: pointer;
+}
+
+.option-text {
+    flex: 1;
+}
+
+.option-text strong {
+    display: block;
+    color: white;
+    margin-bottom: 0.25rem;
+}
+
+.option-text small {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.85rem;
+}
+
+.fsk-warning {
+    background: rgba(255, 152, 0, 0.15);
+    border: 1.5px solid rgba(255, 152, 0, 0.4);
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.warning-icon {
+    font-size: 1.25rem;
+}
+
+.warning-text {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* ============================================================================
+   PLAYERS LIST
+   ============================================================================ */
+.players-list-section {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.players-title {
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.players-count {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.players-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.empty-players {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 1rem;
+}
+
+.players-hint {
+    margin-top: 0.75rem;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.75rem;
+}
+
+/* ============================================================================
    PROCEED BUTTON
    ============================================================================ */
-
 .proceed-button {
     width: 100%;
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
     border: none;
-    padding: 18px 30px;
-    border-radius: 15px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border-radius: 0.875rem;
+    font-size: 1.05rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     opacity: 0.5;
     pointer-events: none;
     font-family: inherit;
+    min-height: 54px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .proceed-button.enabled {
@@ -620,14 +690,9 @@ body {
     pointer-events: auto;
 }
 
-.proceed-button.enabled:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-}
-
-.proceed-button:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.proceed-button.enabled:active {
+    transform: scale(0.98);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .proceed-button:disabled {
@@ -635,15 +700,11 @@ body {
 }
 
 /* ============================================================================
-   LOADING SPINNER
+   LOADING
    ============================================================================ */
-
 .loading {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
@@ -652,7 +713,7 @@ body {
     z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
 }
 
 .loading.show {
@@ -673,82 +734,254 @@ body {
     color: white;
     font-size: 1.1rem;
     font-weight: 600;
-    margin-top: 20px;
+    margin-top: 1.25rem;
 }
 
 @keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* ============================================================================
-   MOBILE RESPONSIVE
+   TIMEOUT DIALOG
    ============================================================================ */
+.timeout-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+}
 
-@media (max-width: 768px) {
+.timeout-dialog:not([hidden]) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dialog-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+}
+
+.dialog-content {
+    position: relative;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(25px);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 1.25rem;
+    padding: 2rem 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-title {
+    color: white;
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.dialog-description {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+#timeout-countdown {
+    font-weight: 700;
+    color: #ff9800;
+}
+
+.dialog-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: 0.875rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    min-height: 54px;
+    touch-action: manipulation;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.btn-secondary:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.98);
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+.hidden {
+    display: none !important;
+}
+
+.host-only {
+    /* Only visible to hosts */
+}
+
+/* ============================================================================
+   TABLET (640px+)
+   ============================================================================ */
+@media (min-width: 640px) {
     .screen-title {
-        font-size: 2rem;
-    }
-
-    .app-container {
-        padding: 15px;
+        font-size: 2.25rem;
+        margin-bottom: 2rem;
     }
 
     .glass-card {
-        padding: 25px 20px;
+        padding: 2.5rem 2rem;
+    }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
     }
 
     .host-info {
-        flex-direction: column;
-        text-align: center;
-        gap: 15px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .host-details,
     .game-id-section {
-        text-align: center;
+        text-align: left;
     }
 
-    .category-card {
-        padding: 20px;
+    .game-id-section {
+        text-align: right;
     }
 
-    .category-icon {
-        font-size: 2.5rem;
+    .dialog-buttons {
+        flex-direction: row;
     }
 }
 
-@media (max-width: 480px) {
-    body {
-        padding-top: 1rem;
-    }
-
+/* ============================================================================
+   DESKTOP (1024px+)
+   ============================================================================ */
+@media (min-width: 1024px) {
     .screen-title {
-        font-size: 1.8rem;
-        margin-bottom: 1.5rem;
+        font-size: 2.5rem;
     }
 
     .glass-card {
-        padding: 20px 15px;
+        padding: 2.5rem;
+    }
+
+    .category-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.75rem;
+    }
+
+    /* Hover Effects */
+    .back-button:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .category-card:hover:not(.locked):not(.guest-disabled) {
+        transform: translateY(-4px);
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .proceed-button.enabled:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+
+    .confirm-name-btn:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+
+    .unlock-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+}
+
+/* ============================================================================
+   SMALL MOBILE (480px and below)
+   ============================================================================ */
+@media (max-width: 480px) {
+    body {
+        padding-top: 0.75rem;
+    }
+
+    .screen-title {
+        font-size: 1.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .glass-card {
+        padding: 1.5rem 1rem;
+    }
+
+    .category-card {
+        padding: 1.25rem;
     }
 
     .category-title {
         font-size: 1.1rem;
     }
 
+    .category-icon {
+        font-size: 2rem;
+    }
+
     .game-id-display {
         font-size: 1.2rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .player-name-section {
+        padding: 1.5rem 1rem;
     }
 }
 
 /* ============================================================================
-   REDUCED MOTION SUPPORT
+   REDUCED MOTION
    ============================================================================ */
-
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -756,34 +989,18 @@ body {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
     }
 
-    .particle {
-        animation: none;
-    }
-
-    .spinner {
-        animation: none;
-    }
-
-    .lock-icon {
-        animation: none;
-    }
-
-    .premium-badge {
-        animation: none;
-    }
-
+    .particle,
+    .spinner,
     .loading-dots {
-        animation: none;
+        animation: none !important;
     }
 }
 
 /* ============================================================================
-   HIGH CONTRAST MODE SUPPORT
+   HIGH CONTRAST
    ============================================================================ */
-
 @media (prefers-contrast: more) {
     .category-card,
     .proceed-button {
@@ -798,11 +1015,11 @@ body {
 /* ============================================================================
    PRINT STYLES
    ============================================================================ */
-
 @media print {
     .background-particles,
     .back-button,
-    .loading {
+    .loading,
+    .timeout-dialog {
         display: none !important;
     }
 
@@ -818,202 +1035,5 @@ body {
     .category-grid {
         break-inside: avoid;
         page-break-inside: avoid;
-    }
-}
-
-/* ============================================================================
-   PLAYER NAME INPUT SECTION - Modern Design
-   ============================================================================ */
-
-.player-name-section {
-    max-width: 550px;
-    margin: 0 auto;
-    padding: 40px 20px;
-    text-align: center;
-}
-
-.player-name-section .section-title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 15px;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    letter-spacing: -0.02em;
-}
-
-.player-name-section .section-description {
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 1.05rem;
-    line-height: 1.6;
-    margin-bottom: 35px;
-    font-weight: 500;
-}
-
-.name-input-container {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    width: 100%;
-}
-
-/* Modern Input Field - Glass Morphism */
-.player-name-input {
-    /* Layout */
-    width: 100%;
-    padding: 18px 24px;
-    min-height: 60px;
-
-    /* Shape */
-    border-radius: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-
-    /* Background - Glass Morphism */
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-
-    /* Typography */
-    font-size: 1.1rem;
-    font-weight: 600;
-    font-family: 'Poppins', sans-serif;
-    color: white;
-    letter-spacing: 0.3px;
-
-    /* Effects */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-
-    /* Behavior */
-    outline: none;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.player-name-input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-    font-weight: 500;
-}
-
-.player-name-input:focus {
-    border-color: rgba(79, 172, 254, 0.7);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.12));
-    box-shadow: 0 12px 35px rgba(79, 172, 254, 0.25),
-                0 0 0 3px rgba(79, 172, 254, 0.15);
-    transform: translateY(-2px);
-}
-
-.player-name-input:focus::placeholder {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-/* Modern Confirm Button - Matching btn-age style from index.html */
-.confirm-name-btn {
-    /* Layout */
-    width: 100%;
-    padding: 19px 32px;
-    min-height: 62px;
-
-    /* Reset */
-    border: none;
-
-    /* Shape */
-    border-radius: 16px;
-
-    /* Background */
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
-
-    /* Typography */
-    font-size: 1.1rem;
-    font-weight: 700;
-    font-family: 'Poppins', sans-serif;
-    letter-spacing: 0.5px;
-
-    /* Effects */
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
-
-    /* Behavior */
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    /* Position for shine effect */
-    position: relative;
-    overflow: hidden;
-}
-
-/* Shine effect on hover */
-.confirm-name-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.6s ease;
-}
-
-.confirm-name-btn:not(:disabled):hover::before {
-    left: 100%;
-}
-
-/* Disabled State */
-.confirm-name-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Enabled/Hover State */
-.confirm-name-btn:not(:disabled):hover {
-    background: linear-gradient(135deg, #45a049, #4CAF50);
-    box-shadow: 0 14px 40px rgba(76, 175, 80, 0.45);
-    transform: translateY(-3px) scale(1.02);
-}
-
-.confirm-name-btn:not(:disabled):active {
-    transform: translateY(-1px) scale(0.98);
-}
-
-/* Focus State */
-.confirm-name-btn:focus-visible {
-    outline: 3px solid rgba(76, 175, 80, 0.6);
-    outline-offset: 3px;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .player-name-section {
-        padding: 30px 15px;
-    }
-
-    .player-name-section .section-title {
-        font-size: 1.7rem;
-    }
-
-    .player-name-section .section-description {
-        font-size: 0.98rem;
-    }
-
-    .player-name-input {
-        font-size: 1rem;
-        padding: 16px 20px;
-        min-height: 54px;
-    }
-
-    .confirm-name-btn {
-        font-size: 1rem;
-        padding: 17px 28px;
-        min-height: 56px;
-    }
-}
-
-@media (max-width: 480px) {
-    .player-name-section .section-title {
-        font-size: 1.5rem;
-    }
-
-    .player-name-section .section-description {
-        font-size: 0.92rem;
-        margin-bottom: 28px;
     }
 }

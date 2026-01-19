@@ -1,12 +1,11 @@
 /* ============================================================================
-   NO-CAP - JOIN GAME PAGE STYLES
-   Version 1.0 - Extracted from inline styles
+   NO-CAP JOIN-GAME.CSS - KOMPLETT NEU
+   Mobile-First, Ultra-Smooth, Production Ready
    ============================================================================ */
 
 /* ============================================================================
-   RESET & BASE STYLES
+   RESET & BASE
    ============================================================================ */
-
 * {
     margin: 0;
     padding: 0;
@@ -23,15 +22,11 @@ body {
 }
 
 /* ============================================================================
-   ANIMATED BACKGROUND
+   BACKGROUND PARTICLES
    ============================================================================ */
-
 .background-particles {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     overflow: hidden;
     z-index: -1;
 }
@@ -43,58 +38,22 @@ body {
     animation: float 8s ease-in-out infinite;
 }
 
-.particle:nth-child(1) {
-    width: 80px;
-    height: 80px;
-    left: 10%;
-    animation-delay: 0s;
-}
-
-.particle:nth-child(2) {
-    width: 120px;
-    height: 120px;
-    left: 70%;
-    animation-delay: 2s;
-}
-
-.particle:nth-child(3) {
-    width: 60px;
-    height: 60px;
-    left: 30%;
-    animation-delay: 4s;
-}
-
-.particle:nth-child(4) {
-    width: 100px;
-    height: 100px;
-    left: 50%;
-    animation-delay: 5s;
-}
-
-.particle:nth-child(5) {
-    width: 90px;
-    height: 90px;
-    left: 80%;
-    animation-delay: 6s;
-}
+.particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+.particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 2s; }
+.particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 4s; }
+.particle:nth-child(4) { width: 100px; height: 100px; left: 50%; animation-delay: 5s; }
+.particle:nth-child(5) { width: 90px; height: 90px; left: 80%; animation-delay: 6s; }
 
 @keyframes float {
-    0%, 100% {
-        transform: translateY(0px) rotate(0deg);
-        opacity: 0.3;
-    }
-    50% {
-        transform: translateY(-50px) rotate(180deg);
-        opacity: 0.6;
-    }
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+    50% { transform: translateY(-50px) rotate(180deg); opacity: 0.6; }
 }
 
 /* ============================================================================
    LAYOUT
    ============================================================================ */
-
 .app-container {
-    padding: 20px;
+    padding: 1.25rem;
     max-width: 600px;
     margin: 0 auto;
     min-height: 100vh;
@@ -104,53 +63,135 @@ body {
 }
 
 .glass-card {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(20px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 40px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 1.25rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem 1.5rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================================================
    HEADER
    ============================================================================ */
-
 .header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 2rem;
 }
 
 .header h1 {
     color: white;
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 800;
-    margin-bottom: 10px;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    margin-bottom: 0.625rem;
+    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
 }
 
 .header p {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.05rem;
     line-height: 1.5;
+}
+
+/* ============================================================================
+   PRIVACY NOTICE
+   ============================================================================ */
+.privacy-notice {
+    background: rgba(33, 150, 243, 0.1);
+    border: 1.5px solid rgba(33, 150, 243, 0.3);
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.privacy-heading {
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.privacy-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.privacy-link {
+    color: #4facfe;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.privacy-link:active {
+    color: #2196F3;
+}
+
+/* ============================================================================
+   ERROR MESSAGES & WARNINGS
+   ============================================================================ */
+.error-messages {
+    background: rgba(244, 67, 54, 0.15);
+    border: 1.5px solid rgba(244, 67, 54, 0.4);
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.error-messages.hidden {
+    display: none;
+}
+
+.offline-warning {
+    background: rgba(255, 152, 0, 0.15);
+    border: 1.5px solid rgba(255, 152, 0, 0.4);
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.offline-warning.hidden {
+    display: none;
+}
+
+.offline-warning strong {
+    display: block;
+    color: white;
+    font-weight: 700;
+    margin-bottom: 0.375rem;
+}
+
+.offline-warning p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    margin: 0;
 }
 
 /* ============================================================================
    FORM SECTION
    ============================================================================ */
-
 .form-section {
-    margin-bottom: 30px;
+    margin-bottom: 1.5rem;
 }
 
 .input-group {
-    margin-bottom: 25px;
+    margin-bottom: 1.5rem;
+    border: none;
+    padding: 0;
+}
+
+.input-group legend {
+    padding: 0;
 }
 
 /* ============================================================================
-   INPUT VALIDATION - P1 UI/UX ENHANCED
+   INPUT FIELDS
    ============================================================================ */
-
 .input-wrapper {
     position: relative;
     width: 100%;
@@ -158,36 +199,22 @@ body {
 
 .input-wrapper .input-field {
     width: 100%;
-    padding-right: 50px; /* Platz für Validation Icon */
+    padding-right: 3rem;
 }
 
-/* ✅ P1 UI/UX: Validation Icon */
 .validation-icon {
     position: absolute;
-    right: 15px;
+    right: 1rem;
     top: 50%;
     transform: translateY(-50%);
     font-size: 1.5rem;
     opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: all 0.2s;
     pointer-events: none;
 }
 
 .validation-icon:not(.hidden) {
     opacity: 1;
-    animation: popIn 0.3s ease;
-}
-
-@keyframes popIn {
-    0% {
-        transform: translateY(-50%) scale(0);
-    }
-    50% {
-        transform: translateY(-50%) scale(1.2);
-    }
-    100% {
-        transform: translateY(-50%) scale(1);
-    }
 }
 
 .validation-icon.valid {
@@ -202,20 +229,21 @@ body {
     color: white;
     font-size: 1rem;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
     display: block;
 }
 
 .input-field {
     width: 100%;
-    padding: 15px 20px;
-    border-radius: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 0.875rem 1.25rem;
+    border-radius: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.25);
     background: rgba(255, 255, 255, 0.1);
     color: white;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-family: 'Poppins', sans-serif;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
+    min-height: 54px;
 }
 
 .input-field.game-code {
@@ -224,7 +252,7 @@ body {
     font-weight: 700;
     text-align: center;
     font-family: 'Courier New', monospace;
-    font-size: 1.4rem;
+    font-size: 1.35rem;
 }
 
 .input-field::placeholder {
@@ -235,7 +263,7 @@ body {
     outline: none;
     border-color: #4CAF50;
     background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
 }
 
 .input-field.error {
@@ -244,76 +272,54 @@ body {
 }
 
 @keyframes shake {
-    0%, 100% {
-        transform: translateX(0);
-    }
-    25% {
-        transform: translateX(-10px);
-    }
-    75% {
-        transform: translateX(10px);
-    }
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
 }
 
 .input-field.valid {
     border-color: #4CAF50;
     background: rgba(76, 175, 80, 0.1);
-    box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
-}
-
-
-/* ✅ P1 FIX: Enhanced focus states for accessibility */
-.input-field:focus-visible {
-    outline: 3px solid rgba(255, 255, 255, 0.6);
-    outline-offset: 2px;
-}
-
-.input-field.valid:focus-visible {
-    outline-color: rgba(76, 175, 80, 0.8);
-}
-
-.input-field.error:focus-visible {
-    outline-color: rgba(244, 67, 54, 0.8);
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.2);
 }
 
 .input-hint {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.65);
     font-size: 0.85rem;
-    margin-top: 8px;
+    margin-top: 0.5rem;
     display: block;
+}
+
+.input-error {
+    color: #f44336;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    display: block;
+    font-weight: 600;
+}
+
+.input-error.hidden {
+    display: none;
 }
 
 /* ============================================================================
-   RATE LIMIT WARNING - P0 Sicherheit
+   RATE LIMIT WARNING
    ============================================================================ */
-
 .rate-limit-warning {
-    background: linear-gradient(135deg, rgba(255, 152, 0, 0.9), rgba(255, 87, 34, 0.9));
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 12px;
-    padding: 15px;
-    margin-top: 15px;
-    animation: slideDown 0.3s ease;
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.85), rgba(255, 87, 34, 0.85));
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
 }
 
-.rate-limit-warning:not(.hidden) {
-    display: block;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.rate-limit-warning.hidden {
+    display: none;
 }
 
 .rate-limit-warning strong {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 0.5rem;
     font-size: 1rem;
     color: white;
 }
@@ -331,22 +337,18 @@ body {
 }
 
 /* ============================================================================
-   AGE GATE MODAL - P1 DSGVO
+   AGE GATE MODAL
    ============================================================================ */
-
 .age-gate-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: all 0.2s;
 }
 
 .age-gate-modal:not(.hidden) {
@@ -356,10 +358,7 @@ body {
 
 .age-gate-backdrop {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(10px);
 }
@@ -368,72 +367,62 @@ body {
     position: relative;
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
     border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 20px;
-    padding: 30px;
+    border-radius: 1.25rem;
+    padding: 2rem 1.5rem;
     max-width: 500px;
     width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(20px);
-    animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
-    from {
-        transform: translateY(-50px) scale(0.9);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
 }
 
 .age-gate-header {
-    margin-bottom: 20px;
+    margin-bottom: 1.25rem;
     text-align: center;
 }
 
 .age-gate-title {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 800;
     color: white;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .age-gate-body {
-    margin-bottom: 25px;
+    margin-bottom: 1.5rem;
 }
 
 .age-gate-message,
 .age-gate-confirmation {
     color: white;
     font-size: 1rem;
-    line-height: 1.6;
-    margin-bottom: 15px;
+    line-height: 1.5;
+    margin-bottom: 1rem;
 }
 
 .age-options {
-    margin: 20px 0;
+    margin: 1.25rem 0;
 }
 
 .age-option {
     display: flex;
     align-items: center;
-    padding: 12px;
-    margin-bottom: 10px;
+    padding: 0.875rem;
+    margin-bottom: 0.75rem;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    border-radius: 0.75rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.age-option:hover {
+.age-option:active {
     background: rgba(255, 255, 255, 0.2);
-    transform: translateX(5px);
+    transform: scale(0.98);
 }
 
 .age-option input[type="radio"] {
-    margin-right: 12px;
+    margin-right: 0.875rem;
     width: 20px;
     height: 20px;
     cursor: pointer;
@@ -448,39 +437,42 @@ body {
 .age-gate-warning {
     background: rgba(255, 152, 0, 0.2);
     border-left: 4px solid #ff9800;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 20px;
+    padding: 1rem;
+    border-radius: 0.625rem;
+    margin-top: 1.25rem;
 }
 
 .age-gate-warning strong {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 0.5rem;
     color: #ffb74d;
 }
 
 .age-gate-warning p {
     color: rgba(255, 255, 255, 0.9);
     font-size: 0.9rem;
-    margin: 5px 0;
+    margin: 0.375rem 0;
 }
 
 .age-gate-footer {
     display: flex;
-    gap: 10px;
+    gap: 0.75rem;
     justify-content: center;
 }
 
 .age-btn {
-    padding: 12px 30px;
+    padding: 0.875rem 1.5rem;
     border: none;
-    border-radius: 25px;
+    border-radius: 1.5rem;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     font-family: inherit;
     min-width: 120px;
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .age-btn.primary {
@@ -488,9 +480,9 @@ body {
     color: white;
 }
 
-.age-btn.primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+.age-btn.primary:active:not(:disabled) {
+    transform: scale(0.98);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 .age-btn.primary:disabled {
@@ -499,32 +491,28 @@ body {
 }
 
 .age-btn.secondary {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
     color: white;
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
-.age-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.3);
+.age-btn.secondary:active {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(0.98);
 }
 
 /* ============================================================================
    GAME INFO PREVIEW
    ============================================================================ */
-
-/* ============================================================================
-   GAME INFO PREVIEW
-   ============================================================================ */
-
 .game-info-preview {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 20px;
-    margin-bottom: 25px;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
     opacity: 0;
     max-height: 0;
     overflow: hidden;
-    transition: all 0.4s ease;
+    transition: all 0.3s;
 }
 
 .game-info-preview.show {
@@ -532,52 +520,83 @@ body {
     max-height: 400px;
 }
 
-.info-title {
+.game-info-title {
     color: white;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 700;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
     text-align: center;
+}
+
+.game-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.game-info-list dt {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.game-info-list dd {
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-left: 0;
+}
+
+.fsk-warning {
+    color: #ff9800 !important;
+}
+
+.fsk-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.75);
+    margin-top: 0.25rem;
 }
 
 .host-info {
     background: rgba(76, 175, 80, 0.2);
-    border: 1px solid #4CAF50;
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 15px;
+    border: 1.5px solid #4CAF50;
+    border-radius: 0.875rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
     text-align: center;
 }
 
 .host-label {
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.85rem;
-    margin-bottom: 5px;
+    margin-bottom: 0.375rem;
 }
 
 .host-name {
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
 }
 
 .info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 0.875rem;
 }
 
 .info-item {
     background: rgba(255, 255, 255, 0.05);
-    padding: 12px;
-    border-radius: 10px;
+    padding: 0.875rem;
+    border-radius: 0.75rem;
     text-align: center;
 }
 
 .info-label {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.75);
     font-size: 0.8rem;
-    margin-bottom: 5px;
+    margin-bottom: 0.375rem;
 }
 
 .info-value {
@@ -589,43 +608,39 @@ body {
 /* ============================================================================
    CONTROLS
    ============================================================================ */
-
 .controls {
     display: flex;
-    gap: 20px;
+    gap: 1rem;
     justify-content: center;
 }
 
 .btn {
-    padding: 15px 30px;
-    border-radius: 15px;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.875rem;
     font-weight: 600;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     border: none;
-    text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 120px;
+    min-height: 54px;
     font-family: inherit;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-outline {
     background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.25);
     color: white;
 }
 
-.btn-outline:hover {
+.btn-outline:active {
     background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.5);
-}
-
-.btn-outline:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+    transform: scale(0.98);
 }
 
 .btn-primary {
@@ -633,14 +648,9 @@ body {
     color: white;
 }
 
-.btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
-}
-
-.btn-primary:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+.btn-primary:active:not(:disabled) {
+    transform: scale(0.98);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
 .btn-primary:disabled {
@@ -649,15 +659,11 @@ body {
 }
 
 /* ============================================================================
-   LOADING SPINNER
+   LOADING
    ============================================================================ */
-
 .loading {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
@@ -666,7 +672,7 @@ body {
     z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
 }
 
 .loading.show {
@@ -681,16 +687,12 @@ body {
     border-top: 4px solid #fff;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-bottom: 20px;
+    margin-bottom: 1.25rem;
 }
 
 @keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .loading-text {
@@ -700,40 +702,106 @@ body {
 }
 
 /* ============================================================================
-   ANIMATIONS
+   UTILITY CLASSES
    ============================================================================ */
+.hidden {
+    display: none !important;
+}
 
-@keyframes slideUp {
-    from {
-        transform: translateY(30px);
-        opacity: 0;
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* ============================================================================
+   TABLET (640px+)
+   ============================================================================ */
+@media (min-width: 640px) {
+    .header h1 {
+        font-size: 2.25rem;
     }
-    to {
-        transform: translateY(0);
-        opacity: 1;
+
+    .glass-card {
+        padding: 2.5rem 2rem;
+    }
+
+    .input-field.game-code {
+        font-size: 1.5rem;
+    }
+
+    .age-gate-content {
+        padding: 2.5rem 2rem;
     }
 }
 
 /* ============================================================================
-   MOBILE RESPONSIVE
+   DESKTOP (1024px+)
    ============================================================================ */
-
-@media (max-width: 768px) {
+@media (min-width: 1024px) {
     .header h1 {
-        font-size: 2rem;
-    }
-
-    .app-container {
-        padding: 15px;
+        font-size: 2.5rem;
     }
 
     .glass-card {
-        padding: 25px 20px;
+        padding: 2.5rem;
+    }
+
+    /* Hover Effects */
+    .age-option:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateX(5px);
+    }
+
+    .btn-outline:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+
+    .age-btn.primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    }
+
+    .age-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
+
+    .privacy-link:hover {
+        color: #2196F3;
+    }
+}
+
+/* ============================================================================
+   SMALL MOBILE (480px and below)
+   ============================================================================ */
+@media (max-width: 480px) {
+    .app-container {
+        padding: 1rem;
+    }
+
+    .header h1 {
+        font-size: 1.75rem;
+    }
+
+    .glass-card {
+        padding: 1.5rem 1.125rem;
     }
 
     .controls {
         flex-direction: column;
-        gap: 15px;
+        gap: 0.75rem;
     }
 
     .btn {
@@ -748,31 +816,27 @@ body {
         font-size: 1.2rem;
         letter-spacing: 2px;
     }
-}
 
-@media (max-width: 480px) {
-    .header h1 {
-        font-size: 1.8rem;
+    .age-gate-content {
+        padding: 1.5rem 1.25rem;
     }
 
-    .glass-card {
-        padding: 20px 15px;
+    .age-gate-title {
+        font-size: 1.2rem;
     }
 
-    .input-field {
-        padding: 12px 15px;
-        font-size: 1rem;
+    .age-gate-footer {
+        flex-direction: column;
     }
 
-    .input-field.game-code {
-        font-size: 1.1rem;
+    .age-btn {
+        width: 100%;
     }
 }
 
 /* ============================================================================
-   REDUCED MOTION SUPPORT
+   REDUCED MOTION
    ============================================================================ */
-
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -780,26 +844,18 @@ body {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
     }
 
-    .particle {
-        animation: none;
-    }
-
-    .spinner {
-        animation: none;
-    }
-
+    .particle,
+    .spinner,
     .input-field.error {
-        animation: none;
+        animation: none !important;
     }
 }
 
 /* ============================================================================
-   HIGH CONTRAST MODE SUPPORT
+   HIGH CONTRAST
    ============================================================================ */
-
 @media (prefers-contrast: more) {
     .input-field,
     .btn {
@@ -818,10 +874,10 @@ body {
 /* ============================================================================
    PRINT STYLES
    ============================================================================ */
-
 @media print {
     .background-particles,
-    .loading {
+    .loading,
+    .age-gate-modal {
         display: none !important;
     }
 
