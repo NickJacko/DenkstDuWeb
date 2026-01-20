@@ -1,6 +1,6 @@
 /* ============================================================================
-   NO-CAP PLAYER-SETUP.CSS - KOMPLETT NEU
-   Mobile-First, Ultra-Smooth, Production Ready
+   NO-CAP PLAYER-SETUP.CSS - ULTRA-KOMPAKT FÜR MOBILE
+   Mobile-First, Kein Scrollen, Minimalistisch, Production Ready
    ============================================================================ */
 
 /* ============================================================================
@@ -17,7 +17,6 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     overflow-x: hidden;
-    position: relative;
     color: white;
 }
 
@@ -29,6 +28,7 @@ body {
     inset: 0;
     overflow: hidden;
     z-index: -1;
+    pointer-events: none;
 }
 
 .particle {
@@ -38,29 +38,29 @@ body {
     animation: float 6s ease-in-out infinite;
 }
 
-.particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
-.particle:nth-child(2) { width: 120px; height: 120px; left: 70%; animation-delay: 1s; }
-.particle:nth-child(3) { width: 60px; height: 60px; left: 30%; animation-delay: 2s; }
-.particle:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 3s; }
-.particle:nth-child(5) { width: 40px; height: 40px; left: 50%; animation-delay: 4s; }
+.particle:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-delay: 0s; }
+.particle:nth-child(2) { width: 80px; height: 80px; left: 70%; animation-delay: 1s; }
+.particle:nth-child(3) { width: 40px; height: 40px; left: 30%; animation-delay: 2s; }
+.particle:nth-child(4) { width: 70px; height: 70px; left: 80%; animation-delay: 3s; }
+.particle:nth-child(5) { width: 30px; height: 30px; left: 50%; animation-delay: 4s; }
 
 @keyframes float {
-    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
-    25% { transform: translateY(-20px) rotate(90deg); opacity: 0.6; }
-    50% { transform: translateY(0) rotate(180deg); opacity: 0.3; }
-    75% { transform: translateY(-10px) rotate(270deg); opacity: 0.6; }
+    0%, 100% { transform: translateY(0); opacity: 0.3; }
+    50% { transform: translateY(-15px); opacity: 0.5; }
 }
 
 /* ============================================================================
-   LAYOUT
+   LAYOUT - KOMPAKT
    ============================================================================ */
 .app-container {
+    padding: 0.875rem;
+    padding-top: max(0.875rem, env(safe-area-inset-top, 0) + 0.875rem);
+    padding-bottom: max(0.875rem, env(safe-area-inset-bottom, 0) + 0.875rem);
+    max-width: 1200px;
+    margin: 0 auto;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    position: relative;
-    z-index: 1;
-    padding: 1.25rem;
 }
 
 .screen {
@@ -73,31 +73,33 @@ body {
     flex-direction: column;
 }
 
-.content-area {
+.glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1rem 0.875rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    max-width: 700px;
-    margin: 0 auto;
-    width: 100%;
-    padding-top: 1rem;
 }
 
 /* ============================================================================
-   BACK BUTTON
+   BACK BUTTON - KOMPAKT
    ============================================================================ */
 .back-button {
     position: fixed;
-    top: 1rem;
-    left: 1rem;
+    top: max(0.75rem, env(safe-area-inset-top, 0) + 0.75rem);
+    left: 0.75rem;
     background: rgba(255, 255, 255, 0.15);
     border: none;
     color: white;
-    padding: 0.75rem 1.25rem;
-    border-radius: 1.5rem;
-    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 1.25rem;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     backdrop-filter: blur(10px);
@@ -113,168 +115,83 @@ body {
 }
 
 /* ============================================================================
-   SCREEN TITLE
+   SCREEN TITLE - KOMPAKT
    ============================================================================ */
 .screen-title {
     color: white;
-    font-size: 2rem;
+    font-size: 1.3rem;
     font-weight: 800;
     text-align: center;
-    margin-bottom: 1.5rem;
-    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
-}
-
-/* ============================================================================
-   GLASS CARD
-   ============================================================================ */
-.glass-card {
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 1.25rem;
-    border: 1.5px solid rgba(255, 255, 255, 0.2);
-    padding: 2rem 1.5rem;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 650px;
-}
-
-/* ============================================================================
-   GAME MODE REMINDER
-   ============================================================================ */
-.game-mode-reminder {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: rgba(76, 175, 80, 0.1);
-    border: 1.5px solid rgba(76, 175, 80, 0.3);
-    padding: 1rem 1.25rem;
-    border-radius: 1rem;
-    margin-bottom: 2rem;
-}
-
-.mode-icon {
-    font-size: 2rem;
-    flex-shrink: 0;
-}
-
-.mode-text {
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-.mode-text strong {
-    display: block;
-    margin-bottom: 0.25rem;
-}
-
-/* ============================================================================
-   OFFLINE WARNING
-   ============================================================================ */
-.offline-warning {
-    position: fixed;
-    top: 1.25rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9999;
-    background: rgba(255, 152, 0, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 1rem;
-    padding: 1rem 1.5rem;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    max-width: 90%;
-}
-
-.offline-warning.hidden {
-    display: none;
-}
-
-.offline-content {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.offline-icon {
-    font-size: 2rem;
-    flex-shrink: 0;
-}
-
-.offline-text {
-    color: white;
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-.offline-text strong {
-    display: block;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-}
-
-.offline-text p {
-    margin: 0;
-    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .selection-description {
     color: rgba(255, 255, 255, 0.95);
     text-align: center;
-    margin-bottom: 2rem;
-    font-size: 1.05rem;
+    margin-bottom: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 500;
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
 /* ============================================================================
-   PLAYERS INPUT SECTION
+   GAME MODE REMINDER & OFFLINE WARNING - VERSTECKT
+   ============================================================================ */
+.game-mode-reminder,
+.offline-warning {
+    display: none !important;
+}
+
+/* ============================================================================
+   PLAYERS INPUT SECTION - KOMPAKT
    ============================================================================ */
 .players-input-section {
-    margin-bottom: 2rem;
+    margin-bottom: 0.875rem;
+    flex: 1;
 }
 
 .input-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.25rem;
-    gap: 1rem;
+    margin-bottom: 0.75rem;
+    gap: 0.75rem;
 }
 
 .input-header h2 {
     color: white;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 700;
 }
 
 .player-count-badge {
     background: rgba(255, 255, 255, 0.15);
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 1.25rem;
-    font-size: 0.9rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
     font-weight: 600;
     white-space: nowrap;
 }
 
 /* ============================================================================
-   PLAYER INPUT ROWS
+   PLAYER INPUT ROWS - KOMPAKT
    ============================================================================ */
 .players-input-list {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
 }
 
 .player-input-row {
     display: flex;
     align-items: center;
-    gap: 0.875rem;
-    margin-bottom: 1rem;
+    gap: 0.625rem;
+    margin-bottom: 0.625rem;
 }
 
 .player-number {
-    width: 35px;
-    height: 35px;
+    width: 30px;
+    height: 30px;
     background: linear-gradient(45deg, #4CAF50, #81C784);
     color: white;
     border-radius: 50%;
@@ -282,23 +199,23 @@ body {
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     flex-shrink: 0;
 }
 
 .player-input {
     flex: 1;
-    padding: 0.875rem 1.25rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 1.5rem;
+    padding: 0.625rem 1rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 1.25rem;
     background: rgba(255, 255, 255, 0.1);
     color: white;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 500;
     backdrop-filter: blur(10px);
     transition: all 0.2s;
     font-family: inherit;
-    min-height: 48px;
+    min-height: 44px;
 }
 
 .player-input::placeholder {
@@ -309,25 +226,29 @@ body {
     outline: none;
     border-color: #4CAF50;
     background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.3);
 }
 
 .remove-player-btn {
-    width: 35px;
-    height: 35px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
     background: rgba(244, 67, 54, 0.2);
-    border: 2px solid rgba(244, 67, 54, 0.3);
+    border: 1.5px solid rgba(244, 67, 54, 0.3);
     color: #F44336;
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+    line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    padding: 0;
 }
 
 .remove-player-btn:active {
@@ -336,27 +257,31 @@ body {
 }
 
 /* ============================================================================
-   ADD PLAYER BUTTON
+   ADD PLAYER BUTTON - MIT EMOJI
    ============================================================================ */
 .add-player-btn {
     background: rgba(255, 255, 255, 0.1);
     border: 2px dashed rgba(255, 255, 255, 0.3);
     color: rgba(255, 255, 255, 0.85);
-    padding: 0.875rem 1.5rem;
-    border-radius: 1.5rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 1.25rem;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    font-size: 1rem;
+    gap: 0.5rem;
+    font-size: 0.9rem;
     font-weight: 600;
     width: 100%;
     font-family: inherit;
-    min-height: 54px;
+    min-height: 48px;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+}
+
+.add-player-btn .btn-icon {
+    font-size: 1.1rem;
 }
 
 .add-player-btn:active:not(:disabled) {
@@ -370,45 +295,71 @@ body {
 }
 
 /* ============================================================================
-   PLAYERS PREVIEW WITH DRAG & DROP
+   INFO BOX - KOMPAKT
+   ============================================================================ */
+.info-box {
+    background: rgba(255, 152, 0, 0.1);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    border-radius: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.info-box p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    margin: 0.25rem 0;
+}
+
+.info-box p:first-child {
+    margin-top: 0;
+}
+
+.info-box p:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================================================
+   PLAYERS PREVIEW - KOMPAKT
    ============================================================================ */
 .players-preview {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    border-radius: 0.875rem;
+    padding: 0.875rem;
+    margin-bottom: 0.875rem;
 }
 
 .players-preview h3 {
     color: white;
-    margin-bottom: 0.75rem;
-    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
 }
 
 .reorder-hint {
     color: rgba(255, 255, 255, 0.75);
-    font-size: 0.85rem;
-    margin-bottom: 1rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.625rem;
     font-style: italic;
 }
 
 .players-order {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .player-order-item {
     background: rgba(76, 175, 80, 0.2);
-    border: 2px solid rgba(76, 175, 80, 0.3);
+    border: 1.5px solid rgba(76, 175, 80, 0.3);
     color: white;
-    padding: 0.875rem 1rem;
-    border-radius: 1rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.875rem;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    gap: 0.625rem;
     cursor: move;
     transition: all 0.2s;
     user-select: none;
@@ -422,8 +373,8 @@ body {
 
 .player-order-item.dragging {
     opacity: 0.6;
-    transform: scale(1.05) rotate(2deg);
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.5);
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
     border-color: #4CAF50;
     background: rgba(76, 175, 80, 0.3);
     cursor: grabbing !important;
@@ -434,100 +385,44 @@ body {
     border-color: #4CAF50;
     background: rgba(76, 175, 80, 0.15);
     border-style: dashed;
-    transform: translateY(-2px);
 }
 
 .player-order-number {
     background: rgba(76, 175, 80, 0.4);
     color: white;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 700;
     flex-shrink: 0;
 }
 
 .drag-handle {
     color: rgba(255, 255, 255, 0.5);
-    font-size: 1.2rem;
+    font-size: 1rem;
     margin-left: auto;
 }
 
 /* ============================================================================
-   GAME SUMMARY
+   GAME SUMMARY - INLINE KOMPAKT (KEINE BOX)
    ============================================================================ */
 .game-summary {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.game-summary h3 {
-    color: white;
-    margin-bottom: 1.25rem;
-    font-size: 1.15rem;
-    text-align: center;
-}
-
-.summary-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.875rem;
-}
-
-.summary-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 1rem;
-    border-radius: 0.75rem;
-}
-
-.summary-icon {
-    font-size: 1.75rem;
-    flex-shrink: 0;
-}
-
-.summary-content {
-    flex: 1;
-}
-
-.summary-label {
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 0.85rem;
-    margin-bottom: 0.25rem;
-}
-
-.summary-value {
-    color: white;
-    font-weight: 600;
-    font-size: 0.95rem;
-}
-
-.loading-dots {
-    animation: blink 1.5s ease-in-out infinite;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
+    display: none !important;
 }
 
 /* ============================================================================
-   CONTROLS
+   CONTROLS - KOMPAKT
    ============================================================================ */
 .controls,
 .start-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
     text-align: center;
 }
 
@@ -538,9 +433,9 @@ body {
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
     border: none;
-    padding: 1rem 1.5rem;
-    border-radius: 0.875rem;
-    font-size: 1.05rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
@@ -548,7 +443,7 @@ body {
     pointer-events: none;
     font-family: inherit;
     box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-    min-height: 54px;
+    min-height: 48px;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
@@ -565,7 +460,6 @@ body {
 .btn-continue:active:not(:disabled),
 .btn-primary:active:not(:disabled) {
     transform: scale(0.98);
-    box-shadow: 0 3px 12px rgba(76, 175, 80, 0.25);
 }
 
 .btn-continue:disabled,
@@ -576,7 +470,8 @@ body {
 
 .start-hint {
     color: rgba(255, 255, 255, 0.75);
-    font-size: 0.9rem;
+    font-size: 0.75rem;
+    margin: 0;
 }
 
 /* ============================================================================
@@ -585,13 +480,12 @@ body {
 .loading {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.8);
     display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 9999;
-    gap: 1.25rem;
 }
 
 .loading.show {
@@ -609,26 +503,38 @@ body {
 
 .loading-text {
     color: white;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
+    margin-top: 1rem;
 }
 
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
+.loading-dots {
+    animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
 /* ============================================================================
-   PRIVACY FOOTER
+   PRIVACY FOOTER - KOMPAKT
    ============================================================================ */
 .privacy-footer {
     text-align: center;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .privacy-link {
     color: rgba(255, 255, 255, 0.65);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     transition: color 0.2s;
 }
 
@@ -637,7 +543,7 @@ body {
 }
 
 .footer-separator {
-    margin: 0 0.5rem;
+    margin: 0 0.375rem;
     color: rgba(255, 255, 255, 0.4);
 }
 
@@ -661,57 +567,64 @@ body {
 }
 
 /* ============================================================================
-   INFO BOX
-   ============================================================================ */
-.info-box {
-    background: rgba(255, 152, 0, 0.1);
-    border: 1.5px solid rgba(255, 152, 0, 0.3);
-    border-radius: 1rem;
-    padding: 1rem 1.25rem;
-    margin-top: 1rem;
-}
-
-.info-box p {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.9rem;
-    line-height: 1.5;
-    margin: 0.5rem 0;
-}
-
-.info-box p:first-child {
-    margin-top: 0;
-}
-
-.info-box p:last-child {
-    margin-bottom: 0;
-}
-
-/* ============================================================================
    TABLET (640px+)
    ============================================================================ */
 @media (min-width: 640px) {
+    .app-container {
+        padding: 1.25rem;
+    }
+
     .screen-title {
-        font-size: 2.25rem;
-        margin-bottom: 2rem;
+        font-size: 1.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .selection-description {
+        font-size: 1rem;
+        margin-bottom: 1.25rem;
     }
 
     .glass-card {
-        padding: 2.5rem 2rem;
+        padding: 1.5rem 1.25rem;
     }
 
-    .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+    .input-header h2 {
+        font-size: 1.15rem;
     }
 
-    .summary-grid .summary-item:last-child {
-        grid-column: 1 / -1;
+    .player-count-badge {
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .player-input {
+        padding: 0.75rem 1.25rem;
+        font-size: 1rem;
+        min-height: 48px;
+    }
+
+    .player-number,
+    .remove-player-btn {
+        width: 35px;
+        height: 35px;
+        min-width: 35px;
+        min-height: 35px;
+    }
+
+    .add-player-btn {
+        font-size: 1rem;
+        min-height: 52px;
     }
 
     .btn-continue,
     .btn-primary {
         max-width: 400px;
+        font-size: 1rem;
+        min-height: 52px;
+    }
+
+    .start-hint {
+        font-size: 0.85rem;
     }
 }
 
@@ -724,19 +637,20 @@ body {
     }
 
     .screen-title {
-        font-size: 2.5rem;
+        font-size: 2.25rem;
+        margin-bottom: 1.5rem;
     }
 
     .glass-card {
-        padding: 2.25rem;
+        padding: 2rem 1.75rem;
     }
 
-    .summary-grid {
-        grid-template-columns: repeat(3, 1fr);
+    .input-header h2 {
+        font-size: 1.3rem;
     }
 
-    .summary-grid .summary-item:last-child {
-        grid-column: auto;
+    .player-input {
+        font-size: 1.05rem;
     }
 
     /* Hover Effects */
@@ -776,44 +690,6 @@ body {
 }
 
 /* ============================================================================
-   SMALL MOBILE (480px and below)
-   ============================================================================ */
-@media (max-width: 480px) {
-    .screen-title {
-        font-size: 1.75rem;
-    }
-
-    .glass-card {
-        padding: 1.5rem 1rem;
-    }
-
-    .input-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .input-header h2 {
-        font-size: 1.15rem;
-    }
-
-    .player-input {
-        padding: 0.75rem 1rem;
-        font-size: 0.95rem;
-    }
-
-    .player-input-row {
-        gap: 0.625rem;
-    }
-
-    .player-number,
-    .remove-player-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 0.85rem;
-    }
-}
-
-/* ============================================================================
    REDUCED MOTION
    ============================================================================ */
 @media (prefers-reduced-motion: reduce) {
@@ -845,31 +721,5 @@ body {
 
     .player-order-item {
         border: 2px solid #4CAF50;
-    }
-}
-
-/* ============================================================================
-   PRINT STYLES
-   ============================================================================ */
-@media print {
-    .background-particles,
-    .back-button,
-    .loading {
-        display: none !important;
-    }
-
-    body {
-        background: white;
-    }
-
-    .glass-card {
-        background: white;
-        border: 1px solid #ccc;
-    }
-
-    .players-preview,
-    .game-summary {
-        break-inside: avoid;
-        page-break-inside: avoid;
     }
 }

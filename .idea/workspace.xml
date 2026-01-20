@@ -4,19 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor index.css for streamlined responsiveness: simplify breakpoints, reduce code duplication, and enhance mobile/desktop layout clarity">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor settings.css for ultra-compact mobile-first layout: streamline modal, button, and section styles; optimize spacing, input fields, and dark mode support; enhance responsiveness and accessibility across devices">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/css/category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/css/difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/difficulty-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/gameplay.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/gameplay.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/join-game.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/join-game.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-gameplay.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-gameplay.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-results.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-results.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/css/player-setup.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/player-setup.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/settings.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/settings.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -176,14 +169,7 @@
       <workItem from="1768554418204" duration="394000" />
       <workItem from="1768555261474" duration="25029000" />
       <workItem from="1768812234952" duration="2784000" />
-    </task>
-    <task id="LOCAL-00109" summary="Claude changes">
-      <option name="closed" value="true" />
-      <created>1768222944456</created>
-      <option name="number" value="00109" />
-      <option name="presentableId" value="LOCAL-00109" />
-      <option name="project" value="LOCAL" />
-      <updated>1768222944456</updated>
+      <workItem from="1768834190520" duration="4985000" />
     </task>
     <task id="LOCAL-00110" summary="Enhance Firebase App Check integration, improve FSK validation, and refactor privacy and UI logic&#10;&#10;- Add firebase-app-check-key meta tag to all HTML files; remove hardcoded fallback keys from JS configs&#10;- Update firebase-init.js and firebase-config.js to require App Check key via meta/env, improve error handling and logging&#10;- Refactor FSK validation in difficulty-selection.js for stricter server-side checks and better error feedback&#10;- Improve multiplayer-category-selection.js player readiness logic and player key handling&#10;- Refactor multiplayer-difficulty-selection.js for cleaner event listener management and dependency checks&#10;- Enhance join-game.js with robust Firebase readiness checks and improved FSK badge rendering&#10;- Update firebase-auth.js for safer initialization, promise handling, and redirect logic&#10;- Refactor privacy.js: use NocapCookies for consent, improve modal cleanup, TOC insertion, and section toggling&#10;- Improve 404.js and difficulty-selection.js for accessibility, reduced motion, and error handling&#10;- Add getPlayerKey utility, update event listener cleanup, and minor UI/UX improvements across modules">
       <option name="closed" value="true" />
@@ -569,7 +555,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768736390622</updated>
     </task>
-    <option name="localTasksCounter" value="158" />
+    <task id="LOCAL-00158" summary="Refactor settings.css for ultra-compact mobile-first layout: streamline modal, button, and section styles; optimize spacing, input fields, and dark mode support; enhance responsiveness and accessibility across devices">
+      <option name="closed" value="true" />
+      <created>1768834490728</created>
+      <option name="number" value="00158" />
+      <option name="presentableId" value="LOCAL-00158" />
+      <option name="project" value="LOCAL" />
+      <updated>1768834490730</updated>
+    </task>
+    <option name="localTasksCounter" value="159" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -590,7 +584,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Add Cloud Function to check user premium status with token and server-side claims" />
     <MESSAGE value="Add Cloud Function to check user access for content categories based on claims" />
     <MESSAGE value="Update Firebase imports to use v1 API and improve multiplayer module initialization logic" />
     <MESSAGE value="Improve Firebase initialization checks and add utility for dependency waiting across modules" />
@@ -615,7 +608,8 @@
     <MESSAGE value="Fix multiplayer role recovery and host/guest state: ensure playerId from Firebase Auth, persist role on every update, and improve robustness after reloads" />
     <MESSAGE value="Revamp index page styles for full responsiveness: implement mobile-first layout, adaptive spacing, improved accessibility, and enhanced desktop features" />
     <MESSAGE value="Refactor index.css for streamlined responsiveness: simplify breakpoints, reduce code duplication, and enhance mobile/desktop layout clarity" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor index.css for streamlined responsiveness: simplify breakpoints, reduce code duplication, and enhance mobile/desktop layout clarity" />
+    <MESSAGE value="Refactor settings.css for ultra-compact mobile-first layout: streamline modal, button, and section styles; optimize spacing, input fields, and dark mode support; enhance responsiveness and accessibility across devices" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor settings.css for ultra-compact mobile-first layout: streamline modal, button, and section styles; optimize spacing, input fields, and dark mode support; enhance responsiveness and accessibility across devices" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
