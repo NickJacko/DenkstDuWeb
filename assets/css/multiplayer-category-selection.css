@@ -1,6 +1,6 @@
 /* ============================================================================
-   NO-CAP MULTIPLAYER-CATEGORY-SELECTION.CSS - ULTRA-KOMPAKT FÜR MOBILE
-   Mobile-First, Kein Scrollen, 2x2 Grid wie Single-Device
+   NO-CAP MULTIPLAYER-CATEGORY-SELECTION.CSS - ULTRA-MINIMAL FÜR MOBILE
+   Mobile-First, Kein Scrollen, Nur Name + Kategorien + Button
    ============================================================================ */
 
 /* ============================================================================
@@ -205,56 +205,10 @@ body {
 }
 
 /* ============================================================================
-   MULTIPLAYER HEADER - KOMPAKT
+   MULTIPLAYER HEADER - KOMPLETT VERSTECKT
    ============================================================================ */
 .multiplayer-header {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.75rem;
-    border-radius: 0.875rem;
-    margin-bottom: 0.875rem;
-    text-align: center;
-}
-
-.host-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.host-details {
-    text-align: center;
-}
-
-.host-name {
-    color: white;
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.host-indicator {
-    color: #4CAF50;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.game-id-section {
-    text-align: center;
-}
-
-.game-id-label {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.75rem;
-    margin-bottom: 0.25rem;
-}
-
-.game-id-display {
-    color: white;
-    font-size: 1.1rem;
-    font-weight: 700;
-    font-family: 'Courier New', monospace;
-    letter-spacing: 1px;
+    display: none !important;
 }
 
 /* ============================================================================
@@ -505,7 +459,12 @@ body {
 }
 
 .category-examples {
-    display: none; /* Versteckt auf Mobile */
+    display: none;
+}
+
+.example-questions,
+.example-question {
+    display: none;
 }
 
 .category-footer {
@@ -596,10 +555,17 @@ body {
 }
 
 /* ============================================================================
-   FSK OPTIONS & PLAYERS LIST - VERSTECKT AUF MOBILE
+   FSK OPTIONS, PLAYERS LIST, GAME ID - KOMPLETT VERSTECKT
    ============================================================================ */
 .fsk-options,
-.players-list-section {
+.players-list-section,
+.game-id-section,
+.host-info,
+.host-details,
+.host-name,
+.host-indicator,
+.game-id-label,
+.game-id-display {
     display: none !important;
 }
 
@@ -795,7 +761,7 @@ body {
 }
 
 .host-only {
-    /* Only visible to hosts */
+    display: none !important;
 }
 
 /* ============================================================================
@@ -834,26 +800,6 @@ body {
 
     .category-description {
         font-size: 0.85rem;
-    }
-
-    .host-info {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .host-details,
-    .game-id-section {
-        text-align: left;
-    }
-
-    .game-id-section {
-        text-align: right;
-    }
-
-    .fsk-options,
-    .players-list-section {
-        display: block !important;
     }
 
     .dialog-buttons {
@@ -902,10 +848,6 @@ body {
 
     .category-description {
         font-size: 0.95rem;
-    }
-
-    .category-examples {
-        display: block;
     }
 
     /* Hover Effects */

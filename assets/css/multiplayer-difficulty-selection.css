@@ -1,6 +1,6 @@
 /* ============================================================================
-   NO-CAP MULTIPLAYER-DIFFICULTY-SELECTION.CSS - ULTRA-KOMPAKT FÜR MOBILE
-   Mobile-First, Kein Scrollen, 3 Cards vertikal wie Single-Device
+   NO-CAP MULTIPLAYER-CATEGORY-SELECTION.CSS - ULTRA-MINIMAL FÜR MOBILE
+   Mobile-First, Kein Scrollen, Nur Name + Kategorien + Button
    ============================================================================ */
 
 /* ============================================================================
@@ -117,61 +117,109 @@ body {
 }
 
 /* ============================================================================
-   MULTIPLAYER HEADER - KOMPAKT
+   PLAYER NAME SECTION - KOMPAKT
    ============================================================================ */
-.multiplayer-header {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.75rem;
-    border-radius: 0.875rem;
-    margin-bottom: 0.875rem;
+.player-name-section {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
     text-align: center;
 }
 
-.host-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.host-details {
-    text-align: center;
-}
-
-.host-name {
-    color: white;
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.host-indicator {
-    color: #4CAF50;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.game-id-section {
-    text-align: center;
-}
-
-.game-id-label {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.75rem;
-    margin-bottom: 0.25rem;
-}
-
-.game-id-display {
-    color: white;
+.section-title {
     font-size: 1.1rem;
     font-weight: 700;
-    font-family: 'Courier New', monospace;
-    letter-spacing: 1px;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.section-description {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin-bottom: 0.875rem;
+    font-weight: 500;
+}
+
+.name-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    width: 100%;
+}
+
+.player-name-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    min-height: 48px;
+    border-radius: 0.875rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(15px);
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    outline: none;
+    transition: all 0.2s;
+}
+
+.player-name-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+.player-name-input:focus {
+    border-color: rgba(79, 172, 254, 0.6);
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.2);
+}
+
+.confirm-name-btn {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    min-height: 48px;
+    border: none;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    cursor: pointer;
+    transition: all 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.confirm-name-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.confirm-name-btn:not(:disabled):active {
+    transform: scale(0.98);
 }
 
 /* ============================================================================
-   DESCRIPTION
+   MULTIPLAYER HEADER - KOMPLETT VERSTECKT
    ============================================================================ */
+.multiplayer-header {
+    display: none !important;
+}
+
+/* ============================================================================
+   CATEGORY SELECTION CONTAINER
+   ============================================================================ */
+.category-selection-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 .selection-description {
     color: rgba(255, 255, 255, 0.95);
     text-align: center;
@@ -181,41 +229,27 @@ body {
     line-height: 1.4;
 }
 
-.selection-description small {
-    display: block;
-    font-size: 0.75rem;
-    margin-top: 0.25rem;
-    opacity: 0.85;
-}
-
 /* ============================================================================
-   SELECTED CATEGORIES - VERSTECKT AUF MOBILE
+   CATEGORY GRID - 2x2 KOMPAKT (wie Single-Device)
    ============================================================================ */
-.selected-categories-section {
-    display: none !important;
-}
-
-/* ============================================================================
-   DIFFICULTY GRID - VERTIKAL KOMPAKT (wie Single-Device)
-   ============================================================================ */
-.difficulty-grid {
-    display: flex;
-    flex-direction: column;
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
     margin-bottom: 0.875rem;
     flex: 1;
 }
 
 /* ============================================================================
-   DIFFICULTY CARDS - ULTRA-KOMPAKT (wie Single-Device)
+   CATEGORY CARDS - ULTRA-KOMPAKT (wie Single-Device)
    ============================================================================ */
-.difficulty-card {
+.category-card {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 0.875rem;
     border: 1.5px solid rgba(255, 255, 255, 0.2);
-    padding: 0.75rem;
+    padding: 0.75rem 0.625rem;
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
@@ -223,168 +257,322 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    text-align: left;
+    text-align: center;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
 
-.difficulty-card:active {
+.category-card:active:not(.locked):not(.guest-disabled) {
     transform: scale(0.98);
+    border-color: rgba(79, 172, 254, 0.5);
+}
+
+.category-card.locked,
+.category-card.guest-disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.category-card.guest-disabled {
+    background: rgba(158, 158, 158, 0.1);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
 }
 
 /* Selected States */
-.difficulty-card.selected,
-.difficulty-card[aria-checked="true"] {
+.category-card.selected,
+.category-card[aria-pressed="true"] {
     transform: scale(1.02);
 }
 
-.difficulty-card[data-difficulty="easy"].selected,
-.difficulty-card.easy.selected {
+.category-card.fsk0.selected {
     border-color: #4CAF50;
     background: rgba(76, 175, 80, 0.15);
     box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
 }
 
-.difficulty-card[data-difficulty="medium"].selected,
-.difficulty-card.medium.selected {
+.category-card.fsk16.selected {
     border-color: #FF9800;
     background: rgba(255, 152, 0, 0.15);
     box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3);
 }
 
-.difficulty-card[data-difficulty="hard"].selected,
-.difficulty-card.hard.selected {
+.category-card.fsk18.selected {
     border-color: #F44336;
     background: rgba(244, 67, 54, 0.15);
     box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
 }
 
+.category-card.special.selected {
+    border-color: #FFD700;
+    background: rgba(255, 215, 0, 0.15);
+    box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3);
+}
+
 /* ============================================================================
-   DIFFICULTY HEADER - KOMPAKT
+   LOCKED OVERLAY - KOMPAKT
    ============================================================================ */
-.difficulty-header {
-    display: flex;
-    justify-content: space-between;
+.locked-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
+    border-radius: 0.875rem;
+    z-index: 10;
+    gap: 0.375rem;
+    padding: 0.5rem;
+}
+
+.locked-overlay:not(.hidden),
+.locked-overlay.d-flex {
+    display: flex;
+}
+
+.lock-icon {
+    font-size: 1.75rem;
+    animation: shake 2s ease-in-out infinite;
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-8deg); }
+    75% { transform: rotate(8deg); }
+}
+
+.lock-message {
+    color: white;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.lock-message strong {
+    font-size: 0.75rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.unlock-btn {
+    margin-top: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    border: none;
+    border-radius: 0.875rem;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 36px;
+    font-size: 0.75rem;
+    touch-action: manipulation;
+}
+
+.unlock-btn:active {
+    transform: scale(0.98);
+}
+
+/* ============================================================================
+   PREMIUM BADGE - KOMPAKT
+   ============================================================================ */
+.premium-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    z-index: 5;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    text-transform: uppercase;
+}
+
+/* ============================================================================
+   CATEGORY CONTENT - KOMPAKT
+   ============================================================================ */
+.category-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
     margin-bottom: 0.5rem;
 }
 
-.difficulty-left {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-}
-
-.sips-indicator,
-.difficulty-icon {
+.category-icon {
     font-size: 1.75rem;
     line-height: 1;
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
-    flex-shrink: 0;
 }
 
-.difficulty-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.difficulty-info h2,
-.difficulty-name {
-    color: white;
-    font-size: 1rem;
-    font-weight: 700;
-    margin: 0;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    line-height: 1.2;
-}
-
-.difficulty-badge {
+.fsk-badge {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
     padding: 0.25rem 0.5rem;
-    border-radius: 0.625rem;
+    border-radius: 0.75rem;
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    display: inline-block;
-    align-self: flex-start;
 }
 
-.easy-badge {
+.fsk0-badge {
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
 }
 
-.medium-badge {
+.fsk16-badge {
     background: linear-gradient(135deg, #FF9800, #F57C00);
     color: white;
 }
 
-.hard-badge {
+.fsk18-badge {
     background: linear-gradient(135deg, #F44336, #D32F2F);
     color: white;
 }
 
-/* ============================================================================
-   SIPS EXPLANATION - KOMPAKT
-   ============================================================================ */
-.sips-explanation {
-    margin-bottom: 0.5rem;
-}
-
-.base-sips,
-.difficulty-penalty {
+.special-badge {
+    background: linear-gradient(45deg, #FFD700, #FFA500);
     color: white;
-    font-weight: 600;
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
 }
 
-.sips-formula,
-.difficulty-formula {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.85);
-    line-height: 1.3;
+.category-title {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 0.375rem;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    line-height: 1.2;
 }
 
-.sips-formula div,
-.difficulty-formula div {
-    margin: 0.125rem 0;
-}
-
-/* ============================================================================
-   DIFFICULTY DESCRIPTION - KOMPAKT
-   ============================================================================ */
-.difficulty-description {
-    color: rgba(255, 255, 255, 0.85);
+.category-description {
+    color: rgba(255, 255, 255, 0.9);
     font-size: 0.7rem;
     line-height: 1.3;
+    margin-bottom: 0.5rem;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
+.category-examples {
+    display: none;
+}
+
+.example-questions,
+.example-question {
+    display: none;
+}
+
+.category-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.age-range {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+}
+
+.question-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.loading-dots {
+    animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
 /* ============================================================================
-   PLAYERS STATUS - VERSTECKT AUF MOBILE
+   SELECTION SUMMARY - KOMPAKT
    ============================================================================ */
-.players-status-section {
+.selection-summary {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+    display: none;
+}
+
+.selection-summary.show {
+    display: block;
+}
+
+.summary-title {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.selected-categories {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+}
+
+.selected-category-tag {
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid #4CAF50;
+    color: white;
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.total-questions {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* ============================================================================
+   FSK OPTIONS, PLAYERS LIST, GAME ID - KOMPLETT VERSTECKT
+   ============================================================================ */
+.fsk-options,
+.players-list-section,
+.game-id-section,
+.host-info,
+.host-details,
+.host-name,
+.host-indicator,
+.game-id-label,
+.game-id-display {
     display: none !important;
 }
 
 /* ============================================================================
-   CONTROLS - KOMPAKT
+   PROCEED BUTTON - KOMPAKT
    ============================================================================ */
-.controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.625rem;
-    text-align: center;
-}
-
-/* ============================================================================
-   BUTTONS - KOMPAKT
-   ============================================================================ */
-.btn-continue,
-.btn-primary {
+.proceed-button {
     width: 100%;
     max-width: 100%;
     padding: 0.75rem 1.25rem;
@@ -405,178 +593,20 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-.btn-continue.enabled,
-.btn-continue:not(:disabled),
-.btn-primary.enabled,
-.btn-primary:not(:disabled) {
+.proceed-button.enabled,
+.proceed-button:not(:disabled) {
     opacity: 1;
     pointer-events: auto;
 }
 
-.btn-continue.enabled:active,
-.btn-continue:active:not(:disabled),
-.btn-primary:active:not(:disabled) {
+.proceed-button.enabled:active,
+.proceed-button:active:not(:disabled) {
     transform: scale(0.98);
 }
 
-.btn-continue:disabled,
-.btn-primary:disabled {
+.proceed-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-/* ============================================================================
-   FSK CONFIRMATION DIALOG - KOMPAKT
-   ============================================================================ */
-.fsk-confirmation-dialog {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.2s;
-    padding: 1rem;
-}
-
-.fsk-confirmation-dialog:not([hidden]) {
-    opacity: 1;
-    visibility: visible;
-}
-
-.dialog-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(10px);
-}
-
-.dialog-content {
-    position: relative;
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(25px);
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    border-radius: 1rem;
-    padding: 1.5rem 1.25rem;
-    max-width: 450px;
-    width: 100%;
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
-}
-
-.dialog-title {
-    color: white;
-    font-size: 1.2rem;
-    font-weight: 800;
-    margin-bottom: 0.75rem;
-    text-align: center;
-}
-
-.dialog-description {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.85rem;
-    line-height: 1.5;
-    margin-bottom: 1rem;
-    text-align: center;
-}
-
-.dialog-description strong {
-    color: white;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.fsk-warning-box {
-    background: rgba(255, 152, 0, 0.15);
-    border: 1.5px solid rgba(255, 152, 0, 0.4);
-    border-radius: 0.75rem;
-    padding: 0.75rem;
-    margin-bottom: 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.warning-icon {
-    font-size: 1.1rem;
-}
-
-.fsk-warning-box span:last-child {
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.3;
-}
-
-.dialog-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.625rem;
-}
-
-.btn-cancel,
-.btn-confirm-fsk,
-.btn-secondary {
-    padding: 0.75rem 1.25rem;
-    border: none;
-    border-radius: 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
-    min-height: 48px;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.btn-cancel,
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1.5px solid rgba(255, 255, 255, 0.25);
-    color: white;
-}
-
-.btn-cancel:active,
-.btn-secondary:active {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(0.98);
-}
-
-.btn-confirm-fsk {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
-}
-
-.btn-confirm-fsk:active {
-    transform: scale(0.98);
-}
-
-/* ============================================================================
-   PRIVACY FOOTER - KOMPAKT
-   ============================================================================ */
-.privacy-footer {
-    text-align: center;
-    padding: 0.75rem;
-    margin-top: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.privacy-link {
-    color: rgba(255, 255, 255, 0.65);
-    text-decoration: none;
-    font-size: 0.75rem;
-    transition: color 0.2s;
-}
-
-.privacy-link:active {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.footer-separator {
-    margin: 0 0.375rem;
-    color: rgba(255, 255, 255, 0.4);
 }
 
 /* ============================================================================
@@ -623,17 +653,115 @@ body {
 }
 
 /* ============================================================================
+   TIMEOUT DIALOG - KOMPAKT
+   ============================================================================ */
+.timeout-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+    padding: 1rem;
+}
+
+.timeout-dialog:not([hidden]) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dialog-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+}
+
+.dialog-content {
+    position: relative;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(25px);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 1rem;
+    padding: 1.5rem 1.25rem;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-title {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+
+.dialog-description {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    text-align: center;
+}
+
+#timeout-countdown {
+    font-weight: 700;
+    color: #ff9800;
+}
+
+.dialog-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    min-height: 48px;
+    touch-action: manipulation;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.btn-secondary:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.98);
+}
+
+/* ============================================================================
    UTILITY CLASSES
    ============================================================================ */
 .hidden {
     display: none !important;
 }
 
-.loading-players {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.85rem;
-    text-align: center;
-    padding: 0.75rem;
+.host-only {
+    display: none !important;
 }
 
 /* ============================================================================
@@ -649,81 +777,39 @@ body {
         margin-bottom: 1.25rem;
     }
 
-    .selection-description {
-        font-size: 1rem;
-        margin-bottom: 1.25rem;
-    }
-
     .glass-card {
         padding: 1.5rem 1.25rem;
     }
 
-    .difficulty-grid {
+    .category-grid {
+        grid-template-columns: repeat(2, 1fr);
         gap: 1.25rem;
     }
 
-    .difficulty-card {
+    .category-card {
         padding: 1.25rem 1rem;
     }
 
-    .sips-indicator,
-    .difficulty-icon {
+    .category-icon {
         font-size: 2.25rem;
     }
 
-    .difficulty-info h2,
-    .difficulty-name {
+    .category-title {
         font-size: 1.15rem;
     }
 
-    .difficulty-badge {
-        font-size: 0.7rem;
-        padding: 0.3125rem 0.625rem;
-    }
-
-    .base-sips,
-    .difficulty-penalty {
-        font-size: 0.9rem;
-    }
-
-    .sips-formula,
-    .difficulty-formula {
-        font-size: 0.8rem;
-    }
-
-    .difficulty-description {
+    .category-description {
         font-size: 0.85rem;
-    }
-
-    .host-info {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .host-details,
-    .game-id-section {
-        text-align: left;
-    }
-
-    .game-id-section {
-        text-align: right;
-    }
-
-    .selected-categories-section,
-    .players-status-section {
-        display: block !important;
-    }
-
-    .btn-continue,
-    .btn-primary {
-        max-width: 400px;
-        font-size: 1rem;
-        min-height: 52px;
     }
 
     .dialog-buttons {
         flex-direction: row;
+    }
+
+    .proceed-button {
+        max-width: 400px;
+        font-size: 1rem;
+        min-height: 52px;
     }
 }
 
@@ -744,39 +830,23 @@ body {
         padding: 2rem 1.75rem;
     }
 
-    .difficulty-grid {
+    .category-grid {
         gap: 1.75rem;
     }
 
-    .difficulty-card {
+    .category-card {
         padding: 1.5rem 1.25rem;
     }
 
-    .sips-indicator,
-    .difficulty-icon {
+    .category-icon {
         font-size: 2.5rem;
     }
 
-    .difficulty-info h2,
-    .difficulty-name {
+    .category-title {
         font-size: 1.3rem;
     }
 
-    .difficulty-badge {
-        font-size: 0.75rem;
-    }
-
-    .base-sips,
-    .difficulty-penalty {
-        font-size: 1rem;
-    }
-
-    .sips-formula,
-    .difficulty-formula {
-        font-size: 0.9rem;
-    }
-
-    .difficulty-description {
+    .category-description {
         font-size: 0.95rem;
     }
 
@@ -786,21 +856,26 @@ body {
         transform: translateY(-2px);
     }
 
-    .difficulty-card:hover {
+    .category-card:hover:not(.locked):not(.guest-disabled) {
         transform: translateY(-4px) scale(1.02);
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
         border-color: rgba(79, 172, 254, 0.6);
         background: rgba(255, 255, 255, 0.15);
     }
 
-    .btn-continue.enabled:hover,
-    .btn-primary:hover:not(:disabled) {
+    .unlock-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+
+    .proceed-button.enabled:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
     }
 
-    .privacy-link:hover {
-        color: rgba(255, 255, 255, 0.9);
+    .confirm-name-btn:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
     }
 }
 
@@ -808,7 +883,8 @@ body {
    LARGE DESKTOP (1280px+)
    ============================================================================ */
 @media (min-width: 1280px) {
-    .difficulty-grid {
+    .category-grid {
+        grid-template-columns: repeat(2, 1fr);
         max-width: 1000px;
         margin: 0 auto 1.5rem;
     }
@@ -827,7 +903,9 @@ body {
     }
 
     .particle,
-    .spinner {
+    .spinner,
+    .lock-icon,
+    .loading-dots {
         animation: none !important;
     }
 }
@@ -836,13 +914,12 @@ body {
    HIGH CONTRAST
    ============================================================================ */
 @media (prefers-contrast: more) {
-    .difficulty-card,
-    .btn-continue,
-    .btn-primary {
+    .category-card,
+    .proceed-button {
         border: 2px solid white;
     }
 
-    .difficulty-card.selected {
+    .category-card.selected {
         border: 3px solid #4CAF50;
     }
 }
