@@ -830,7 +830,7 @@
     // ===========================
     // CATEGORY SELECTION
     // ===========================
-    function toggleCategory(key) {
+    async function toggleCategory(key) {
         const card = document.querySelector(`[data-category="${key}"]`);
         if (!card) return;
 
@@ -883,11 +883,23 @@
         const selectedCategories = getSelectedCategories();
 
         if (selectedCategories.includes(key)) {
+            // Deselecting - no warning needed
             MultiplayerCategoryModule.gameState.removeCategory(key);
             card.classList.remove('selected');
             card.classList.remove(key);
             card.setAttribute('aria-pressed', 'false');
         } else {
+            // ✅ NEW: Warn host about FSK changes in active lobby
+            if (MultiplayerCategoryModule.gameState.gameId && (key === 'fsk16' || key === 'fsk18')) {
+                const warningMessage = key === 'fsk18'
+                    ? 'Achtung: Spieler unter 18 Jahren werden automatisch entfernt!'
+                    : 'Achtung: Spieler unter 16 Jahren werden automatisch entfernt!';
+
+                if (!confirm(`${warningMessage}\n\nMöchtest du ${categoryData[key].name} wirklich aktivieren?`)) {
+                    return; // User cancelled
+                }
+            }
+
             MultiplayerCategoryModule.gameState.addCategory(key);
             card.classList.add('selected');
             card.classList.add(key);
@@ -895,7 +907,70 @@
         }
 
         updateSelectionSummary();
-        syncWithFirebase();
+        await syncWithFirebase();
+
+    if (MultiplayerCategoryModule.gameState.gameId) {
+        await kickInvalidPlayersAfterCategoryChange();
+    }
+}
+
+
+    /**
+     * ✅ P0 SECURITY: Kick players who don't meet new FSK requirements
+     */
+    async function kickInvalidPlayersAfterCategoryChange() {
+        if (!MultiplayerCategoryModule.gameState?.gameId) return;
+        if (!MultiplayerCategoryModule.isHost) return;
+
+        try {
+            const gameId = MultiplayerCategoryModule.gameState.gameId;
+            const selectedCategories = getSelectedCategories();
+
+            const hasFSK18 = selectedCategories.includes('fsk18');
+            const hasFSK16 = selectedCategories.includes('fsk16');
+
+            if (!hasFSK18 && !hasFSK16) return; // No age restrictions
+
+            const requiredAge = hasFSK18 ? 18 : (hasFSK16 ? 16 : 0);
+
+            // Get all players
+            const playersRef = firebase.database().ref(`games/${gameId}/players`);
+            const snapshot = await playersRef.once('value');
+
+            if (!snapshot.exists()) return;
+
+            const players = snapshot.val();
+            let kickedCount = 0;
+
+            for (const [playerId, player] of Object.entries(players)) {
+                if (player.isHost) continue; // Don't kick host
+
+                // Check player age (stored in their player data or validate via their auth)
+                const playerAge = player.ageLevel || 0;
+
+                if (playerAge < requiredAge) {
+                    // Remove player
+                    await firebase.database()
+                        .ref(`games/${gameId}/players/${playerId}`)
+                        .remove();
+
+                    kickedCount++;
+
+                    Logger.debug(`✅ Kicked player ${player.name} (age ${playerAge} < required ${requiredAge})`);
+                }
+            }
+
+            if (kickedCount > 0) {
+                showNotification(
+                    `${kickedCount} Spieler wurden aufgrund der FSK-Änderung entfernt`,
+                    'info',
+                    3000
+                );
+            }
+
+        } catch (error) {
+            Logger.error('❌ Auto-kick error:', error);
+        }
     }
 
     function getSelectedCategories() {
@@ -1069,6 +1144,29 @@
                     'warning'
                 );
                 return;
+            }
+        }
+
+        // ✅ Wenn wir eine bestehende Lobby editieren, speichere Categories direkt in Firebase
+        const getLS = (k) => window.NocapUtils?.getLocalStorage
+            ? window.NocapUtils.getLocalStorage(k)
+            : localStorage.getItem(k);
+
+        const isEditingLobby = String(getLS('nocap_editing_lobby') || 'false') === 'true';
+        const existingGameId = getLS('nocap_existing_game_id');
+
+        if (isEditingLobby && existingGameId && MultiplayerCategoryModule.gameState.isHost) {
+            try {
+                // ✅ Update categories in Firebase
+                const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+                const database = instances?.database;
+
+                if (database?.ref) {
+                    await database.ref(`games/${existingGameId}/settings/categories`).set(selectedCategories);
+                    Logger.debug('✅ Updated categories in existing game:', selectedCategories);
+                }
+            } catch (error) {
+                Logger.error('❌ Failed to update categories:', error);
             }
         }
 

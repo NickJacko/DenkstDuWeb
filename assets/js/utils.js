@@ -1213,7 +1213,7 @@
                 id: 'easy',
                 name: 'Entspannt',
                 emoji: '🍺',
-                description: 'Abweichung × 1 Schluck',
+                description: 'Abweichung × 1',
                 multiplier: 1,
                 color: '#4CAF50'
             },
@@ -1221,7 +1221,7 @@
                 id: 'medium',
                 name: 'Normal',
                 emoji: '🍺🍺',
-                description: 'Abweichung × 2 Schlücke',
+                description: 'Abweichung × 2 ',
                 multiplier: 2,
                 color: '#FF9800'
             },
@@ -1229,7 +1229,7 @@
                 id: 'hard',
                 name: 'Hardcore',
                 emoji: '🍺🍺🍺',
-                description: 'Abweichung × 3 Schlücke',
+                description: 'Abweichung × 3 ',
                 multiplier: 3,
                 color: '#F44336'
             }

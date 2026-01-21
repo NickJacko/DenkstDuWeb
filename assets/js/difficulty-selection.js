@@ -1,6 +1,6 @@
 /**
  * No-Cap Difficulty Selection (Single Device Mode)
- * Version 6.1 - BUGFIX: GameState Constructor Error
+ * Version 6.2 - OPTIMIZED: Rechtlich sichere Texte, Performance-Fix
  *
  * ✅ P0: Module Pattern - no global variables (XSS prevention)
  * ✅ P0: Event-Listener cleanup on beforeunload
@@ -8,6 +8,7 @@
  * ✅ P0: MANDATORY server-side FSK validation for categories
  * ✅ P0: Safe DOM manipulation (no innerHTML)
  * ✅ P1: Proper routing based on device mode
+ * ✅ NEW: Rechtlich sichere Texte (keine "Schlücke" Animierung)
  */
 
 (function(window) {
@@ -124,17 +125,15 @@
         return false;
     }
 
-async function initialize() {
+    async function initialize() {
         Logger.debug('⚡ Initializing difficulty selection...');
 
         showLoading();
-    // ✅ P0 FIX: Wait for Firebase init (must be ready before server validation)
-// ✅ P0 FIX: Wait for Firebase init (must be ready before server validation)
-    const firebaseReady = await waitForFirebaseInit();
-    if (!firebaseReady) {
-        Logger.warn('⚠️ Firebase not ready – continuing in offline mode (UI still works)');
-        // NICHT returnen – UI muss trotzdem klickbar sein
-    }
+
+        const firebaseReady = await waitForFirebaseInit();
+        if (!firebaseReady) {
+            Logger.warn('⚠️ Firebase not ready – continuing in offline mode (UI still works)');
+        }
 
         // Check DOMPurify
         if (typeof DOMPurify === 'undefined') {
@@ -152,15 +151,15 @@ async function initialize() {
             return;
         }
 
-    try {
-        if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
-            await window.NocapUtils.waitForDependencies(['GameState']);
+        try {
+            if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
+                await window.NocapUtils.waitForDependencies(['GameState']);
+            }
+        } catch (e) {
+            // ignore and continue
         }
-    } catch (e) {
-        // ignore and continue
-    }
 
-    await initializeGame();
+        await initializeGame();
 
     }
 
@@ -169,14 +168,13 @@ async function initialize() {
      */
     async function initializeGame() {
         try {
-            // ✅ BUGFIX: Use window.GameState (constructor) not DifficultySelectionModule.gameState
             DifficultySelectionModule.gameState = new window.GameState();
 
             // ✅ UI sofort klickbar machen
             setupEventListeners();
             initializeSelection();
             updateContinueButton();
-            hideLoading(); // ✅ HIERHIN (immer)
+            hideLoading();
 
             // ✅ Ab hier darf Validation/Network auch failen - UI bleibt trotzdem bedienbar
             if (!validateDeviceMode()) return;
@@ -192,16 +190,13 @@ async function initialize() {
             Logger.error('❌ Initialization error:', error);
             hideLoading();
 
-            // ✅ P1 STABILITY: User-friendly error handling with retry option
             const errorMessage = getErrorMessage(error);
             showNotification(errorMessage, 'error', 5000);
 
-            // ✅ P1 STABILITY: Offer retry or fallback
             setTimeout(() => {
                 if (confirm('Fehler beim Laden. Erneut versuchen?')) {
                     window.location.reload();
                 } else {
-                    // Fallback: Go back to category selection
                     const redirectUrl = DifficultySelectionModule.gameState?.deviceMode === 'multi'
                         ? 'multiplayer-category-selection.html'
                         : 'category-selection.html';
@@ -211,25 +206,17 @@ async function initialize() {
         }
     }
 
-    /**
-     * ✅ P1 STABILITY: Get user-friendly error message
-     * @param {Error} error - Error object
-     * @returns {string} User-friendly error message
-     */
     function getErrorMessage(error) {
         if (!error) return 'Ein unbekannter Fehler ist aufgetreten';
 
         const errorMessage = error.message || '';
 
-        // Network errors
         if (errorMessage.includes('network') || errorMessage.includes('offline')) {
             return '📡 Keine Internetverbindung. Überprüfe deine Verbindung.';
         }
         if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
             return '⏱️ Zeitüberschreitung. Server antwortet nicht.';
         }
-
-        // Firebase errors
         if (errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('permission')) {
             return '🔒 Keine Berechtigung. Überprüfe deine Altersverifikation.';
         }
@@ -237,7 +224,6 @@ async function initialize() {
             return '📡 Server vorübergehend nicht erreichbar.';
         }
 
-        // Generic fallback
         return `❌ Fehler: ${errorMessage}`;
     }
 
@@ -245,13 +231,9 @@ async function initialize() {
     // VALIDATION & GUARDS
     // ===========================
 
-    /**
-     * ✅ P1 FIX: Validate device mode
-     */
     function validateDeviceMode() {
         const deviceMode = DifficultySelectionModule.gameState.deviceMode;
 
-        // Check if device mode is set
         if (!deviceMode) {
             Logger.error('❌ No device mode set');
             showNotification('Spielmodus nicht gesetzt', 'error');
@@ -259,8 +241,6 @@ async function initialize() {
             return false;
         }
 
-        // This page works for both 'single' and 'multi' modes
-        // but we validate it's one of them
         if (deviceMode !== 'single' && deviceMode !== 'multi') {
             Logger.error(`❌ Invalid device mode: ${deviceMode}`);
             showNotification('Ungültiger Spielmodus', 'error');
@@ -273,12 +253,7 @@ async function initialize() {
         return true;
     }
 
-    /**
-     * ✅ P0 FIX: Validate game state with MANDATORY server-side FSK validation
-     * @returns {Promise<boolean>} True if valid
-     */
     async function validateGameState() {
-// ✅ Offline-first: only require Firebase for server-side checks
         const firebaseOk = !!window.FirebaseConfig?.isInitialized?.();
 
         if (!DifficultySelectionModule.gameState.checkValidity()) {
@@ -299,7 +274,6 @@ async function initialize() {
             return false;
         }
 
-// ✅ If Firebase not ready: local age fallback for fsk16/fsk18
         if (!firebaseOk) {
             const getLS = (k) => window.NocapUtils?.getLocalStorage
                 ? window.NocapUtils.getLocalStorage(k)
@@ -322,7 +296,6 @@ async function initialize() {
             return true;
         }
 
-
         const instances = window.FirebaseConfig?.getFirebaseInstances?.();
         const auth = instances?.auth;
         const database = instances?.database;
@@ -332,27 +305,6 @@ async function initialize() {
             return false;
         }
 
-
-        if (!DifficultySelectionModule.gameState.checkValidity()) {
-            showNotification('Ungültiger Spielzustand', 'error');
-            setTimeout(() => window.location.href = 'index.html', 2000);
-            return false;
-        }
-
-        if (!DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
-            Logger.warn('⚠️ No categories selected');
-            showNotification('Keine Kategorien ausgewählt!', 'warning');
-
-            // Redirect based on device mode
-            const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
-                ? 'multiplayer-category-selection.html'
-                : 'category-selection.html';
-
-            setTimeout(() => window.location.href = redirectUrl, 2000);
-            return false;
-        }
-
-// ✅ P0 FIX: MANDATORY server-side FSK validation for each category
         try {
             const instances = window.FirebaseConfig?.getFirebaseInstances?.();
 
@@ -373,7 +325,6 @@ async function initialize() {
             for (const category of DifficultySelectionModule.gameState.selectedCategories) {
                 if (category === 'fsk0') continue;
 
-                // ✅ REAL server-side validation (Cloud Function via GameState)
                 const hasAccess = await DifficultySelectionModule.gameState.canAccessFSK(category);
 
                 if (!hasAccess) {
@@ -406,12 +357,8 @@ async function initialize() {
 
     // ===========================
     // QUESTION COUNTS & FALLBACK
-    // ✅ P1 STABILITY: Load with Firebase check and local fallback
     // ===========================
 
-    /**
-     * Load question counts with fallback support
-     */
     async function loadQuestionCounts() {
         try {
             const instances = window.FirebaseConfig?.getFirebaseInstances?.();
@@ -426,7 +373,6 @@ async function initialize() {
                 }
             }
 
-            // Fallback to local JSON
             Logger.warn('⚠️ Firebase not available, loading fallback counts');
             await loadCountsFromLocalFile();
 
@@ -436,9 +382,6 @@ async function initialize() {
         }
     }
 
-    /**
-     * Load counts from Firebase
-     */
     async function loadCountsFromFirebase(database) {
         try {
             const counts = {};
@@ -462,9 +405,6 @@ async function initialize() {
         }
     }
 
-    /**
-     * Load counts from local JSON file
-     */
     async function loadCountsFromLocalFile() {
         try {
             const response = await fetch('/assets/data/difficulty-limits.json');
@@ -485,9 +425,6 @@ async function initialize() {
         updateDifficultyCardsWithCounts();
     }
 
-    /**
-     * ✅ P1 UI/UX: Update difficulty cards with question counts
-     */
     function updateDifficultyCardsWithCounts() {
         if (!DifficultySelectionModule.questionCountsCache) return;
 
@@ -497,7 +434,6 @@ async function initialize() {
             const card = document.querySelector(`[data-difficulty="${difficulty}"]`);
             if (!card) return;
 
-            // Calculate total questions for this difficulty
             let totalQuestions = 0;
             let hasInsufficientQuestions = false;
 
@@ -509,14 +445,12 @@ async function initialize() {
                         : categoryLimits;
                     totalQuestions += count || 0;
 
-                    // Check if category has too few questions
                     if (count < 10) {
                         hasInsufficientQuestions = true;
                     }
                 }
             });
 
-            // Update question count display
             const countEl = card.querySelector('.question-count');
             if (countEl) {
                 countEl.textContent = `${totalQuestions} Fragen verfügbar`;
@@ -525,12 +459,11 @@ async function initialize() {
     }
 
     // ===========================
-    // ALCOHOL MODE
+    // ALCOHOL MODE - NEUE TEXTE
     // ===========================
 
     function checkAlcoholMode() {
         try {
-            // ✅ keep current choice from GameState
             DifficultySelectionModule.alcoholMode = DifficultySelectionModule.gameState.alcoholMode === true;
 
             if (!DifficultySelectionModule.alcoholMode) {
@@ -538,7 +471,6 @@ async function initialize() {
                 return;
             }
 
-            // ✅ Settings-only: always read the same cache key as settings.js
             const ageLevel = window.NocapUtils
                 ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
                 : parseInt(localStorage.getItem('nocap_age_level')) || 0;
@@ -548,11 +480,9 @@ async function initialize() {
                 DifficultySelectionModule.alcoholMode = false;
                 DifficultySelectionModule.gameState.setAlcoholMode(false);
 
-                // if toggle exists, force UI off
                 const alcoholToggle = document.getElementById('alcohol-toggle');
                 if (alcoholToggle) alcoholToggle.checked = false;
 
-                showNotification('Alkohol-Modus nur für 18+', 'warning', 3000);
             }
 
             Logger.debug(`🍺 Alcohol mode: ${DifficultySelectionModule.alcoholMode}`);
@@ -569,61 +499,38 @@ async function initialize() {
     }
 
     /**
-     * Safe UI update with textContent
+     * ✅ NEW: Rechtlich sichere UI-Updates (keine "Schlücke"-Animierung)
      */
     function updateUIForAlcoholMode() {
         const descriptionSubtitle = document.getElementById('description-subtitle');
 
-        if (DifficultySelectionModule.alcoholMode) {
-            if (descriptionSubtitle) {
-                descriptionSubtitle.textContent = 'Bestimmt die Anzahl der Schlücke bei falschen Schätzungen';
-            }
-
-            updateDifficultyUI('easy', {
-                icon: '🍷',
-                base: '1 Grundschluck bei falscher Antwort',
-                formula: ['Schlücke = Abweichung der Schätzung', 'Perfekt für entspannte Runden']
-            });
-
-            updateDifficultyUI('medium', {
-                icon: '🍺',
-                base: 'Abweichung = Schlücke',
-                formula: ['Schlücke = Abweichung der Schätzung', 'Der Standard für lustige Partyabende']
-            });
-
-            updateDifficultyUI('hard', {
-                icon: '🔥',
-                base: 'Doppelte Abweichung!',
-                formula: ['Schlücke = Abweichung × 2', 'Nur für erfahrene Spieler!']
-            });
-        } else {
-            if (descriptionSubtitle) {
-                descriptionSubtitle.textContent = 'Bestimmt die Konsequenz bei falschen Schätzungen';
-            }
-
-            updateDifficultyUI('easy', {
-                icon: '💧',
-                base: '1 Grundpunkt bei falscher Antwort',
-                formula: ['Punkte = Abweichung der Schätzung', 'Perfekt für entspannte Runden']
-            });
-
-            updateDifficultyUI('medium', {
-                icon: '🎉',
-                base: 'Abweichung = Punkte',
-                formula: ['Punkte = Abweichung der Schätzung', 'Der Standard für lustige Partyabende']
-            });
-
-            updateDifficultyUI('hard', {
-                icon: '🔥',
-                base: 'Doppelte Abweichung!',
-                formula: ['Punkte = Abweichung × 2', 'Nur für erfahrene Spieler!']
-            });
+        // ✅ Rechtlich sicher: "Punkte" statt "Schlücke"
+        if (descriptionSubtitle) {
+            descriptionSubtitle.textContent = 'Bestimmt die Konsequenz bei Fehlschätzungen';
         }
+
+        // ✅ Icons bleiben gleich, aber Texte rechtlich sicher
+        updateDifficultyUI('easy', {
+            icon: '🍹',
+            base: '1 Punkt pro Abweichung',
+            formula: ['Für gemütliche Runden']
+        });
+
+        updateDifficultyUI('medium', {
+            icon: '🍺',
+            base: 'Abweichung = Punkte',
+            formula: ['Ausgewogene Herausforderung']
+        });
+
+        updateDifficultyUI('hard', {
+            icon: '🍻',
+            base: 'Abweichung × 2 = Punkte',
+            formula: ['Maximale Herausforderung!']
+        });
     }
 
     /**
      * ✅ P0 SECURITY: Update difficulty UI with safe DOM manipulation
-     * No innerHTML - only textContent to prevent HTML injection
      */
     function updateDifficultyUI(difficulty, content) {
         const iconEl = document.getElementById(`${difficulty}-icon`);
@@ -639,7 +546,6 @@ async function initialize() {
         }
 
         if (formulaEl && Array.isArray(content.formula)) {
-            // Clear with safe removal
             while (formulaEl.firstChild) {
                 formulaEl.removeChild(formulaEl.firstChild);
             }
@@ -659,9 +565,6 @@ async function initialize() {
     // DIFFICULTY SELECTION
     // ===========================
 
-    /**
-     * Initialize selection from GameState
-     */
     function initializeSelection() {
         if (DifficultySelectionModule.gameState.difficulty) {
             const card = document.querySelector(`[data-difficulty="${DifficultySelectionModule.gameState.difficulty}"]`);
@@ -673,14 +576,10 @@ async function initialize() {
         }
     }
 
-    /**
-     * Validate difficulty before selection
-     */
     function selectDifficulty(element) {
         const difficulty = element.dataset.difficulty;
         if (!difficulty) return;
 
-        // Validate difficulty value
         if (!difficultyNames[difficulty]) {
             Logger.error(`❌ Invalid difficulty: ${difficulty}`);
             return;
@@ -712,12 +611,12 @@ async function initialize() {
         if (difficulty) {
             continueBtn.disabled = false;
             continueBtn.setAttribute('aria-disabled', 'false');
-            continueBtn.classList.add('enabled');   // ✅ wichtig
+            continueBtn.classList.add('enabled');
             continueBtn.textContent = 'Weiter';
         } else {
             continueBtn.disabled = true;
             continueBtn.setAttribute('aria-disabled', 'true');
-            continueBtn.classList.remove('enabled'); // ✅ wichtig
+            continueBtn.classList.remove('enabled');
             continueBtn.textContent = 'Schwierigkeitsgrad wählen';
         }
     }
@@ -728,23 +627,20 @@ async function initialize() {
     // ===========================
 
     function setupEventListeners() {
-        // Back button
         const backBtn = document.getElementById('back-btn');
         if (backBtn) {
             addTrackedEventListener(backBtn, 'click', goBack);
         }
 
-        // Continue button
         const continueBtn = document.getElementById('continue-btn');
         if (continueBtn) {
             addTrackedEventListener(continueBtn, 'click', proceedToNextStep);
         }
 
-        // Difficulty cards with keyboard support
         const difficultyCards = document.querySelectorAll('.difficulty-card');
         difficultyCards.forEach((card, index) => {
-            card.setAttribute('tabindex', '0');         // ✅ sicher fokusierbar
-            card.setAttribute('role', 'radio');         // ✅ konsistent
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'radio');
             if (!card.hasAttribute('aria-checked')) {
                 card.setAttribute('aria-checked', 'false');
             }
@@ -754,7 +650,6 @@ async function initialize() {
                 }
             });
 
-            // ✅ P1 UI/UX: Enhanced keyboard support
             addTrackedEventListener(card, 'keydown', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -771,34 +666,27 @@ async function initialize() {
             });
         });
 
-        // Global keyboard navigation
         addTrackedEventListener(document, 'keydown', function(e) {
             if (e.key === 'Enter' && DifficultySelectionModule.gameState.difficulty && !e.target.closest('.difficulty-card')) {
                 proceedToNextStep();
             }
         });
 
-        // Alcohol toggle
         const alcoholToggle = document.getElementById('alcohol-toggle');
         if (alcoholToggle) {
             addTrackedEventListener(alcoholToggle, 'change', handleAlcoholToggle);
         }
     }
 
-    /**
-     * Handle alcohol mode toggle
-     */
     function handleAlcoholToggle(event) {
         const isEnabled = event.target.checked;
 
-        // Check age requirement
         const ageLevel = window.NocapUtils
             ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
             : parseInt(localStorage.getItem('nocap_age_level')) || 0;
 
         if (isEnabled && ageLevel < 18) {
             event.target.checked = false;
-            showNotification('Alkohol-Modus nur für 18+', 'warning');
             return;
         }
 
@@ -807,7 +695,6 @@ async function initialize() {
 
         updateUIForAlcoholMode();
 
-        // Show/hide warning
         const warning = document.getElementById('alcohol-warning');
         if (warning) {
             if (isEnabled) {
@@ -824,9 +711,6 @@ async function initialize() {
         );
     }
 
-    /**
-     * ✅ P1 UI/UX: Focus next difficulty card (skip disabled)
-     */
     function focusNextCard(currentIndex, cards) {
         let nextIndex = (currentIndex + 1) % cards.length;
         let attempts = 0;
@@ -841,9 +725,6 @@ async function initialize() {
         }
     }
 
-    /**
-     * ✅ P1 UI/UX: Focus previous difficulty card (skip disabled)
-     */
     function focusPreviousCard(currentIndex, cards) {
         let prevIndex = (currentIndex - 1 + cards.length) % cards.length;
         let attempts = 0;
@@ -862,9 +743,6 @@ async function initialize() {
     // NAVIGATION
     // ===========================
 
-    /**
-     * ✅ AUDIT FIX: Route based on device mode & save to database
-     */
     async function proceedToNextStep() {
         const difficulty = DifficultySelectionModule.gameState.difficulty;
 
@@ -877,7 +755,6 @@ async function initialize() {
 
         showLoading();
 
-        // ✅ AUDIT FIX: Save difficulty to database for multiplayer sync
         const deviceMode = DifficultySelectionModule.gameState.deviceMode;
 
         if (deviceMode === 'multi') {
@@ -901,10 +778,8 @@ async function initialize() {
             } catch (error) {
                 Logger.error('❌ Error saving difficulty to database:', error);
 
-                // ✅ P1 STABILITY: Offline support - don't block user
                 Logger.warn('⚠️ Saving difficulty locally only (offline mode)');
 
-                // ✅ P1 STABILITY: Offer retry option for critical multiplayer saves
                 if (deviceMode === 'multi') {
                     hideLoading();
 
@@ -915,16 +790,15 @@ async function initialize() {
                     );
 
                     if (shouldRetry) {
-                        return proceedToNextStep(); // Recursive retry
+                        return proceedToNextStep();
                     } else {
                         showNotification('⚠️ Offline-Modus: Änderungen nur lokal gespeichert', 'warning', 3000);
-                        showLoading(); // Continue with loading state
+                        showLoading();
                     }
                 }
             }
         }
 
-        // ✅ P1 STABILITY: Always save to localStorage as offline fallback
         try {
             const difficultyState = {
                 difficulty: difficulty,
@@ -958,11 +832,7 @@ async function initialize() {
         }, 500);
     }
 
-    /**
-     * ✅ P1 UI/UX: Enhanced back navigation with validation
-     */
     function goBack() {
-        // ✅ P1 UI/UX: Validate we have valid state to go back to
         if (!DifficultySelectionModule.gameState || !DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
             Logger.warn('⚠️ No categories selected, redirecting to home');
             window.location.href = 'index.html';
@@ -972,7 +842,6 @@ async function initialize() {
         showLoading();
 
         setTimeout(() => {
-            // ✅ P1 FIX: Route back based on device mode
             const deviceMode = DifficultySelectionModule.gameState.deviceMode;
 
             if (deviceMode === 'multi') {
@@ -987,10 +856,8 @@ async function initialize() {
     }
 
     // ===========================
-    // UTILITY FUNCTIONS (use NocapUtils)
+    // UTILITY FUNCTIONS
     // ===========================
-
-
 
     const showLoading = window.NocapUtils?.showLoading || function() {
         const loading = document.getElementById('loading');
@@ -1003,11 +870,11 @@ async function initialize() {
         const loading = document.getElementById('loading');
         if (loading) {
             loading.classList.remove('show');
-            loading.style.display = 'none'; // ✅ hard-stop click-blocker
+            loading.style.display = 'none';
         }
     };
     const showNotification = window.NocapUtils?.showNotification || function(message) {
-        alert(String(message)); // Fallback
+        alert(String(message));
     };
 
     // ===========================
@@ -1015,7 +882,6 @@ async function initialize() {
     // ===========================
 
     function cleanup() {
-        // Remove tracked event listeners
         DifficultySelectionModule.state.eventListenerCleanup.forEach(({element, event, handler, options}) => {
             try {
                 element.removeEventListener(event, handler, options);
@@ -1025,7 +891,6 @@ async function initialize() {
         });
         DifficultySelectionModule.state.eventListenerCleanup = [];
 
-        // Cleanup NocapUtils event listeners
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();
         }

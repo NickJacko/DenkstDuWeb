@@ -222,7 +222,9 @@
 .input-group .settings-input {
     flex: 1;
 }
-
+.input-group button {
+    flex: 0 0 auto;
+}
 /* ============================================================================
    BUTTONS - KOMPAKT
    ============================================================================ */
@@ -240,15 +242,24 @@
     font-size: 0.85rem;
     min-height: 40px;
     font-family: inherit;
-    width: 100%;
+    width: auto;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+}
+/* Große Action Buttons sollen weiterhin Full-Width sein */
+.btn-export,
+.btn-danger,
+.btn-secondary {
+    width: 100%;
 }
 
 .btn-save {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+    font-size: 0.78rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 36px;
 }
 
 .btn-save:active {
@@ -271,6 +282,9 @@
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+    font-size: 0.78rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 36px;
 }
 
 .btn-primary:active {
@@ -499,8 +513,8 @@
 
     .settings-modal-content {
         border-radius: 1.25rem;
-        max-width: 600px;
-        max-height: 85vh;
+        max-width: 900px;
+        max-height: 90vh;
     }
 
     .settings-header {
@@ -524,38 +538,49 @@
     }
 
     .settings-section {
-        padding: 1rem;
+        padding: 0.875rem;
     }
 
     .settings-section h3 {
-        font-size: 1rem;
+        font-size: 0.95rem;
+        margin-bottom: 0.625rem;
+    }
+
+    .settings-item {
+        margin-bottom: 0.625rem;
     }
 
     .settings-item label {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
     }
 
     .settings-input {
-        font-size: 0.95rem;
-        padding: 0.75rem 0.875rem;
+        font-size: 0.9rem;
+        padding: 0.625rem 0.75rem;
     }
 
     .btn-save,
+    .btn-primary {
+        font-size: 0.78rem;
+        padding: 0.5rem 0.75rem;
+        min-height: 36px;
+    }
+
     .btn-export,
-    .btn-primary,
     .btn-danger,
     .btn-secondary {
-        font-size: 0.9rem;
-        padding: 0.75rem 1.25rem;
-        min-height: 44px;
+        font-size: 0.85rem;
+        padding: 0.625rem 1rem;
+        min-height: 40px;
     }
 
     .settings-info {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
     .settings-hint {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
     }
 
     .user-info {
@@ -572,6 +597,20 @@
     /* Full width sections */
     .settings-section.full-width {
         grid-column: 1 / -1;
+    }
+
+    /* Deletion Info kompakter */
+    .deletion-info-box {
+        padding: 0.625rem;
+    }
+
+    .deletion-info-box p {
+        font-size: 0.75rem;
+        margin: 0.25rem 0;
+    }
+
+    #cancel-deletion-container {
+        padding: 0.625rem;
     }
 }
 

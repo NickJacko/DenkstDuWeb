@@ -2333,7 +2333,7 @@
             statsDiv.className = 'leaderboard-player-stats';
 
             const sipsSpan = document.createElement('span');
-            sipsSpan.textContent = `🍺 ${player.totalSips} Schlücke`;
+            sipsSpan.textContent = `🍺 ${player.totalSips} `;
 
             const correctSpan = document.createElement('span');
             correctSpan.textContent = `🎯 ${player.correctGuesses}/${player.totalGuesses} richtig`;

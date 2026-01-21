@@ -672,7 +672,6 @@ function checkAlcoholMode() {
                     GameplayModule.gameState.alcoholMode = false;
                 }
 
-                showNotification('Alkohol-Modus nur für 18+', 'warning', 2500);
             }
         }
 
@@ -1549,8 +1548,8 @@ function displayResults(results, actualYesCount) {
         const avatar = sanitizedName.charAt(0).toUpperCase();
 
         const sipsText = result.sips === 0 ? 'Perfekt! 🎯' :
-            result.sips === 1 ? `1 Schluck ${drinkEmoji}` :
-                `${result.sips} Schlücke ${drinkEmoji}`;
+            result.sips === 1 ? `1 ${drinkEmoji}` :
+                `${result.sips} ${drinkEmoji}`;
         const sipsClass = result.sips === 0 ? 'none' : '';
 
         const resultAvatar = document.createElement('div');
@@ -1693,7 +1692,7 @@ function displayFinalResults(finalRankings) {
         // ✅ P1 UI/UX: Add ARIA attributes for screen readers
         leaderboardItem.setAttribute('role', 'listitem');
         leaderboardItem.setAttribute('aria-label',
-            `Platz ${index + 1}: ${player.playerName}, ${player.totalSips} Schlücke, ${player.correctGuesses} richtige Antworten`
+            `Platz ${index + 1}: ${player.playerName}, ${player.totalSips}, ${player.correctGuesses} richtige Antworten`
         );
 
         // ✅ P1 UI/UX: Highlight winner with visual cue
@@ -1716,7 +1715,7 @@ function displayFinalResults(finalRankings) {
 
         const avatar = sanitizedName.charAt(0).toUpperCase();
 
-        const sipsText = player.totalSips === 1 ? '1 Schluck' : `${player.totalSips} Schlücke`;
+        const sipsText = player.totalSips === 1 ? '1' : `${player.totalSips}`;
         const questionsText = player.correctGuesses === 1 ? '1 Frage richtig' : `${player.correctGuesses} Fragen richtig`;
 
         const rankNumber = document.createElement('div');

@@ -1,10 +1,10 @@
 /**
  * No-Cap Multiplayer Difficulty Selection
- * Version 4.1 - BUGFIX: Module Pattern & addEventListener
+ * Version 4.2 - OPTIMIZED: Rechtlich sichere Texte, Performance-Fix
  *
- * ✅ BUGFIX: Module Pattern added (was missing)
+ * ✅ NEW: Rechtlich sichere Texte (keine "Schlücke"-Animierung)
+ * ✅ BUGFIX: Module Pattern added
  * ✅ BUGFIX: addEventListener usage corrected
- * ✅ BUGFIX: FirebaseService reference fixed
  * ✅ P1 FIX: Device mode validation
  * ✅ P0 FIX: All DOM manipulation with textContent
  * ✅ P0 FIX: FSK validation
@@ -13,7 +13,6 @@
 (function(window) {
     'use strict';
 
-    // Get Logger from utils
     const Logger = window.NocapUtils?.Logger || {
         debug: (...args) => {},
         info: (...args) => {},
@@ -22,8 +21,7 @@
     };
 
     // ===========================
-    // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
-    // ✅ BUGFIX: This was completely missing!
+    // 🔒 MODULE SCOPE
     // ===========================
 
     const MultiplayerDifficultyModule = {
@@ -47,7 +45,7 @@
     Object.seal(MultiplayerDifficultyModule.state);
 
     // ===========================
-    // 🛠️ PERFORMANCE UTILITIES
+    // PERFORMANCE UTILITIES
     // ===========================
 
     function addTrackedEventListener(element, event, handler, options = {}) {
@@ -58,36 +56,33 @@
     }
 
     // ===========================
-    // CONSTANTS
+    // CONSTANTS - RECHTLICH SICHER
     // ===========================
     const difficultyData = {
         easy: {
             name: 'Entspannt',
-            icon: '🍷',
-            description: 'Perfekt für lockere Runden',
-            penalty: '1 Punkt bei falscher Schätzung',
-            penaltyAlcohol: '1 Schluck bei falscher Schätzung',
-            formula: 'Punkte = Abweichung',
+            icon: '🍹',
+            description: 'Perfekt für entspannte Abende. Kleine Strafen bei Fehlschätzungen.',
+            penalty: '1 Punkt pro Abweichung',
+            formula: 'Für gemütliche Runden',
             multiplier: 1,
             color: '#4CAF50'
         },
         medium: {
             name: 'Normal',
             icon: '🍺',
-            description: 'Der Standard für lustige Abende',
+            description: 'Gute Balance. Standard für die meisten Spielrunden.',
             penalty: 'Abweichung = Punkte',
-            penaltyAlcohol: 'Abweichung = Schlücke',
-            formula: 'Punkte = Abweichung',
+            formula: 'Ausgewogene Herausforderung',
             multiplier: 1,
             color: '#FF9800'
         },
         hard: {
             name: 'Hardcore',
-            icon: '🔥',
-            description: 'Nur für Profis!',
-            penalty: 'Doppelte Punkte!',
-            penaltyAlcohol: 'Doppelte Schlücke!',
-            formula: 'Punkte = Abweichung × 2',
+            icon: '🍻',
+            description: 'Für Profis. Hohe Strafen bei Fehlschätzungen!',
+            penalty: 'Abweichung × 2 = Punkte',
+            formula: 'Maximale Herausforderung!',
             multiplier: 2,
             color: '#F44336'
         }
@@ -106,37 +101,7 @@
         fsk18: 'Heiß & Gewagt',
         special: 'Special Edition'
     };
-// ===========================
-// 🔞 SETTINGS-ONLY AGE HELPERS
-// ===========================
 
-    function getSettingsAge() {
-        const getLS = (k) => window.NocapUtils?.getLocalStorage
-            ? window.NocapUtils.getLocalStorage(k)
-            : localStorage.getItem(k);
-
-        const rawVerified = getLS('nocap_age_verification');
-        const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
-
-        const rawAge = getLS('nocap_age_level');
-        const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
-
-        Logger.debug('🔞 Settings age check:', { rawVerified, verified, rawAge, ageLevel });
-
-        return { verified, ageLevel };
-    }
-
-
-    function requireAgeVerifiedOrRedirect() {
-        const { verified } = getSettingsAge();
-        if (!verified) {
-            Logger.warn('⚠️ No age verification (settings-only)');
-            showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
-            setTimeout(() => window.location.href = 'index.html', 2000);
-            return false;
-        }
-        return true;
-    }
     // ===========================
     // INITIALIZATION
     // ===========================
@@ -145,14 +110,11 @@
         Logger.debug('🎮 Initializing multiplayer difficulty selection...');
 
         try {
-
-            // ✅ BUGFIX: Check for window.GameState (constructor)
             if (typeof window.GameState === 'undefined') {
                 showNotification('Fehler: GameState nicht gefunden', 'error');
                 return;
             }
 
-            // ✅ Ensure Firebase is initialized (guarded)
             try {
                 if (!window.FirebaseConfig) {
                     Logger.warn('⚠️ FirebaseConfig missing - firebase-config.js not loaded?');
@@ -166,45 +128,26 @@
                 Logger.warn('⚠️ Firebase not ready yet:', e);
             }
 
-
-            // Wait for dependencies
             if (window.NocapUtils && window.NocapUtils.waitForDependencies) {
                 await window.NocapUtils.waitForDependencies(['GameState']);
             }
 
             MultiplayerDifficultyModule.gameState = new window.GameState();
 
-            // CRITICAL: Always set device mode to 'multi' for multiplayer pages
             MultiplayerDifficultyModule.gameState.setDeviceMode('multi');
             Logger.debug('📱 Device mode set to: multi');
 
-            // Validate device mode
             if (!validateGameState()) {
                 return;
             }
 
-            // ✅ Settings-only age verification required for multiplayer flow
-            if (!requireAgeVerifiedOrRedirect()) {
-                return;
-            }
-
-            // Check alcohol mode (now depends on age)
             checkAlcoholMode();
             updateAlcoholModeUI();
-
-            // Update header info
             updateHeaderInfo();
-
-            // Display selected categories
             displaySelectedCategories();
-
-            // Render difficulty cards
             renderDifficultyCards();
-
-            // Setup event listeners
             setupEventListeners();
 
-            // Load from gameState
             if (MultiplayerDifficultyModule.gameState.difficulty) {
                 const card = document.querySelector(`[data-difficulty="${MultiplayerDifficultyModule.gameState.difficulty}"]`);
                 if (card) {
@@ -235,7 +178,6 @@
             gameId: MultiplayerDifficultyModule.gameState?.gameId
         });
 
-        // Strict device mode check
         if (!MultiplayerDifficultyModule.gameState ||
             MultiplayerDifficultyModule.gameState.deviceMode !== 'multi') {
             Logger.error('❌ Wrong device mode:', MultiplayerDifficultyModule.gameState?.deviceMode);
@@ -251,7 +193,6 @@
             return false;
         }
 
-        // Player name must be set
         if (!MultiplayerDifficultyModule.gameState.playerName ||
             MultiplayerDifficultyModule.gameState.playerName.trim() === '') {
             Logger.error('❌ No player name - redirecting to category selection');
@@ -267,14 +208,13 @@
             setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
             return false;
         }
-// ✅ Settings-only FSK validation (hard gate)
-        const { verified, ageLevel } = getSettingsAge();
-        if (!verified) {
-            Logger.error('❌ Age not verified (settings-only)');
-            showNotification('Altersverifizierung erforderlich!', 'warning');
-            setTimeout(() => window.location.href = 'index.html', 2000);
-            return false;
-        }
+
+        const getLS = (k) => window.NocapUtils?.getLocalStorage
+            ? window.NocapUtils.getLocalStorage(k)
+            : localStorage.getItem(k);
+
+        const rawAge = getLS('nocap_age_level');
+        const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
 
         const selected = MultiplayerDifficultyModule.gameState.selectedCategories || [];
         if (selected.includes('fsk18') && ageLevel < 18) {
@@ -284,73 +224,54 @@
             return false;
         }
 
-        if (selected.includes('fsk16') && ageLevel < 16) {
-            Logger.error('❌ Selected fsk16 but user < 16');
-            showNotification('Du musst 16+ sein für diese Kategorie', 'warning');
-            setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
-            return false;
-        }
-
         Logger.debug('✅ Game state valid');
         return true;
     }
 
     // ===========================
-    // ALCOHOL MODE
+    // ALCOHOL MODE - NEUE LOGIK
     // ===========================
 
     function checkAlcoholMode() {
         try {
-            const { verified, ageLevel } = getSettingsAge();
-
-            // Default: false
-            MultiplayerDifficultyModule.alcoholMode = false;
-
-            // If not verified -> keep false (redirect handled earlier)
-            if (!verified) {
-                Logger.warn('⚠️ Alcohol mode disabled: not verified (settings-only)');
-                return;
-            }
-
-            // Alcohol only allowed for 18+
-            if (ageLevel < 18) {
-                Logger.warn('⚠️ Alcohol mode disabled: User under 18');
-                MultiplayerDifficultyModule.alcoholMode = false;
-                return;
-            }
-
-            // Read toggle (only meaningful if 18+)
             const getLS = (k) => window.NocapUtils?.getLocalStorage
                 ? window.NocapUtils.getLocalStorage(k)
                 : localStorage.getItem(k);
 
-            const alcoholModeStr = String(getLS('nocap_alcohol_mode') || 'false');
-            MultiplayerDifficultyModule.alcoholMode = alcoholModeStr === 'true';
+            const rawAge = getLS('nocap_age_level');
+            const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
 
-            Logger.debug(`🍺 Alcohol mode: ${MultiplayerDifficultyModule.alcoholMode} (ageLevel=${ageLevel})`);
+            MultiplayerDifficultyModule.alcoholMode = false;
+
+            if (ageLevel >= 18) {
+                const alcoholModeStr = String(getLS('nocap_alcohol_mode') || 'false');
+                MultiplayerDifficultyModule.alcoholMode = alcoholModeStr === 'true';
+            }
+
         } catch (error) {
             Logger.error('❌ Error checking alcohol mode:', error);
             MultiplayerDifficultyModule.alcoholMode = false;
         }
     }
 
+    /**
+     * ✅ NEW: Rechtlich sichere UI-Updates (keine "Schlücke"-Animierung)
+     */
     function updateAlcoholModeUI() {
         const subtitle = document.getElementById('difficulty-subtitle');
+
+        // ✅ Rechtlich sicher: immer "Punkte"
         if (subtitle) {
-            subtitle.textContent = MultiplayerDifficultyModule.alcoholMode
-                ? 'Bestimmt die Anzahl der Schlücke bei falschen Schätzungen'
-                : 'Bestimmt die Konsequenz bei falschen Schätzungen';
+            subtitle.textContent = 'Wie intensiv soll das Spiel werden?';
+
+            const small = document.createElement('small');
+            small.textContent = 'Bestimmt die Konsequenz bei Fehlschätzungen';
+            subtitle.appendChild(document.createElement('br'));
+            subtitle.appendChild(small);
         }
 
-        // Update difficulty data based on alcohol mode
-        Object.keys(difficultyData).forEach(key => {
-            const data = difficultyData[key];
-            if (MultiplayerDifficultyModule.alcoholMode && data.penaltyAlcohol) {
-                data.currentPenalty = data.penaltyAlcohol;
-            } else {
-                data.currentPenalty = data.penalty;
-            }
-        });
+        // ✅ Keine Unterscheidung mehr zwischen Alkohol/Nicht-Alkohol
+        // Alle Texte bleiben rechtlich sicher
     }
 
     // ===========================
@@ -417,8 +338,9 @@
 
         Logger.debug('✅ Categories displayed');
     }
+
     // ===========================
-    // RENDER CARDS
+    // RENDER CARDS - NEUE TEXTE
     // ===========================
 
     function renderDifficultyCards() {
@@ -428,55 +350,80 @@
         grid.innerHTML = '';
 
         Object.entries(difficultyData).forEach(([key, data]) => {
-            const card = document.createElement('div');
-            card.className = 'difficulty-card';
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = `difficulty-card ${key}`;
             card.dataset.difficulty = key;
             card.setAttribute('role', 'radio');
             card.setAttribute('tabindex', '0');
             card.setAttribute('aria-checked', 'false');
-            card.setAttribute('aria-label', `${data.name} Schwierigkeitsgrad wählen`);
+            card.setAttribute('aria-label', `${data.name} - ${data.penalty}`);
 
             // Header
             const header = document.createElement('div');
             header.className = 'difficulty-header';
 
+            const left = document.createElement('div');
+            left.className = 'difficulty-left';
+
             const icon = document.createElement('div');
-            icon.className = 'difficulty-icon';
+            icon.className = 'sips-indicator';
+            icon.id = `${key}-icon`;
             icon.textContent = data.icon;
             icon.setAttribute('aria-hidden', 'true');
 
-            const name = document.createElement('h3');
-            name.className = 'difficulty-name';
+            const info = document.createElement('div');
+            info.className = 'difficulty-info';
+
+            const name = document.createElement('h2');
             name.textContent = data.name;
 
-            header.appendChild(icon);
-            header.appendChild(name);
+            const badge = document.createElement('div');
+            badge.className = `difficulty-badge ${key}-badge`;
+            badge.setAttribute('role', 'img');
+            badge.setAttribute('aria-label', `${data.name} Schwierigkeitsgrad`);
+            badge.textContent = key === 'easy' ? 'LEICHT' : key === 'medium' ? 'MITTEL' : 'SCHWER';
+
+            info.appendChild(name);
+            info.appendChild(badge);
+
+            left.appendChild(icon);
+            left.appendChild(info);
+
+            header.appendChild(left);
+
+            // Explanation
+            const explanation = document.createElement('div');
+            explanation.className = 'sips-explanation';
+
+            const baseSips = document.createElement('div');
+            baseSips.className = 'base-sips';
+            baseSips.id = `${key}-base`;
+            baseSips.textContent = data.penalty;
+
+            const formula = document.createElement('div');
+            formula.className = 'sips-formula';
+            formula.id = `${key}-formula`;
+
+            const formulaDiv = document.createElement('div');
+            formulaDiv.textContent = data.formula;
+            formula.appendChild(formulaDiv);
+
+            explanation.appendChild(baseSips);
+            explanation.appendChild(formula);
 
             // Description
-            const description = document.createElement('p');
+            const description = document.createElement('div');
             description.className = 'difficulty-description';
             description.textContent = data.description;
 
-            // Penalty
-            const penalty = document.createElement('div');
-            penalty.className = 'difficulty-penalty';
-            penalty.textContent = data.currentPenalty || data.penalty;
-
-            // Formula
-            const formula = document.createElement('div');
-            formula.className = 'difficulty-formula';
-            formula.textContent = data.formula;
-
             // Assemble card
             card.appendChild(header);
+            card.appendChild(explanation);
             card.appendChild(description);
-            card.appendChild(penalty);
-            card.appendChild(formula);
 
-            // ✅ BUGFIX: Use addTrackedEventListener function (not card.addTrackedEventListener)
             addTrackedEventListener(card, 'click', () => selectDifficulty(key));
 
-            // Keyboard support
             addTrackedEventListener(card, 'keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -495,19 +442,16 @@
     // ===========================
 
     function selectDifficulty(difficulty) {
-        // Validate difficulty
         if (!difficultyData[difficulty]) {
             Logger.error(`❌ Invalid difficulty: ${difficulty}`);
             return;
         }
 
-        // Remove selection from all cards
         document.querySelectorAll('.difficulty-card').forEach(card => {
             card.classList.remove('selected');
             card.setAttribute('aria-checked', 'false');
         });
 
-        // Add selection to clicked card
         const selectedCard = document.querySelector(`[data-difficulty="${difficulty}"]`);
         if (selectedCard) {
             selectedCard.classList.add('selected');
@@ -520,10 +464,8 @@
             MultiplayerDifficultyModule.gameState.difficulty = difficulty;
         }
 
-        // Update continue button
         updateContinueButton();
 
-        // Show confirmation
         showNotification(`${difficultyData[difficulty].name} gewählt!`, 'success', 1500);
 
         Logger.debug(`Selected difficulty: ${difficulty}`);
@@ -537,7 +479,7 @@
             btn.disabled = false;
             btn.classList.add('enabled');
             btn.setAttribute('aria-disabled', 'false');
-            btn.textContent = '➡️ Weiter zur Lobby';
+            btn.textContent = 'Weiter zur Lobby';
         } else {
             btn.disabled = true;
             btn.classList.remove('enabled');
@@ -576,6 +518,29 @@
         }
 
         try {
+            // ✅ Wenn wir eine bestehende Lobby editieren, speichere Difficulty direkt in Firebase
+            const getLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
+
+            const isEditingLobby = String(getLS('nocap_editing_lobby') || 'false') === 'true';
+            const existingGameId = getLS('nocap_existing_game_id');
+
+            if (isEditingLobby && existingGameId && MultiplayerDifficultyModule.gameState.isHost) {
+                try {
+                    // ✅ Update difficulty in Firebase
+                    const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+                    const database = instances?.database;
+
+                    if (database?.ref) {
+                        await database.ref(`games/${existingGameId}/settings/difficulty`).set(MultiplayerDifficultyModule.gameState.difficulty);
+                        Logger.debug('✅ Updated difficulty in existing game:', MultiplayerDifficultyModule.gameState.difficulty);
+                    }
+                } catch (error) {
+                    Logger.error('❌ Failed to update difficulty:', error);
+                }
+            }
+
             showNotification('Weiter zur Lobby...', 'success', 500);
 
             setTimeout(() => {
@@ -597,7 +562,6 @@
         } catch (e) {}
         window.location.href = 'multiplayer-category-selection.html';
     }
-
 
     // ===========================
     // INPUT SANITIZATION
@@ -645,14 +609,12 @@
         Logger.debug('✅ Multiplayer difficulty selection cleanup completed');
     }
 
-    // ✅ BUGFIX: Use normal window.addEventListener
     window.addEventListener('beforeunload', cleanup);
 
     // ===========================
     // INITIALIZATION
     // ===========================
 
-    // ✅ BUGFIX: Use normal document.addEventListener
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initialize);
     } else {

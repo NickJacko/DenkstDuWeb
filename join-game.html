@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>No-Cap - Spiel beitreten</title>
 
-    <!-- ? SECURITY: Security Headers -->
+    <!-- ✅ SECURITY: Security Headers -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
 
-    <!-- ? P0 SECURITY: Domain Whitelist Public Key -->
+    <!-- ✅ P0 SECURITY: Domain Whitelist Public Key -->
     <meta name="domain-whitelist-public-key" content="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgJ2dp2d2iufGYuz+rdUiaZZkl4ig0H90wRfZGSl2YH+RvP4TyLhmeW1FfmHXEJthWeZCFSoVEvJ6Sv77LryPYnZt8at0a4o5KDdsBWXNn5vtg5uKsIzhC8KF7vjPtRm9omt5lnUUALibbNSkzEgYNMllzlnUjDZPOcWGUj+LUraG4nkpunhzsmosctLY/EcgN3g5Mx9F066fnBECnWzQZZfRHowIIW+1tLF1it3Ngqkprf4WG0bE9AfgziYUuP64hw9zUMCkovb7RLzPDw5w9BdBxo9/GUwV7AQAw4KsWgJaHmueB6e21FrqKaJ45NooJMDjimo9WBAEiMEL8fbZGwIDAQAB-----END PUBLIC KEY-----">
 
-    <!-- ? P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
+    <!-- ✅ P0 SECURITY: Firebase Config via Meta Tags (CSP-compliant) -->
     <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
     <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
     <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
@@ -22,6 +22,7 @@
     <meta name="firebase-app-id" content="1:27029260611:web:3c7da4db0bf92e8ce247f6">
     <meta name="firebase-measurement-id" content="G-BNKNW95HK8">
     <meta name="firebase-app-check-key" content="6LeSPUQsAAAAANnUhOAey-M8Mgr0eeT9-inR7wKZ">
+
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,69 +34,44 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 
-    <!-- ? SECURITY: External CSS ONLY (no inline styles) -->
+    <!-- ✅ SECURITY: External CSS ONLY (no inline styles) -->
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="/assets/css/join-game.css">
+    <!-- ✅ NEW: Settings Modal Styles -->
+    <link rel="stylesheet" href="/assets/css/settings.css">
 
-    <!-- ? SECURITY: DOMPurify lokal gehostet (no SRI needed for local files) -->
+    <!-- ✅ SECURITY: DOMPurify lokal gehostet (no SRI needed for local files) -->
     <script src="/assets/lib/purify.min.js"></script>
 
-    <!-- ? SECURITY: Firebase SDK with crossorigin -->
+    <!-- ✅ SECURITY: Firebase SDK with crossorigin -->
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js" crossorigin="anonymous"></script>
     <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
-    <!-- ? SECURITY: Core Scripts in correct dependency order -->
+
+    <!-- ✅ SECURITY: Core Scripts in correct dependency order -->
     <script defer src="/assets/js/GameState.js"></script>
     <script defer src="/assets/js/utils.js"></script>
     <script defer src="/assets/js/firebase-config.js"></script>
     <script defer src="/assets/js/firebase-auth.js"></script>
     <script defer src="/assets/js/firebase-service.js"></script>
+    <!-- ✅ NEW: Settings Script -->
+    <script defer src="/assets/js/settings.js"></script>
     <script defer src="/assets/js/join-game.js"></script>
 
+    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
+    <script src="/assets/js/error-boundary.js"></script>
 </head>
 <body>
-<!-- ? P1 DSGVO: Age-Gate Modal für Jugendschutz -->
-<div class="age-gate-modal hidden" id="age-gate-modal" role="dialog" aria-labelledby="age-gate-title" aria-modal="true">
-    <div class="age-gate-backdrop"></div>
-    <div class="age-gate-content">
-        <div class="age-gate-header">
-            <h2 class="age-gate-title" id="age-gate-title">🔞 Altersverifikation erforderlich</h2>
-        </div>
-        <div class="age-gate-body">
-            <p class="age-gate-message">
-                Das Spiel enthält Fragen mit einer FSK-Einstufung von <strong id="fsk-rating">16</strong> Jahren.
-            </p>
-            <p class="age-gate-confirmation">
-                Bitte bestätige, dass du das Mindestalter erreicht hast:
-            </p>
-            <div class="age-options">
-                <label class="age-option">
-                    <input type="radio" name="age-confirmation" value="16" id="age-16">
-                    <span class="age-label">Ich bin 16 Jahre oder älter</span>
-                </label>
-                <label class="age-option">
-                    <input type="radio" name="age-confirmation" value="18" id="age-18">
-                    <span class="age-label">Ich bin 18 Jahre oder älter</span>
-                </label>
-            </div>
-            <div class="age-gate-warning">
-                <p><strong>ℹ️ Hinweis:</strong></p>
-                <p>Durch die Bestätigung versicherst du, dass deine Angaben der Wahrheit entsprechen.
-                   Falsche Angaben können zum Ausschluss aus dem Spiel führen.</p>
-            </div>
-        </div>
-        <div class="age-gate-footer">
-            <button class="age-btn secondary" id="age-decline" type="button">Abbrechen</button>
-            <button class="age-btn primary" id="age-confirm" type="button" disabled>Bestätigen</button>
-        </div>
-    </div>
-</div>
 
 <!-- Background Particles -->
 <div class="background-particles" aria-hidden="true">
-    ...existing code...
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
 </div>
 
 <!-- Loading -->
@@ -111,24 +87,21 @@
         <header class="header" role="banner">
             <h1 id="page-title">🎮 Spiel beitreten</h1>
             <p>Gib den Spiel-Code und deinen Namen ein</p>
+
+            <!-- ✅ NEW: Settings Button (oben rechts) -->
+            <button id="settings-btn" class="settings-btn" aria-label="Einstellungen öffnen" title="Einstellungen">
+                <span class="settings-icon" aria-hidden="true">⚙️</span>
+            </button>
         </header>
 
-        <!-- ? P1 DSGVO: Datenschutzhinweis -->
-        <div class="privacy-notice" role="region" aria-labelledby="privacy-heading">
-            <h2 id="privacy-heading" class="privacy-heading">🔒 Datenschutzhinweis</h2>
-            <p class="privacy-text">
-                Beim Beitreten werden <strong>Name</strong>, <strong>Alter</strong> und <strong>IP-Adresse</strong>
-                temporär für das Multiplayer-Spiel gespeichert. Daten werden nach Spielende automatisch gelöscht.
-                <a href="/privacy.html" class="privacy-link" target="_blank" rel="noopener">Mehr erfahren</a>
-            </p>
-        </div>
+        <!-- ✅ REMOVED: Datenschutzhinweis komplett entfernt -->
 
-        <!-- ? P0 SECURITY: Fehlermeldungen Container -->
+        <!-- ✅ P0 SECURITY: Fehlermeldungen Container -->
         <div class="error-messages hidden" id="error-container" role="alert" aria-live="assertive" aria-atomic="true">
             <!-- Fehler werden hier dynamisch eingefügt (via textContent, NICHT innerHTML) -->
         </div>
 
-        <!-- ? P1 STABILITY: Offline-Warnung -->
+        <!-- ✅ P1 STABILITY: Offline-Warnung -->
         <div class="offline-warning hidden" id="offline-warning" role="alert" aria-live="polite">
             <strong>⚠️ Verbindung verloren</strong>
             <p>Überprüfe deine Internetverbindung und versuche es erneut.</p>
@@ -152,17 +125,17 @@
                             aria-required="true"
                             aria-invalid="false"
                     >
-                    <!-- ? P1 UI/UX: Live-Validierung Icon -->
+                    <!-- ✅ P1 UI/UX: Live-Validierung Icon -->
                     <span class="validation-icon hidden" id="code-validation-icon" aria-hidden="true">✓</span>
                 </div>
                 <span class="input-hint" id="code-hint">Vom Host mitgeteilt (z.B. ABC123)</span>
 
-                <!-- ? P1 UI/UX: Fehlermeldung für ungültigen Code -->
+                <!-- ✅ P1 UI/UX: Fehlermeldung für ungültigen Code -->
                 <span class="input-error hidden" id="code-error" role="alert">
                     <!-- Fehlertext wird dynamisch eingefügt -->
                 </span>
 
-                <!-- ? P0 Sicherheit: Rate-Limit Warnung -->
+                <!-- ✅ P0 Sicherheit: Rate-Limit Warnung -->
                 <div class="rate-limit-warning hidden" id="rate-limit-warning" role="alert" aria-live="polite">
                     <strong>⚠️ Zu viele Versuche</strong>
                     <p>Bitte warte <span id="rate-limit-countdown" aria-live="polite">30</span> Sekunden bevor du es erneut versuchst.</p>
@@ -177,7 +150,7 @@
                     <dd id="game-host-name">Wird geladen...</dd>
 
                     <dt>Spieler:</dt>
-                    <dd id="game-player-count">0/10</dd>
+                    <dd id="game-player-count">0/8</dd>
 
                     <dt>Kategorien:</dt>
                     <dd id="game-categories">Wird geladen...</dd>
@@ -185,11 +158,11 @@
                     <dt>Schwierigkeit:</dt>
                     <dd id="game-difficulty">Wird geladen...</dd>
 
-                    <!-- ? P1 DSGVO/Jugendschutz: FSK-Warnung -->
+                    <!-- ✅ P1 DSGVO/Jugendschutz: FSK-Warnung -->
                     <dt>FSK-Einstufung:</dt>
                     <dd id="game-fsk-rating" class="fsk-warning" role="status">
-                        <strong>🔞 FSK 16+</strong>
-                        <span class="fsk-hint">Alterspr�fung erforderlich</span>
+                        <strong>✓ FSK 0</strong>
+                        <span class="fsk-hint">Familienfreundlich</span>
                     </dd>
                 </dl>
             </aside>
@@ -211,12 +184,12 @@
                             aria-required="true"
                             aria-invalid="false"
                     >
-                    <!-- ? P1 UI/UX: Live-Validierung Icon -->
+                    <!-- ✅ P1 UI/UX: Live-Validierung Icon -->
                     <span class="validation-icon hidden" id="name-validation-icon" aria-hidden="true">✓</span>
                 </div>
                 <span class="input-hint" id="name-hint">2-20 Zeichen, nur Buchstaben und Zahlen</span>
 
-                <!-- ? P1 UI/UX: Fehlermeldung für ungültigen Namen -->
+                <!-- ✅ P1 UI/UX: Fehlermeldung für ungültigen Namen -->
                 <span class="input-error hidden" id="name-error" role="alert">
                     <!-- Fehlertext wird dynamisch eingefügt -->
                 </span>
@@ -234,8 +207,100 @@
         </div>
     </div>
 </div>
-    <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
-    <script src="/assets/js/error-boundary.js"></script>
+
+<!-- ✅ NEW: Settings Modal (genau wie in index.html) -->
+<div class="settings-modal" id="settings-modal" role="dialog" aria-labelledby="settings-title" aria-modal="true" style="display:none;">
+    <div class="settings-modal-content">
+        <div class="settings-header">
+            <h2 id="settings-title">⚙️ Einstellungen</h2>
+            <button class="settings-close-btn" id="settings-close-btn" type="button" aria-label="Einstellungen schließen">
+                <span aria-hidden="true">✕</span>
+            </button>
+        </div>
+
+        <div class="settings-body">
+            <!-- Account Section -->
+            <section class="settings-section">
+                <h3>👤 Account</h3>
+                <div class="settings-item">
+                    <label for="display-name-input">Anzeigename</label>
+                    <div class="input-group">
+                        <input type="text" id="display-name-input" class="settings-input" placeholder="Dein Name" maxlength="20">
+                        <button class="btn-save" id="save-display-name-btn" type="button">Speichern</button>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label>Account Status</label>
+                    <p class="settings-info" id="account-status">Angemeldet</p>
+                </div>
+            </section>
+
+            <!-- Altersverifikation Section -->
+            <section class="settings-section">
+                <h3>🛡️ Altersverifikation</h3>
+                <div class="settings-item">
+                    <label for="birthdate-input">Geburtsdatum (Ü18 Verifikation)</label>
+                    <div class="input-group">
+                        <input type="date" id="birthdate-input" class="settings-input" max="2026-01-12">
+                        <button class="btn-save" id="verify-age-btn" type="button">Verifizieren</button>
+                    </div>
+                    <p class="settings-hint">Erforderlich für FSK 16/18 Inhalte</p>
+                </div>
+                <div class="settings-item">
+                    <label>FSK Zugriff</label>
+                    <div class="fsk-status" id="fsk-status">
+                        <span class="fsk-badge fsk-0">FSK 0</span>
+                        <span class="fsk-badge fsk-16" id="fsk16-badge-settings" style="display:none;">FSK 16</span>
+                        <span class="fsk-badge fsk-18" id="fsk18-badge-settings" style="display:none;">FSK 18</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DSGVO Section -->
+            <section class="settings-section">
+                <h3>🔒 Datenschutz (DSGVO)</h3>
+                <div class="settings-item">
+                    <button class="btn-export" id="export-data-btn" type="button">
+                        <span aria-hidden="true">📥</span> Meine Daten exportieren
+                    </button>
+                    <p class="settings-hint">Lade alle deine gespeicherten Daten als JSON herunter</p>
+                </div>
+            </section>
+
+            <!-- Danger Zone -->
+            <section class="settings-section settings-danger-zone">
+                <h3>⚠️ Gefahrenzone</h3>
+                <div class="settings-item" id="cancel-deletion-container" style="display:none;">
+                    <div class="deletion-info-box">
+                        <p><strong>⚠️ Account-Löschung geplant</strong></p>
+                        <p id="deletion-scheduled-date"></p>
+                        <p class="settings-hint">Sie können die Löschung noch abbrechen</p>
+                    </div>
+                    <button class="btn-primary" id="cancel-deletion-btn" type="button">
+                        <span aria-hidden="true">↩️</span> Löschung abbrechen
+                    </button>
+                </div>
+                <div class="settings-item" id="delete-account-container">
+                    <button class="btn-danger" id="delete-account-btn" type="button">
+                        <span aria-hidden="true">🗑️</span> Account löschen
+                    </button>
+                    <p class="settings-hint">Löscht deinen Account nach 48 Stunden (Karenzzeit)</p>
+                </div>
+            </section>
+
+            <!-- Links -->
+            <section class="settings-section">
+                <div class="settings-links">
+                    <a href="privacy.html" target="_blank">🔒 Datenschutzerklärung</a>
+                    <a href="imprint.html" target="_blank">📋 Impressum</a>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ Notification Container -->
+<div id="notification-container" aria-live="polite" aria-atomic="true"></div>
 
 </body>
 </html>

@@ -211,7 +211,10 @@
                 isGuest: JoinGameModule.gameState.isGuest
             });
 
-// Age verification check (accepts legacy "true" AND object format)
+            // ===========================
+            // AGE VERIFICATION - NUR FÜR FSK16/18 LOBBYS
+            // ===========================
+
             const readLS = (k) => {
                 try {
                     if (window.NocapUtils?.getLocalStorage) {
@@ -225,7 +228,6 @@
                 }
             };
 
-
             const writeLS = (k, v) => window.NocapUtils?.setLocalStorage
                 ? window.NocapUtils.setLocalStorage(k, v)
                 : localStorage.setItem(k, (typeof v === 'string' ? v : JSON.stringify(v)));
@@ -236,7 +238,7 @@
 
             const raw = readLS('nocap_age_verification');
 
-// legacy: "true"/true  | new: { verified:true, timestamp: ... }
+            // Legacy: "true"/true | New: { verified:true, timestamp: ... }
             const verified =
                 raw === true ||
                 raw === 'true' ||
@@ -246,47 +248,25 @@
                 (raw && typeof raw === 'object' && Number(raw.timestamp)) ||
                 Number(readLS('nocap_age_verification_ts') || 0);
 
-            if (verified && !timestamp) {
-                // first time we see legacy verified -> create timestamp so expiry works
-                timestamp = Date.now();
-                writeLS('nocap_age_verification_ts', String(timestamp));
+            // ✅ NEU: Altersverifikation ist OPTIONAL beim Seitenaufruf
+            // Wird nur geprüft wenn User FSK16/18-Lobby beitreten will
+
+            if (verified && timestamp) {
+                // Check expiry (24 hours)
+                const AGE_VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000;
+                if ((Date.now() - timestamp) > AGE_VERIFICATION_EXPIRY) {
+                    Logger.warn('⚠️ Age verification expired - clearing');
+                    removeLS('nocap_age_verification');
+                    removeLS('nocap_age_verification_ts');
+                    removeLS('nocap_age_level');
+                }
             }
 
-            if (!verified) {
-                Logger.warn('⚠️ No age verification found - redirecting to age gate');
-                showNotification('⚠️ Altersverifikation erforderlich', 'warning', 3000);
-
-                const currentUrl = window.location.href;
-                sessionStorage.setItem('nocap_return_url', currentUrl);
-
-                setTimeout(() => {
-                    window.location.href = 'index.html?showAgeGate=true';
-                }, 2000);
-                return;
-            }
-
-// Check timestamp expiry (24 hours) – only if we have a timestamp
-            const AGE_VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000;
-            if (timestamp && (Date.now() - timestamp) > AGE_VERIFICATION_EXPIRY) {
-                Logger.warn('⚠️ Age verification expired');
-                showNotification('⚠️ Altersverifikation abgelaufen. Bitte erneut bestätigen.', 'warning', 3000);
-
-                removeLS('nocap_age_verification');
-                removeLS('nocap_age_verification_ts');
-
-                const currentUrl = window.location.href;
-                sessionStorage.setItem('nocap_return_url', currentUrl);
-
-                setTimeout(() => {
-                    window.location.href = 'index.html?showAgeGate=true';
-                }, 2000);
-                return;
-            }
-// Build a normalized ageVerification object (legacy: string/boolean -> empty object)
+            // Build normalized ageVerification object
             const ageVerification = (raw && typeof raw === 'object') ? raw : {};
 
-// Prefer stored age level key (single source of truth)
-            const userAgeLevel = Math.max(
+            // Get age level (default: 0 = not verified)
+            const userAgeLevel = verified ? Math.max(
                 0,
                 Number(
                     ageVerification.ageLevel ??
@@ -294,14 +274,16 @@
                     readLS('nocap_age_level') ??
                     (ageVerification.isAdult ? 18 : 0)
                 ) || 0
-            );
+            ) : 0;
 
-            Logger.debug(`✅ Age verification valid: ${userAgeLevel}+`);
+            Logger.debug(`📋 User age level: ${userAgeLevel === 0 ? 'nicht verifiziert' : userAgeLevel + '+'}`);
             JoinGameModule.gameState.userAgeLevel = userAgeLevel;
-            // keep single source of truth
-            writeLS('nocap_age_level', String(userAgeLevel));
 
-// ✅ Content settings (user must explicitly allow 16+/18+ categories)
+            if (userAgeLevel > 0) {
+                writeLS('nocap_age_level', String(userAgeLevel));
+            }
+
+            // ✅ Content settings (optional - wird bei FSK16/18-Check geprüft)
             const allowFSK16 = readBoolFlag('nocap_allow_fsk16');
             const allowFSK18 = readBoolFlag('nocap_allow_fsk18');
 
@@ -312,7 +294,7 @@
                 JoinGameModule.gameState.save();
             }
 
-            Logger.debug('✅ Content settings:', { allowFSK16, allowFSK18 });
+            Logger.debug('✅ Content settings:', { allowFSK16, allowFSK18, userAgeLevel });
 
             // Initialize Firebase
             showLoading('Verbinde mit Server...');
@@ -632,25 +614,23 @@
                 .map(c => String(c || '').trim())
                 .filter(Boolean);
 
-// UX-FSK Check (server enforced beim Join sowieso)
+// ✅ FSK-Check: Nur prüfen wenn Lobby FSK16/18 enthält
             const userAgeLevel = JoinGameModule.gameState.userAgeLevel || 0;
+            const hasFSK18 = categories.includes('fsk18');
 
-// Age restriction
-            if (categories.includes('fsk18') && userAgeLevel < 18) {
-                throw new Error('Du musst mindestens 18 Jahre alt sein für dieses Spiel');
-            }
-            if (categories.includes('fsk16') && userAgeLevel < 16) {
-                throw new Error('Du musst mindestens 16 Jahre alt sein für dieses Spiel');
+            // ✅ FSK18-Lobby: User muss 18+ sein
+            if (hasFSK18) {
+                if (userAgeLevel === 0) {
+                    // Nicht verifiziert
+                    throw new Error('AGE_VERIFICATION_REQUIRED_18');
+                }
+                if (userAgeLevel < 18) {
+                    // Zu jung
+                    throw new Error('AGE_TOO_YOUNG_18');
+                }
             }
 
-            const maxPlayers = Number(codeData.maxPlayers || 8);
-            let players = null;
-            try {
-                const playersSnap = await JoinGameModule.firebaseService.database.ref(`games/${gameId}/players`).once('value');
-                players = playersSnap.exists() ? playersSnap.val() : null;
-            } catch (e) {
-                players = null;
-            }
+            Logger.debug('✅ Age check passed:', { userAgeLevel, hasFSK16, hasFSK18 });
 
 // ✅ Preview-Objekt so bauen, dass displayGameInfo() + joinGame() Settings lesen können
             const previewGameData = {
@@ -700,6 +680,23 @@
                 userMessage = '🏁 Dieses Spiel ist bereits beendet.';
             } else if (error.message.includes('läuft') || error.message.includes('playing')) {
                 userMessage = '🎮 Dieses Spiel läuft bereits.';
+            } else if (error.message === 'AGE_VERIFICATION_REQUIRED_18') {
+                userMessage = '🔞 Diese Lobby ist ab 18 Jahren. Bitte verifiziere dein Alter in den Einstellungen.';
+
+                setTimeout(() => {
+                    if (confirm('Möchtest du jetzt dein Alter verifizieren?')) {
+                        // Store return URL
+                        sessionStorage.setItem('nocap_return_url', window.location.href + '?code=' + gameCodeInput.value);
+                        // Open settings (oder redirect zu age-gate)
+                        const settingsBtn = document.getElementById('settings-btn');
+                        if (settingsBtn) {
+                            settingsBtn.click();
+                        }
+                    }
+                }, 2000);
+
+            } else if (error.message === 'AGE_TOO_YOUNG_18') {
+                userMessage = '🔞 Diese Lobby ist ab 18 Jahren. Du bist noch zu jung für diese Inhalte.';
             } else if (error.message.includes('Alter') || error.message.includes('FSK')) {
                 userMessage = error.message;
             } else if (error.message.includes('Verbindung') || error.message.includes('connection')) {
@@ -891,20 +888,10 @@
             gameCodeInput.focus();
             return;
         }
-// ✅ Enforce age + explicit opt-in again (must match preview check)
+
         const preview = JoinGameModule.currentGameData || {};
         const cats = (preview.settings?.categories || []).map(c => String(c || '').trim()).filter(Boolean);
 
-        const userAgeLevel = Number(JoinGameModule.gameState.userAgeLevel || 0);
-        const allowFSK16 = JoinGameModule.gameState.allowFSK16 === true;
-        const allowFSK18 = JoinGameModule.gameState.allowFSK18 === true;
-
-        if (cats.includes('fsk18')) {
-            if (userAgeLevel < 18) {
-                showNotification('Du musst mindestens 18 Jahre alt sein für dieses Spiel', 'error');
-                return;
-            }
-        }
 
         if (!GAME_CODE_REGEX.test(gameCode)) {
             showNotification('Ungültiger Spiel-Code', 'error');
@@ -961,15 +948,20 @@
                 // ignore
             }
 
-// ✅ HARD UID SYNC (verhindert playerId-null/alt -> Lobby "Player not found")
+// ✅ Store player's age level in their player data (use already loaded value)
             const uid =
                 (window.firebase?.auth?.()?.currentUser?.uid) ||
                 (JoinGameModule.firebaseService?.auth?.currentUser?.uid) ||
                 null;
 
             if (uid) {
-                JoinGameModule.gameState.playerId = uid;
-                JoinGameModule.gameState.authUid = uid;
+                // ✅ Use already loaded userAgeLevel from JoinGameModule.gameState
+                const userAgeLevel = Number(JoinGameModule.gameState.userAgeLevel || 0);
+
+                // Store age level in player data for host validation
+                await firebase.database()
+                    .ref(`games/${gameId}/players/${uid}/ageLevel`)
+                    .set(userAgeLevel);
             }
 
 // ✅ Save GameState (IMPORTANT: gameId ist die echte DB-ID)

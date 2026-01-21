@@ -230,6 +230,7 @@
       }
     },
 
+
     "users": {
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
@@ -249,9 +250,17 @@
         },
         "lastLogin": {
           ".validate": "newData.isNumber()"
+        },
+
+        "saved_games": {
+          ".indexOn": ["savedAt"],
+          "$gameId": {
+            ".validate": "newData.hasChildren(['players', 'timestamp', 'deviceMode'])"
+          }
         }
       }
     },
+
 
     "deletionRequests": {
       "$userId": {

@@ -81,43 +81,100 @@
     <h1 class="screen-title">⚙️ Schwierigkeit wählen</h1>
 
     <div class="glass-card">
-        <!-- Multiplayer Header -->
-        <header class="multiplayer-header">
-            <div class="host-info">
-                <div class="host-details">
-                    <div class="host-name" id="host-name">Host Name</div>
-                    <div class="host-indicator">👑 Du bist der Host</div>
-                </div>
-                <div class="game-id-section">
-                    <div class="game-id-label">Spiel-Code:</div>
-                    <div class="game-id-display" id="game-id-display" aria-live="polite">Wird geladen...</div>
-                </div>
-            </div>
-        </header>
-
         <p class="selection-description" id="difficulty-subtitle">
-            Wähle den Schwierigkeitsgrad für euer Multiplayer-Spiel
+            Wie intensiv soll das Spiel werden?<br>
+            <small>Bestimmt die Konsequenz bei Fehlschätzungen</small>
         </p>
 
-        <!-- Selected Categories Display -->
-        <aside class="selected-categories-section" id="selected-categories-section" role="region" aria-label="Ausgewählte Kategorien">
-            <h2 class="section-title">Ausgewählte Kategorien</h2>
-            <div class="selected-categories-display" id="selected-categories-display"></div>
-        </aside>
-
         <!-- Difficulty Grid -->
-        <div class="difficulty-grid" id="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad-Auswahl"></div>
+        <div class="difficulty-grid" id="difficulty-grid" role="radiogroup" aria-label="Schwierigkeitsgrad-Auswahl">
+            <!-- Easy -->
+            <button type="button"
+                    class="difficulty-card easy"
+                    data-difficulty="easy"
+                    role="radio"
+                    aria-checked="false"
+                    aria-label="Entspannt - Leicht - 1 Punkt pro Abweichung">
+                <div class="difficulty-header">
+                    <div class="difficulty-left">
+                        <div class="sips-indicator" id="easy-icon" aria-hidden="true">🍹</div>
+                        <div class="difficulty-info">
+                            <h2>Entspannt</h2>
+                            <div class="difficulty-badge easy-badge" role="img" aria-label="Leichter Schwierigkeitsgrad">LEICHT</div>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- ? P1 UI/UX: Players Status Display -->
-        <section class="players-status-section" id="players-status-section" role="region" aria-labelledby="players-status-title">
-            <h2 id="players-status-title" class="status-title">📊 Spieler-Status</h2>
-            <div class="players-status-grid" id="players-status-grid" role="list">
-                <div class="loading-players">Lade Spieler...</div>
-            </div>
-            <div class="status-summary" id="status-summary" aria-live="polite">
-                <span id="ready-count">0</span> von <span id="total-count">0</span> Spielern bereit
-            </div>
-        </section>
+                <div class="sips-explanation">
+                    <div class="base-sips" id="easy-base">1 Punkt pro Abweichung</div>
+                    <div class="sips-formula" id="easy-formula">
+                        <div>Für gemütliche Runden</div>
+                    </div>
+                </div>
+
+                <div class="difficulty-description">
+                    Perfekt für entspannte Abende. Kleine Strafen bei Fehlschätzungen.
+                </div>
+            </button>
+
+            <!-- Medium -->
+            <button type="button"
+                    class="difficulty-card medium"
+                    data-difficulty="medium"
+                    role="radio"
+                    aria-checked="false"
+                    aria-label="Normal - Mittel - Abweichung gleich Punkte">
+                <div class="difficulty-header">
+                    <div class="difficulty-left">
+                        <div class="sips-indicator" id="medium-icon" aria-hidden="true">🍺</div>
+                        <div class="difficulty-info">
+                            <h2>Normal</h2>
+                            <div class="difficulty-badge medium-badge" role="img" aria-label="Mittlerer Schwierigkeitsgrad">MITTEL</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sips-explanation">
+                    <div class="base-sips" id="medium-base">Abweichung = Punkte</div>
+                    <div class="sips-formula" id="medium-formula">
+                        <div>Ausgewogene Herausforderung</div>
+                    </div>
+                </div>
+
+                <div class="difficulty-description">
+                    Gute Balance. Standard für die meisten Spielrunden.
+                </div>
+            </button>
+
+            <!-- Hard -->
+            <button type="button"
+                    class="difficulty-card hard"
+                    data-difficulty="hard"
+                    role="radio"
+                    aria-checked="false"
+                    aria-label="Hardcore - Schwer - Doppelte Abweichung">
+                <div class="difficulty-header">
+                    <div class="difficulty-left">
+                        <div class="sips-indicator" id="hard-icon" aria-hidden="true">🍻</div>
+                        <div class="difficulty-info">
+                            <h2>Hardcore</h2>
+                            <div class="difficulty-badge hard-badge" role="img" aria-label="Schwerer Schwierigkeitsgrad">SCHWER</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sips-explanation">
+                    <div class="base-sips" id="hard-base">Abweichung × 2 = Punkte</div>
+                    <div class="sips-formula" id="hard-formula">
+                        <div>Maximale Herausforderung!</div>
+                    </div>
+                </div>
+
+                <div class="difficulty-description">
+                    Für Profis. Hohe Strafen bei Fehlschätzungen!
+                </div>
+            </button>
+        </div>
 
         <!-- Controls -->
         <div class="controls">
@@ -177,8 +234,8 @@
     <a href="/jugendschutz.html" class="privacy-link" target="_blank" rel="noopener">Jugendschutz</a>
 </div>
 
-    <!-- ? ERROR BOUNDARY: Global Error Handling -->
-    <script src="/assets/js/error-boundary.js"></script>
+<!-- ? ERROR BOUNDARY: Global Error Handling -->
+<script src="/assets/js/error-boundary.js"></script>
 
 </body>
 </html>

@@ -341,21 +341,46 @@
             MultiplayerLobbyModule.gameState.save?.(true);
         } catch (e) {}
 
-        if (MultiplayerLobbyModule.gameState.gameId) {
+// ✅ Check: Kommen wir von einem "Edit Settings"-Flow zurück?
+        const getLS = (k) => window.NocapUtils?.getLocalStorage
+            ? window.NocapUtils.getLocalStorage(k)
+            : localStorage.getItem(k);
+
+        const isEditingLobby = String(getLS('nocap_editing_lobby') || 'false') === 'true';
+        const existingGameId = getLS('nocap_existing_game_id');
+
+        if (isEditingLobby && existingGameId) {
+            // ✅ Wir editieren eine bestehende Lobby - laden ohne neu zu erstellen
+            Logger.debug('🔧 Editing existing lobby:', existingGameId);
+
+            currentGameId = existingGameId;
+            MultiplayerLobbyModule.gameState.gameId = existingGameId;
+            isHost = MultiplayerLobbyModule.gameState.isHost === true;
+
+            // ✅ Clear edit flags
+            try {
+                if (window.NocapUtils && window.NocapUtils.removeLocalStorage) {
+                    window.NocapUtils.removeLocalStorage('nocap_editing_lobby');
+                    window.NocapUtils.removeLocalStorage('nocap_existing_game_id');
+                } else {
+                    localStorage.removeItem('nocap_editing_lobby');
+                    localStorage.removeItem('nocap_existing_game_id');
+                }
+            } catch (e) {}
+
+            await loadExistingGame();
+            setupPresenceSystem();
+
+        } else if (MultiplayerLobbyModule.gameState.gameId) {
             currentGameId = MultiplayerLobbyModule.gameState.gameId;
             isHost = MultiplayerLobbyModule.gameState.isHost === true;
 
             await loadExistingGame();
-
-            // ✅ P0 FIX: Start presence only AFTER game loaded & player exists
             setupPresenceSystem();
 
         } else if (MultiplayerLobbyModule.gameState.isHost) {
             isHost = true;
-
             await createNewGame();
-
-            // ✅ P0 FIX: Start presence only AFTER game created
             setupPresenceSystem();
     } else {
         // ✅ P0 FIX: Give 1s to recover gameId (storage/URL)
@@ -414,6 +439,7 @@
             const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
             const rawAge = getLS('nocap_age_level');
             const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
+
             if (MultiplayerLobbyModule.isDevelopment) {
                 console.log('🔞 Age settings read:', {
                     rawVerified,
@@ -424,27 +450,20 @@
                 });
             }
 
-            if (!verified) {
-                console.error('❌ No age verification found (settings-only)');
-                showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
-                setTimeout(() => window.location.href = 'index.html', 2000);
-                return false;
-            }
-
             const rawSelected = MultiplayerLobbyModule.gameState?.selectedCategories || [];
             const selected = Array.isArray(rawSelected)
                 ? rawSelected
                 : (rawSelected ? Object.values(rawSelected) : []);
 
+            // ✅ NUR noch FSK 18 prüfen
             const hasInvalidCategory = selected.some(cat => {
                 if (cat === 'fsk18' && ageLevel < 18) return true;
-                if (cat === 'fsk16' && ageLevel < 16) return true;
                 return false;
             });
 
             if (hasInvalidCategory) {
                 console.error('❌ Invalid categories for age level (settings-only)', { ageLevel, selected });
-                showNotification('Ungültige Kategorien für dein Alter!', 'error');
+                showNotification('FSK 18 Inhalte erfordern Volljährigkeit!', 'error');
                 setTimeout(() => window.location.href = 'index.html', 2000);
                 return false;
             }
@@ -591,7 +610,8 @@
 
             displayGameCode(codeToShow);
             displayQRCode(codeToShow);
-            // ✅ Display settings (supports both: game.settings OR direct fields)
+
+            // Display settings (supports both: game.settings OR direct fields)
             const categories = game.settings?.categories
                 || (game.selectedCategories ? Object.values(game.selectedCategories) : [])
                 || MultiplayerLobbyModule.gameState.selectedCategories
@@ -604,11 +624,7 @@
 
             displaySettings({ categories, difficulty });
 
-
-// ✅ Option A: Spieler wird serverseitig via joinGameSecure angelegt.
-// ABER: Direkt nach Redirect kann der Player-Eintrag noch nicht im Snapshot sein.
-// Deshalb: kurz warten/pollen statt sofort redirect.
-// ✅ P0 FIX: Ensure we have a stable player key before checking player existence
+            // ✅ P0 FIX: Ensure we have a stable player key before checking player existence
             const ensurePlayerKey = async (timeoutMs = 3000, intervalMs = 50) => {
                 const start = Date.now();
                 while (Date.now() - start < timeoutMs) {
@@ -637,9 +653,7 @@
             };
 
             const key = await ensurePlayerKey();
-
             let playerExists = !!(key && game.players?.[key]);
-
 
             if (!playerExists && !isHost) {
                 // ✅ Warte kurz, ob der Player-Eintrag noch nachkommt
@@ -654,13 +668,13 @@
                 }
             }
 
-
             if (MultiplayerLobbyModule.isDevelopment && !isHost) {
                 console.log('✅ Player exists in game');
             }
 
-
             setupGameListener(currentGameId);
+
+            // ✅ REMOVED: Duplicate initialization block (was causing recursion)
 
             showNotification('Spiel geladen!', 'success', 800);
             if (MultiplayerLobbyModule.isDevelopment) {
@@ -704,6 +718,78 @@
 
         if (MultiplayerLobbyModule.isDevelopment) {
             console.log('✅ Game listener setup');
+        }
+    }
+    // In multiplayer-lobby.js - NACH setupGameListener()
+
+    /**
+     * ✅ P0 SECURITY: Monitor category changes and kick invalid players
+     */
+    function setupCategoryMonitor(gameId) {
+        if (!gameId) return;
+
+        const categoriesRef = firebase.database().ref(`games/${gameId}/settings/categories`);
+
+        categoriesRef.on('value', async (snapshot) => {
+            if (!snapshot.exists()) return;
+
+            const newCategories = snapshot.val() || [];
+
+            // Check if current player is still allowed
+            await validatePlayerCategories(newCategories);
+        });
+
+        Logger.debug('✅ Category monitor active');
+    }
+
+    /**
+     * ✅ P0 SECURITY: Validate player age for current categories
+     */
+    async function validatePlayerCategories(categories) {
+        try {
+            const getLS = (k) => window.NocapUtils?.getLocalStorage
+                ? window.NocapUtils.getLocalStorage(k)
+                : localStorage.getItem(k);
+
+            const rawAge = getLS('nocap_age_level');
+            const userAgeLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
+
+            const categoriesArray = Array.isArray(categories)
+                ? categories
+                : (categories ? Object.values(categories) : []);
+
+            // ✅ NUR noch FSK18 prüfen
+            if (categoriesArray.includes('fsk18') && userAgeLevel < 18) {
+                Logger.warn('⚠️ Player kicked: FSK18 category added but user < 18');
+
+                showNotification('⚠️ Host hat FSK18-Inhalte aktiviert. Du wurdest entfernt.', 'warning', 5000);
+
+                // Remove player from game
+                if (currentGameId && !isHost) {
+                    try {
+                        await firebase.database()
+                            .ref(`games/${currentGameId}/players/${getPlayerKey()}`)
+                            .remove();
+                    } catch (e) {
+                        Logger.error('Failed to remove player:', e);
+                    }
+                }
+
+                // Redirect to index with message
+                setTimeout(() => {
+                    sessionStorage.setItem('nocap_kick_reason', 'fsk18_restriction');
+                    cleanup();
+                    window.location.href = 'index.html';
+                }, 3000);
+
+                return false;
+            }
+
+            return true;
+
+        } catch (error) {
+            Logger.error('❌ Category validation error:', error);
+            return true; // Don't kick on error
         }
     }
 
@@ -820,98 +906,140 @@
     // ===========================
     // DISPLAY FUNCTIONS
     // ===========================
+    /**
+     * ✅ P1 UI/UX: Setup share button handlers
+     */
+    function setupShareButtons(gameCode) {
+        const whatsappBtn = document.getElementById('share-whatsapp-btn');
+        const telegramBtn = document.getElementById('share-telegram-btn');
+        const copyBtn = document.getElementById('share-copy-btn');
+        const nativeBtn = document.getElementById('share-native-btn');
 
-    function displayGameCode(gameId) {
-        const codeDisplay = document.getElementById('game-code-display');
-        if (codeDisplay) {
-            codeDisplay.textContent = gameId;
+        const shareUrl = `${window.location.origin}/join-game.html?code=${encodeURIComponent(gameCode)}`;
+        const shareText = `🎮 Komm mit zu No-Cap!\n\nSpiel-Code: ${gameCode}\n\nOder nutze diesen Link:\n${shareUrl}`;
 
-            // ✅ P1 UI/UX: Add click-to-copy if not already added
-            if (!codeDisplay.parentElement.querySelector('.copy-button')) {
-                const copyButton = document.createElement('button');
-                copyButton.className = 'copy-button';
-                copyButton.textContent = '📋';
-                copyButton.type = 'button';
-                copyButton.setAttribute('aria-label', 'Spiel-Code kopieren');
-                copyButton.setAttribute('title', 'Code kopieren');
+        // WhatsApp Share
+        if (whatsappBtn) {
+            addTrackedEventListener(whatsappBtn, 'click', () => {
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+                showNotification('WhatsApp geöffnet!', 'success', 2000);
+            });
+        }
 
-                addTrackedEventListener(copyButton, 'click', async () => {
+        // Telegram Share
+        if (telegramBtn) {
+            addTrackedEventListener(telegramBtn, 'click', () => {
+                const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`🎮 Spiel-Code: ${gameCode}`)}`;
+                window.open(telegramUrl, '_blank', 'noopener,noreferrer');
+                showNotification('Telegram geöffnet!', 'success', 2000);
+            });
+        }
+
+        // Copy Link
+        if (copyBtn) {
+            addTrackedEventListener(copyBtn, 'click', async () => {
+                try {
+                    await navigator.clipboard.writeText(shareUrl);
+
+                    copyBtn.classList.add('copied');
+                    const textSpan = copyBtn.querySelector('span:last-child');
+                    const originalText = textSpan ? textSpan.textContent : '';
+
+                    if (textSpan) textSpan.textContent = 'Kopiert!';
+
+                    showNotification('✅ Link kopiert!', 'success', 2000);
+
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copied');
+                        if (textSpan) textSpan.textContent = originalText;
+                    }, 2000);
+
+                } catch (error) {
+                    // Fallback
+                    const textArea = document.createElement('textarea');
+                    textArea.value = shareUrl;
+                    textArea.style.position = 'fixed';
+                    textArea.style.opacity = '0';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+
                     try {
-                        await navigator.clipboard.writeText(gameId);
-                        showNotification('Spiel-Code kopiert!', 'success', 2000);
-                        copyButton.textContent = '✅';
-                        setTimeout(() => {
-                            copyButton.textContent = '📋';
-                        }, 2000);
-                    } catch (error) {
-                        // Fallback
-                        const textArea = document.createElement('textarea');
-                        textArea.value = gameId;
-                        textArea.style.position = 'fixed';
-                        textArea.style.left = '-999999px';
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        try {
-                            document.execCommand('copy');
-                            showNotification('Spiel-Code kopiert!', 'success', 2000);
-                        } catch (e) {
-                            showNotification('Kopieren fehlgeschlagen', 'error');
-                        }
-                        document.body.removeChild(textArea);
+                        document.execCommand('copy');
+                        showNotification('✅ Link kopiert!', 'success', 2000);
+                    } catch (e) {
+                        showNotification('❌ Kopieren fehlgeschlagen', 'error');
                     }
-                });
 
-                codeDisplay.parentElement.appendChild(copyButton);
-            }
+                    document.body.removeChild(textArea);
+                }
+            });
+        }
+
+        // Native Share API (if supported)
+        if (nativeBtn && navigator.share) {
+            nativeBtn.removeAttribute('hidden');
+
+            addTrackedEventListener(nativeBtn, 'click', async () => {
+                try {
+                    await navigator.share({
+                        title: 'No-Cap Spiel',
+                        text: `🎮 Spiel-Code: ${gameCode}`,
+                        url: shareUrl
+                    });
+                    showNotification('Link geteilt!', 'success', 2000);
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        showNotification('Teilen fehlgeschlagen', 'error');
+                    }
+                }
+            });
         }
     }
 
     /**
-     * ✅ P1 UI/UX: Display QR Code with enhanced accessibility
-     * ✅ P0 SECURITY: Safe DOM manipulation (no innerHTML for user data)
+     * ✅ UPDATED: Display game code and setup share buttons
      */
-    function displayQRCode(gameId) {
+    function displayGameCode(gameCode) {
+        const codeDisplay = document.getElementById('qr-code-text');
+        if (codeDisplay) {
+            codeDisplay.textContent = gameCode;
+        }
+
+        // ✅ Setup share buttons with the game code
+        setupShareButtons(gameCode);
+    }
+
+    /**
+     * ✅ UPDATED: Display QR Code (simplified)
+     */
+    function displayQRCode(gameCode) {
         const qrContainer = document.getElementById('qr-code');
-        const qrTextCode = document.getElementById('qr-code-text');
-        const copyBtn = document.getElementById('copy-code-btn');
 
         if (!qrContainer) return;
 
-        // ✅ P0 SECURITY: Clear container safely
+        // Clear container safely
         while (qrContainer.firstChild) {
             qrContainer.removeChild(qrContainer.firstChild);
         }
 
-        // ✅ P1 UI/UX: Display text code for accessibility
-        if (qrTextCode) {
-            qrTextCode.textContent = gameId;
-        }
-
-        // ✅ P1 UI/UX: Enable copy button
-        if (copyBtn) {
-            copyBtn.disabled = false;
-            copyBtn.removeAttribute('aria-disabled');
-        }
-
         // Generate QR Code
         if (typeof QRCode !== 'undefined') {
-            // ✅ P0 SECURITY: Don't expose gameId in URL parameter directly
-            // Instead use the join page which will handle validation
-            const joinUrl = `${window.location.origin}/join-game.html?code=${encodeURIComponent(gameId)}`;
+            const joinUrl = `${window.location.origin}/join-game.html?code=${encodeURIComponent(gameCode)}`;
+
             try {
                 new QRCode(qrContainer, {
                     text: joinUrl,
-                    width: 180,
-                    height: 180,
+                    width: 200,
+                    height: 200,
                     colorDark: '#000000',
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
                 });
 
-                // ✅ P1 UI/UX: Update ARIA description after QR code is generated
                 setTimeout(() => {
                     qrContainer.setAttribute('aria-label',
-                        `QR-Code zum Beitreten mit Spiel-Code ${gameId}`
+                        `QR-Code zum Beitreten mit Spiel-Code ${gameCode}`
                     );
                 }, 100);
 
@@ -929,74 +1057,6 @@
             const loadingMsg = document.createElement('div');
             loadingMsg.textContent = '⏳ QR-Code lädt...';
             qrContainer.appendChild(loadingMsg);
-        }
-    }
-
-    /**
-     * ✅ P1 UI/UX: Copy game code to clipboard
-     */
-    async function copyGameCode() {
-        const gameCodeDisplay = document.getElementById('game-code-display');
-        const copyBtn = document.getElementById('copy-code-btn');
-        const codeHint = document.getElementById('code-hint');
-
-        if (!gameCodeDisplay || !copyBtn) return;
-
-        const gameCode = gameCodeDisplay.textContent.trim();
-
-        if (!gameCode || gameCode === 'Lädt...') {
-            showNotification('⚠️ Kein Code zum Kopieren verfügbar', 'warning');
-            return;
-        }
-
-        try {
-            // Try modern Clipboard API first
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(gameCode);
-            } else {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = gameCode;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-            }
-
-            // ✅ P1 UI/UX: Visual feedback
-            const copyText = copyBtn.querySelector('.copy-text');
-            const originalText = copyText.textContent;
-
-            copyText.textContent = 'Kopiert!';
-            copyBtn.classList.add('copied');
-
-            if (codeHint) {
-                const hint = codeHint.querySelector('small');
-                if (hint) {
-                    hint.textContent = '✅ Code in Zwischenablage kopiert';
-                }
-            }
-
-            showNotification('✅ Code kopiert!', 'success', 2000);
-
-            // Reset after 2 seconds
-            setTimeout(() => {
-                copyText.textContent = originalText;
-                copyBtn.classList.remove('copied');
-
-                if (codeHint) {
-                    const hint = codeHint.querySelector('small');
-                    if (hint) {
-                        hint.textContent = 'Teile diesen Code mit deinen Freunden';
-                    }
-                }
-            }, 2000);
-
-        } catch (error) {
-            console.error('Failed to copy code:', error);
-            showNotification('❌ Kopieren fehlgeschlagen', 'error');
         }
     }
 
@@ -1605,6 +1665,20 @@
 
     function editSettings() {
         if (!isHost) return;
+
+        // ✅ Markiere: Wir editieren eine bestehende Lobby (nicht neu erstellen)
+        try {
+            if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
+                window.NocapUtils.setLocalStorage('nocap_editing_lobby', true);
+                window.NocapUtils.setLocalStorage('nocap_existing_game_id', currentGameId);
+            } else {
+                localStorage.setItem('nocap_editing_lobby', 'true');
+                localStorage.setItem('nocap_existing_game_id', currentGameId);
+            }
+        } catch (e) {
+            console.warn('Could not save editing flag:', e);
+        }
+
         window.location.href = 'multiplayer-category-selection.html';
     }
 
@@ -1686,10 +1760,6 @@
         if (leaveBtn) {
             // ✅ P1 STABILITY: Show confirmation instead of direct leave
             addTrackedEventListener(leaveBtn, 'click', showLeaveConfirmation);
-        }
-        if (copyBtn) {
-            // ✅ P1 UI/UX: Use enhanced copy function
-            addTrackedEventListener(copyBtn, 'click', copyGameCode);
         }
         if (editBtn) {
             addTrackedEventListener(editBtn, 'click', editSettings);
@@ -1809,7 +1879,15 @@
                 presenceRef = null;
             }
         } catch (e) {}
-
+        // ✅ NEW: Remove category monitor
+        if (currentGameId) {
+            try {
+                const categoriesRef = firebase.database().ref(`games/${currentGameId}/settings/categories`);
+                categoriesRef.off();
+            } catch (e) {
+                // Silent fail
+            }
+        }
         // ✅ P2 PERFORMANCE: Cleanup event listeners
         if (window.NocapUtils && window.NocapUtils.cleanupEventListeners) {
             window.NocapUtils.cleanupEventListeners();

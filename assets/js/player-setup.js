@@ -294,7 +294,6 @@
                     if (typeof PlayerSetupModule.gameState.setAlcoholMode === 'function') {
                         PlayerSetupModule.gameState.setAlcoholMode(false);
                     }
-                    showNotification('Alkohol-Modus nur für 18+', 'warning', 2500);
                 }
             }
 
@@ -1299,27 +1298,19 @@
     // ===========================
     // START GAME
     // ===========================
-
     /**
      * ✅ P1 DSGVO/Jugendschutz: Check FSK rating before starting
+     * Nur FSK 18 erfordert Altersverifizierung
      */
     function checkFSKRating() {
         const difficulty = PlayerSetupModule.gameState.difficulty;
         const categories = PlayerSetupModule.gameState.selectedCategories || [];
 
-        let requiredAge = 0;
-        let warning = '';
+        // ✅ NUR noch FSK 18 prüfen
+        if (categories.includes('fsk18')) {
+            const requiredAge = 18;
+            const warning = 'FSK 18 - Nur für Erwachsene';
 
-        // Check difficulty-based FSK
-        if (difficulty === 'hard' || categories.includes('fsk18')) {
-            requiredAge = 18;
-            warning = 'FSK 18 - Nur für Erwachsene';
-        } else if (difficulty === 'medium' || categories.includes('fsk16')) {
-            requiredAge = 16;
-            warning = 'FSK 16 - Ab 16 Jahren';
-        }
-
-        if (requiredAge > 0) {
             // Check if user has verified age
             const ageVerification = window.NocapUtils
                 ? window.NocapUtils.getLocalStorage('nocap_age_verification')
@@ -1328,7 +1319,6 @@
             const ageLevel = window.NocapUtils
                 ? window.NocapUtils.getLocalStorage('nocap_age_level')
                 : localStorage.getItem('nocap_age_level');
-
 
             if (String(ageVerification) !== 'true' || !ageLevel) {
                 showNotification('Altersverifikation erforderlich!', 'error');

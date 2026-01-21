@@ -668,6 +668,7 @@
 
             if (!checkDOMPurify()) return;
             await initializeFirebase().catch(err => Logger.warn('⚠️ Firebase initialization error:', err));
+
             if (typeof GameState === 'undefined') {
                 Logger.error('❌ GameState class not found!');
                 window.NocapUtils?.showNotification?.('Fehler beim Laden der Spieldaten', 'error');
@@ -676,19 +677,50 @@
 
             IndexPageModule.gameState = new GameState();
             if (IndexPageModule.isDevelopment) Logger.debug('✅ GameState initialized');
+
             // ✅ Settings-only: just read cached age level (if any) and adjust UI
             loadVerification();
             updateUIForVerification();
+
+            // ✅ NEW: Check if user was kicked from lobby
+            checkKickReason();
+
             animateCards();
             setupEventListeners();
             setupScrollToTop();
-
             handleDirectJoin();
 
             if (IndexPageModule.isDevelopment) Logger.debug('✅ Index page initialized');
         } catch (err) {
             Logger.error('❌ Initialization error:', err);
             window.NocapUtils?.showNotification?.('Fehler beim Laden der Seite', 'error');
+        }
+    }
+
+    /**
+     * ✅ NEW: Check if user was kicked from a lobby
+     */
+    function checkKickReason() {
+        try {
+            const kickReason = sessionStorage.getItem('nocap_kick_reason');
+            if (!kickReason) return;
+
+            sessionStorage.removeItem('nocap_kick_reason');
+
+            let message = '';
+            if (kickReason === 'fsk18_restriction') {
+                message = '⚠️ Du wurdest aus dem Spiel entfernt, da der Host FSK18-Inhalte aktiviert hat.';
+            } else if (kickReason === 'fsk16_restriction') {
+                message = '⚠️ Du wurdest aus dem Spiel entfernt, da der Host FSK16-Inhalte aktiviert hat.';
+            }
+
+            if (message && window.NocapUtils?.showNotification) {
+                setTimeout(() => {
+                    window.NocapUtils.showNotification(message, 'warning', 5000);
+                }, 500);
+            }
+        } catch (error) {
+            Logger.warn('⚠️ Could not check kick reason:', error);
         }
     }
 

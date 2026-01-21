@@ -87,38 +87,11 @@
             <h2 id="game-info-title" class="sr-only">Spiel-Beitrittsinformationen</h2>
 
             <div class="info-grid">
-                <!-- ? P1 UI/UX: Enhanced Game Code Display with Copy Button -->
-                <div class="info-item">
-                    <div class="info-label" id="game-code-label">Spiel-Code</div>
-                    <div class="game-code-wrapper">
-                        <!-- ? P0 SECURITY: textContent only, no innerHTML -->
-                        <div class="info-value game-code"
-                             id="game-code-display"
-                             aria-live="polite"
-                             aria-labelledby="game-code-label"
-                             role="status">
-                            Lädt...
-                        </div>
-                        <!-- ? P1 UI/UX: Copy to Clipboard Button -->
-                        <button class="copy-code-btn"
-                                id="copy-code-btn"
-                                type="button"
-                                aria-label="Spiel-Code in Zwischenablage kopieren"
-                                disabled>
-                            <span class="copy-icon" aria-hidden="true">📋</span>
-                            <span class="copy-text">Kopieren</span>
-                        </button>
-                    </div>
-                    <div class="code-hint" id="code-hint" aria-live="polite">
-                        <small>Teile diesen Code mit deinen Freunden</small>
-                    </div>
-                </div>
-
-                <!-- ? P1 UI/UX: Enhanced QR Code with ARIA Labels -->
-                <div class="info-item">
+                <!-- ✅ NEUE QR-CODE SECTION MIT SHARE-BUTTONS -->
+                <div class="info-item qr-section-centered">
                     <div class="info-label" id="qr-code-label">QR-Code scannen</div>
                     <div class="qr-code-wrapper">
-                        <!-- ? P1 UI/UX: QR Code Container with proper ARIA -->
+                        <!-- ✅ Centered QR Code -->
                         <div class="qr-code-container"
                              id="qr-code"
                              role="img"
@@ -128,14 +101,60 @@
                                 <span>Generiere QR-Code...</span>
                             </div>
                         </div>
-                        <!-- ? P1 UI/UX: QR Code Description for Accessibility -->
-                        <div id="qr-code-description" class="qr-description">
-                            <small>Scannen Sie den QR-Code mit Ihrem Smartphone, um dem Spiel beizutreten</small>
-                        </div>
-                        <!-- ? P1 UI/UX: Alternative Text Code Display -->
+
+                        <!-- ✅ Game Code Display Below QR -->
                         <div class="qr-text-code" id="qr-text-code" aria-live="polite">
-                            <span class="code-prefix">Code:</span>
+                            <span class="code-prefix">Spiel-Code:</span>
                             <span class="code-value" id="qr-code-text">------</span>
+                        </div>
+
+                        <!-- ✅ Social Share Buttons -->
+                        <div class="share-buttons" id="share-buttons">
+                            <button class="share-btn share-whatsapp"
+                                    id="share-whatsapp-btn"
+                                    type="button"
+                                    aria-label="Per WhatsApp teilen">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                                </svg>
+                                <span>WhatsApp</span>
+                            </button>
+
+                            <button class="share-btn share-telegram"
+                                    id="share-telegram-btn"
+                                    type="button"
+                                    aria-label="Per Telegram teilen">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                                </svg>
+                                <span>Telegram</span>
+                            </button>
+
+                            <button class="share-btn share-copy"
+                                    id="share-copy-btn"
+                                    type="button"
+                                    aria-label="Link kopieren">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                                </svg>
+                                <span>Link kopieren</span>
+                            </button>
+
+                            <button class="share-btn share-native"
+                                    id="share-native-btn"
+                                    type="button"
+                                    aria-label="Nativ teilen"
+                                    hidden>
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                    <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+                                </svg>
+                                <span>Teilen</span>
+                            </button>
+                        </div>
+
+                        <!-- ✅ QR Code Description for Accessibility -->
+                        <div id="qr-code-description" class="qr-description">
+                            <small>Scannen Sie den QR-Code oder teilen Sie den Link mit Ihren Freunden</small>
                         </div>
                     </div>
                 </div>
@@ -156,21 +175,6 @@
                 <div class="setting-header">Kategorien</div>
                 <div class="categories-tags" id="selected-categories-display" role="list" aria-live="polite">
                     <span class="loading-text-muted">Lädt...</span>
-                </div>
-            </div>
-
-            <!-- ? P1 DSGVO: Privacy Notice for Players -->
-            <div class="privacy-notice" role="note" aria-labelledby="privacy-notice-title">
-                <div class="privacy-notice-icon" aria-hidden="true">ℹ️</div>
-                <div class="privacy-notice-content">
-                    <strong id="privacy-notice-title">Datenschutzhinweis</strong>
-                    <p>
-                        Dein Name und deine Antworten werden während des Spiels temporär gespeichert
-                        und nach Beendigung automatisch gelöscht.
-                        <a href="privacy.html" class="privacy-link-inline" target="_blank" rel="noopener">
-                            Mehr erfahren
-                        </a>
-                    </p>
                 </div>
             </div>
 
@@ -207,7 +211,7 @@
                     id="ready-btn"
                     type="button"
                     aria-label="Als bereit markieren">
-                <span aria-hidden="true">?</span> Bereit
+                <span aria-hidden="true">✅</span> Bereit
             </button>
             <button class="btn-start host-only"
                     id="start-btn"
@@ -221,7 +225,7 @@
                     id="leave-btn"
                     type="button"
                     aria-label="Lobby verlassen">
-                <span aria-hidden="true">?</span> Lobby verlassen
+                <span aria-hidden="true"></span> Lobby verlassen
             </button>
         </div>
     </div>

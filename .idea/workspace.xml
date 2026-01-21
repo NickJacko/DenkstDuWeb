@@ -4,10 +4,36 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor category-selection.css and difficulty-selection.css for ultra-compact mobile-first layout: minimize padding, streamline card and button styles, optimize grid spacing, and enhance visual clarity and responsiveness across devices">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/difficulty-selection.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/join-game.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/join-game.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/player-setup.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/player-setup.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/settings.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/settings.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/player-setup.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/utils.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database.rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database.rules.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/imprint.html" beforeDir="false" afterPath="$PROJECT_DIR$/imprint.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/join-game.html" beforeDir="false" afterPath="$PROJECT_DIR$/join-game.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jugendschutz.html" beforeDir="false" afterPath="$PROJECT_DIR$/jugendschutz.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/multiplayer-lobby.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-lobby.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/player-setup.html" beforeDir="false" afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/privacy.html" beforeDir="false" afterPath="$PROJECT_DIR$/privacy.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -167,31 +193,7 @@
       <workItem from="1768554418204" duration="394000" />
       <workItem from="1768555261474" duration="25029000" />
       <workItem from="1768812234952" duration="2784000" />
-      <workItem from="1768834190520" duration="7728000" />
-    </task>
-    <task id="LOCAL-00111" summary="Enhance Firebase App Check integration, improve FSK validation, and refactor privacy and UI logic&#10;&#10;- Add firebase-app-check-key meta tag to all HTML files; remove hardcoded fallback keys from JS configs&#10;- Update firebase-init.js and firebase-config.js to require App Check key via meta/env, improve error handling and logging&#10;- Refactor FSK validation in difficulty-selection.js for stricter server-side checks and better error feedback&#10;- Improve multiplayer-category-selection.js player readiness logic and player key handling&#10;- Refactor multiplayer-difficulty-selection.js for cleaner event listener management and dependency checks&#10;- Enhance join-game.js with robust Firebase readiness checks and improved FSK badge rendering&#10;- Update firebase-auth.js for safer initialization, promise handling, and redirect logic&#10;- Refactor privacy.js: use NocapCookies for consent, improve modal cleanup, TOC insertion, and section toggling&#10;- Improve 404.js and difficulty-selection.js for accessibility, reduced motion, and error handling&#10;- Add getPlayerKey utility, update event listener cleanup, and minor UI/UX improvements across modules">
-      <option name="closed" value="true" />
-      <created>1768492503160</created>
-      <option name="number" value="00111" />
-      <option name="presentableId" value="LOCAL-00111" />
-      <option name="project" value="LOCAL" />
-      <updated>1768492503160</updated>
-    </task>
-    <task id="LOCAL-00112" summary="Refactor Cloud Functions tests for improved isolation and coverage; add proxyquire for dependency mocking, enhance FSK validation and privacy logic tests, and update dev dependencies">
-      <option name="closed" value="true" />
-      <created>1768493011145</created>
-      <option name="number" value="00112" />
-      <option name="presentableId" value="LOCAL-00112" />
-      <option name="project" value="LOCAL" />
-      <updated>1768493011145</updated>
-    </task>
-    <task id="LOCAL-00113" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
-      <option name="closed" value="true" />
-      <created>1768493247669</created>
-      <option name="number" value="00113" />
-      <option name="presentableId" value="LOCAL-00113" />
-      <option name="project" value="LOCAL" />
-      <updated>1768493247669</updated>
+      <workItem from="1768834190520" duration="29063000" />
     </task>
     <task id="LOCAL-00114" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
       <option name="closed" value="true" />
@@ -561,7 +563,31 @@
       <option name="project" value="LOCAL" />
       <updated>1768899753809</updated>
     </task>
-    <option name="localTasksCounter" value="160" />
+    <task id="LOCAL-00160" summary="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness">
+      <option name="closed" value="true" />
+      <created>1768902978997</created>
+      <option name="number" value="00160" />
+      <option name="presentableId" value="LOCAL-00160" />
+      <option name="project" value="LOCAL" />
+      <updated>1768902978997</updated>
+    </task>
+    <task id="LOCAL-00161" summary="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness">
+      <option name="closed" value="true" />
+      <created>1768903519866</created>
+      <option name="number" value="00161" />
+      <option name="presentableId" value="LOCAL-00161" />
+      <option name="project" value="LOCAL" />
+      <updated>1768903519866</updated>
+    </task>
+    <task id="LOCAL-00162" summary="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness">
+      <option name="closed" value="true" />
+      <created>1768903668744</created>
+      <option name="number" value="00162" />
+      <option name="presentableId" value="LOCAL-00162" />
+      <option name="project" value="LOCAL" />
+      <updated>1768903668744</updated>
+    </task>
+    <option name="localTasksCounter" value="163" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -582,7 +608,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Update Firebase imports to use v1 API and improve multiplayer module initialization logic" />
     <MESSAGE value="Improve Firebase initialization checks and add utility for dependency waiting across modules" />
     <MESSAGE value="add JMStV age rating file (.well-known/age-de.xml) and allow deployment" />
     <MESSAGE value="Update hosting public directory to 'public' and adjust ignore patterns in firebase.json" />
@@ -607,7 +632,8 @@
     <MESSAGE value="Refactor index.css for streamlined responsiveness: simplify breakpoints, reduce code duplication, and enhance mobile/desktop layout clarity" />
     <MESSAGE value="Refactor settings.css for ultra-compact mobile-first layout: streamline modal, button, and section styles; optimize spacing, input fields, and dark mode support; enhance responsiveness and accessibility across devices" />
     <MESSAGE value="Refactor category-selection.css and difficulty-selection.css for ultra-compact mobile-first layout: minimize padding, streamline card and button styles, optimize grid spacing, and enhance visual clarity and responsiveness across devices" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor category-selection.css and difficulty-selection.css for ultra-compact mobile-first layout: minimize padding, streamline card and button styles, optimize grid spacing, and enhance visual clarity and responsiveness across devices" />
+    <MESSAGE value="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

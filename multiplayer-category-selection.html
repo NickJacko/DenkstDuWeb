@@ -75,7 +75,10 @@
 <button class="back-button" id="back-button" type="button" aria-label="Zurück">
     ← Zurück
 </button>
-
+<!-- Settings Button -->
+<button class="settings-btn" id="settings-btn" type="button" aria-label="Einstellungen öffnen" title="Einstellungen">
+    <span class="settings-icon" aria-hidden="true">⚙️</span>
+</button>
 <!-- App Container -->
 <div class="app-container">
     <h1 class="screen-title">🎮 Multiplayer Kategorien</h1>
@@ -221,8 +224,109 @@
     </div>
 </div>
 
-    <!-- ? ERROR BOUNDARY: Global Error Handling -->
-    <script src="/assets/js/error-boundary.js"></script>
+<!-- ✅ ERROR BOUNDARY: Global Error Handling -->
+<script src="/assets/js/error-boundary.js"></script>
+
+<!-- ✅ Settings Modal -->
+<link rel="stylesheet" href="/assets/css/settings.css">
+<script defer src="/assets/js/settings.js"></script>
+
+<!-- ✅ Settings Modal HTML (same as join-game.html) -->
+<div class="settings-modal" id="settings-modal" role="dialog" aria-labelledby="settings-title" aria-modal="true" style="display:none;">
+    <div class="settings-modal-content">
+        <div class="settings-header">
+            <h2 id="settings-title">⚙️ Einstellungen</h2>
+            <button class="settings-close-btn" id="settings-close-btn" type="button" aria-label="Einstellungen schließen">
+                <span aria-hidden="true">✕</span>
+            </button>
+        </div>
+
+        <div class="settings-body">
+            <!-- Account Section -->
+            <section class="settings-section">
+                <h3>👤 Account</h3>
+                <div class="settings-item">
+                    <label for="display-name-input">Anzeigename</label>
+                    <div class="input-group">
+                        <input type="text" id="display-name-input" class="settings-input" placeholder="Dein Name" maxlength="20">
+                        <button class="btn-save" id="save-display-name-btn" type="button">Speichern</button>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <label>Account Status</label>
+                    <p class="settings-info" id="account-status">Angemeldet</p>
+                </div>
+            </section>
+
+            <!-- Altersverifikation Section -->
+            <section class="settings-section">
+                <h3>🛡️ Altersverifikation</h3>
+                <div class="settings-item">
+                    <label for="birthdate-input">Geburtsdatum (Ü18 Verifikation)</label>
+                    <div class="input-group">
+                        <input type="date" id="birthdate-input" class="settings-input" max="2026-01-12">
+                        <button class="btn-save" id="verify-age-btn" type="button">Verifizieren</button>
+                    </div>
+                    <p class="settings-hint">Erforderlich für FSK 16/18 Inhalte</p>
+                </div>
+                <div class="settings-item">
+                    <label>FSK Zugriff</label>
+                    <div class="fsk-status" id="fsk-status">
+                        <span class="fsk-badge fsk-0">FSK 0</span>
+                        <span class="fsk-badge fsk-16" id="fsk16-badge-settings" style="display:none;">FSK 16</span>
+                        <span class="fsk-badge fsk-18" id="fsk18-badge-settings" style="display:none;">FSK 18</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DSGVO Section -->
+            <section class="settings-section">
+                <h3>🔒 Datenschutz (DSGVO)</h3>
+                <div class="settings-item">
+                    <button class="btn-export" id="export-data-btn" type="button">
+                        <span aria-hidden="true">📥</span> Meine Daten exportieren
+                    </button>
+                    <p class="settings-hint">Lade alle deine gespeicherten Daten als JSON herunter</p>
+                </div>
+            </section>
+
+            <!-- Danger Zone -->
+            <section class="settings-section settings-danger-zone">
+                <h3>⚠️ Gefahrenzone</h3>
+                <div class="settings-item" id="cancel-deletion-container" style="display:none;">
+                    <div class="deletion-info-box">
+                        <p><strong>⚠️ Account-Löschung geplant</strong></p>
+                        <p id="deletion-scheduled-date"></p>
+                        <p class="settings-hint">Sie können die Löschung noch abbrechen</p>
+                    </div>
+                    <button class="btn-primary" id="cancel-deletion-btn" type="button">
+                        <span aria-hidden="true">↩️</span> Löschung abbrechen
+                    </button>
+                </div>
+                <div class="settings-item" id="delete-account-container">
+                    <button class="btn-danger" id="delete-account-btn" type="button">
+                        <span aria-hidden="true">🗑️</span> Account löschen
+                    </button>
+                    <p class="settings-hint">Löscht deinen Account nach 48 Stunden (Karenzzeit)</p>
+                </div>
+            </section>
+
+            <!-- Links -->
+            <section class="settings-section">
+                <div class="settings-links">
+                    <a href="privacy.html" target="_blank">🔒 Datenschutzerklärung</a>
+                    <a href="imprint.html" target="_blank">📋 Impressum</a>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ Notification Container -->
+<div id="notification-container" aria-live="polite" aria-atomic="true"></div>
+
+</body>
+</html>
 
 </body>
 </html>
