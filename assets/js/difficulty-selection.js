@@ -286,10 +286,6 @@
                     showNotification('🔞 FSK18 nur ab 18. Bitte verifizieren.', 'warning', 3000);
                     return false;
                 }
-                if (category === 'fsk16' && ageLevel < 16) {
-                    showNotification('🔞 FSK16 nur ab 16. Bitte verifizieren.', 'warning', 3000);
-                    return false;
-                }
             }
 
             Logger.warn('⚠️ Firebase offline – local age checks passed, continuing');
@@ -323,7 +319,7 @@
             }
 
             for (const category of DifficultySelectionModule.gameState.selectedCategories) {
-                if (category === 'fsk0') continue;
+                if (category === 'fsk0' || 'fsk0') continue;
 
                 const hasAccess = await DifficultySelectionModule.gameState.canAccessFSK(category);
 

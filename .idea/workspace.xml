@@ -4,36 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor multiplayer lobby and category selection UI: redesign QR and share section for mobile, add settings modal, improve FSK auto-kick logic, and streamline difficulty/leaderboard wording">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/difficulty-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/join-game.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/join-game.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-category-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-difficulty-selection.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/multiplayer-lobby.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/player-setup.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/player-setup.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/settings.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/settings.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/css/category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/gameplay.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/player-setup.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/utils.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/database.rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database.rules.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/difficulty-selection.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gameplay.html" beforeDir="false" afterPath="$PROJECT_DIR$/gameplay.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/imprint.html" beforeDir="false" afterPath="$PROJECT_DIR$/imprint.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/join-game.html" beforeDir="false" afterPath="$PROJECT_DIR$/join-game.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jugendschutz.html" beforeDir="false" afterPath="$PROJECT_DIR$/jugendschutz.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/functions/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/multiplayer-category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-difficulty-selection.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/multiplayer-lobby.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-lobby.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/player-setup.html" beforeDir="false" afterPath="$PROJECT_DIR$/player-setup.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/privacy.html" beforeDir="false" afterPath="$PROJECT_DIR$/privacy.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage.rules" beforeDir="false" afterPath="$PROJECT_DIR$/storage.rules" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -193,15 +175,7 @@
       <workItem from="1768554418204" duration="394000" />
       <workItem from="1768555261474" duration="25029000" />
       <workItem from="1768812234952" duration="2784000" />
-      <workItem from="1768834190520" duration="29063000" />
-    </task>
-    <task id="LOCAL-00114" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
-      <option name="closed" value="true" />
-      <created>1768493344235</created>
-      <option name="number" value="00114" />
-      <option name="presentableId" value="LOCAL-00114" />
-      <option name="project" value="LOCAL" />
-      <updated>1768493344235</updated>
+      <workItem from="1768834190520" duration="35661000" />
     </task>
     <task id="LOCAL-00115" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
       <option name="closed" value="true" />
@@ -587,7 +561,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768903668744</updated>
     </task>
-    <option name="localTasksCounter" value="163" />
+    <task id="LOCAL-00163" summary="Refactor multiplayer lobby and category selection UI: redesign QR and share section for mobile, add settings modal, improve FSK auto-kick logic, and streamline difficulty/leaderboard wording">
+      <option name="closed" value="true" />
+      <created>1768999547644</created>
+      <option name="number" value="00163" />
+      <option name="presentableId" value="LOCAL-00163" />
+      <option name="project" value="LOCAL" />
+      <updated>1768999547644</updated>
+    </task>
+    <option name="localTasksCounter" value="164" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -608,7 +590,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Improve Firebase initialization checks and add utility for dependency waiting across modules" />
     <MESSAGE value="add JMStV age rating file (.well-known/age-de.xml) and allow deployment" />
     <MESSAGE value="Update hosting public directory to 'public' and adjust ignore patterns in firebase.json" />
     <MESSAGE value="Move firebase.json and .firebaserc to project root for improved configuration management" />
@@ -633,7 +614,8 @@
     <MESSAGE value="Refactor settings.css for ultra-compact mobile-first layout: streamline modal, button, and section styles; optimize spacing, input fields, and dark mode support; enhance responsiveness and accessibility across devices" />
     <MESSAGE value="Refactor category-selection.css and difficulty-selection.css for ultra-compact mobile-first layout: minimize padding, streamline card and button styles, optimize grid spacing, and enhance visual clarity and responsiveness across devices" />
     <MESSAGE value="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness" />
+    <MESSAGE value="Refactor multiplayer lobby and category selection UI: redesign QR and share section for mobile, add settings modal, improve FSK auto-kick logic, and streamline difficulty/leaderboard wording" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor multiplayer lobby and category selection UI: redesign QR and share section for mobile, add settings modal, improve FSK auto-kick logic, and streamline difficulty/leaderboard wording" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

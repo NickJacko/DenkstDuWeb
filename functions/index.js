@@ -281,11 +281,7 @@ exports.validateFSKAccess = functions
 
             const ageLevel = Number(userData.ageLevel || 0);
 
-            if (category === "fsk16" && ageLevel < 16) {
-                return res
-                    .status(200)
-                    .json({ result: { allowed: false, reason: "age_too_young", message: "FSK 16 erforderlich" } });
-            }
+            // ✅ fsk16 is ALWAYS allowed - no check needed
 
             if (category === "fsk18" && ageLevel < 18) {
                 return res
@@ -320,7 +316,10 @@ exports.validateFSKAccessCallable = functions
             throw new functions.https.HttpsError("invalid-argument", "Kategorie ist erforderlich");
         }
 
-        if (category === "fsk0" || category === "special") return { allowed: true, category };
+        // ✅ fsk0, fsk16, and special are ALWAYS allowed
+        if (category === "fsk0" || category === "fsk16" || category === "special") {
+            return { allowed: true, category };
+        }
 
         const userSnapshot = await admin.database().ref(`users/${uid}`).once("value");
         const userData = userSnapshot.val();
@@ -331,8 +330,9 @@ exports.validateFSKAccessCallable = functions
 
         const ageLevel = Number(userData.ageLevel || 0);
 
-        if (category === "fsk16" && ageLevel < 16) return { allowed: false, reason: "age_too_young", message: "FSK 16 erforderlich" };
-        if (category === "fsk18" && ageLevel < 18) return { allowed: false, reason: "age_too_young", message: "FSK 18 erforderlich" };
+        if (category === "fsk18" && ageLevel < 18) {
+            return { allowed: false, reason: "age_too_young", message: "FSK 18 erforderlich" };
+        }
 
         return { allowed: true, category };
     });
@@ -413,16 +413,20 @@ exports.setAgeVerification = functions
                 ageVerifiedAt: admin.database.ServerValue.TIMESTAMP,
             });
 
-            // ✅ optional aber empfohlen: Claims mergen statt überschreiben
+// ✅ Set custom claims - FSK16 is ALWAYS granted
             const user = await admin.auth().getUser(uid);
             const existing = user.customClaims || {};
             const nextClaims = { ...existing };
 
-            if (ageLevel >= 16) nextClaims.fsk16 = true;
-            else delete nextClaims.fsk16;
+            // ✅ FSK16 is ALWAYS granted (no age check)
+            nextClaims.fsk16 = true;
 
-            if (ageLevel >= 18) nextClaims.fsk18 = true;
-            else delete nextClaims.fsk18;
+            // ✅ FSK18 only if 18+
+            if (ageLevel >= 18) {
+                nextClaims.fsk18 = true;
+            } else {
+                delete nextClaims.fsk18;
+            }
 
             await admin.auth().setCustomUserClaims(uid, nextClaims);
 
@@ -535,17 +539,13 @@ exports.checkCategoryAccess = functions
                 throw new functions.https.HttpsError("permission-denied", "FSK18 nicht erlaubt");
             }
 
-            // fsk16
+            // ✅ fsk16 is ALWAYS allowed
             if (categoryId === "fsk16") {
-                if (tokenFsk16) return { allowed: true };
-
-                const uid = context.auth.uid;
-                const user = await admin.auth().getUser(uid);
-                const claims = user.customClaims || {};
-
-                if (claims.fsk16 === true || claims.fsk18 === true) return { allowed: true };
-                throw new functions.https.HttpsError("permission-denied", "FSK16 nicht erlaubt");
+                return { allowed: true };
             }
+
+            // default deny
+            return { allowed: false };
 
             // default deny
             return { allowed: false };
@@ -590,10 +590,11 @@ function normalizeCategories(input) {
     return Array.from(new Set(cleaned));
 }
 
-// helper: enforce category access (uses token claims, with fallback to latest claims)
 async function assertCategoryAllowed(categoryId, context) {
-    // fsk0 always ok
-    if (categoryId === "fsk0") return true;
+    // ✅ fsk0 and fsk16 are ALWAYS allowed (no age check)
+    if (categoryId === "fsk0" || categoryId === "fsk16") {
+        return true;
+    }
 
     const token = context.auth?.token || {};
 
@@ -603,7 +604,6 @@ async function assertCategoryAllowed(categoryId, context) {
         token.stripeRole === "pro";
 
     const tokenFsk18 = token.fsk18 === true;
-    const tokenFsk16 = token.fsk16 === true || tokenFsk18 === true; // 18 implies 16
 
     if (categoryId === "special") {
         if (tokenPremium) return true;
@@ -628,16 +628,6 @@ async function assertCategoryAllowed(categoryId, context) {
         if (claims.fsk18 === true) return true;
 
         throw new functions.https.HttpsError("permission-denied", "FSK18 nicht erlaubt");
-    }
-
-    if (categoryId === "fsk16") {
-        if (tokenFsk16) return true;
-
-        const user = await admin.auth().getUser(context.auth.uid);
-        const claims = user.customClaims || {};
-        if (claims.fsk16 === true || claims.fsk18 === true) return true;
-
-        throw new functions.https.HttpsError("permission-denied", "FSK16 nicht erlaubt");
     }
 
     // default deny
@@ -860,31 +850,32 @@ exports.joinGameSecure = functions
 // Lazy-load (prevents deploy discovery timeout)
 // --------------------
 
-// account-deletion (lazy)
-exports.scheduleAccountDeletion = (data, context) =>
-    require("./account-deletion").scheduleAccountDeletion(data, context);
+// account-deletion (lazy) - Conditional loading only if files exist
+if (require('fs').existsSync('./account-deletion.js')) {
+    exports.scheduleAccountDeletion = (data, context) =>
+        require("./account-deletion").scheduleAccountDeletion(data, context);
 
-exports.cancelAccountDeletion = (data, context) =>
-    require("./account-deletion").cancelAccountDeletion(data, context);
+    exports.cancelAccountDeletion = (data, context) =>
+        require("./account-deletion").cancelAccountDeletion(data, context);
 
-exports.processScheduledDeletions = (context) =>
-    require("./account-deletion").processScheduledDeletions(context);
+    exports.processScheduledDeletions = (context) =>
+        require("./account-deletion").processScheduledDeletions(context);
+}
 
+// realtime-security (lazy) - Conditional loading only if files exist
+if (require('fs').existsSync('./realtime-security.js')) {
+    exports.validateGameUpdate = (change, context) =>
+        require("./realtime-security").validateGameUpdate(change, context);
 
-// realtime-security (lazy)
-// NOTE: If these are RTDB/Firestore triggers (change, context) keep signature (change, context).
-exports.validateGameUpdate = (change, context) =>
-    require("./realtime-security").validateGameUpdate(change, context);
+    exports.detectRapidUpdates = (snap, context) =>
+        require("./realtime-security").detectRapidUpdates(snap, context);
 
-exports.detectRapidUpdates = (snap, context) =>
-    require("./realtime-security").detectRapidUpdates(snap, context);
+    exports.monitorGameDeletion = (snap, context) =>
+        require("./realtime-security").monitorGameDeletion(snap, context);
 
-exports.monitorGameDeletion = (snap, context) =>
-    require("./realtime-security").monitorGameDeletion(snap, context);
-
-exports.cleanupOldViolations = (context) =>
-    require("./realtime-security").cleanupOldViolations(context);
-
+    exports.cleanupOldViolations = (context) =>
+        require("./realtime-security").cleanupOldViolations(context);
+}
 /**
  * ✅ Simple health-check endpoint (Gen1)
  */

@@ -4,13 +4,16 @@
     ".write": false,
 
     "games": {
+      ".indexOn": ["hostId", "createdAt", "status"],
+
       "$gameId": {
         ".read": "auth != null && (data.child('players').child(auth.uid).exists() || data.child('hostId').val() === auth.uid)",
-
         ".write": false,
 
+        ".validate": "newData.hasChildren(['hostId', 'gameCode', 'status', 'createdAt']) && newData.child('players').hasChildren()",
+
         "hostId": {
-          ".validate": "newData.isString() && newData.val().length > 0"
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128"
         },
 
         "gameCode": {
@@ -24,30 +27,30 @@
 
         "phase": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'results' || newData.val() === 'finished' || newData.val() === 'waiting' || newData.val() === 'question')"
+          ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'setup' || newData.val() === 'question' || newData.val() === 'estimation' || newData.val() === 'results' || newData.val() === 'finished' || newData.val() === 'waiting' || newData.val() === 'playing')"
         },
 
         "startedAt": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0"
         },
 
         "createdAt": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0"
         },
 
         "lastUpdate": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0"
         },
 
         "lastActivity": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber()"
+          ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).exists())",
+          ".validate": "newData.isNumber() && newData.val() > 0"
         },
 
         "ttl": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0"
         },
 
         "difficulty": {
@@ -60,21 +63,24 @@
 
         "currentRound": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber() && newData.val() >= 1"
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100"
         },
 
         "currentQuestionIndex": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber() && newData.val() >= 0"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
         },
 
         "scores": {
-          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid"
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+          "$playerId": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
+          }
         },
 
         "timerStartTime": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0"
         },
 
         "timerPaused": {
@@ -84,37 +90,39 @@
 
         "timerRemaining": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber() && newData.val() >= 0"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 300"
         },
 
         "settings": {
           ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
-          ".write": false,
+          ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+
+          ".validate": "newData.hasChildren(['categories', 'difficulty', 'alcoholMode'])",
 
           "categories": {
-            ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
             ".validate": "(newData.hasChildren(['0']) && newData.child('0').isString()) || (newData.child('fsk0').exists() || newData.child('fsk16').exists() || newData.child('fsk18').exists() || newData.child('special').exists())",
             "$i": {
-            ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special')"
-                  }
-                        },
+              ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special')"
+            }
+          },
 
           "difficulty": {
-            ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
             ".validate": "newData.isString() && (newData.val() === 'easy' || newData.val() === 'medium' || newData.val() === 'hard')"
           },
 
           "alcoholMode": {
-            ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
             ".validate": "newData.isBoolean()"
           }
         },
 
         "players": {
+          ".indexOn": ["joinedAt", "online", "isHost"],
+
           "$playerId": {
             ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
+            ".write": "auth != null && (auth.uid === $playerId || root.child('games').child($gameId).child('hostId').val() === auth.uid) && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
 
-            ".write": "auth != null && ($playerId === auth.uid) && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+            ".validate": "newData.hasChildren(['name', 'joinedAt'])",
 
             "isReady": {
               ".validate": "newData.isBoolean()"
@@ -125,7 +133,7 @@
             },
 
             "lastSeen": {
-              ".validate": "newData.isNumber()"
+              ".validate": "newData.isNumber() && newData.val() > 0"
             },
 
             "online": {
@@ -133,15 +141,15 @@
             },
 
             "disconnectedAt": {
-              ".validate": "newData.isNumber()"
+              ".validate": "newData.isNumber() && newData.val() > 0"
             },
 
             "rejoinDeadline": {
-              ".validate": "newData.isNumber() || newData.val() === null"
+              ".validate": "(newData.isNumber() && newData.val() > 0) || newData.val() === null"
             },
 
             "updatedAt": {
-              ".validate": "newData.isNumber()"
+              ".validate": "newData.isNumber() && newData.val() > 0"
             },
 
             "name": {
@@ -153,23 +161,32 @@
             },
 
             "joinedAt": {
-              ".validate": "newData.isNumber()"
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+
+            "score": {
+              ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000 && (newData.val() - data.val() <= 100 || !data.exists())"
             }
           }
         },
 
         "rounds": {
+          ".indexOn": ["startedAt"],
+
           "$roundId": {
             ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
 
+            ".validate": "newData.hasChildren(['question', 'startedAt'])",
+
             "question": {
               ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-              ".validate": "newData.hasChildren(['text','category']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 300 && newData.child('category').isString()"
+              ".validate": "newData.hasChildren(['text','category']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 300 && newData.child('category').isString() && (newData.child('category').val() === 'fsk0' || newData.child('category').val() === 'fsk16' || newData.child('category').val() === 'fsk18' || newData.child('category').val() === 'special')"
             },
 
             "startedAt": {
               ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-              ".validate": "newData.isNumber()"
+              ".validate": "newData.isNumber() && newData.val() > 0"
             },
 
             "timerDuration": {
@@ -179,13 +196,15 @@
 
             "summary": {
               ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-              ".validate": "newData.hasChildren(['totalAnswers','yesCount','aggregatedAt']) && newData.child('totalAnswers').isNumber() && newData.child('yesCount').isNumber() && newData.child('aggregatedAt').isNumber()"
+              ".validate": "newData.hasChildren(['totalAnswers','yesCount','aggregatedAt']) && newData.child('totalAnswers').isNumber() && newData.child('totalAnswers').val() >= 0 && newData.child('totalAnswers').val() <= 50 && newData.child('yesCount').isNumber() && newData.child('yesCount').val() >= 0 && newData.child('yesCount').val() <= newData.child('totalAnswers').val() && newData.child('aggregatedAt').isNumber() && newData.child('aggregatedAt').val() > 0"
             },
 
             "answers": {
+              ".indexOn": ["submittedAt"],
+
               "$uid": {
                 ".write": "auth != null && $uid === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
-                ".validate": "newData.hasChildren(['answer','estimation','submittedAt']) && newData.child('answer').isBoolean() && newData.child('estimation').isNumber() && newData.child('estimation').val() >= 0 && newData.child('estimation').val() <= 50 && newData.child('submittedAt').isNumber()"
+                ".validate": "newData.hasChildren(['answer','estimation','submittedAt']) && newData.child('answer').isBoolean() && newData.child('estimation').isNumber() && newData.child('estimation').val() >= 0 && newData.child('estimation').val() <= 50 && newData.child('submittedAt').isNumber() && newData.child('submittedAt').val() > 0"
               }
             }
           }
@@ -194,30 +213,47 @@
     },
 
     "gameCodes": {
+      ".indexOn": ["status", "createdAt", "hostId"],
+
       "$code": {
         ".read": "auth != null",
         ".write": false,
 
+        ".validate": "newData.hasChildren(['hostId', 'gameId', 'status', 'createdAt']) && newData.val().matches(/^[A-Z0-9]{6}$/)",
+
         "hostId": {
-          ".validate": "newData.isString() && newData.val().length > 0"
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128"
         },
+
         "gameId": {
-          ".validate": "newData.isString() && newData.val().length > 0"
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128"
         },
+
         "status": {
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString() && (newData.val() === 'active' || newData.val() === 'used' || newData.val() === 'expired')"
         },
+
         "maxPlayers": {
           ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 8"
         },
+
         "categories": {
-          ".validate": "newData.hasChildren()"
+          ".validate": "newData.hasChildren()",
+          "$i": {
+            ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special')"
+          }
         },
+
         "difficulty": {
           ".validate": "newData.isString() && (newData.val() === 'easy' || newData.val() === 'medium' || newData.val() === 'hard')"
         },
+
         "createdAt": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        },
+
+        "expiresAt": {
+          ".validate": "newData.isNumber() && newData.val() > newData.parent().child('createdAt').val()"
         }
       }
     },
@@ -225,59 +261,145 @@
     "questions": {
       ".read": "auth != null",
       ".write": false,
+
       "$category": {
-        ".validate": "$category === 'fsk0' || $category === 'fsk16' || $category === 'fsk18' || $category === 'special'"
+        ".validate": "$category === 'fsk0' || $category === 'fsk16' || $category === 'fsk18' || $category === 'special'",
+
+        "$questionId": {
+          ".validate": "newData.hasChildren(['text']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 300"
+        }
       }
     },
 
-
     "users": {
+      ".indexOn": ["createdAt", "lastLogin"],
+
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
         ".write": "auth != null && auth.uid === $userId",
 
+        ".validate": "newData.hasChildren(['createdAt'])",
+
         "isPremium": {
+          ".write": false,
           ".validate": "newData.isBoolean()"
         },
+
         "ageVerified": {
+          ".write": false,
           ".validate": "newData.isBoolean()"
         },
+
         "ageLevel": {
+          ".write": false,
           ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 16 || newData.val() === 18)"
         },
+
         "createdAt": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0 && !data.exists()"
         },
+
         "lastLogin": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        },
+
+        "email": {
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/)"
+        },
+
+        "displayName": {
+          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 30"
+        },
+
+        "pendingDeletion": {
+          ".validate": "newData.isBoolean()"
         },
 
         "saved_games": {
-          ".indexOn": ["savedAt"],
+          ".indexOn": ["savedAt", "deviceMode"],
+
           "$gameId": {
-            ".validate": "newData.hasChildren(['players', 'timestamp', 'deviceMode'])"
+            ".validate": "newData.hasChildren(['players', 'timestamp', 'deviceMode']) && newData.child('players').hasChildren() && newData.child('timestamp').isNumber() && newData.child('timestamp').val() > 0 && newData.child('deviceMode').isString() && (newData.child('deviceMode').val() === 'single' || newData.child('deviceMode').val() === 'multi')",
+
+            "savedAt": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            }
+          }
+        },
+
+        "preferences": {
+          "notifications": {
+            ".validate": "newData.isBoolean()"
+          },
+
+          "theme": {
+            ".validate": "newData.isString() && (newData.val() === 'light' || newData.val() === 'dark' || newData.val() === 'auto')"
           }
         }
       }
     },
 
-
     "deletionRequests": {
+      ".indexOn": ["status", "scheduledFor", "requestedAt"],
+
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
         ".write": "auth != null && auth.uid === $userId",
 
+        ".validate": "newData.hasChildren(['requestedAt', 'scheduledFor', 'status'])",
+
         "requestedAt": {
-          ".validate": "newData.isNumber()"
-        },
-        "scheduledFor": {
-          ".validate": "newData.isNumber()"
-        },
-        "gracePeriodHours": {
           ".validate": "newData.isNumber() && newData.val() > 0"
         },
+
+        "scheduledFor": {
+          ".validate": "newData.isNumber() && newData.val() > newData.parent().child('requestedAt').val()"
+        },
+
+        "gracePeriodHours": {
+          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 720"
+        },
+
         "status": {
           ".validate": "newData.isString() && (newData.val() === 'pending' || newData.val() === 'cancelled' || newData.val() === 'completed')"
+        },
+
+        "completedAt": {
+          ".validate": "(newData.isNumber() && newData.val() > 0) || newData.val() === null"
+        },
+
+        "cancelledAt": {
+          ".validate": "(newData.isNumber() && newData.val() > 0) || newData.val() === null"
+        }
+      }
+    },
+
+    "analytics": {
+      ".read": false,
+      ".write": false,
+
+      "games": {
+        ".indexOn": ["timestamp", "status"],
+
+        "$analyticsId": {
+          ".validate": "newData.hasChildren(['timestamp', 'gameId']) && newData.child('timestamp').isNumber() && newData.child('timestamp').val() > 0 && newData.child('gameId').isString()"
+        }
+      }
+    },
+
+    "sessions": {
+      "$sessionId": {
+        ".read": "auth != null && data.child('userId').val() === auth.uid",
+        ".write": "auth != null && newData.child('userId').val() === auth.uid",
+
+        ".validate": "newData.hasChildren(['userId', 'createdAt']) && newData.child('userId').isString() && newData.child('createdAt').isNumber() && newData.child('createdAt').val() > 0",
+
+        "lastActivity": {
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        },
+
+        "expiresAt": {
+          ".validate": "newData.isNumber() && newData.val() > newData.parent().child('createdAt').val()"
         }
       }
     }
