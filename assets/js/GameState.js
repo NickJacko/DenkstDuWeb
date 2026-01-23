@@ -1,18 +1,21 @@
 /**
  * No-Cap GameState - Central State Management
- * Version 9.0 - Event System & Enhanced State Management
+ * Version 9.1 - FSK18 Server-Side Validation
  *
+ * ✅ P0 SECURITY: FSK0 & FSK16 always available (no verification needed)
+ * ✅ P0 SECURITY: FSK18 requires server-side validation via Custom Claims
+ * ✅ P0 SECURITY: localStorage is read-only cache (NOT source of truth)
  * ✅ P1 STABILITY: Single Source of Truth - Alle Seiten nutzen dieselbe Instanz
  * ✅ P1 STABILITY: Event System - onChange Callbacks für reactive UI
  * ✅ P1 UI/UX: Vollständige JSDoc-Dokumentation
  * ✅ P1 UI/UX: reset() Methode zum Zurücksetzen des States
  * ✅ P0 FIX: getState() returns deep copy (no mutation possible)
- * ✅ P0 FIX: isPremiumUser() & canAccessFSK() use MANDATORY server validation
+ * ✅ P0 FIX: canAccessFSK() validates FSK18 via server, FSK0/16 always true
  * ✅ P1 FIX: Improved debounce with cancel function and mutex
  * ✅ P1 FIX: Proper cleanup on page unload
  * ✅ P0 FIX: All string values sanitized on load/save
  * ✅ P2 FIX: Production logging via logger service instead of console
- * ✅ OPTIMIZATION: Session cache for Premium/FSK checks (5min TTL)
+ * ✅ OPTIMIZATION: Session cache only for FSK18 checks (5min TTL)
  * ✅ OPTIMIZATION: addPlayer() / removePlayer() / getPlayerCount() methods
  * ✅ OPTIMIZATION: Support for player metadata (avatar, gender)
  *
@@ -48,6 +51,9 @@
  * // State setzen (triggert Event)
  * gameState.set('difficulty', 'hard');
  *
+ * // FSK18 Access prüfen (Server-validiert)
+ * const canPlay = await gameState.canAccessFSK('fsk18');
+ *
  * // State abrufen (Deep Copy)
  * const state = gameState.getState();
  *
@@ -62,7 +68,7 @@
         constructor() {
             // Storage configuration
             this.STORAGE_KEY = 'nocap_game_state';
-            this.VERSION = 9.0; // ✅ P1 STABILITY: Version bump for event system
+            this.VERSION = 9.1; // ✅ Version bump for FSK18 server validation
             this.MAX_AGE_HOURS = 24;
 
             // ✅ P1 FIX: Improved debounce & locking with mutex
@@ -79,12 +85,11 @@
             // Structure: Map<eventName, Set<callback>>
             // Supported events: 'change', 'change:propertyName', 'save', 'load', 'reset'
 
-            // ✅ OPTIMIZATION: Session-Cache für Server-Validierungen (verhindert redundante Cloud Function Calls)
+            // ✅ OPTIMIZATION: Session-Cache NUR für FSK18 (FSK0/16 brauchen kein Caching)
             this._sessionCache = {
-                premiumStatus: null,
-                premiumCheckedAt: 0,
-                fskLevels: {}, // { 'fsk0': { allowed: true, checkedAt: timestamp }, ... }
-                cacheTTL: 5 * 60 * 1000 // 5 Minuten Cache
+                fsk18Access: null,         // ✅ Nur FSK18 wird gecacht
+                fsk18CheckedAt: 0,
+                cacheTTL: 5 * 60 * 1000    // 5 Minuten Cache
             };
 
             // ✅ P0 SECURITY: Clean localStorage from potentially corrupted data on startup
@@ -343,7 +348,6 @@
                     this.players = [];
                 }
 
-
                 this.playerName = this.sanitizeString(state.playerName);
                 this.gameId = this.sanitizeGameId(state.gameId);
                 this.playerId = this.sanitizeString(state.playerId);
@@ -490,7 +494,6 @@
                                 return false;
                             }
                         }
-
                     } else {
                         this.log(`❌ Validation failed: invalid player type`, 'error');
                         return false;
@@ -888,158 +891,149 @@
         }
 
         /**
-         * ✅ OPTIMIZATION: Check premium status with session cache (verhindert redundante Cloud Function Calls)
-         * @param {boolean} forceRefresh - Force server check, bypass cache
-         * @returns {Promise<boolean>} Premium status from server
-         */
-        async isPremiumUser(forceRefresh = false) {
-            try {
-                const now = Date.now();
-                const cacheAge = now - this._sessionCache.premiumCheckedAt;
-
-                if (!forceRefresh &&
-                    this._sessionCache.premiumStatus !== null &&
-                    cacheAge < this._sessionCache.cacheTTL) {
-                    this.log(`✅ Premium status from cache: ${this._sessionCache.premiumStatus} (age: ${Math.floor(cacheAge / 1000)}s)`, 'debug');
-                    return this._sessionCache.premiumStatus;
-                }
-
-                // ✅ Settings-only premium flag (set this somewhere on purchase success)
-                const getLS = (k) => window.NocapUtils?.getLocalStorage
-                    ? window.NocapUtils.getLocalStorage(k)
-                    : localStorage.getItem(k);
-
-                const premium = String(getLS('nocap_is_premium') || 'false') === 'true';
-
-                this._sessionCache.premiumStatus = premium;
-                this._sessionCache.premiumCheckedAt = now;
-
-                this.log(`✅ Premium status set (settings-only): ${premium}`, 'info');
-                return premium;
-
-            } catch (error) {
-                this.log(`❌ Premium check failed (settings-only): ${error.message}`, 'error');
-                return false;
-            }
-        }
-
-        /**
-         * ✅ P0 FIX: Synchronous fallback for premium check (cached only)
-         * Should only be used for UI hints, NOT for access control
-         * @returns {boolean} Cached premium status (NOT authoritative)
-         */
-        isPremiumUserCached() {
-            try {
-                if (window.FirebaseService && typeof window.FirebaseService.isPremiumUser === 'function') {
-                    return window.FirebaseService.isPremiumUser();
-                }
-
-                return false;
-            } catch (error) {
-                this.log(`⚠️ Cached premium check failed: ${error.message}`, 'warning');
-                return false;
-            }
-        }
-
-        /**
-         * ✅ OPTIMIZATION: Check FSK access with session cache + server validation
+         * ✅ P0 SECURITY: Check FSK access with strict server validation
+         * - FSK0 & FSK16: Always allowed (no verification needed)
+         * - FSK18: REQUIRES server-side validation (fail closed if unavailable)
+         *
          * @param {string} level - FSK level ('fsk0', 'fsk16', 'fsk18')
-         * @param {boolean} forceRefresh - Force server check, bypass cache
+         * @param {boolean} forceRefresh - Force server check for FSK18
          * @returns {Promise<boolean>} Access granted
          */
         async canAccessFSK(level, forceRefresh = false) {
             try {
-                const now = Date.now();
-                const cached = this._sessionCache.fskLevels[level];
-
-                // ✅ Cache (5min)
-                if (!forceRefresh && cached && (now - cached.checkedAt) < this._sessionCache.cacheTTL) {
-                    this.log(`✅ FSK ${level} from cache: ${cached.allowed} (age: ${Math.floor((now - cached.checkedAt) / 1000)}s)`, 'debug');
-                    return cached.allowed;
-                }
-
-                // ✅ Settings-only Source of Truth
-                const getLS = (k) => window.NocapUtils?.getLocalStorage
-                    ? window.NocapUtils.getLocalStorage(k)
-                    : localStorage.getItem(k);
-
-                const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
-                const localAgeLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
-
-                const levelMap = { fsk0: 0, fsk16: 16, fsk18: 18 };
-                if (!Object.prototype.hasOwnProperty.call(levelMap, level)) {
-                    this.log(`❌ Unknown FSK level: ${level}`, 'warning');
-                    this._sessionCache.fskLevels[level] = { allowed: false, checkedAt: now };
-                    return false;
-                }
-
-                const requiredAge = levelMap[level];
-
-                // fsk0 immer ok
-                if (requiredAge === 0) {
-                    this._sessionCache.fskLevels[level] = { allowed: true, checkedAt: now };
+                // ✅ FSK0 & FSK16 always allowed (no verification needed)
+                if (level === 'fsk0' || level === 'fsk16') {
+                    this.log(`✅ FSK ${level} granted (always available)`, 'debug');
                     return true;
                 }
 
-                // ✅ Verified + Age required
-                const allowed = verified && localAgeLevel >= requiredAge;
+                // ✅ FSK18 requires MANDATORY server-side validation
+                if (level === 'fsk18') {
+                    const now = Date.now();
+                    const cached = this._sessionCache.fsk18Access;
+                    const cacheAge = now - this._sessionCache.fsk18CheckedAt;
 
-                this._sessionCache.fskLevels[level] = { allowed, checkedAt: now };
+                    // ✅ Use cache if valid (5min TTL) and not forced refresh
+                    if (!forceRefresh &&
+                        cached !== null &&
+                        cacheAge < this._sessionCache.cacheTTL) {
+                        this.log(
+                            `✅ FSK18 from cache: ${cached} (age: ${Math.floor(cacheAge / 1000)}s)`,
+                            'debug'
+                        );
+                        return cached;
+                    }
 
-                this.log(
-                    allowed
-                        ? `✅ FSK ${level} granted (settings-only)`
-                        : `❌ FSK ${level} denied (settings-only): verified=${verified}, age=${localAgeLevel}, required=${requiredAge}`,
-                    allowed ? 'info' : 'warning'
-                );
+                    // ✅ MANDATORY: Validate via SettingsModule (server-side validation)
+                    if (!window.SettingsModule ||
+                        typeof window.SettingsModule.validateFSKAccess !== 'function') {
 
-                return allowed;
+                        // ✅ SECURITY: Fail closed if SettingsModule unavailable
+                        this.log(
+                            '❌ SettingsModule not available - FSK18 access denied (fail closed)',
+                            'error'
+                        );
+
+                        // ✅ Cache denial
+                        this._sessionCache.fsk18Access = false;
+                        this._sessionCache.fsk18CheckedAt = now;
+
+                        // ✅ Show error to user
+                        if (window.SettingsModule &&
+                            typeof window.SettingsModule.showFSKError === 'function') {
+                            window.SettingsModule.showFSKError(
+                                'fsk18',
+                                'FSK18-Zugriff erfordert Altersverifikation. Bitte melde dich an und verifiziere dein Alter in den Einstellungen.'
+                            );
+                        }
+
+                        return false;
+                    }
+
+                    // ✅ Validate via server
+                    this.log('🔍 Validating FSK18 access via SettingsModule (server)...', 'debug');
+
+                    const allowed = await window.SettingsModule.validateFSKAccess('fsk18');
+
+                    // ✅ Update cache with server response
+                    this._sessionCache.fsk18Access = allowed;
+                    this._sessionCache.fsk18CheckedAt = now;
+
+                    this.log(
+                        allowed
+                            ? '✅ FSK18 access granted (server validated)'
+                            : '❌ FSK18 access denied (server validation failed)',
+                        allowed ? 'info' : 'warning'
+                    );
+
+                    return allowed;
+                }
+
+                // ✅ Unknown FSK level
+                this.log(`❌ Unknown FSK level: ${level}`, 'warning');
+                return false;
 
             } catch (error) {
-                this.log(`❌ FSK check error: ${error.message}`, 'error');
-                return false; // fail secure
+                this.log(`❌ FSK ${level} check error: ${error.message}`, 'error');
+
+                // ✅ FSK0/16 fail safe (always allow), FSK18 fail secure (deny)
+                if (level === 'fsk0' || level === 'fsk16') {
+                    return true;
+                }
+
+                // ✅ SECURITY: FSK18 fails closed on error
+                this._sessionCache.fsk18Access = false;
+                this._sessionCache.fsk18CheckedAt = Date.now();
+                return false;
             }
         }
 
         /**
-         * ✅ P0 FIX: Synchronous fallback for FSK check (cached only)
+         * ✅ P0 SECURITY: Synchronous FSK check (session cache only, NOT authoritative)
          * Should only be used for UI hints, NOT for access control
+         *
+         * IMPORTANT: This method NEVER grants FSK18 access without prior server validation.
+         * If session cache is empty, it returns false (fail closed).
+         *
          * @param {string} level - FSK level
-         * @returns {boolean} Cached FSK status (NOT authoritative)
+         * @returns {boolean} Cached FSK status (NOT authoritative, UI hint only)
          */
         canAccessFSKCached(level) {
-
             try {
-                const getLS = (k) => window.NocapUtils?.getLocalStorage
-                    ? window.NocapUtils.getLocalStorage(k)
-                    : localStorage.getItem(k);
+                // ✅ FSK0 & FSK16 always allowed
+                if (level === 'fsk0' || level === 'fsk16') {
+                    return true;
+                }
 
-                const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
-                const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
-                const now = Date.now();
-                const levelMap = {
-                    'fsk0': 0,
-                    'fsk16': 16,
-                    'fsk18': 18
-                };
+                // ✅ FSK18 from session cache only (NO localStorage fallback)
+                if (level === 'fsk18') {
+                    const now = Date.now();
+                    const cacheAge = now - this._sessionCache.fsk18CheckedAt;
 
-                if (!Object.prototype.hasOwnProperty.call(levelMap, level)) {
-                    this.log(`❌ Unknown FSK level: ${level}`, 'warning');
-                    this._sessionCache.fskLevels[level] = { allowed: false, checkedAt: now };
+                    // ✅ Return cached value if valid
+                    if (this._sessionCache.fsk18Access !== null &&
+                        cacheAge < this._sessionCache.cacheTTL) {
+                        this.log(
+                            `ℹ️ FSK18 cached: ${this._sessionCache.fsk18Access} (age: ${Math.floor(cacheAge / 1000)}s)`,
+                            'debug'
+                        );
+                        return this._sessionCache.fsk18Access;
+                    }
+
+                    // ✅ SECURITY: No localStorage fallback - fail closed
+                    this.log('⚠️ FSK18 session cache empty - denying access (fail closed)', 'warning');
                     return false;
                 }
 
-                const requiredAge = levelMap[level];
+                // Unknown level
+                this.log(`❌ Unknown FSK level: ${level}`, 'warning');
+                return false;
 
-                const hasAccess = requiredAge === 0 ? true : (verified && ageLevel >= requiredAge);
-                if (!hasAccess) {
-                    this.log(`ℹ️ FSK ${level} cached check: denied (user age: ${ageLevel})`, 'info');
-                }
-
-                return hasAccess;
             } catch (error) {
                 this.log(`⚠️ Cached FSK check failed: ${error.message}`, 'warning');
-                return false;
+
+                // Fail safe for FSK0/16, fail secure for FSK18
+                return level === 'fsk0' || level === 'fsk16';
             }
         }
 
@@ -1048,36 +1042,39 @@
         // ===========================
 
         /**
-         * Clear session cache for premium/FSK checks
+         * Clear session cache (only FSK18 now)
          */
         clearSessionCache() {
             this._sessionCache = {
-                premiumStatus: null,
-                premiumCheckedAt: 0,
-                fskLevels: {},
+                fsk18Access: null,
+                fsk18CheckedAt: 0,
                 cacheTTL: 5 * 60 * 1000
             };
             this.log('✅ Session cache cleared', 'debug');
         }
-
+        /**
+         * ✅ SECURITY: Invalidate FSK18 cache (z.B. bei Kategorie-Wechsel oder Logout)
+         * @param {string} reason - Reason for invalidation (for logging)
+         */
+        invalidateFSK18Cache(reason = 'manual') {
+            this._sessionCache.fsk18Access = null;
+            this._sessionCache.fsk18CheckedAt = 0;
+            this.log(`🔄 FSK18 cache invalidated (reason: ${reason})`, 'info');
+        }
         /**
          * Get cache statistics
          */
         getCacheStats() {
             const now = Date.now();
+            const cacheAge = now - this._sessionCache.fsk18CheckedAt;
+
             return {
-                premium: {
-                    cached: this._sessionCache.premiumStatus !== null,
-                    value: this._sessionCache.premiumStatus,
-                    ageSeconds: Math.floor((now - this._sessionCache.premiumCheckedAt) / 1000),
-                    valid: (now - this._sessionCache.premiumCheckedAt) < this._sessionCache.cacheTTL
+                fsk18: {
+                    cached: this._sessionCache.fsk18Access !== null,
+                    value: this._sessionCache.fsk18Access,
+                    ageSeconds: Math.floor(cacheAge / 1000),
+                    valid: cacheAge < this._sessionCache.cacheTTL
                 },
-                fsk: Object.entries(this._sessionCache.fskLevels).map(([level, data]) => ({
-                    level,
-                    allowed: data.allowed,
-                    ageSeconds: Math.floor((now - data.checkedAt) / 1000),
-                    valid: (now - data.checkedAt) < this._sessionCache.cacheTTL
-                })),
                 cacheTTL: this._sessionCache.cacheTTL / 1000
             };
         }
@@ -1131,7 +1128,6 @@
                     return;
                 }
             }
-
 
             const sanitized = players
                 .map(p => {
@@ -1316,7 +1312,6 @@
 
                 this._isDirty = true;
                 this.save();
-
             }
         }
 
@@ -1353,17 +1348,21 @@
                 alcoholMode: this.alcoholMode,
                 questionCount: this.questionCount,
                 playerName: this.playerName,
-                playerCount: this.getPlayerCount(), // ✅ OPTIMIZATION: Player count
+                playerCount: this.getPlayerCount(),
                 gamePhase: this.gamePhase,
                 validMulti: this.isValidForMultiplayer(),
                 validSingle: this.isValidForSingleDevice(),
                 timestamp: this.timestamp,
                 ageMinutes: Math.floor((Date.now() - this.timestamp) / 1000 / 60),
                 version: this.VERSION,
-                isPremium: this.isPremiumUserCached(), // ✅ P0 FIX: Use cached version for debug
+                fskAccess: {
+                    fsk0: true,  // ✅ Always true
+                    fsk16: true, // ✅ Always true
+                    fsk18: this.canAccessFSKCached('fsk18') // ✅ Cached check
+                },
                 isDirty: this._isDirty,
                 lastModified: new Date(this._lastModified).toISOString(),
-                cache: this.getCacheStats() // ✅ OPTIMIZATION: Cache statistics
+                cache: this.getCacheStats()
             };
         }
 
@@ -1414,9 +1413,9 @@
             };
 
             const logMethod = type === 'error' ? console.error :
-                             type === 'warning' ? console.warn :
-                             type === 'debug' ? console.debug :
-                             console.log;
+                type === 'warning' ? console.warn :
+                    type === 'debug' ? console.debug :
+                        console.log;
 
             logMethod(
                 `%c${prefix} [${timestamp}] ${message}`,
@@ -1645,11 +1644,26 @@
         window.location.hostname.includes('192.168.');
 
     if (isDev) {
-        console.log('%c✅ GameState v9.0 loaded (Optimizations & Player Management)', 'color: #4CAF50; font-weight: bold; font-size: 14px');
-        console.log('%c   - Session cache for Premium/FSK (5min TTL - verhindert redundante Calls)', 'color: #888; font-size: 12px');
-        console.log('%c   - addPlayer() / removePlayer() / getPlayerCount() methods', 'color: #888; font-size: 12px');
-        console.log('%c   - Player metadata support (avatar, gender)', 'color: #888; font-size: 12px');
-        console.log('%c   - Production telemetry logging (console.log nur in Dev)', 'color: #888; font-size: 12px');
+        console.log(
+            '%c✅ GameState v9.1 loaded (FSK18 Server Validation)',
+            'color: #4CAF50; font-weight: bold; font-size: 14px'
+        );
+        console.log(
+            '%c   - FSK0 & FSK16: Always available (no verification)',
+            'color: #888; font-size: 12px'
+        );
+        console.log(
+            '%c   - FSK18: Server-side validation via Custom Claims',
+            'color: #888; font-size: 12px'
+        );
+        console.log(
+            '%c   - Session cache only for FSK18 (5min TTL)',
+            'color: #888; font-size: 12px'
+        );
+        console.log(
+            '%c   - Player management & metadata support',
+            'color: #888; font-size: 12px'
+        );
     }
 
 })(window);

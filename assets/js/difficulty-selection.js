@@ -1,11 +1,12 @@
 /**
  * No-Cap Difficulty Selection (Single Device Mode)
- * Version 6.2 - OPTIMIZED: Rechtlich sichere Texte, Performance-Fix
+ * Version 6.3 - FSK18 Server-Side Validation
  *
+ * ✅ P0 SECURITY: FSK0 & FSK16 always unlocked (no verification)
+ * ✅ P0 SECURITY: FSK18 requires server-side validation (fail closed)
  * ✅ P0: Module Pattern - no global variables (XSS prevention)
  * ✅ P0: Event-Listener cleanup on beforeunload
  * ✅ P1: Validates device mode (should be "single" or "multi")
- * ✅ P0: MANDATORY server-side FSK validation for categories
  * ✅ P0: Safe DOM manipulation (no innerHTML)
  * ✅ P1: Proper routing based on device mode
  * ✅ NEW: Rechtlich sichere Texte (keine "Schlücke" Animierung)
@@ -20,7 +21,6 @@
         warn: () => {},
         error: () => {}
     };
-
 
     // ===========================
     // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
@@ -160,7 +160,6 @@
         }
 
         await initializeGame();
-
     }
 
     /**
@@ -253,6 +252,11 @@
         return true;
     }
 
+    /**
+     * ✅ NEW: Validate game state with FSK18 server-side validation
+     * FSK0 & FSK16: No validation needed (always allowed)
+     * FSK18: Requires server-side validation
+     */
     async function validateGameState() {
         const firebaseOk = !!window.FirebaseConfig?.isInitialized?.();
 
@@ -262,7 +266,8 @@
             return false;
         }
 
-        if (!DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
+        if (!DifficultySelectionModule.gameState.selectedCategories ||
+            DifficultySelectionModule.gameState.selectedCategories.length === 0) {
             Logger.warn('⚠️ No categories selected');
             showNotification('Keine Kategorien ausgewählt!', 'warning');
 
@@ -274,72 +279,19 @@
             return false;
         }
 
-        if (!firebaseOk) {
-            const getLS = (k) => window.NocapUtils?.getLocalStorage
-                ? window.NocapUtils.getLocalStorage(k)
-                : localStorage.getItem(k);
+        // ✅ Check if any FSK18 categories are selected
+        const hasFSK18 = DifficultySelectionModule.gameState.selectedCategories.includes('fsk18');
 
-            const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
-
-            for (const category of DifficultySelectionModule.gameState.selectedCategories) {
-                if (category === 'fsk18' && ageLevel < 18) {
-                    showNotification('🔞 FSK18 nur ab 18. Bitte verifizieren.', 'warning', 3000);
-                    return false;
-                }
-            }
-
-            Logger.warn('⚠️ Firebase offline – local age checks passed, continuing');
+        // ✅ FSK0 & FSK16 don't need validation
+        if (!hasFSK18) {
+            Logger.debug('✅ No FSK18 categories selected, validation skipped');
             return true;
         }
 
-        const instances = window.FirebaseConfig?.getFirebaseInstances?.();
-        const auth = instances?.auth;
-        const database = instances?.database;
-
-        if (!auth || !database) {
-            Logger.error('❌ Firebase instances missing');
-            return false;
-        }
-
-        try {
-            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
-
-            if (!window.FirebaseConfig?.isInitialized?.() || !instances?.functions) {
-                if (DifficultySelectionModule.isDevelopment) {
-                    Logger.warn('⚠️ FSK validation skipped (DEV, no functions)');
-                    return true;
-                }
-                showNotification('FSK-Validierung nicht verfügbar. Bitte später erneut versuchen.', 'error');
-                const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
-                    ? 'multiplayer-category-selection.html'
-                    : 'category-selection.html';
-
-                setTimeout(() => window.location.href = redirectUrl, 2000);
-                return false;
-            }
-
-            for (const category of DifficultySelectionModule.gameState.selectedCategories) {
-                if (category === 'fsk0' || 'fsk0') continue;
-
-                const hasAccess = await DifficultySelectionModule.gameState.canAccessFSK(category);
-
-                if (!hasAccess) {
-                    Logger.error(`❌ Server denied access to category: ${category}`);
-                    showNotification(`Keine Berechtigung für ${category.toUpperCase()}!`, 'error');
-
-                    const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
-                        ? 'multiplayer-category-selection.html'
-                        : 'category-selection.html';
-
-                    setTimeout(() => window.location.href = redirectUrl, 2000);
-                    return false;
-                }
-            }
-
-            Logger.debug('✅ All categories validated (server-side)');
-        } catch (error) {
-            Logger.error('❌ Server-side FSK validation failed:', error);
-            showNotification('FSK-Validierung fehlgeschlagen. Bitte erneut versuchen.', 'error');
+        // ✅ Firebase offline: Fail closed for FSK18
+        if (!firebaseOk) {
+            Logger.error('❌ Firebase offline, cannot validate FSK18');
+            showNotification('🔞 FSK18-Validierung erfordert Internetverbindung', 'error', 3000);
 
             const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
                 ? 'multiplayer-category-selection.html'
@@ -348,7 +300,40 @@
             setTimeout(() => window.location.href = redirectUrl, 2000);
             return false;
         }
-        return true;
+
+        // ✅ Server-side validation for FSK18
+        try {
+            Logger.debug('🔍 Validating FSK18 access via server...');
+
+            // Use GameState for server validation
+            const hasAccess = await DifficultySelectionModule.gameState.canAccessFSK('fsk18', true);
+
+            if (!hasAccess) {
+                Logger.error('❌ Server denied FSK18 access');
+                showNotification('🔞 Keine Berechtigung für FSK18-Inhalte!', 'error');
+
+                const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
+                    ? 'multiplayer-category-selection.html'
+                    : 'category-selection.html';
+
+                setTimeout(() => window.location.href = redirectUrl, 2000);
+                return false;
+            }
+
+            Logger.debug('✅ FSK18 access validated (server-side)');
+            return true;
+
+        } catch (error) {
+            Logger.error('❌ Server-side FSK18 validation failed:', error);
+            showNotification('FSK18-Validierung fehlgeschlagen. Bitte erneut versuchen.', 'error');
+
+            const redirectUrl = DifficultySelectionModule.gameState.deviceMode === 'multi'
+                ? 'multiplayer-category-selection.html'
+                : 'category-selection.html';
+
+            setTimeout(() => window.location.href = redirectUrl, 2000);
+            return false;
+        }
     }
 
     // ===========================
@@ -478,7 +463,6 @@
 
                 const alcoholToggle = document.getElementById('alcohol-toggle');
                 if (alcoholToggle) alcoholToggle.checked = false;
-
             }
 
             Logger.debug(`🍺 Alcohol mode: ${DifficultySelectionModule.alcoholMode}`);
@@ -617,7 +601,6 @@
         }
     }
 
-
     // ===========================
     // EVENT LISTENERS
     // ===========================
@@ -663,7 +646,9 @@
         });
 
         addTrackedEventListener(document, 'keydown', function(e) {
-            if (e.key === 'Enter' && DifficultySelectionModule.gameState.difficulty && !e.target.closest('.difficulty-card')) {
+            if (e.key === 'Enter' &&
+                DifficultySelectionModule.gameState.difficulty &&
+                !e.target.closest('.difficulty-card')) {
                 proceedToNextStep();
             }
         });
@@ -829,7 +814,9 @@
     }
 
     function goBack() {
-        if (!DifficultySelectionModule.gameState || !DifficultySelectionModule.gameState.selectedCategories || DifficultySelectionModule.gameState.selectedCategories.length === 0) {
+        if (!DifficultySelectionModule.gameState ||
+            !DifficultySelectionModule.gameState.selectedCategories ||
+            DifficultySelectionModule.gameState.selectedCategories.length === 0) {
             Logger.warn('⚠️ No categories selected, redirecting to home');
             window.location.href = 'index.html';
             return;
@@ -862,6 +849,7 @@
             loading.classList.add('show');
         }
     };
+
     const hideLoading = window.NocapUtils?.hideLoading || function() {
         const loading = document.getElementById('loading');
         if (loading) {
@@ -869,6 +857,7 @@
             loading.style.display = 'none';
         }
     };
+
     const showNotification = window.NocapUtils?.showNotification || function(message) {
         alert(String(message));
     };

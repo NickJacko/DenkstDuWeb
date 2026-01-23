@@ -688,45 +688,22 @@
             return false;
         }
 
-        // ✅ Settings-only age verification (consistent with lobby/difficulty)
-        let ageLevel = 0;
-
+        // ✅ FSK18-SYSTEM: Simplified validation - no kick in gameplay
+        // Just log warnings about FSK18 content
         try {
-            const getLS = (k) => window.NocapUtils?.getLocalStorage
-                ? window.NocapUtils.getLocalStorage(k)
-                : localStorage.getItem(k);
+            const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
+            const selectedCategories = Array.isArray(rawSelected)
+                ? rawSelected
+                : (rawSelected ? Object.values(rawSelected) : []);
 
-            const rawVerified = getLS('nocap_age_verification');
-            const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
+            const hasFSK18 = selectedCategories.includes('fsk18');
 
-            const rawAge = getLS('nocap_age_level');
-            ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
-
-            if (!verified) ageLevel = 0;
-
-            if (MultiplayerGameplayModule.isDevelopment) {
-                console.log('🔞 Age settings:', {verified, rawAge, ageLevel});
+            if (hasFSK18 && MultiplayerGameplayModule.isDevelopment) {
+                console.log('🔒 FSK18 content in game - questions will be validated per-question');
             }
         } catch (e) {
-            console.warn('⚠️ Could not read age settings:', e);
-            ageLevel = 0;
+            console.warn('⚠️ Could not check categories:', e);
         }
-
-        // ✅ Normalize selectedCategories to array (prevents .length/.forEach crashes)
-        const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
-        const selectedCategories = Array.isArray(rawSelected)
-            ? rawSelected
-            : (rawSelected ? Object.values(rawSelected) : []);
-
-        // ✅ Multiplayer: Don't kick players out. We just log.
-        selectedCategories.forEach(cat => {
-            if (cat === 'fsk18' && ageLevel < 18) {
-                console.warn(`⚠️ Selected FSK18 but age ${ageLevel} - allowed in multiplayer, will block questions`);
-            }
-            if (cat === 'fsk16' && ageLevel < 16) {
-                console.warn(`⚠️ Selected FSK16 but age ${ageLevel} - allowed in multiplayer, will block questions if needed`);
-            }
-        });
 
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log('✅ Game state valid');
@@ -1140,27 +1117,36 @@
     }
 
     /**
-     * ✅ P1 DSGVO/Jugendschutz: Verify age for FSK18 questions
+     * ✅ FSK18-SYSTEM: Verify age for FSK18 questions with server validation
+     * - FSK0 & FSK16: Always allowed
+     * - FSK18: Requires server validation via GameState.canAccessFSK()
      * @param {string} category - Question category
-     * @returns {boolean} True if user is allowed to see this question
+     * @returns {Promise<boolean>} True if user is allowed to see this question
      */
-    function verifyAgeForQuestion(category) {
-        if (category !== 'fsk18') return true;
+    async function verifyAgeForQuestion(category) {
+        // FSK0 & FSK16: Always allowed
+        if (category !== 'fsk18') {
+            return true;
+        }
+
+        // FSK18: Server validation required
+        if (!window.FirebaseConfig?.isInitialized?.()) {
+            // Fail closed - no Firebase = no FSK18
+            return false;
+        }
 
         try {
-            const getLS = (k) => window.NocapUtils?.getLocalStorage
-                ? window.NocapUtils.getLocalStorage(k)
-                : localStorage.getItem(k);
+            // Use GameState's server validation
+            const hasAccess = await MultiplayerGameplayModule.gameState.canAccessFSK('fsk18', true);
 
-            const rawVerified = getLS('nocap_age_verification');
-            const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
+            if (!hasAccess && MultiplayerGameplayModule.isDevelopment) {
+                console.log('❌ FSK18 access denied for question');
+            }
 
-            const rawAge = getLS('nocap_age_level');
-            const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
-
-            return verified && ageLevel >= 18;
-        } catch {
-            return false;
+            return hasAccess;
+        } catch (error) {
+            console.error('❌ FSK18 validation error:', error);
+            return false; // Fail closed on error
         }
     }
 
@@ -1339,7 +1325,6 @@
             setTimeout(() => window.location.href = 'index.html', 3000);
         }
     }
-
     async function loadRoundFromFirebase(roundNumber) {
         try {
             if (MultiplayerGameplayModule.isDevelopment) {
@@ -1357,13 +1342,21 @@
                 }
                 currentQuestion = roundData.question;
 
-                // ✅ P1 DSGVO/Jugendschutz: Verify age for loaded question
-                if (currentQuestion && currentQuestion.category === 'fsk18' && !verifyAgeForQuestion('fsk18')) {
-                    // Block FSK18 content for unverified users
-                    currentQuestion = {
-                        text: "Diese Frage ist für dein Alter nicht freigegeben",
-                        category: "fsk0"
-                    };
+                // ✅ FSK18-SYSTEM: Verify age for loaded question with server validation
+                if (currentQuestion && currentQuestion.category === 'fsk18') {
+                    const hasAccess = await verifyAgeForQuestion('fsk18');
+
+                    if (!hasAccess) {
+                        // Block FSK18 content - show fallback question
+                        currentQuestion = {
+                            text: "Diese Frage ist für dein Alter nicht freigegeben",
+                            category: "fsk0"
+                        };
+
+                        if (MultiplayerGameplayModule.isDevelopment) {
+                            console.log('🔒 FSK18 question blocked - showing fallback');
+                        }
+                    }
                 }
 
                 if (currentQuestion) {
@@ -1529,13 +1522,21 @@
         // Generate question
         currentQuestion = generateRandomQuestion();
 
-        // ✅ P1 DSGVO/Jugendschutz: Verify age for FSK18
-        if (currentQuestion.category === 'fsk18' && !verifyAgeForQuestion('fsk18')) {
-            // Fallback to safe question
-            currentQuestion = {
-                text: "Ich habe schon mal... etwas Lustiges erlebt",
-                category: "fsk0"
-            };
+        // ✅ FSK18-SYSTEM: Verify age for FSK18 with server validation
+        if (currentQuestion.category === 'fsk18') {
+            const hasAccess = await verifyAgeForQuestion('fsk18');
+
+            if (!hasAccess) {
+                // Fallback to safe question
+                currentQuestion = {
+                    text: "Ich habe schon mal... etwas Lustiges erlebt",
+                    category: "fsk0"
+                };
+
+                if (MultiplayerGameplayModule.isDevelopment) {
+                    console.log('🔒 FSK18 question blocked for host - using fallback');
+                }
+            }
         }
 
         // Display question
@@ -1571,7 +1572,6 @@
             console.error('❌ Error starting round:', error);
         }
     }
-
     /**
      * ✅ P1 UI/UX: Get server timestamp for timer sync
      */

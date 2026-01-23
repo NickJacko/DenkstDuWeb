@@ -137,7 +137,7 @@
                 Logger.warn('⚠️ DOMPurify not loaded - continuing (textContent-only rendering)');
             }
 
-// ✅ Ensure Firebase is initialized (consistent with other pages)
+            // ✅ Ensure Firebase is initialized
             try {
                 if (!window.FirebaseConfig) {
                     throw new Error('FirebaseConfig missing - firebase-config.js not loaded?');
@@ -152,11 +152,22 @@
                 Logger.warn('⚠️ Firebase not ready (results page can still work with local data):', e);
             }
 
-// ✅ P0 SECURITY: Verify user authentication
+            // ✅ Initialize GameState (needed for FSK validation)
+            if (window.GameState && !MultiplayerResultsModule.gameState) {
+                MultiplayerResultsModule.gameState = window.GameState;
+            }
+
+            // ✅ P0 SECURITY: Verify user authentication
             await verifyUserAuthentication();
 
             // Load game results
             await loadGameResults();
+
+            // ✅ FSK18-SYSTEM: Validate FSK18 access BEFORE authorization
+            const hasFSK18Access = await validateFSK18Access();
+            if (!hasFSK18Access) {
+                throw new Error('FSK18_ACCESS_DENIED');
+            }
 
             // ✅ P0 SECURITY: Verify user is authorized to view results
             if (!verifyUserAuthorization()) {
@@ -172,7 +183,7 @@
             // Start auto-redirect timer
             startAutoRedirectTimer();
 
-            // ✅ Privacy: Client-side attempt to delete after 24h (NOT guaranteed)
+            // ✅ Privacy: Client-side attempt to delete after 24h
             scheduleResultsDeletion();
 
             hideLoading();
@@ -229,6 +240,7 @@
 
     /**
      * ✅ P0 SECURITY: Verify user is authorized to view these results
+     * ✅ FSK18-SYSTEM: Also check FSK18 access if game contains FSK18 content
      * @returns {boolean} True if authorized
      */
     function verifyUserAuthorization() {
@@ -244,7 +256,7 @@
             isAuthorizedUser = playerIds.includes(currentUserId);
 
             if (!isAuthorizedUser) {
-                console.error('❌ User not authorized to view these results');
+                Logger.error('User not authorized to view these results');
                 return false;
             }
 
@@ -263,20 +275,20 @@
 
         return isAuthorizedUser;
     }
-
     // ===========================
     // LOAD DATA
     // ===========================
 
     /**
      * ✅ P1 STABILITY: Load game results with comprehensive error handling
+     * ✅ FSK18-SYSTEM: Load game settings including FSK categories
      */
     async function loadGameResults() {
         // Try to get results from multiple sources
         let gameData = null;
         const gameId = getGameIdFromURL() ||
-                      localStorage.getItem('nocap_game_id') ||
-                      sessionStorage.getItem('nocap_game_id');
+            localStorage.getItem('nocap_game_id') ||
+            sessionStorage.getItem('nocap_game_id');
 
         if (!gameId) {
             throw new Error('NO_GAME_ID');
@@ -296,6 +308,7 @@
                 if (!gameData) {
                     throw new Error('GAME_DELETED');
                 }
+
                 const endedAt = gameData.endedAt || gameData.lastUpdate || 0;
                 if (endedAt && Date.now() - endedAt > RESULTS_RETENTION_TIME) {
                     throw new Error('RESULTS_EXPIRED');
@@ -311,6 +324,13 @@
                     gameResults = gameData.results;
                     gameResults.gameId = gameId;
                     gameResults.hostId = gameData.hostId;
+
+                    // ✅ FSK18-SYSTEM: Store game settings for FSK validation
+                    gameResults.settings = gameData.settings || {};
+                    gameResults.categories = gameData.settings?.categories ||
+                        gameData.selectedCategories ||
+                        [];
+
                     return;
                 }
 
@@ -319,15 +339,24 @@
                     gameResults = calculateResultsFromGameData(gameData);
                     gameResults.gameId = gameId;
                     gameResults.hostId = gameData.hostId;
+
+                    // ✅ FSK18-SYSTEM: Store game settings
+                    gameResults.settings = gameData.settings || {};
+                    gameResults.categories = gameData.settings?.categories ||
+                        gameData.selectedCategories ||
+                        [];
+
                     return;
                 }
 
             } catch (error) {
                 // Re-throw specific errors
-                if (error.message === 'GAME_DELETED' || error.message === 'GAME_ENDED') {
+                if (error.message === 'GAME_DELETED' ||
+                    error.message === 'GAME_ENDED' ||
+                    error.message === 'RESULTS_EXPIRED') {
                     throw error;
                 }
-                console.warn('Firebase load failed:', error);
+                Logger.warn('Firebase load failed:', error);
             }
         }
 
@@ -337,14 +366,24 @@
             try {
                 gameResults = JSON.parse(savedResults);
                 gameResults.gameId = gameId;
+
+                // ✅ FSK18-SYSTEM: Ensure categories are loaded
+                if (!gameResults.categories) {
+                    const savedState = localStorage.getItem('nocap_game_state');
+                    if (savedState) {
+                        const state = JSON.parse(savedState);
+                        gameResults.categories = state.selectedCategories || [];
+                    }
+                }
+
                 return;
             } catch (error) {
-                console.warn('localStorage parse failed:', error);
+                Logger.warn('localStorage parse failed:', error);
             }
         }
+
         throw new Error('NO_RESULTS');
     }
-
     /**
      * ✅ P1 STABILITY: Calculate results from game data if needed
      */
@@ -387,6 +426,9 @@
         return totalAccuracy / playersArray.length;
     }
 
+    /**
+     * ✅ FSK18-SYSTEM: Generate fun facts with FSK level tagging
+     */
     function generateFunFacts(gameData) {
         const facts = [];
         const players = Object.values(gameData.players || {});
@@ -398,7 +440,8 @@
             );
             facts.push({
                 icon: '🎯',
-                text: `${bestPlayer.name} hatte die meisten richtigen Antworten!`
+                text: `${bestPlayer.name} hatte die meisten richtigen Antworten!`,
+                fskLevel: 'fsk0' // ✅ Safe for all ages
             });
 
             // Fastest player
@@ -407,8 +450,25 @@
             );
             facts.push({
                 icon: '⚡',
-                text: `${fastestPlayer.name} war am schnellsten!`
+                text: `${fastestPlayer.name} war am schnellsten!`,
+                fskLevel: 'fsk0' // ✅ Safe for all ages
             });
+
+            // ✅ FSK18-SYSTEM: Mark FSK18-specific facts
+            // (Example - you can add more FSK18 facts if needed)
+            if (gameData.settings?.categories?.includes('fsk18')) {
+                const wildestPlayer = players.reduce((wildest, player) =>
+                    (player.wildAnswers || 0) > (wildest.wildAnswers || 0) ? player : wildest
+                );
+
+                if (wildestPlayer.wildAnswers > 0) {
+                    facts.push({
+                        icon: '🔥',
+                        text: `${wildestPlayer.name} war am wildesten!`,
+                        fskLevel: 'fsk18' // ✅ Only show with FSK18 access
+                    });
+                }
+            }
         }
 
         return facts;
@@ -624,8 +684,10 @@
             '📋 Alle Spieler anzeigen' :
             '🏆 Nur Top 3 anzeigen';
     }
-
-    function displayFunFacts(facts) {
+    /**
+     * ✅ FSK18-SYSTEM: Display fun facts (filter FSK18 if no access)
+     */
+    async function displayFunFacts(facts) {
         const factsGrid = document.getElementById('facts-grid');
         if (!factsGrid || !facts) return;
 
@@ -634,7 +696,16 @@
             factsGrid.removeChild(factsGrid.firstChild);
         }
 
+        // ✅ FSK18-SYSTEM: Check FSK18 access
+        const hasFSK18Access = await validateFSK18Access();
+
         facts.forEach(fact => {
+            // ✅ FSK18-SYSTEM: Skip FSK18 facts if no access
+            if (fact.fskLevel === 'fsk18' && !hasFSK18Access) {
+                Logger.debug('Skipping FSK18 fun fact (no access)');
+                return;
+            }
+
             const factCard = document.createElement('div');
             factCard.className = 'fact-card';
             factCard.setAttribute('role', 'listitem');
@@ -653,6 +724,14 @@
 
             factsGrid.appendChild(factCard);
         });
+
+        // ✅ FSK18-SYSTEM: Show message if all facts were filtered
+        if (factsGrid.children.length === 0) {
+            const noFactsMsg = document.createElement('div');
+            noFactsMsg.className = 'no-facts-message';
+            noFactsMsg.textContent = '🎮 Keine Fun Facts verfügbar';
+            factsGrid.appendChild(noFactsMsg);
+        }
     }
 
     // ===========================
@@ -757,7 +836,50 @@
             }
         }, RESULTS_RETENTION_TIME);
     }
+    /**
+     * ✅ FSK18-SYSTEM: Validate FSK18 access for this game
+     * @returns {Promise<boolean>} True if user has access to FSK18 content
+     */
+    async function validateFSK18Access() {
+        // Check if game contains FSK18 categories
+        const categories = gameResults?.settings?.categories ||
+            gameResults?.categories ||
+            [];
 
+        // FSK0 & FSK16 always allowed - no validation needed
+        if (!categories.includes('fsk18')) {
+            Logger.debug('No FSK18 content in game - access granted');
+            return true;
+        }
+
+        // FSK18: Requires Firebase and server validation
+        if (!window.FirebaseConfig?.isInitialized?.()) {
+            Logger.warn('Firebase not initialized - FSK18 access denied (fail closed)');
+            return false; // Fail closed
+        }
+
+        // Check if GameState is available
+        if (!MultiplayerResultsModule.gameState?.canAccessFSK) {
+            Logger.warn('GameState not available - FSK18 access denied');
+            return false;
+        }
+
+        try {
+            const hasAccess = await MultiplayerResultsModule.gameState.canAccessFSK('fsk18', true);
+
+            if (!hasAccess) {
+                Logger.warn('User does not have FSK18 access');
+            } else {
+                Logger.debug('User has FSK18 access');
+            }
+
+            return hasAccess;
+
+        } catch (error) {
+            Logger.error('FSK18 validation failed:', error);
+            return false; // Fail closed on error
+        }
+    }
     /**
      * ✅ P1 DSGVO: Delete game results from database
      */
@@ -951,9 +1073,10 @@
 
     /**
      * ✅ P1 UI/UX: Share via WhatsApp
+     * ✅ FSK18-SYSTEM: Async share message generation
      */
-    function shareViaWhatsApp() {
-        const message = generateShareMessage();
+    async function shareViaWhatsApp() {
+        const message = await generateShareMessage(); // ✅ Now async
         const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank', 'noopener,noreferrer');
     }
@@ -1001,7 +1124,7 @@
      * ✅ P1 DSGVO: Anonymize player data in shared content
      * Prevents XSS in shared URLs
      */
-    function generateShareMessage() {
+    async function generateShareMessage() {
         if (!gameResults || !gameResults.rankings || gameResults.rankings.length === 0) {
             return 'Schau dir mein No-Cap Spielergebnis an!';
         }
@@ -1013,7 +1136,6 @@
             ? DOMPurify.sanitize(rawWinnerName, { ALLOWED_TAGS: [], KEEP_CONTENT: true })
             : rawWinnerName.replace(/[<>\"'&]/g, '').slice(0, 20);
 
-
         // ✅ P0 SECURITY: Sanitize score (validate as number)
         const score = Math.max(0, parseInt(winner.totalScore) || 0);
 
@@ -1024,9 +1146,17 @@
         const anonymized = document.getElementById('anonymize-share-checkbox')?.checked;
         const displayName = anonymized ? `Spieler 1` : winnerName;
 
+        // ✅ FSK18-SYSTEM: Check if game contained FSK18 content
+        const hasFSK18Content = gameResults.categories?.includes('fsk18');
+        const hasFSK18Access = await validateFSK18Access();
+
+        // ✅ FSK18-SYSTEM: Generic message if FSK18 content but no access
+        if (hasFSK18Content && !hasFSK18Access) {
+            return `🎮 Wir haben No-Cap gespielt! Spiele jetzt mit: ${origin}`;
+        }
+
         return `🎉 ${displayName} hat No-Cap gewonnen mit ${score} Punkten! Spiele jetzt mit: ${origin}`;
     }
-
     /**
      * ✅ P1 DSGVO: Generate anonymized results for sharing
      */
@@ -1199,6 +1329,7 @@
 
     /**
      * ✅ P1 STABILITY: Handle initialization errors with specific messages
+     * ✅ FSK18-SYSTEM: Handle FSK18 access denied
      */
     function handleInitializationError(error) {
         hideLoading();
@@ -1244,6 +1375,13 @@
                 title = '⏳ Ergebnisse abgelaufen';
                 message = 'Diese Ergebnisse sind nicht mehr verfügbar (Datenschutz).';
                 showNewGameButton = true;
+                break;
+
+            // ✅ FSK18-SYSTEM: New error case
+            case 'FSK18_ACCESS_DENIED':
+                title = '🔞 FSK18-Zugriff verweigert';
+                message = 'Dieses Spiel enthielt FSK18-Inhalte. Bitte verifiziere dein Alter, um die Ergebnisse anzusehen.';
+                showNewGameButton = false;
                 break;
 
             default:

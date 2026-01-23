@@ -155,12 +155,12 @@
     // ===========================
     // INITIALIZATION
     // ===========================
-
     /**
      * ✅ P0 FIX: Enhanced initialization with proper dependency checks
+     * ✅ FSK18-SYSTEM: Simplified age verification (only FSK18 needs validation)
      */
     async function initialize() {
-        Logger.debug('🔗 Join Game v5.1 - Initialisierung...');
+        Logger.debug('🔗 Join Game v5.2 - Initialisierung...');
 
         try {
             // ✅ P0 FIX: Critical security check
@@ -177,7 +177,7 @@
                 return;
             }
 
-            // ✅ BUGFIX: Check for window.FirebaseService (not JoinGameModule.firebaseService)
+            // ✅ BUGFIX: Check for window.FirebaseService
             if (typeof window.FirebaseService === 'undefined') {
                 Logger.error('❌ FirebaseService not loaded!');
                 showNotification('Fehler: Firebase-Service nicht geladen', 'error');
@@ -212,7 +212,7 @@
             });
 
             // ===========================
-            // AGE VERIFICATION - NUR FÜR FSK16/18 LOBBYS
+            // ✅ FSK18-SYSTEM: Load user age level (no localStorage checks)
             // ===========================
 
             const readLS = (k) => {
@@ -236,45 +236,50 @@
                 ? window.NocapUtils.removeLocalStorage(k)
                 : localStorage.removeItem(k);
 
-            const raw = readLS('nocap_age_verification');
+            // ✅ FSK18-SYSTEM: Get user age level from Firebase token claims
+            let userAgeLevel = 0;
 
-            // Legacy: "true"/true | New: { verified:true, timestamp: ... }
-            const verified =
-                raw === true ||
-                raw === 'true' ||
-                (raw && typeof raw === 'object' && raw.verified === true);
+            try {
+                // Try to get from Firebase token claims first (server-side source of truth)
+                if (window.firebase?.auth && window.firebase.auth().currentUser) {
+                    const user = window.firebase.auth().currentUser;
+                    const tokenResult = await user.getIdTokenResult();
 
-            let timestamp =
-                (raw && typeof raw === 'object' && Number(raw.timestamp)) ||
-                Number(readLS('nocap_age_verification_ts') || 0);
+                    if (tokenResult.claims.fsk18 === true) {
+                        userAgeLevel = 18;
+                    } else {
+                        userAgeLevel = 0;
+                    }
 
-            // ✅ NEU: Altersverifikation ist OPTIONAL beim Seitenaufruf
-            // Wird nur geprüft wenn User FSK16/18-Lobby beitreten will
-
-            if (verified && timestamp) {
-                // Check expiry (24 hours)
-                const AGE_VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000;
-                if ((Date.now() - timestamp) > AGE_VERIFICATION_EXPIRY) {
-                    Logger.warn('⚠️ Age verification expired - clearing');
-                    removeLS('nocap_age_verification');
-                    removeLS('nocap_age_verification_ts');
-                    removeLS('nocap_age_level');
+                    Logger.debug('✅ Age level from token claims:', userAgeLevel);
                 }
+            } catch (error) {
+                Logger.warn('⚠️ Could not get age level from token claims:', error);
             }
 
-            // Build normalized ageVerification object
-            const ageVerification = (raw && typeof raw === 'object') ? raw : {};
+            // Fallback: Try localStorage (less reliable)
+            if (userAgeLevel === 0) {
+                const raw = readLS('nocap_age_verification');
+                const verified =
+                    raw === true ||
+                    raw === 'true' ||
+                    (raw && typeof raw === 'object' && raw.verified === true);
 
-            // Get age level (default: 0 = not verified)
-            const userAgeLevel = verified ? Math.max(
-                0,
-                Number(
-                    ageVerification.ageLevel ??
-                    ageVerification.userAgeLevel ??
-                    readLS('nocap_age_level') ??
-                    (ageVerification.isAdult ? 18 : 0)
-                ) || 0
-            ) : 0;
+                if (verified) {
+                    const ageVerification = (raw && typeof raw === 'object') ? raw : {};
+                    userAgeLevel = Math.max(
+                        0,
+                        Number(
+                            ageVerification.ageLevel ??
+                            ageVerification.userAgeLevel ??
+                            readLS('nocap_age_level') ??
+                            (ageVerification.isAdult ? 18 : 0)
+                        ) || 0
+                    );
+
+                    Logger.debug('✅ Age level from localStorage:', userAgeLevel);
+                }
+            }
 
             Logger.debug(`📋 User age level: ${userAgeLevel === 0 ? 'nicht verifiziert' : userAgeLevel + '+'}`);
             JoinGameModule.gameState.userAgeLevel = userAgeLevel;
@@ -283,18 +288,19 @@
                 writeLS('nocap_age_level', String(userAgeLevel));
             }
 
-            // ✅ Content settings (optional - wird bei FSK16/18-Check geprüft)
-            const allowFSK16 = readBoolFlag('nocap_allow_fsk16');
-            const allowFSK18 = readBoolFlag('nocap_allow_fsk18');
+            // ✅ FSK18-SYSTEM: Remove old FSK flags (no longer used)
+            // FSK16 is always allowed, FSK18 is checked via server
+            try {
+                removeLS('nocap_allow_fsk16'); // Not used anymore
+                removeLS('nocap_allow_fsk18'); // Not used anymore
+            } catch (e) {}
 
-            JoinGameModule.gameState.allowFSK16 = allowFSK16;
-            JoinGameModule.gameState.allowFSK18 = allowFSK18;
-
+            // Save GameState
             if (typeof JoinGameModule.gameState.save === 'function') {
                 JoinGameModule.gameState.save();
             }
 
-            Logger.debug('✅ Content settings:', { allowFSK16, allowFSK18, userAgeLevel });
+            Logger.debug('✅ Age verification loaded:', { userAgeLevel });
 
             // Initialize Firebase
             showLoading('Verbinde mit Server...');
@@ -307,12 +313,12 @@
                     throw new Error('FirebaseService missing');
                 }
 
-                // ✅ WICHTIG: Service aktiv initialisieren (sonst bleibt isReady false)
+                // ✅ WICHTIG: Service aktiv initialisieren
                 if (!JoinGameModule.firebaseService.isInitialized) {
                     await JoinGameModule.firebaseService.initialize();
                 }
 
-                // Optional: wenn du sicherstellen willst, dass ein User existiert
+                // Optional: User-Check
                 if (!JoinGameModule.firebaseService.getCurrentUser()) {
                     await JoinGameModule.firebaseService.signInAnonymously();
                 }
@@ -368,7 +374,6 @@
             showNotification('Fehler beim Laden', 'error');
         }
     }
-
     // ===========================
     // URL PARAMETER HANDLING
     // ===========================
@@ -565,7 +570,9 @@
     // ===========================
     // GAME VALIDATION
     // ===========================
-
+    /**
+     * ✅ FSK18-SYSTEM: Check if game exists and validate FSK18 access
+     */
     async function checkGameExists(gameCode) {
         const input = document.getElementById('game-code');
         if (!input) return;
@@ -582,14 +589,14 @@
             }
 
             if (!JoinGameModule.firebaseService.isReady) {
-                // ✅ quick retry window (covers slow auth/db init)
+                // ✅ quick retry window
                 await new Promise(r => setTimeout(r, 400));
                 if (!JoinGameModule.firebaseService.isReady) {
                     throw new Error('Keine Firebase-Verbindung');
                 }
             }
 
-// 1) Mapping holen: gameCodes/{gameCode} -> { gameId, status, categories, difficulty, maxPlayers }
+            // 1) Mapping holen: gameCodes/{gameCode} -> { gameId, status, categories, difficulty, maxPlayers }
             const codeRef = JoinGameModule.firebaseService.database.ref(`gameCodes/${gameCode}`);
             const codeSnap = await codeRef.once('value');
 
@@ -608,31 +615,75 @@
             if (status === 'finished') throw new Error('Spiel bereits beendet');
             if (status === 'playing') throw new Error('Spiel läuft bereits');
 
-            // categories: object -> array
-// categories: object -> array (normalize to string[])
+            // categories: object -> array (normalize to string[])
             const categories = (codeData.categories ? Object.values(codeData.categories) : [])
                 .map(c => String(c || '').trim())
                 .filter(Boolean);
 
-// ✅ FSK-Check: Nur prüfen wenn Lobby FSK16/18 enthält
-            const userAgeLevel = JoinGameModule.gameState.userAgeLevel || 0;
+            // maxPlayers
+            const maxPlayers = Number(codeData.maxPlayers || 8);
+
+            // 2) ✅ FSK18-SYSTEM: Check if lobby has FSK18 content
             const hasFSK18 = categories.includes('fsk18');
 
-            // ✅ FSK18-Lobby: User muss 18+ sein
+            // ✅ FSK18-SYSTEM: Only check FSK18 (FSK16 is always allowed)
             if (hasFSK18) {
+                const userAgeLevel = JoinGameModule.gameState.userAgeLevel || 0;
+
+                // Not verified at all
                 if (userAgeLevel === 0) {
-                    // Nicht verifiziert
                     throw new Error('AGE_VERIFICATION_REQUIRED_18');
                 }
+
+                // Verified but too young
                 if (userAgeLevel < 18) {
-                    // Zu jung
                     throw new Error('AGE_TOO_YOUNG_18');
+                }
+
+                // ✅ FSK18-SYSTEM: Server-side validation
+                if (!window.FirebaseConfig?.isInitialized?.()) {
+                    throw new Error('Keine Firebase-Verbindung für FSK18-Validierung');
+                }
+
+                try {
+                    const hasAccess = await JoinGameModule.gameState.canAccessFSK('fsk18', true);
+
+                    if (!hasAccess) {
+                        throw new Error('FSK18_ACCESS_DENIED');
+                    }
+
+                    Logger.debug('✅ FSK18 server validation passed');
+
+                } catch (validationError) {
+                    Logger.error('❌ FSK18 validation failed:', validationError);
+                    throw new Error('FSK18_ACCESS_DENIED');
                 }
             }
 
-            Logger.debug('✅ Age check passed:', { userAgeLevel, hasFSK16, hasFSK18 });
+            Logger.debug('✅ Age check passed:', {
+                userAgeLevel: JoinGameModule.gameState.userAgeLevel,
+                hasFSK18
+            });
 
-// ✅ Preview-Objekt so bauen, dass displayGameInfo() + joinGame() Settings lesen können
+            // 3) Get player count (optional - for display)
+            let players = {};
+            try {
+                const playersRef = JoinGameModule.firebaseService.database.ref(`games/${gameId}/players`);
+                const playersSnap = await playersRef.once('value');
+                players = playersSnap.val() || {};
+
+                // Check if game is full
+                if (Object.keys(players).length >= maxPlayers) {
+                    throw new Error('Spiel ist bereits voll');
+                }
+            } catch (error) {
+                if (error.message === 'Spiel ist bereits voll') {
+                    throw error;
+                }
+                Logger.warn('⚠️ Could not get player count:', error);
+            }
+
+            // ✅ Preview-Objekt bauen
             const previewGameData = {
                 _gameId: gameId,
                 _gameCode: gameCode,
@@ -642,10 +693,8 @@
                     difficulty: codeData.difficulty || 'medium',
                     maxPlayers
                 },
-                // optional: wenn du später host/player-count anzeigen willst, brauchst du players
                 players
             };
-
 
             JoinGameModule.currentGameData = previewGameData;
             displayGameInfo(previewGameData);
@@ -653,7 +702,6 @@
             input.classList.add('valid');
             input.setAttribute('aria-invalid', 'false');
             showNotification('Spiel gefunden!', 'success', 2000);
-
 
             setTimeout(() => {
                 const playerNameInput = document.getElementById('player-name');
@@ -686,17 +734,22 @@
                 setTimeout(() => {
                     if (confirm('Möchtest du jetzt dein Alter verifizieren?')) {
                         // Store return URL
+                        const gameCodeInput = document.getElementById('game-code');
                         sessionStorage.setItem('nocap_return_url', window.location.href + '?code=' + gameCodeInput.value);
-                        // Open settings (oder redirect zu age-gate)
+                        // Open settings
                         const settingsBtn = document.getElementById('settings-btn');
                         if (settingsBtn) {
                             settingsBtn.click();
+                        } else {
+                            window.location.href = 'index.html#settings';
                         }
                     }
                 }, 2000);
 
             } else if (error.message === 'AGE_TOO_YOUNG_18') {
                 userMessage = '🔞 Diese Lobby ist ab 18 Jahren. Du bist noch zu jung für diese Inhalte.';
+            } else if (error.message === 'FSK18_ACCESS_DENIED') {
+                userMessage = '🔞 Keine Berechtigung für FSK18-Inhalte. Bitte verifiziere dein Alter.';
             } else if (error.message.includes('Alter') || error.message.includes('FSK')) {
                 userMessage = error.message;
             } else if (error.message.includes('Verbindung') || error.message.includes('connection')) {
@@ -725,11 +778,12 @@
 
         validateForm();
     }
-
     // ===========================
     // GAME INFO DISPLAY
     // ===========================
-
+    /**
+     * ✅ FSK18-SYSTEM: Display game info with simplified FSK badge
+     */
     function displayGameInfo(gameData) {
         const infoDiv = document.getElementById('game-info');
         const playerNameStep = document.getElementById('step-player-name');
@@ -744,6 +798,7 @@
                 elem.textContent = String(text || '-');
             }
         };
+
         const maxPlayers = gameData.settings?.maxPlayers || 8;
 
         if (gameData.players && typeof gameData.players === 'object') {
@@ -771,16 +826,19 @@
         const difficultyText = difficultyNames[difficulty] || 'Standard';
         setTextSafe('game-difficulty', difficultyText);
 
-        const hasFSK18 = categoriesArray.some(cat => cat === 'fsk18' || cat.includes('18'));
-        const hasFSK16 = categoriesArray.some(cat => cat === 'fsk16' || cat.includes('16'));
+        // ✅ FSK18-SYSTEM: Simplified FSK badge (only show FSK18 if present)
+        const hasFSK18 = categoriesArray.some(cat => cat === 'fsk18');
+        const hasFSK16 = categoriesArray.some(cat => cat === 'fsk16');
 
         const fskElem = document.getElementById('game-fsk-rating');
         if (fskElem) {
-            if (hasFSK18) {
-                while (fskElem.firstChild) fskElem.removeChild(fskElem.firstChild);
+            // Clear existing content
+            while (fskElem.firstChild) fskElem.removeChild(fskElem.firstChild);
 
+            if (hasFSK18) {
+                // ✅ FSK18: Show warning
                 const strong = document.createElement('strong');
-                strong.textContent = '⚠️ FSK 18+';
+                strong.textContent = '🔞 FSK 18+';
 
                 const span = document.createElement('span');
                 span.className = 'fsk-hint';
@@ -791,33 +849,30 @@
                 fskElem.classList.add('fsk-warning');
 
             } else if (hasFSK16) {
-                while (fskElem.firstChild) fskElem.removeChild(fskElem.firstChild);
-
+                // ✅ FSK16: Show info (no warning, always accessible)
                 const strong = document.createElement('strong');
-                strong.textContent = '⚠️ FSK 16+';
+                strong.textContent = '🎉 FSK 16+';
 
                 const span = document.createElement('span');
                 span.className = 'fsk-hint';
-                span.textContent = 'Enthält Inhalte ab 16 Jahren';
+                span.textContent = 'Enthält Party-Inhalte';
 
                 fskElem.appendChild(strong);
                 fskElem.appendChild(span);
-                fskElem.classList.add('fsk-warning');
+                fskElem.classList.remove('fsk-warning'); // Not a warning anymore
 
             } else {
-                while (fskElem.firstChild) fskElem.removeChild(fskElem.firstChild);
-
+                // ✅ FSK0: Family-friendly
                 const strong = document.createElement('strong');
-                strong.textContent = ' FSK 0';
+                strong.textContent = '👨‍👩‍👧‍👦 FSK 0';
 
                 const span = document.createElement('span');
                 span.className = 'fsk-hint';
-                span.textContent = 'Enthält keine Inhalte für Erwachsene';
+                span.textContent = 'Familienfreundlich';
 
                 fskElem.appendChild(strong);
                 fskElem.appendChild(span);
-                fskElem.classList.add('fsk-warning');
-
+                fskElem.classList.remove('fsk-warning');
             }
         }
 
@@ -873,7 +928,9 @@
     // ===========================
     // JOIN GAME
     // ===========================
-
+    /**
+     * ✅ FSK18-SYSTEM: Join game with server-side FSK validation
+     */
     async function joinGame() {
         const gameCodeInput = document.getElementById('game-code');
         const playerNameInput = document.getElementById('player-name');
@@ -891,7 +948,6 @@
 
         const preview = JoinGameModule.currentGameData || {};
         const cats = (preview.settings?.categories || []).map(c => String(c || '').trim()).filter(Boolean);
-
 
         if (!GAME_CODE_REGEX.test(gameCode)) {
             showNotification('Ungültiger Spiel-Code', 'error');
@@ -915,23 +971,20 @@
         showLoading('Trete Spiel bei...');
 
         try {
-// ✅ Join securely via FirebaseService (no direct firebase.functions dependency)
+            // ✅ Join securely via FirebaseService
             const svc = JoinGameModule.firebaseService;
 
             if (!svc) throw new Error('FirebaseService missing');
             if (!svc.isReady) throw new Error('Keine Firebase-Verbindung');
 
-// Prefer service wrapper if available
+            // Prefer service wrapper if available
             let res;
             if (typeof svc.callCallable === 'function') {
-                // your service may implement this helper
                 res = await svc.callCallable('joinGameSecure', { gameCode, playerName }, 'europe-west1');
             } else if (svc.functions && typeof svc.functions.httpsCallable === 'function') {
-                // compat-style
                 const joinGameFn = svc.functions.httpsCallable('joinGameSecure');
                 res = await joinGameFn({ gameCode, playerName });
             } else if (window.firebase?.app?.().functions) {
-                // last fallback (requires functions SDK compat)
                 const joinGameFn = window.firebase.app().functions('europe-west1').httpsCallable('joinGameSecure');
                 res = await joinGameFn({ gameCode, playerName });
             } else {
@@ -940,7 +993,8 @@
 
             const { gameId } = (res && res.data) ? res.data : {};
             if (!gameId) throw new Error('Join erfolgreich, aber gameId fehlt');
-// ✅ P0 FIX: Persist gameId immediately (independent of GameState implementation)
+
+            // ✅ P0 FIX: Persist gameId immediately
             try {
                 localStorage.setItem('nocap_game_id', String(gameId));
                 sessionStorage.setItem('nocap_game_id', String(gameId));
@@ -948,25 +1002,31 @@
                 // ignore
             }
 
-// ✅ Store player's age level in their player data (use already loaded value)
+            // ✅ FSK18-SYSTEM: Store player's age level in their player data
             const uid =
                 (window.firebase?.auth?.()?.currentUser?.uid) ||
                 (JoinGameModule.firebaseService?.auth?.currentUser?.uid) ||
                 null;
 
             if (uid) {
-                // ✅ Use already loaded userAgeLevel from JoinGameModule.gameState
+                // Use already loaded userAgeLevel
                 const userAgeLevel = Number(JoinGameModule.gameState.userAgeLevel || 0);
 
                 // Store age level in player data for host validation
-                await firebase.database()
-                    .ref(`games/${gameId}/players/${uid}/ageLevel`)
-                    .set(userAgeLevel);
+                try {
+                    await firebase.database()
+                        .ref(`games/${gameId}/players/${uid}/ageLevel`)
+                        .set(userAgeLevel);
+
+                    Logger.debug('✅ Player age level stored:', userAgeLevel);
+                } catch (error) {
+                    Logger.warn('⚠️ Could not store age level:', error);
+                }
             }
 
-// ✅ Save GameState (IMPORTANT: gameId ist die echte DB-ID)
+            // ✅ Save GameState
             JoinGameModule.gameState.gameId = gameId;
-            JoinGameModule.gameState.gameCode = gameCode; // optional
+            JoinGameModule.gameState.gameCode = gameCode;
             JoinGameModule.gameState.playerId =
                 (JoinGameModule.firebaseService?.getCurrentUser?.()?.uid) ||
                 (firebase?.auth?.()?.currentUser?.uid) ||
@@ -979,11 +1039,12 @@
             JoinGameModule.gameState.isHost = false;
             JoinGameModule.gameState.isGuest = true;
 
-// ✅ categories/difficulty aus der vorherigen checkGameExists()-Antwort ziehen
+            // ✅ categories/difficulty aus preview ziehen
             const gameData = JoinGameModule.currentGameData || {};
             const settings = gameData.settings || {};
             const categories = settings.categories || [];
-// ✅ Reset categories first (sonst bleiben alte Kategorien im State)
+
+            // ✅ Reset categories first
             try {
                 if (typeof JoinGameModule.gameState.clearCategories === 'function') {
                     JoinGameModule.gameState.clearCategories();
@@ -992,15 +1053,16 @@
                 }
             } catch (e) {}
 
-// ✅ Apply server preview categories
+            // ✅ Apply server preview categories
             categories.forEach(cat => JoinGameModule.gameState.addCategory(cat));
 
-// ✅ Apply difficulty
+            // ✅ Apply difficulty
             JoinGameModule.gameState.setDifficulty(settings.difficulty || 'medium');
 
             hideLoading();
             showNotification('Erfolgreich beigetreten!', 'success', 500);
-// ✅ P0 FIX: Persist EVERYTHING before redirect (triple redundancy)
+
+            // ✅ P0 FIX: Persist EVERYTHING before redirect
             try {
                 const uid =
                     (window.firebase?.auth?.()?.currentUser?.uid) ||
@@ -1017,8 +1079,9 @@
                     playerId: uid,
                     authUid: uid,
                     playerName: playerName,
-                    selectedCategories: (JoinGameModule.currentGameData?.settings?.categories) || [],
-                    difficulty: (JoinGameModule.currentGameData?.settings?.difficulty) || 'medium'
+                    selectedCategories: categories,
+                    difficulty: settings.difficulty || 'medium',
+                    userAgeLevel: JoinGameModule.gameState.userAgeLevel || 0 // ✅ Store age level
                 };
 
                 localStorage.setItem('nocap_game_id', String(gameId));
@@ -1029,14 +1092,13 @@
                 // ignore
             }
 
-// Save GameState too (optional, but keep it)
+            // Save GameState too
             try { JoinGameModule.gameState.save?.(true); } catch (e) {}
 
-// ✅ P0 FIX: Pass gameId in URL as final fallback
+            // ✅ P0 FIX: Pass gameId in URL as final fallback
             setTimeout(() => {
                 window.location.href = 'multiplayer-lobby.html?gameId=' + encodeURIComponent(String(gameId));
             }, 50);
-
 
         } catch (error) {
             Logger.error('❌ Join failed:', error);

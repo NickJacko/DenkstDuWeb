@@ -6,16 +6,20 @@
   <component name="ChangeListManager">
     <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor multiplayer lobby and category selection UI: redesign QR and share section for mobile, add settings modal, improve FSK auto-kick logic, and streamline difficulty/leaderboard wording">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/category-selection.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/category-selection.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/GameState.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/GameState.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/category-selection.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-results.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-results.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/player-setup.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/database.rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database.rules.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firebase.json" beforeDir="false" afterPath="$PROJECT_DIR$/firebase.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/functions/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/multiplayer-category-selection.html" beforeDir="false" afterPath="$PROJECT_DIR$/multiplayer-category-selection.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage.rules" beforeDir="false" afterPath="$PROJECT_DIR$/storage.rules" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -176,6 +180,7 @@
       <workItem from="1768555261474" duration="25029000" />
       <workItem from="1768812234952" duration="2784000" />
       <workItem from="1768834190520" duration="35661000" />
+      <workItem from="1769067668112" duration="16015000" />
     </task>
     <task id="LOCAL-00115" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
       <option name="closed" value="true" />

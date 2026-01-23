@@ -1,13 +1,13 @@
 /**
  * No-Cap Multiplayer Difficulty Selection
- * Version 4.2 - OPTIMIZED: Rechtlich sichere Texte, Performance-Fix
+ * Version 4.3 - FSK18-System Integration
  *
+ * ✅ FSK18: FSK0 & FSK16 always allowed, FSK18 requires server validation
  * ✅ NEW: Rechtlich sichere Texte (keine "Schlücke"-Animierung)
  * ✅ BUGFIX: Module Pattern added
  * ✅ BUGFIX: addEventListener usage corrected
  * ✅ P1 FIX: Device mode validation
  * ✅ P0 FIX: All DOM manipulation with textContent
- * ✅ P0 FIX: FSK validation
  */
 
 (function(window) {
@@ -137,7 +137,9 @@
             MultiplayerDifficultyModule.gameState.setDeviceMode('multi');
             Logger.debug('📱 Device mode set to: multi');
 
-            if (!validateGameState()) {
+            // ✅ FSK18-SYSTEM: Validate game state with server-side FSK check
+            const isValid = await validateGameState();
+            if (!isValid) {
                 return;
             }
 
@@ -169,7 +171,12 @@
     // VALIDATION
     // ===========================
 
-    function validateGameState() {
+    /**
+     * ✅ FSK18-SYSTEM: Updated validation with server-side FSK check
+     * - FSK0 & FSK16: No validation needed
+     * - FSK18: Requires server validation via GameState.canAccessFSK()
+     */
+    async function validateGameState() {
         Logger.debug('🔍 Validating game state...');
         Logger.debug('GameState:', {
             deviceMode: MultiplayerDifficultyModule.gameState?.deviceMode,
@@ -209,23 +216,59 @@
             return false;
         }
 
-        const getLS = (k) => window.NocapUtils?.getLocalStorage
-            ? window.NocapUtils.getLocalStorage(k)
-            : localStorage.getItem(k);
+        // ✅ FSK18-SYSTEM: Check if FSK18 is selected
+        const selectedCategories = MultiplayerDifficultyModule.gameState.selectedCategories || [];
+        const hasFSK18 = selectedCategories.includes('fsk18');
 
-        const rawAge = getLS('nocap_age_level');
-        const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
+        // ✅ FSK0 & FSK16: No validation needed
+        if (!hasFSK18) {
+            Logger.debug('✅ No FSK18 content - validation passed');
+            return true;
+        }
 
-        const selected = MultiplayerDifficultyModule.gameState.selectedCategories || [];
-        if (selected.includes('fsk18') && ageLevel < 18) {
-            Logger.error('❌ Selected fsk18 but user < 18');
-            showNotification('Du musst 18+ sein für diese Kategorie', 'warning');
+        // ✅ FSK18: Server-side validation required
+        Logger.debug('🔒 FSK18 content detected - validating access...');
+
+        // Check Firebase availability (fail closed)
+        if (!window.FirebaseConfig?.isInitialized?.()) {
+            Logger.error('❌ Firebase not available - cannot validate FSK18 access');
+            showNotification(
+                '⚠️ FSK18-Validierung erfordert Internetverbindung',
+                'error',
+                5000
+            );
             setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
             return false;
         }
 
-        Logger.debug('✅ Game state valid');
-        return true;
+        try {
+            // Use GameState's server validation
+            const hasAccess = await MultiplayerDifficultyModule.gameState.canAccessFSK('fsk18', true);
+
+            if (!hasAccess) {
+                Logger.error('❌ FSK18 access denied');
+                showNotification(
+                    '🔞 Keine Berechtigung für FSK18-Inhalte! Bitte verifiziere dein Alter.',
+                    'error',
+                    5000
+                );
+                setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
+                return false;
+            }
+
+            Logger.debug('✅ FSK18 access validated');
+            return true;
+
+        } catch (error) {
+            Logger.error('❌ FSK18 validation error:', error);
+            showNotification(
+                '⚠️ Fehler bei der Altersverifikation. Bitte versuche es erneut.',
+                'error',
+                5000
+            );
+            setTimeout(() => window.location.href = 'multiplayer-category-selection.html', 2000);
+            return false;
+        }
     }
 
     // ===========================

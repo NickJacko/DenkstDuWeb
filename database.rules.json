@@ -361,7 +361,7 @@
         },
 
         "status": {
-          ".validate": "newData.isString() && (newData.val() === 'pending' || newData.val() === 'cancelled' || newData.val() === 'completed')"
+          ".validate": "newData.isString() && (newData.val() === 'pending' || newData.val() === 'cancelled' || newData.val() === 'completed' || newData.val() === 'scheduled')"
         },
 
         "completedAt": {

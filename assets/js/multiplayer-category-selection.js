@@ -1,6 +1,6 @@
 /**
  * No-Cap Multiplayer Category Selection
- * Version 5.1 - BUGFIX: addEventListener Errors
+ * Version 5.2 - FSK18-System Integration
  *
  * CRITICAL: This page is the "Source of Truth" for Multiplayer Host Mode
  * - Sets deviceMode = 'multi'
@@ -10,7 +10,7 @@
  * ✅ P0: Module Pattern - no global variables (XSS prevention)
  * ✅ P0: Event-Listener cleanup on beforeunload
  * ✅ P0: MANDATORY server-side premium validation
- * ✅ BUGFIX: Corrected addEventListener usage
+ * ✅ FSK18: FSK0 & FSK16 always allowed, FSK18 requires server validation
  */
 
 (function(window) {
@@ -122,10 +122,10 @@
             icon: '🎉',
             color: '#FF9800',
             fsk: 'FSK 16',
-            ageRange: 'Für alle', // ✅ CHANGED
+            ageRange: 'Für alle', // ✅ FSK18-SYSTEM: Always unlocked
             description: 'Freche und witzige Fragen für Partys mit Freunden',
             examples: ['...auf einer Party eingeschlafen?', '...den Namen vergessen?'],
-            requiresAge: 0 // ✅ CHANGED: Always unlocked
+            requiresAge: 0 // ✅ FSK18-SYSTEM: No age requirement
         },
         fsk18: {
             name: 'Heiß & Gewagt',
@@ -423,6 +423,10 @@
 // AGE VERIFICATION
 // ===========================
 
+    /**
+     * ✅ FSK18-SYSTEM: Simplified age check - no redirect on load
+     * Age verification is only enforced when trying to activate FSK18
+     */
     function checkAgeVerification() {
         try {
             const getLS = (k) => window.NocapUtils?.getLocalStorage
@@ -431,7 +435,7 @@
 
             const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
 
-            Logger.debug(`ℹ️ Current age level: ${ageLevel} (no redirect on load)`);
+            Logger.debug(`ℹ️ Current age level: ${ageLevel} (FSK0/FSK16 always accessible)`);
             return true;
 
         } catch (error) {
@@ -570,19 +574,24 @@
             addTrackedEventListener(confirmNameBtn, 'click', confirmPlayerName);
         }
 
-        // ✅ NEW: Listen for age verification event
+        // ✅ FSK18-SYSTEM: Listen for age verification event
         addTrackedEventListener(window, 'nocap:age-verified', handleAgeVerified);
 
         Logger.debug('✅ Event listeners setup');
     }
 
     /**
-     * ✅ NEW: Handle age verification event - re-render cards
+     * ✅ FSK18-SYSTEM: Handle age verification event - invalidate cache and re-render
      */
     async function handleAgeVerified(event) {
         const ageLevel = event?.detail?.ageLevel ?? 0;
 
         Logger.debug('🔄 Age verified event received, re-rendering cards with ageLevel:', ageLevel);
+
+        // Invalidate FSK18 cache in GameState
+        if (MultiplayerCategoryModule.gameState?.invalidateFSK18Cache) {
+            MultiplayerCategoryModule.gameState.invalidateFSK18Cache('age-verified');
+        }
 
         showNotification('Altersverifikation aktualisiert! 🎉', 'success', 2000);
 
@@ -630,6 +639,7 @@
             ? window.NocapUtils.getLocalStorage(k)
             : localStorage.getItem(k);
 
+        // ✅ FSK18-SYSTEM: Only check for FSK18
         const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
         const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
 
@@ -645,7 +655,7 @@
 
             const isGuest = !MultiplayerCategoryModule.isHost;
 
-            // ✅ FSK16 is ALWAYS unlocked
+            // ✅ FSK18-SYSTEM: FSK0 & FSK16 always unlocked
             const locked = isGuest ||
                 (key === 'fsk18' && (!verified || ageLevel < 18)) ||
                 (key === 'special' && !hasPremium);
@@ -676,6 +686,7 @@
                     showNotification('Nur der Host kann Kategorien auswählen', 'info');
                 });
             } else if (key === 'fsk18') {
+                // ✅ FSK18-SYSTEM: Allow click to trigger age verification
                 addTrackedEventListener(card, 'click', () => toggleCategory(key));
                 addTrackedEventListener(card, 'keypress', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -808,6 +819,11 @@
 // CATEGORY SELECTION
 // ===========================
 
+    /**
+     * ✅ FSK18-SYSTEM: Updated toggle logic
+     * - FSK0 & FSK16: Always accessible
+     * - FSK18: Requires server validation via GameState
+     */
     async function toggleCategory(key) {
         const card = document.querySelector(`[data-category="${key}"]`);
         if (!card) return;
@@ -818,31 +834,61 @@
                 return;
             }
 
-            // ✅ FSK18 only
+            // ✅ FSK18-SYSTEM: Only FSK18 requires validation
             if (key === 'fsk18') {
-                const requiredAge = 18;
-
-                const getLS = (k) => window.NocapUtils?.getLocalStorage
-                    ? window.NocapUtils.getLocalStorage(k)
-                    : localStorage.getItem(k);
-
-                const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
-                const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
-
-                if (!verified) {
-                    showNotification('Bitte bestätige dein Alter in den Settings', 'warning');
+                // Check if Firebase is available (fail closed)
+                if (!window.FirebaseConfig?.isInitialized?.()) {
+                    showNotification(
+                        '⚠️ FSK18-Validierung erfordert Internetverbindung',
+                        'error',
+                        5000
+                    );
                     return;
                 }
 
-                if (ageLevel < requiredAge) {
-                    showNotification(`Du musst ${requiredAge}+ sein`, 'warning');
+                Logger.debug('🔒 FSK18 locked - checking access...');
+
+                // Use GameState's server validation
+                const hasAccess = await MultiplayerCategoryModule.gameState.canAccessFSK('fsk18', true);
+
+                if (!hasAccess) {
+                    Logger.debug('❌ FSK18 access denied');
+
+                    // Show age verification modal
+                    if (window.SettingsModule?.showFSKError) {
+                        window.SettingsModule.showFSKError(
+                            'fsk18',
+                            'Altersverifikation erforderlich für FSK18-Inhalte'
+                        );
+                    } else {
+                        showNotification(
+                            '🔞 Altersverifikation erforderlich! Bitte verifiziere dein Alter in den Einstellungen.',
+                            'error',
+                            5000
+                        );
+                    }
+
                     return;
                 }
 
+                Logger.debug('✅ FSK18 access validated - unlocking card');
+
+                // Unlock the card
+                card.classList.remove('locked');
+                card.setAttribute('aria-disabled', 'false');
+
+                // Remove overlay
+                const overlay = card.querySelector('.locked-overlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+
+                // Now proceed with toggle
+                // Fall through to toggle logic below
+            } else {
+                // Other locked categories (shouldn't happen for FSK0/FSK16)
                 return;
             }
-
-            return;
         }
 
         if (!categoryData[key]) {

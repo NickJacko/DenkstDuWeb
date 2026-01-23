@@ -185,9 +185,9 @@ function hideLoading() {
         loadingOverlay.classList.remove('active');
     }
 }
-
 /**
  * ✅ P1 DSGVO: Display FSK badge for age-restricted content
+ * ✅ FSK18-SYSTEM: Only show badge for FSK18 (FSK16 not restricted anymore)
  */
 function updateFSKBadge(question) {
     const fskBadge = document.getElementById('fsk-badge');
@@ -195,19 +195,14 @@ function updateFSKBadge(question) {
 
     if (!fskBadge || !fskText) return;
 
-    // Check if question has FSK rating
-    if (question.category === 'fsk16' || question.fsk === 16) {
-        fskBadge.classList.remove('hidden', 'fsk-18');
-        fskBadge.classList.add('fsk-16');
-        fskText.textContent = 'ab 16';
-        fskBadge.setAttribute('aria-label', 'FSK 16 - Freigegeben ab 16 Jahren');
-    } else if (question.category === 'fsk18' || question.fsk === 18) {
+    // ✅ FSK18-SYSTEM: Only show badge for FSK18 content
+    if (question.category === 'fsk18' || question.fsk === 18) {
         fskBadge.classList.remove('hidden', 'fsk-16');
         fskBadge.classList.add('fsk-18');
         fskText.textContent = 'ab 18';
         fskBadge.setAttribute('aria-label', 'FSK 18 - Freigegeben ab 18 Jahren');
     } else {
-        // FSK 0 or no rating - hide badge
+        // FSK 0, FSK 16, or no rating - hide badge (FSK16 not restricted)
         fskBadge.classList.add('hidden');
         fskBadge.classList.remove('fsk-16', 'fsk-18');
     }
@@ -389,14 +384,14 @@ function validateDeviceMode() {
 
     return true;
 }
-
 /**
  * ✅ P0 FIX: Comprehensive validation with MANDATORY server-side FSK checks
+ * ✅ FSK18-SYSTEM: Only FSK18 requires server validation, FSK16 is always allowed
  * @returns {Promise<boolean>} True if valid
  */
 async function validateGameState() {
     if (!GameplayModule.gameState.checkValidity()) {
-        console.error('❌ GameplayModule.gameState invalid');
+        console.error('❌ GameState invalid');
         showNotification('Ungültiger Spielzustand', 'error');
         setTimeout(() => window.location.href = 'index.html', 2000);
         return false;
@@ -405,7 +400,7 @@ async function validateGameState() {
     const savedPlayers = GameplayModule.gameState.get('players');
 
     if (GameplayModule.isDevelopment) {
-        console.log('🔍 GameplayModule.gameState validation:', {
+        console.log('🔍 GameState validation:', {
             players: savedPlayers,
             playersLength: savedPlayers ? savedPlayers.length : 0,
             categories: GameplayModule.gameState.selectedCategories,
@@ -435,47 +430,57 @@ async function validateGameState() {
         return false;
     }
 
-// ✅ Settings-only FSK validation (NO server/Firebase)
+    // ✅ FSK18-SYSTEM: Check if FSK18 categories are selected
+    const hasFSK18 = GameplayModule.gameState.selectedCategories.includes('fsk18');
+
+    // ✅ FSK18-SYSTEM: FSK0 & FSK16 always allowed - no validation needed
+    if (!hasFSK18) {
+        if (GameplayModule.isDevelopment) {
+            console.log('✅ No FSK18 content - validation passed');
+        }
+        return true;
+    }
+
+    // ✅ FSK18-SYSTEM: FSK18 requires server-side validation
     try {
-        const getLS = (key) => window.NocapUtils?.getLocalStorage
-            ? window.NocapUtils.getLocalStorage(key)
-            : localStorage.getItem(key);
+        // Check if Firebase is available (required for server validation)
+        if (!window.FirebaseConfig?.isInitialized?.()) {
+            console.error('❌ Firebase not initialized - FSK18 requires server validation');
+            showNotification('FSK18-Validierung erfordert Internetverbindung', 'error');
+            setTimeout(() => window.location.href = 'category-selection.html', 2000);
+            return false;
+        }
 
-        const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
-        const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
+        // Check if GameState has FSK validation method
+        if (!GameplayModule.gameState?.canAccessFSK) {
+            console.error('❌ GameState.canAccessFSK not available');
+            showNotification('Fehler bei der Altersverifikation', 'error');
+            setTimeout(() => window.location.href = 'category-selection.html', 2000);
+            return false;
+        }
 
-        for (const category of GameplayModule.gameState.selectedCategories) {
-            if (category === 'fsk0') continue;
+        // ✅ FSK18-SYSTEM: Server-side validation
+        const hasAccess = await GameplayModule.gameState.canAccessFSK('fsk18', true);
 
-            if (category === 'fsk16') {
-                if (!verified || ageLevel < 16) {
-                    showNotification('Du musst 16+ sein für diese Kategorie', 'warning', 2500);
-                    setTimeout(() => window.location.href = 'category-selection.html', 800);
-                    return false;
-                }
-            }
-
-            if (category === 'fsk18') {
-                if (!verified || ageLevel < 18) {
-                    showNotification('Du musst 18+ sein für diese Kategorie', 'warning', 2500);
-                    setTimeout(() => window.location.href = 'category-selection.html', 800);
-                    return false;
-                }
-            }
+        if (!hasAccess) {
+            console.error('❌ No FSK18 access');
+            showNotification('🔞 Keine Berechtigung für FSK18-Inhalte', 'error');
+            setTimeout(() => window.location.href = 'category-selection.html', 2000);
+            return false;
         }
 
         if (GameplayModule.isDevelopment) {
-            console.log('✅ All categories validated (settings-only)', { verified, ageLevel });
+            console.log('✅ FSK18 server validation passed');
         }
+
+        return true;
+
     } catch (error) {
-        console.error('❌ Settings-only FSK validation error:', error);
-        showNotification('Verifikation fehlgeschlagen. Bitte erneut versuchen.', 'error');
-        setTimeout(() => window.location.href = 'category-selection.html', 1000);
+        console.error('❌ FSK18 validation error:', error);
+        showNotification('Fehler bei der Altersverifikation', 'error');
+        setTimeout(() => window.location.href = 'category-selection.html', 2000);
         return false;
     }
-
-
-    return true;
 }
 
 // ===========================
@@ -645,23 +650,19 @@ function clearGameProgress() {
         console.warn('⚠️ Could not clear progress:', error);
     }
 }
-
-// ===========================
-// ALCOHOL MODE CHECK
-// ===========================
-
+/**
+ * ✅ FSK18-SYSTEM: Check alcohol mode with integrated age verification
+ */
 function checkAlcoholMode() {
     try {
         GameplayModule.alcoholMode = GameplayModule.gameState.alcoholMode === true;
 
         if (GameplayModule.alcoholMode) {
-            const ageLevelStr = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_level')
-                : localStorage.getItem('nocap_age_level');
-
-            const ageLevel = parseInt(ageLevelStr, 10) || 0;
+            // ✅ FSK18-SYSTEM: Use userAgeLevel from GameState
+            const ageLevel = GameplayModule.gameState.userAgeLevel || 0;
 
             if (ageLevel < 18) {
+                // User is under 18 - disable alcohol mode
                 GameplayModule.alcoholMode = false;
 
                 if (typeof GameplayModule.gameState.setAlcoholMode === 'function') {
@@ -672,6 +673,9 @@ function checkAlcoholMode() {
                     GameplayModule.gameState.alcoholMode = false;
                 }
 
+                if (GameplayModule.isDevelopment) {
+                    console.log('⚠️ Alcohol mode disabled (user under 18)');
+                }
             }
         }
 
@@ -684,13 +688,12 @@ function checkAlcoholMode() {
     }
 }
 
-
 // ===========================
 // QUESTION LOADING WITH CACHING
 // ===========================
-
 /**
  * ✅ P0 FIX: Load questions from Firebase with caching
+ * ✅ FSK18-SYSTEM: Validate FSK18 access before loading
  */
 async function loadQuestions() {
     // ✅ P1 UI/UX: Show loading state
@@ -709,10 +712,49 @@ async function loadQuestions() {
             console.log('✅ Loaded questions from cache:', cachedQuestions.length);
         }
         GameplayModule.currentGame.allQuestions = cachedQuestions;
-        hideLoading(); // ✅ Hide loading when done
+        hideLoading();
         return;
     }
-// Load from Firebase
+
+    // ✅ FSK18-SYSTEM: Check if FSK18 validation is needed
+    const hasFSK18 = GameplayModule.gameState.selectedCategories.includes('fsk18');
+
+    if (hasFSK18) {
+        // Validate FSK18 access before loading any questions
+        try {
+            if (!window.FirebaseConfig?.isInitialized?.()) {
+                console.warn('⚠️ Firebase not initialized - cannot validate FSK18');
+                throw new Error('FSK18-Validierung erfordert Internetverbindung');
+            }
+
+            if (!GameplayModule.gameState?.canAccessFSK) {
+                throw new Error('Altersverifikation nicht verfügbar');
+            }
+
+            const hasAccess = await GameplayModule.gameState.canAccessFSK('fsk18', true);
+
+            if (!hasAccess) {
+                console.error('❌ No FSK18 access during question loading');
+                hideLoading();
+                showNotification('🔞 Keine Berechtigung für FSK18-Inhalte', 'error');
+                setTimeout(() => window.location.href = 'category-selection.html', 2000);
+                return;
+            }
+
+            if (GameplayModule.isDevelopment) {
+                console.log('✅ FSK18 validation passed - loading questions');
+            }
+
+        } catch (error) {
+            console.error('❌ FSK18 validation failed:', error);
+            hideLoading();
+            showNotification(error.message || 'Fehler bei der Altersverifikation', 'error');
+            setTimeout(() => window.location.href = 'category-selection.html', 2000);
+            return;
+        }
+    }
+
+    // Load from Firebase
     if (GameplayModule.firebaseService?.database?.ref) {
         if (GameplayModule.isDevelopment) {
             console.log('🔥 Loading from Firebase...');
@@ -735,10 +777,24 @@ async function loadQuestions() {
                     if (GameplayModule.isDevelopment) {
                         console.log(`⚠️ No Firebase questions for ${category}, using fallback`);
                     }
+
+                    // ✅ FSK18-SYSTEM: Only load FSK18 fallback if validated
+                    if (category === 'fsk18' && !hasFSK18) {
+                        console.warn('⚠️ Skipping FSK18 fallback - no access');
+                        continue;
+                    }
+
                     await loadFallbackQuestions(category);
                 }
             } catch (error) {
                 console.warn(`⚠️ Error loading ${category}:`, error);
+
+                // ✅ FSK18-SYSTEM: Skip FSK18 fallback if no access
+                if (category === 'fsk18' && !hasFSK18) {
+                    console.warn('⚠️ Skipping FSK18 fallback - no access');
+                    continue;
+                }
+
                 await loadFallbackQuestions(category);
             }
         }
@@ -746,16 +802,30 @@ async function loadQuestions() {
         // No Firebase - use fallback
         console.warn('⚠️ Firebase not available, using fallback questions');
         for (const category of GameplayModule.gameState.selectedCategories) {
+            // ✅ FSK18-SYSTEM: Skip FSK18 fallback if offline
+            if (category === 'fsk18') {
+                console.warn('⚠️ Skipping FSK18 fallback - offline mode');
+                continue;
+            }
+
             await loadFallbackQuestions(category);
         }
     }
 
-
     // ✅ FIX: Ensure we have at least some questions
     if (GameplayModule.currentGame.allQuestions.length === 0) {
         console.error('❌ No questions loaded! Loading all fallbacks...');
-        // Load all fallback categories as emergency
-        await Promise.all(Object.keys(fallbackQuestionsDatabase).map(c => loadFallbackQuestions(c)));
+
+        // Load all fallback categories as emergency (except FSK18 if no access)
+        const fallbackCategories = Object.keys(fallbackQuestionsDatabase);
+
+        for (const cat of fallbackCategories) {
+            // Skip FSK18 if not validated
+            if (cat === 'fsk18' && !hasFSK18) {
+                continue;
+            }
+            await loadFallbackQuestions(cat);
+        }
     }
 
     if (GameplayModule.isDevelopment) {
@@ -786,7 +856,6 @@ async function loadQuestions() {
     // ✅ P1 UI/UX: Hide loading when done
     hideLoading();
 }
-
 /**
  * ✅ P0 FIX: Sanitize question text
  */
@@ -801,14 +870,41 @@ function sanitizeQuestionText(text) {
     // Fallback: Remove HTML tags
     return String(text).replace(/<[^>]*>/g, '').substring(0, 500);
 }
-
 /**
- * Load category questions from Firebase
+ * ✅ FSK18-SYSTEM: Load category questions from Firebase with FSK validation
+ * @param {string} category - Category to load (fsk0, fsk16, fsk18, special)
+ * @returns {Promise<Array|null>} Array of questions or null
  */
 async function loadCategoryQuestions(category) {
     if (!GameplayModule.firebaseService) return null;
 
     try {
+        // ✅ FSK18-SYSTEM: Server-side validation for FSK18 questions
+        if (category === 'fsk18') {
+            if (!window.FirebaseConfig?.isInitialized?.()) {
+                console.warn('⚠️ Firebase not initialized - cannot load FSK18 questions');
+                return null;
+            }
+
+            // Validate FSK18 access before loading
+            if (!GameplayModule.gameState?.canAccessFSK) {
+                console.warn('⚠️ GameState.canAccessFSK not available');
+                return null;
+            }
+
+            const hasAccess = await GameplayModule.gameState.canAccessFSK('fsk18', true);
+
+            if (!hasAccess) {
+                console.warn('⚠️ No FSK18 access - skipping FSK18 questions');
+                return null;
+            }
+
+            if (GameplayModule.isDevelopment) {
+                console.log('✅ FSK18 access validated - loading questions');
+            }
+        }
+
+        // ✅ FSK18-SYSTEM: FSK0 & FSK16 can be loaded without validation
         if (GameplayModule.firebaseService?.database) {
             const questionsRef = GameplayModule.firebaseService.database.ref(`questions/${category}`);
             const snapshot = await questionsRef.once('value');
@@ -848,9 +944,9 @@ async function loadCategoryQuestions(category) {
 
 // ✅ P1 STABILITY: Track which fallback categories have been loaded
 const _fallbackLoadedCategories = new Set();
-
 /**
  * ✅ P1 STABILITY: Load fallback questions for category (only once per session)
+ * ✅ FSK18-SYSTEM: Skip FSK18 fallback if no server validation
  * Caches to IndexedDB to avoid repeated database queries
  */
 async function loadFallbackQuestions(category) {
@@ -860,6 +956,36 @@ async function loadFallbackQuestions(category) {
             console.log(`ℹ️ Fallback questions for ${category} already loaded this session`);
         }
         return;
+    }
+
+    // ✅ FSK18-SYSTEM: FSK18 fallback requires validation
+    if (category === 'fsk18') {
+        try {
+            if (!window.FirebaseConfig?.isInitialized?.()) {
+                console.warn('⚠️ Cannot load FSK18 fallback - Firebase not initialized');
+                return;
+            }
+
+            if (!GameplayModule.gameState?.canAccessFSK) {
+                console.warn('⚠️ Cannot load FSK18 fallback - canAccessFSK not available');
+                return;
+            }
+
+            const hasAccess = await GameplayModule.gameState.canAccessFSK('fsk18', true);
+
+            if (!hasAccess) {
+                console.warn('⚠️ Cannot load FSK18 fallback - no access');
+                return;
+            }
+
+            if (GameplayModule.isDevelopment) {
+                console.log('✅ FSK18 access validated - loading fallback');
+            }
+
+        } catch (error) {
+            console.warn('⚠️ FSK18 fallback validation failed:', error);
+            return;
+        }
     }
 
     // Try to load from IndexedDB cache first
@@ -908,7 +1034,6 @@ async function loadFallbackQuestions(category) {
         _fallbackLoadedCategories.add(category);
     }
 }
-
 /**
  * ✅ P1 STABILITY: Save fallback questions to IndexedDB
  */

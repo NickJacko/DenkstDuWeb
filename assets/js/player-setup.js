@@ -1,6 +1,6 @@
 /**
  * No-Cap Player Setup (Single Device Mode)
- * Version 5.0 - JavaScript-Kern Hardening
+ * Version 5.1 - FSK18-System Integration
  *
  * ✅ P0: Module Pattern - no global variables (XSS prevention)
  * ✅ P0: Event-Listener cleanup on beforeunload
@@ -9,6 +9,7 @@
  * ✅ P1: Players stored in PlayerSetupModule.gameState
  * ✅ P1: Keyboard navigation improved
  * ✅ P2: Drag & drop with accessibility
+ * ✅ FSK18: FSK0 & FSK16 always allowed, FSK18 requires server validation
  */
 
 (function(window) {
@@ -1298,47 +1299,78 @@
     // ===========================
     // START GAME
     // ===========================
+
     /**
-     * ✅ P1 DSGVO/Jugendschutz: Check FSK rating before starting
-     * Nur FSK 18 erfordert Altersverifizierung
+     * ✅ FSK18-SYSTEM: Updated FSK rating check
+     * FSK0 & FSK16 always allowed, only FSK18 requires server validation
      */
-    function checkFSKRating() {
-        const difficulty = PlayerSetupModule.gameState.difficulty;
+    async function checkFSKRating() {
         const categories = PlayerSetupModule.gameState.selectedCategories || [];
 
-        // ✅ NUR noch FSK 18 prüfen
-        if (categories.includes('fsk18')) {
-            const requiredAge = 18;
-            const warning = 'FSK 18 - Nur für Erwachsene';
-
-            // Check if user has verified age
-            const ageVerification = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_verification')
-                : localStorage.getItem('nocap_age_verification');
-
-            const ageLevel = window.NocapUtils
-                ? window.NocapUtils.getLocalStorage('nocap_age_level')
-                : localStorage.getItem('nocap_age_level');
-
-            if (String(ageVerification) !== 'true' || !ageLevel) {
-                showNotification('Altersverifikation erforderlich!', 'error');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
-                return false;
+        // ✅ FSK0 & FSK16 immer erlaubt - keine Prüfung nötig
+        if (!categories.includes('fsk18')) {
+            if (PlayerSetupModule.isDevelopment) {
+                console.log('✅ No FSK18 content - proceeding without validation');
             }
-
-            const userAge = parseInt(ageLevel);
-            if (userAge < requiredAge) {
-                showNotification(
-                    `${warning} - Diese Kategorien sind für deine Altersgruppe nicht verfügbar.`,
-                    'error'
-                );
-                return false;
-            }
+            return true;
         }
 
-        return true;
+        // ✅ FSK18: Server-Validierung erforderlich
+        if (PlayerSetupModule.isDevelopment) {
+            console.log('🔒 FSK18 content detected - validating access...');
+        }
+
+        // Check Firebase availability
+        if (!window.FirebaseConfig?.isInitialized?.()) {
+            showNotification(
+                '⚠️ FSK18-Validierung erfordert Internetverbindung',
+                'error',
+                5000
+            );
+            return false;
+        }
+
+        try {
+            // Use GameState's canAccessFSK with forceRefresh
+            const hasAccess = await PlayerSetupModule.gameState.canAccessFSK('fsk18', true);
+
+            if (!hasAccess) {
+                if (PlayerSetupModule.isDevelopment) {
+                    console.log('❌ FSK18 access denied');
+                }
+
+                // Show age verification modal
+                if (window.SettingsModule?.showFSKError) {
+                    window.SettingsModule.showFSKError(
+                        'fsk18',
+                        'Altersverifikation erforderlich für FSK18-Inhalte'
+                    );
+                } else {
+                    showNotification(
+                        '🔞 Altersverifikation erforderlich! Bitte verifiziere dein Alter in den Einstellungen.',
+                        'error',
+                        5000
+                    );
+                }
+
+                return false;
+            }
+
+            if (PlayerSetupModule.isDevelopment) {
+                console.log('✅ FSK18 access validated');
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('❌ FSK18 validation error:', error);
+            showNotification(
+                '⚠️ Fehler bei der Altersverifikation. Bitte versuche es erneut.',
+                'error',
+                5000
+            );
+            return false;
+        }
     }
 
     async function startGame() {
@@ -1367,8 +1399,10 @@
             return;
         }
 
-        // ✅ P1 DSGVO/Jugendschutz: FSK-Check
-        if (!checkFSKRating()) {
+        // ✅ FSK18-SYSTEM: Updated FSK check
+        const fskValid = await checkFSKRating();
+        if (!fskValid) {
+            // FSK validation failed - don't proceed
             return;
         }
 

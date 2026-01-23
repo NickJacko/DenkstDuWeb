@@ -1,6 +1,6 @@
 /**
  * No-Cap Multiplayer Lobby
- * Version 4.0 - Security & Performance Optimized
+ * Version 4.1 - FSK18-System Integration
  *
  * CRITICAL: This page manages real-time multiplayer lobby
  * - Creates game (if host)
@@ -9,6 +9,7 @@
  * - Validates device mode continuously
  *
  * SECURITY FIXES:
+ * ✅ FSK18: FSK0 & FSK16 always allowed, FSK18 requires server validation
  * ✅ P0: DOMPurify XSS prevention
  * ✅ P0: Age verification with server validation
  * ✅ P0: Safe DOM manipulation (textContent only)
@@ -232,8 +233,10 @@
             setTimeout(() => window.location.href = 'index.html', 2000);
             return;
         }
-        // ✅ Settings-only Age Verification (must be available before lobby)
-        if (!checkAgeVerification()) {
+
+        // ✅ FSK18-SYSTEM: Validate game state with server-side FSK check
+        const ageValid = await checkAgeVerification();
+        if (!ageValid) {
             return;
         }
 
@@ -370,6 +373,7 @@
 
             await loadExistingGame();
             setupPresenceSystem();
+            setupCategoryMonitor(currentGameId); // ✅ NEW: Monitor category changes
 
         } else if (MultiplayerLobbyModule.gameState.gameId) {
             currentGameId = MultiplayerLobbyModule.gameState.gameId;
@@ -377,41 +381,44 @@
 
             await loadExistingGame();
             setupPresenceSystem();
+            setupCategoryMonitor(currentGameId); // ✅ NEW: Monitor category changes
 
         } else if (MultiplayerLobbyModule.gameState.isHost) {
             isHost = true;
             await createNewGame();
             setupPresenceSystem();
-    } else {
-        // ✅ P0 FIX: Give 1s to recover gameId (storage/URL)
-        showNotification('Game-ID wird geladen...', 'info', 800);
+            setupCategoryMonitor(currentGameId); // ✅ NEW: Monitor category changes
+        } else {
+            // ✅ P0 FIX: Give 1s to recover gameId (storage/URL)
+            showNotification('Game-ID wird geladen...', 'info', 800);
 
-        await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 800));
 
-        const params = new URLSearchParams(window.location.search);
-        const recovered =
-            params.get('gameId') ||
-            sessionStorage.getItem('nocap_game_id') ||
-            localStorage.getItem('nocap_game_id');
+            const params = new URLSearchParams(window.location.search);
+            const recovered =
+                params.get('gameId') ||
+                sessionStorage.getItem('nocap_game_id') ||
+                localStorage.getItem('nocap_game_id');
 
-        if (recovered) {
-            MultiplayerLobbyModule.gameState.gameId = String(recovered);
-            currentGameId = String(recovered);
-            MultiplayerLobbyModule.gameState.save?.(true);
+            if (recovered) {
+                MultiplayerLobbyModule.gameState.gameId = String(recovered);
+                currentGameId = String(recovered);
+                MultiplayerLobbyModule.gameState.save?.(true);
 
-            isHost = MultiplayerLobbyModule.gameState.isHost === true;
-            await loadExistingGame();
-            setupPresenceSystem();
+                isHost = MultiplayerLobbyModule.gameState.isHost === true;
+                await loadExistingGame();
+                setupPresenceSystem();
+                setupCategoryMonitor(currentGameId); // ✅ NEW: Monitor category changes
 
-            setupEventListeners();
-            updateUIForRole();
+                setupEventListeners();
+                updateUIForRole();
+                return;
+            }
+
+            showNotification('Keine Game-ID gefunden', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
             return;
         }
-
-        showNotification('Keine Game-ID gefunden', 'error');
-        setTimeout(() => window.location.href = 'index.html', 2000);
-        return;
-    }
 
 
         setupEventListeners();
@@ -427,55 +434,79 @@
     // ===========================
 
     /**
-     * ✅ FIX: Check age verification with 7-day expiration (consistent)
+     * ✅ FSK18-SYSTEM: Updated age verification with server-side FSK check
+     * - FSK0 & FSK16: No validation needed
+     * - FSK18: Requires server validation via GameState.canAccessFSK()
      */
-    function checkAgeVerification() {
+    async function checkAgeVerification() {
         try {
-            const getLS = (k) => window.NocapUtils?.getLocalStorage
-                ? window.NocapUtils.getLocalStorage(k)
-                : localStorage.getItem(k);
-
-            const rawVerified = getLS('nocap_age_verification');
-            const verified = rawVerified === true || String(rawVerified || 'false') === 'true';
-            const rawAge = getLS('nocap_age_level');
-            const ageLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
-
-            if (MultiplayerLobbyModule.isDevelopment) {
-                console.log('🔞 Age settings read:', {
-                    rawVerified,
-                    verified,
-                    rawAge,
-                    ageLevel,
-                    rawSelected: MultiplayerLobbyModule.gameState?.selectedCategories
-                });
-            }
-
             const rawSelected = MultiplayerLobbyModule.gameState?.selectedCategories || [];
             const selected = Array.isArray(rawSelected)
                 ? rawSelected
                 : (rawSelected ? Object.values(rawSelected) : []);
 
-            // ✅ NUR noch FSK 18 prüfen
-            const hasInvalidCategory = selected.some(cat => {
-                if (cat === 'fsk18' && ageLevel < 18) return true;
-                return false;
-            });
+            // ✅ FSK18-SYSTEM: Only check FSK18
+            const hasFSK18 = selected.includes('fsk18');
 
-            if (hasInvalidCategory) {
-                console.error('❌ Invalid categories for age level (settings-only)', { ageLevel, selected });
-                showNotification('FSK 18 Inhalte erfordern Volljährigkeit!', 'error');
+            // ✅ FSK0 & FSK16: No validation needed
+            if (!hasFSK18) {
+                if (MultiplayerLobbyModule.isDevelopment) {
+                    console.log('✅ No FSK18 content - age check passed');
+                }
+                return true;
+            }
+
+            // ✅ FSK18: Server-side validation required
+            if (MultiplayerLobbyModule.isDevelopment) {
+                console.log('🔒 FSK18 content detected - validating access...');
+            }
+
+            // Check Firebase availability (fail closed)
+            if (!window.FirebaseConfig?.isInitialized?.()) {
+                console.error('❌ Firebase not available - cannot validate FSK18 access');
+                showNotification(
+                    '⚠️ FSK18-Validierung erfordert Internetverbindung',
+                    'error',
+                    5000
+                );
                 setTimeout(() => window.location.href = 'index.html', 2000);
                 return false;
             }
 
-            if (MultiplayerLobbyModule.isDevelopment) {
-                console.log(`✅ Age verification OK (settings-only): ageLevel=${ageLevel}`);
+            try {
+                // Use GameState's server validation
+                const hasAccess = await MultiplayerLobbyModule.gameState.canAccessFSK('fsk18', true);
+
+                if (!hasAccess) {
+                    console.error('❌ FSK18 access denied');
+                    showNotification(
+                        '🔞 Keine Berechtigung für FSK18-Inhalte!',
+                        'error',
+                        5000
+                    );
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                    return false;
+                }
+
+                if (MultiplayerLobbyModule.isDevelopment) {
+                    console.log('✅ FSK18 access validated');
+                }
+                return true;
+
+            } catch (error) {
+                console.error('❌ FSK18 validation error:', error);
+                showNotification(
+                    '⚠️ Fehler bei der Altersverifikation',
+                    'error',
+                    5000
+                );
+                setTimeout(() => window.location.href = 'index.html', 2000);
+                return false;
             }
-            return true;
 
         } catch (error) {
-            console.error('❌ Age verification error (settings-only):', error);
-            showNotification('Altersverifizierung erforderlich! Bitte in den Settings bestätigen.', 'warning');
+            console.error('❌ Age verification error:', error);
+            showNotification('Altersverifizierung fehlgeschlagen', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
@@ -720,10 +751,11 @@
             console.log('✅ Game listener setup');
         }
     }
-    // In multiplayer-lobby.js - NACH setupGameListener()
 
     /**
-     * ✅ P0 SECURITY: Monitor category changes and kick invalid players
+     * ✅ FSK18-SYSTEM: Monitor category changes and validate player access
+     * - Watches for changes to game/settings/categories
+     * - Kicks players who lose FSK18 access when category is added
      */
     function setupCategoryMonitor(gameId) {
         if (!gameId) return;
@@ -735,7 +767,7 @@
 
             const newCategories = snapshot.val() || [];
 
-            // Check if current player is still allowed
+            // ✅ FSK18-SYSTEM: Validate player's access to new categories
             await validatePlayerCategories(newCategories);
         });
 
@@ -743,49 +775,75 @@
     }
 
     /**
-     * ✅ P0 SECURITY: Validate player age for current categories
+     * ✅ FSK18-SYSTEM: Validate player age for current categories
+     * - Only checks FSK18 (FSK0 & FSK16 always allowed)
+     * - Uses server validation via GameState.canAccessFSK()
+     * - Kicks player if access denied
      */
     async function validatePlayerCategories(categories) {
         try {
-            const getLS = (k) => window.NocapUtils?.getLocalStorage
-                ? window.NocapUtils.getLocalStorage(k)
-                : localStorage.getItem(k);
-
-            const rawAge = getLS('nocap_age_level');
-            const userAgeLevel = Number(rawAge) || parseInt(String(rawAge || '0'), 10) || 0;
-
             const categoriesArray = Array.isArray(categories)
                 ? categories
                 : (categories ? Object.values(categories) : []);
 
-            // ✅ NUR noch FSK18 prüfen
-            if (categoriesArray.includes('fsk18') && userAgeLevel < 18) {
-                Logger.warn('⚠️ Player kicked: FSK18 category added but user < 18');
+            // ✅ FSK18-SYSTEM: Only check FSK18
+            const hasFSK18 = categoriesArray.includes('fsk18');
 
-                showNotification('⚠️ Host hat FSK18-Inhalte aktiviert. Du wurdest entfernt.', 'warning', 5000);
-
-                // Remove player from game
-                if (currentGameId && !isHost) {
-                    try {
-                        await firebase.database()
-                            .ref(`games/${currentGameId}/players/${getPlayerKey()}`)
-                            .remove();
-                    } catch (e) {
-                        Logger.error('Failed to remove player:', e);
-                    }
-                }
-
-                // Redirect to index with message
-                setTimeout(() => {
-                    sessionStorage.setItem('nocap_kick_reason', 'fsk18_restriction');
-                    cleanup();
-                    window.location.href = 'index.html';
-                }, 3000);
-
-                return false;
+            // ✅ FSK0 & FSK16: No validation needed
+            if (!hasFSK18) {
+                return true;
             }
 
-            return true;
+            // ✅ FSK18: Server validation required
+            Logger.debug('🔒 FSK18 category active - validating access...');
+
+            // Check Firebase availability (fail closed)
+            if (!window.FirebaseConfig?.isInitialized?.()) {
+                Logger.warn('⚠️ Firebase not available for FSK18 validation');
+                return true; // Don't kick on connection issues
+            }
+
+            try {
+                // Use GameState's server validation
+                const hasAccess = await MultiplayerLobbyModule.gameState.canAccessFSK('fsk18', true);
+
+                if (!hasAccess) {
+                    Logger.warn('⚠️ Player lost FSK18 access - kicking from game');
+
+                    showNotification(
+                        '⚠️ Host hat FSK18-Inhalte aktiviert. Du wurdest entfernt.',
+                        'warning',
+                        5000
+                    );
+
+                    // Remove player from game
+                    if (currentGameId && !isHost) {
+                        try {
+                            await firebase.database()
+                                .ref(`games/${currentGameId}/players/${getPlayerKey()}`)
+                                .remove();
+                        } catch (e) {
+                            Logger.error('Failed to remove player:', e);
+                        }
+                    }
+
+                    // Redirect to index with message
+                    setTimeout(() => {
+                        sessionStorage.setItem('nocap_kick_reason', 'fsk18_restriction');
+                        cleanup();
+                        window.location.href = 'index.html';
+                    }, 3000);
+
+                    return false;
+                }
+
+                Logger.debug('✅ FSK18 access validated');
+                return true;
+
+            } catch (error) {
+                Logger.error('❌ FSK18 validation error:', error);
+                return true; // Don't kick on error
+            }
 
         } catch (error) {
             Logger.error('❌ Category validation error:', error);
@@ -1879,7 +1937,7 @@
                 presenceRef = null;
             }
         } catch (e) {}
-        // ✅ NEW: Remove category monitor
+        // ✅ FSK18-SYSTEM: Remove category monitor
         if (currentGameId) {
             try {
                 const categoriesRef = firebase.database().ref(`games/${currentGameId}/settings/categories`);

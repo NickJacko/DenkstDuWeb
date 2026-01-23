@@ -1996,16 +1996,40 @@
         const check = checkAgeVerification();
         return check.isValid ? check.age : null;
     }
-
     /**
-     * ✅ P1 DSGVO: Check if user can access FSK level
+     * ✅ FSK18-SYSTEM: Check if user can access FSK level
+     * FSK0 & FSK16: Always allowed
+     * FSK18: Requires server validation (use GameState.canAccessFSK instead)
+     *
+     * @param {number|string} fskLevel - FSK level (0, 16, 18)
+     * @returns {boolean} True if accessible (client-side check only)
      */
     function canAccessFSK(fskLevel) {
-        const age = getVerifiedAge();
-        if (!age) return fskLevel === 0;
-        return age >= fskLevel;
-    }
+        // Normalize input
+        const level = typeof fskLevel === 'string'
+            ? parseInt(fskLevel.replace(/\D/g, ''))
+            : fskLevel;
 
+        // ✅ FSK18-SYSTEM: FSK0 & FSK16 always allowed (no validation needed)
+        if (level === 0 || level === 16) {
+            return true;
+        }
+
+        // ✅ FSK18-SYSTEM: FSK18 requires server validation
+        // This is a CLIENT-SIDE HINT ONLY - server validation is mandatory
+        if (level === 18) {
+            try {
+                const ageLevel = parseInt(localStorage.getItem('nocap_age_level') || '0', 10);
+                return ageLevel >= 18;
+            } catch (error) {
+                Logger.warn('⚠️ Could not check age level:', error);
+                return false;
+            }
+        }
+
+        // Unknown FSK level - deny access
+        return false;
+    }
     /**
      * ✅ P1 DSGVO: Set age verification token (valid for 7 days)
      */
@@ -2046,12 +2070,126 @@
     }
 
     /**
-     * ✅ P1 DSGVO: Get time until age verification expires
+     * ✅ P1 DSGVO: Check if age verification is valid
+     * Verifies the nocap_age_verification token and checks expiry (7 days)
+     *
+     * ⚠️ DEPRECATED FOR FSK18 VALIDATION
+     * This function checks localStorage only. For FSK18 content, use:
+     * - GameState.canAccessFSK('fsk18', true) for server-side validation
+     * - This function is OK for UI hints (e.g., showing FSK badges)
+     *
+     * @returns {Object} Validation result
+     * @returns {boolean} .isValid - Whether verification is valid
+     * @returns {number|null} .age - Verified age (if valid)
+     * @returns {number|null} .expiresAt - Expiry timestamp (if valid)
+     * @returns {string|null} .reason - Reason for invalidity
+     *
+     * @example
+     * // ❌ DON'T USE FOR FSK18 VALIDATION
+     * const ageCheck = checkAgeVerification();
+     * if (ageCheck.age >= 18) {
+     *     // This is NOT secure for FSK18!
+     * }
+     *
+     * // ✅ USE THIS FOR FSK18 VALIDATION
+     * const hasAccess = await gameState.canAccessFSK('fsk18', true);
+     * if (hasAccess) {
+     *     // Server validated - OK to load FSK18 content
+     * }
      */
-    function getAgeVerificationTimeLeft() {
-        const check = checkAgeVerification();
-        if (!check.isValid || !check.expiresAt) return null;
-        return check.expiresAt - Date.now();
+    function checkAgeVerification() {
+        try {
+            const token = getLocalStorage('nocap_age_verification');
+
+            if (!token) {
+                return {
+                    isValid: false,
+                    age: null,
+                    expiresAt: null,
+                    reason: 'NO_TOKEN'
+                };
+            }
+
+            let data = token;
+
+            // Backward compatibility: falls alte Version noch String gespeichert hat
+            if (typeof data === 'string') {
+                try {
+                    data = JSON.parse(data);
+                } catch (error) {
+                    Logger.warn('⚠️ Invalid age verification token format');
+                    removeLocalStorage('nocap_age_verification');
+                    return {
+                        isValid: false,
+                        age: null,
+                        expiresAt: null,
+                        reason: 'INVALID_FORMAT'
+                    };
+                }
+            }
+
+            if (!data || typeof data !== 'object') {
+                Logger.warn('⚠️ Invalid age verification token type');
+                removeLocalStorage('nocap_age_verification');
+                return {
+                    isValid: false,
+                    age: null,
+                    expiresAt: null,
+                    reason: 'INVALID_FORMAT'
+                };
+            }
+
+            if (!data.age || !data.verifiedAt || !data.expiresAt) {
+                Logger.warn('⚠️ Incomplete age verification data');
+                removeLocalStorage('nocap_age_verification');
+                return {
+                    isValid: false,
+                    age: null,
+                    expiresAt: null,
+                    reason: 'INCOMPLETE_DATA'
+                };
+            }
+
+            const now = Date.now();
+            if (now > data.expiresAt) {
+                Logger.info('ℹ️ Age verification expired');
+                removeLocalStorage('nocap_age_verification');
+                return {
+                    isValid: false,
+                    age: data.age,
+                    expiresAt: data.expiresAt,
+                    reason: 'EXPIRED'
+                };
+            }
+
+            const age = parseInt(data.age);
+            if (isNaN(age) || age < 0 || age > 150) {
+                Logger.warn('⚠️ Invalid age value');
+                removeLocalStorage('nocap_age_verification');
+                return {
+                    isValid: false,
+                    age: null,
+                    expiresAt: null,
+                    reason: 'INVALID_AGE'
+                };
+            }
+
+            return {
+                isValid: true,
+                age: age,
+                expiresAt: data.expiresAt,
+                reason: null
+            };
+
+        } catch (error) {
+            Logger.error('❌ Age verification check failed:', error);
+            return {
+                isValid: false,
+                age: null,
+                expiresAt: null,
+                reason: 'ERROR'
+            };
+        }
     }
 
     /**

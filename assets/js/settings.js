@@ -1,12 +1,9 @@
 /**
  * Settings & DSGVO Functions
- * Version 1.0 - Firebase Cloud Functions Integration
+ * Version 2.0 - FSK18 Server-Side Validation
  *
- * Features:
- * - User Settings Management
- * - Age Verification (FSK)
- * - DSGVO Data Export
- * - Account Deletion
+ * ✅ FSK0 & FSK16: Always available (no verification needed)
+ * ✅ FSK18: Only after server-side age verification
  */
 
 (function(window) {
@@ -19,19 +16,17 @@
         error: () => {}
     };
 
-
     // ===================================
     // GLOBAL STATE
     // ===================================
 
     const SettingsState = {
         currentUser: null,
-        userFSKAccess: { fsk0: true, fsk16: false, fsk18: false },
+        userFSKAccess: { fsk0: true, fsk16: true, fsk18: false }, // ✅ FSK0 & FSK16 always true
         functionsInstance: null,
         eventCleanup: []
     };
     Object.seal(SettingsState);
-
 
     // ===================================
     // INIT
@@ -51,23 +46,21 @@
         const { auth, functions } = instances;
 
         if (!functions) {
-            Logger.error('❌ Firebase Functions not available (SDK missing or not initialized). Callable features disabled.');
-            // Optional: return; wenn Settings ohne Functions keinen Sinn macht
-            // return;
+            Logger.error('❌ Firebase Functions not available.');
+            return;
         } else {
             SettingsState.functionsInstance = functions;
-            Logger.info('✅ Firebase Functions ready (via FirebaseConfig)');
+            Logger.info('✅ Firebase Functions ready');
         }
+
         if (!auth) {
-            Logger.error('❌ Firebase Auth not available (SDK missing or not initialized).');
+            Logger.error('❌ Firebase Auth not available.');
             return;
         }
 
         const unsub = auth.onAuthStateChanged(onAuthStateChanged);
         if (typeof unsub === 'function') SettingsState.eventCleanup.push(unsub);
 
-
-        // Setup Event Listeners
         setupEventListeners();
 
         Logger.info('✅ Settings Module initialized');
@@ -87,6 +80,9 @@
         } else {
             Logger.info('ℹ️ No user logged in');
             hideUserMenu();
+            // ✅ Reset FSK access when logged out
+            SettingsState.userFSKAccess = { fsk0: true, fsk16: true, fsk18: false };
+            updateFSKBadges(SettingsState.userFSKAccess);
         }
     }
 
@@ -107,6 +103,7 @@
                 : userMenuContainer.classList.add('hidden');
         }
     }
+
     async function loadUserData() {
         if (!SettingsState.currentUser) return;
 
@@ -114,17 +111,22 @@
             const displayName = SettingsState.currentUser.displayName || 'Gast';
             updateDisplayName(displayName);
 
+            // ✅ Force token refresh to get latest claims
             await SettingsState.currentUser.getIdToken(true);
             const tokenResult = await SettingsState.currentUser.getIdTokenResult();
 
-
+            // ✅ FSK0 & FSK16 always available, only FSK18 needs verification
             SettingsState.userFSKAccess = {
                 fsk0: true,
-                fsk16: tokenResult?.claims?.fsk16 === true,
+                fsk16: true,
                 fsk18: tokenResult?.claims?.fsk18 === true
             };
 
+            Logger.info('✅ FSK Access loaded:', SettingsState.userFSKAccess);
             updateFSKBadges(SettingsState.userFSKAccess);
+
+            // ✅ Sync to localStorage for offline checks
+            syncFSKToLocalStorage(SettingsState.userFSKAccess);
 
             await checkScheduledDeletion();
 
@@ -133,9 +135,23 @@
         }
     }
 
+    /**
+     * ✅ Sync FSK access to localStorage (read-only cache)
+     */
+    function syncFSKToLocalStorage(fskAccess) {
+        const ts = Date.now();
+
+        if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
+            window.NocapUtils.setLocalStorage('nocap_fsk18_verified', String(fskAccess.fsk18));
+            window.NocapUtils.setLocalStorage('nocap_fsk_sync_ts', String(ts));
+        } else {
+            localStorage.setItem('nocap_fsk18_verified', String(fskAccess.fsk18));
+            localStorage.setItem('nocap_fsk_sync_ts', String(ts));
+        }
+    }
 
     /**
-     * ✅ NEW: Check if user has scheduled deletion
+     * ✅ Check if user has scheduled deletion
      */
     async function checkScheduledDeletion() {
         if (!SettingsState.currentUser) return;
@@ -147,8 +163,11 @@
 
             if (snapshot.exists()) {
                 const request = snapshot.val();
-                if (request?.status === 'scheduled') showCancellationOption(request);
-                else hideCancellationOption();
+                if (request?.status === 'scheduled') {
+                    showCancellationOption(request);
+                } else {
+                    hideCancellationOption();
+                }
             } else {
                 hideCancellationOption();
             }
@@ -156,7 +175,6 @@
             Logger.error('Error checking scheduled deletion:', error);
         }
     }
-
 
     function showCancellationOption(request) {
         const cancelContainer = document.getElementById('cancel-deletion-container');
@@ -196,7 +214,6 @@
                 ? window.NocapUtils.showElement(deleteContainer, 'block')
                 : deleteContainer.classList.remove('hidden');
         }
-
     }
 
     function updateDisplayName(name) {
@@ -213,21 +230,9 @@
     }
 
     function updateFSKBadges(fskAccess) {
-        // Header badges
-        const fsk16Badge = document.getElementById('fsk16-badge');
+        // ✅ Only show FSK18 badge (FSK0 & FSK16 are default)
         const fsk18Badge = document.getElementById('fsk18-badge');
-
-        if (fsk16Badge) {
-            if (fskAccess.fsk16) {
-                window.NocapUtils?.showElement
-                    ? window.NocapUtils.showElement(fsk16Badge, 'inline-block')
-                    : fsk16Badge.classList.remove('hidden');
-            } else {
-                window.NocapUtils?.hideElement
-                    ? window.NocapUtils.hideElement(fsk16Badge)
-                    : fsk16Badge.classList.add('hidden');
-            }
-        }
+        const fsk18BadgeSettings = document.getElementById('fsk18-badge-settings');
 
         if (fsk18Badge) {
             if (fskAccess.fsk18) {
@@ -238,23 +243,6 @@
                 window.NocapUtils?.hideElement
                     ? window.NocapUtils.hideElement(fsk18Badge)
                     : fsk18Badge.classList.add('hidden');
-            }
-        }
-
-
-        // Settings badges
-        const fsk16BadgeSettings = document.getElementById('fsk16-badge-settings');
-        const fsk18BadgeSettings = document.getElementById('fsk18-badge-settings');
-
-        if (fsk16BadgeSettings) {
-            if (fskAccess.fsk16) {
-                window.NocapUtils?.showElement
-                    ? window.NocapUtils.showElement(fsk16BadgeSettings, 'inline-block')
-                    : fsk16BadgeSettings.classList.remove('hidden');
-            } else {
-                window.NocapUtils?.hideElement
-                    ? window.NocapUtils.hideElement(fsk16BadgeSettings)
-                    : fsk16BadgeSettings.classList.add('hidden');
             }
         }
 
@@ -270,11 +258,27 @@
             }
         }
 
+        // ✅ Remove FSK16 badges (no longer needed)
+        const fsk16Badge = document.getElementById('fsk16-badge');
+        const fsk16BadgeSettings = document.getElementById('fsk16-badge-settings');
+
+        if (fsk16Badge) {
+            window.NocapUtils?.hideElement
+                ? window.NocapUtils.hideElement(fsk16Badge)
+                : fsk16Badge.classList.add('hidden');
+        }
+
+        if (fsk16BadgeSettings) {
+            window.NocapUtils?.hideElement
+                ? window.NocapUtils.hideElement(fsk16BadgeSettings)
+                : fsk16BadgeSettings.classList.add('hidden');
+        }
     }
 
     // ===================================
     // EVENT LISTENERS
     // ===================================
+
     function addTrackedListener(el, type, fn, opts) {
         if (!el) return;
         el.addEventListener(type, fn, opts);
@@ -282,51 +286,45 @@
             try { el.removeEventListener(type, fn, opts); } catch (_) {}
         });
     }
+
     function setupEventListeners() {
         const fskWarningModal = document.getElementById('fsk-warning-modal');
-        // Settings Button
+
         const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) {
             addTrackedListener(settingsBtn, 'click', openSettings);
         }
 
-        // Close Settings
         const closeBtn = document.getElementById('settings-close-btn');
         if (closeBtn) {
             addTrackedListener(closeBtn, 'click', closeSettings);
         }
 
-        // Save Display Name
         const saveNameBtn = document.getElementById('save-display-name-btn');
         if (saveNameBtn) {
             addTrackedListener(saveNameBtn, 'click', saveDisplayName);
         }
 
-        // Verify Age
         const verifyAgeBtn = document.getElementById('verify-age-btn');
         if (verifyAgeBtn) {
             addTrackedListener(verifyAgeBtn, 'click', verifyAge);
         }
 
-        // Export Data
         const exportBtn = document.getElementById('export-data-btn');
         if (exportBtn) {
-            addTrackedListener(exportBtn, 'click', exportMyData)
+            addTrackedListener(exportBtn, 'click', exportMyData);
         }
 
-        // Delete Account
         const deleteBtn = document.getElementById('delete-account-btn');
         if (deleteBtn) {
             addTrackedListener(deleteBtn, 'click', showDeleteAccountDialog);
         }
 
-        // Cancel Deletion
         const cancelDeletionBtn = document.getElementById('cancel-deletion-btn');
         if (cancelDeletionBtn) {
             addTrackedListener(cancelDeletionBtn, 'click', cancelAccountDeletion);
         }
 
-        // FSK Warning Modal
         const closeFSKModalBtn = document.getElementById('close-fsk-modal-btn');
         if (closeFSKModalBtn) {
             addTrackedListener(closeFSKModalBtn, 'click', closeFSKModal);
@@ -337,13 +335,13 @@
             addTrackedListener(gotoAgeVerificationBtn, 'click', goToAgeVerification);
         }
 
-        // Close modal on outside click
         const settingsModal = document.getElementById('settings-modal');
         if (settingsModal) {
             addTrackedListener(settingsModal, 'click', (e) => {
                 if (e.target === settingsModal) closeSettings();
             });
         }
+
         if (fskWarningModal) {
             addTrackedListener(fskWarningModal, 'click', (e) => {
                 if (e.target === fskWarningModal) closeFSKModal();
@@ -359,7 +357,6 @@
         const modal = document.getElementById('settings-modal');
         if (!modal) return;
 
-        // sichtbar machen
         modal.classList.remove('hidden');
         modal.classList.add('d-flex');
         modal.setAttribute('aria-hidden', 'false');
@@ -453,8 +450,9 @@
             showError('Ungültiges Geburtsdatum');
             return;
         }
-        const ageLevel = age >= 18 ? 18 : (age >= 16 ? 16 : 0);
 
+        // ✅ Only age 18+ matters for FSK18
+        const ageLevel = age >= 18 ? 18 : 0;
 
         const btn = document.getElementById('verify-age-btn');
         setButtonLoading(btn, true);
@@ -471,58 +469,37 @@
             });
 
             Logger.info('✅ Age verified:', result.data);
-            // Optional: sofortiges UI-Update aus Response (falls Claims minimal verzögert)
-            if (result?.data?.fskAccess) {
-                SettingsState.userFSKAccess = result.data.fskAccess;
-                updateFSKBadges(SettingsState.userFSKAccess);
-            }
 
-// ✅ Lokaler Cache für andere Seiten (Settings-only read path)
-            const ts = Date.now();
-
-            if (window.NocapUtils && window.NocapUtils.setLocalStorage) {
-                window.NocapUtils.setLocalStorage('nocap_age_level', String(ageLevel));
-                window.NocapUtils.setLocalStorage('nocap_is_adult', String(ageLevel >= 18));
-                window.NocapUtils.setLocalStorage('nocap_age_verification', 'true');
-
-                // ✅ wichtig: Timestamp (damit Seiten nicht “komisch” erneut fragen)
-                window.NocapUtils.setLocalStorage('nocap_age_verification_ts', String(ts));
-            } else {
-                localStorage.setItem('nocap_age_level', String(ageLevel));
-                localStorage.setItem('nocap_is_adult', String(ageLevel >= 18));
-                localStorage.setItem('nocap_age_verification', 'true');
-
-                // ✅ wichtig: Timestamp (damit Seiten nicht “komisch” erneut fragen)
-                localStorage.setItem('nocap_age_verification_ts', String(ts));
-            }
-
-
-
-            // ✅ Force Token Refresh (Custom Claims werden erst danach sicher sichtbar)
+            // ✅ Force Token Refresh (Custom Claims are now set)
             await SettingsState.currentUser.getIdToken(true);
             const refreshed = await SettingsState.currentUser.getIdTokenResult();
 
-            // ✅ Claims sind Source of Truth
+            // ✅ Update local state from claims
             SettingsState.userFSKAccess = {
                 fsk0: true,
-                fsk16: refreshed?.claims?.fsk16 === true,
+                fsk16: true,
                 fsk18: refreshed?.claims?.fsk18 === true
             };
+
             updateFSKBadges(SettingsState.userFSKAccess);
+            syncFSKToLocalStorage(SettingsState.userFSKAccess);
 
-            showSuccess('Altersverifikation erfolgreich!');
-            // ✅ UI: Modals sauber schließen (sonst bleibt schwarzer Screen / Overlay hängen)
-            closeFSKModal();   // falls das FSK-Modal offen war
-            closeSettings();   // Settings modal schließen
+            if (ageLevel >= 18) {
+                showSuccess('✅ Altersverifikation erfolgreich! FSK18-Inhalte freigeschaltet.');
+            } else {
+                showSuccess('✅ Alter bestätigt. FSK18-Inhalte bleiben gesperrt.');
+            }
 
-// ✅ UX: anderen Seiten sagen “Alter ist jetzt verifiziert”
-// (damit category-selection den Klick automatisch fortsetzen kann)
+            // ✅ Close modals
+            closeFSKModal();
+            closeSettings();
+
+            // ✅ Notify other pages
             setTimeout(() => {
                 window.dispatchEvent(new CustomEvent('nocap:age-verified', {
-                    detail: { ageLevel }
+                    detail: { ageLevel, fsk18: ageLevel >= 18 }
                 }));
             }, 0);
-
 
         } catch (error) {
             Logger.error('❌ Error verifying age:', error);
@@ -547,45 +524,54 @@
             return false;
         }
 
-        try {
-            if (!SettingsState.functionsInstance) {
-                throw new Error('Functions not initialized');
-            }
-
-            // ✅ CALLABLE statt fetch => kein CORS Preflight
-            const validate = SettingsState.functionsInstance.httpsCallable('validateFSKAccessCallable');
-            const result = await validate({ category });
-
-            const allowed = Boolean(result?.data?.allowed);
-            const message = result?.data?.message;
-
-            if (allowed) {
-                Logger.info('✅ FSK Access granted (callable):', category);
-                return true;
-            }
-
-            Logger.warn('❌ FSK Access denied (callable):', message || 'Zugriff verweigert');
-            showFSKError(category, message);
-            return false;
-
-        } catch (error) {
-            Logger.error('FSK validation error:', error);
-            showError('Fehler bei der Altersverifikation');
-            return false;
+        // ✅ FSK0 & FSK16 always allowed (no server check needed)
+        if (category === 'fsk0' || category === 'fsk16') {
+            Logger.info('✅ FSK0/FSK16 access granted (no verification needed)');
+            return true;
         }
+
+        // ✅ FSK18 requires server-side validation
+        if (category === 'fsk18') {
+            try {
+                if (!SettingsState.functionsInstance) {
+                    throw new Error('Functions not initialized');
+                }
+
+                const validate = SettingsState.functionsInstance.httpsCallable('validateFSKAccessCallable');
+                const result = await validate({ category });
+
+                const allowed = Boolean(result?.data?.allowed);
+                const message = result?.data?.message;
+
+                if (allowed) {
+                    Logger.info('✅ FSK18 access granted (server validated)');
+                    return true;
+                }
+
+                Logger.warn('❌ FSK18 access denied:', message || 'Zugriff verweigert');
+                showFSKError(category, message);
+                return false;
+
+            } catch (error) {
+                Logger.error('FSK18 validation error:', error);
+                showError('Fehler bei der Altersverifikation');
+                return false;
+            }
+        }
+
+        // ✅ Unknown category
+        Logger.warn('❌ Unknown category:', category);
+        return false;
     }
 
     function showFSKError(fskLevel, message) {
-        const messages = {
-            'fsk16': 'Dieser Inhalt ist ab 16 Jahren freigegeben.',
-            'fsk18': 'Dieser Inhalt ist ab 18 Jahren freigegeben.'
-        };
+        const defaultMessage = 'Dieser Inhalt ist ab 18 Jahren freigegeben. Bitte verifiziere dein Alter in den Einstellungen.';
 
         const modal = document.getElementById('fsk-warning-modal');
         const messageEl = document.getElementById('fsk-message');
 
         if (messageEl) {
-            messageEl.textContent = message || messages[fskLevel] || 'Altersbeschränkung aktiv';
+            messageEl.textContent = message || defaultMessage;
         }
 
         if (modal) {
@@ -608,7 +594,6 @@
         closeFSKModal();
         openSettings();
 
-        // Scroll to age verification section
         setTimeout(() => {
             const birthdateInput = document.getElementById('birthdate-input');
             if (birthdateInput) {
@@ -634,7 +619,6 @@
         try {
             Logger.info('📥 Exporting user data...');
 
-            // ✅ FIX: Use regionalized Functions instance
             if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
@@ -644,14 +628,13 @@
 
             Logger.info('Export completed:', result.data);
 
-            // Download als JSON
             const dataStr = JSON.stringify(result.data, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
 
             const a = document.createElement('a');
             a.href = url;
-            a.download = `denkstduweb-daten-${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `nocap-daten-${new Date().toISOString().split('T')[0]}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -704,12 +687,10 @@
         try {
             Logger.info('🗑️ Scheduling account deletion...');
 
-            // ✅ FIX: Use regionalized Functions instance
             if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
 
-            // ✅ NEW: Use scheduleAccountDeletion with 48h grace period
             const scheduleDelete = SettingsState.functionsInstance.httpsCallable('scheduleAccountDeletion');
             const result = await scheduleDelete({
                 confirmation: 'DELETE_MY_ACCOUNT'
@@ -717,7 +698,6 @@
 
             Logger.info('✅ Account deletion scheduled:', result.data);
 
-            // Show info about grace period
             const scheduledDate = new Date(result.data.scheduledFor);
             const message =
                 `✅ Account-Löschung wurde geplant!\n\n` +
@@ -727,7 +707,6 @@
 
             alert(message);
 
-            // Reload user data to show cancellation option
             await checkScheduledDeletion();
 
         } catch (error) {
@@ -738,9 +717,6 @@
         }
     }
 
-    /**
-     * ✅ NEW: Cancel scheduled account deletion
-     */
     async function cancelAccountDeletion() {
         const confirmed = confirm(
             '✅ Möchten Sie die Account-Löschung wirklich abbrechen?\n\n' +
@@ -755,7 +731,6 @@
         try {
             Logger.info('↩️ Cancelling account deletion...');
 
-            // ✅ FIX: Use regionalized Functions instance
             if (!SettingsState.functionsInstance) {
                 throw new Error('Functions not initialized');
             }
@@ -767,7 +742,6 @@
 
             showSuccess('✅ Account-Löschung wurde abgebrochen!\n\nIhr Account bleibt erhalten.');
 
-            // Hide cancellation option
             hideCancellationOption();
 
         } catch (error) {
@@ -805,12 +779,10 @@
     // ===================================
 
     function showSuccess(message) {
-        // Simple alert for now - can be replaced with toast notification
         alert('✅ ' + message);
     }
 
     function showError(message) {
-        // Simple alert for now - can be replaced with toast notification
         alert('❌ ' + message);
     }
 
@@ -829,16 +801,19 @@
     // ===================================
     // PUBLIC API
     // ===================================
+
     function cleanup() {
         SettingsState.eventCleanup.forEach(fn => { try { fn(); } catch(_) {} });
         SettingsState.eventCleanup = [];
     }
+
     window.addEventListener('beforeunload', cleanup);
 
     window.SettingsModule = Object.freeze({
         validateFSKAccess,
         showFSKError,
-        updateFSKBadges
+        updateFSKBadges,
+        getFSKAccess: () => ({ ...SettingsState.userFSKAccess }) // ✅ Read-only getter
     });
 
     (async function boot() {
@@ -849,9 +824,8 @@
             await window.FirebaseConfig.waitForFirebase(10000);
             await init();
         } catch (e) {
-            Logger.error('❌ Settings boot failed (Firebase not ready):', e);
+            Logger.error('❌ Settings boot failed:', e);
         }
     })();
 
 })(window);
-

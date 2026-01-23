@@ -1,15 +1,15 @@
 /**
  * No-Cap Category Selection (Single Device Mode)
- * Version 8.2 - FSK16 ALWAYS UNLOCKED
+ * Version 8.3 - FSK18 Server-Side Validation
  *
+ * ✅ P0 SECURITY: FSK0 & FSK16 always unlocked (no verification)
+ * ✅ P0 SECURITY: FSK18 requires server-side validation (fail closed)
  * ✅ P0: Module Pattern - no global variables (XSS prevention)
  * ✅ P0: Event-Listener cleanup on beforeunload
  * ✅ P1: Device mode is SET HERE, not on landing page
- * ✅ P0: Age verification with expiration check
  * ✅ P0: Safe DOM manipulation (no innerHTML)
  * ✅ P0: MANDATORY server-side premium validation via Cloud Function
  * ✅ PRODUCTION: Logger statt console.log (no spam in production)
- * ✅ NEW: FSK16 is ALWAYS unlocked, no verification needed
  */
 
 (function(window) {
@@ -21,7 +21,6 @@
         warn: () => {},
         error: () => {}
     };
-
 
     // ===========================
     // 🔒 MODULE SCOPE - NO GLOBAL POLLUTION
@@ -113,7 +112,7 @@
             name: 'Party Time',
             icon: '🎉',
             color: '#FF9800',
-            requiresAge: 0, // ✅ CHANGED: Always unlocked
+            requiresAge: 0, // ✅ Always unlocked
             requiresPremium: false,
             description: 'Freche und witzige Fragen für Partys mit Freunden'
         },
@@ -121,7 +120,7 @@
             name: 'Heiß & Gewagt',
             icon: '🔥',
             color: '#F44336',
-            requiresAge: 18,
+            requiresAge: 18, // ✅ Requires server validation
             requiresPremium: false,
             description: 'Intime und pikante Fragen nur für Erwachsene'
         },
@@ -134,7 +133,6 @@
             description: 'Exklusive Premium-Fragen für besondere Momente'
         }
     };
-
 
     // ===========================
     // INITIALIZATION
@@ -201,10 +199,8 @@
                 return;
             }
 
-            if (!checkAgeVerification()) {
-                hideLoading();
-                return;
-            }
+            // ✅ NEW: Check FSK18 access via server
+            await checkFSKAccess();
 
             // Check premium status
             await checkPremiumStatus();
@@ -246,76 +242,66 @@
     }
 
     /**
-     * Validate age verification with expiration check
-     * ✅ FSK16 is ALWAYS unlocked
+     * ✅ NEW: Check FSK18 access via server-side validation
+     * FSK0 & FSK16 are always unlocked
      */
-    function checkAgeVerification() {
+    async function checkFSKAccess() {
         try {
-            const ageLevel = window.NocapUtils
-                ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
-                : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+            Logger.debug('🔍 Checking FSK access...');
 
-            Logger.debug(`✅ Age cache level: ${ageLevel}+`);
+            // ✅ FSK0 & FSK16 always unlocked
+            updateCategoryLock('fsk0', false);
+            updateCategoryLock('fsk16', false);
 
-            // ✅ FSK16 ist IMMER freigeschaltet, nur FSK18 braucht Verifikation
-            updateCategoryLocks(ageLevel);
+            // ✅ FSK18 requires server validation
+            const hasFSK18Access = await CategorySelectionModule.gameState.canAccessFSK('fsk18');
 
-            return true;
+            updateCategoryLock('fsk18', !hasFSK18Access);
+
+            if (hasFSK18Access) {
+                Logger.debug('✅ FSK18 access granted (server validated)');
+            } else {
+                Logger.debug('❌ FSK18 access denied (server validation failed)');
+            }
 
         } catch (error) {
-            Logger.error('❌ Error checking age cache:', error);
-            updateCategoryLocks(0);
-            return true;
+            Logger.error('❌ Error checking FSK access:', error);
+
+            // ✅ SECURITY: Fail closed for FSK18
+            updateCategoryLock('fsk18', true);
         }
     }
 
     /**
-     * Update category locks based on age
-     * ✅ FSK16 is ALWAYS unlocked
+     * ✅ NEW: Update single category lock state
+     * @param {string} category - Category ID
+     * @param {boolean} locked - Lock state
      */
-    function updateCategoryLocks(ageLevel) {
-        Object.keys(categoryData).forEach(category => {
-            const data = categoryData[category];
-            const card = document.querySelector(`[data-category="${category}"]`);
-            if (!card) return;
+    function updateCategoryLock(category, locked) {
+        const card = document.querySelector(`[data-category="${category}"]`);
+        if (!card) return;
 
-            // ✅ FSK16 ist IMMER freigeschaltet (keine Bedingungen!)
-            if (category === 'fsk16') {
-                card.classList.remove('locked');
-                card.setAttribute('aria-disabled', 'false');
+        if (locked) {
+            card.classList.add('locked');
+            card.setAttribute('aria-disabled', 'true');
 
-                const lockedOverlay = document.getElementById(`${category}-locked`);
-                if (lockedOverlay) {
-                    lockedOverlay.classList.add('hidden');
-                    lockedOverlay.classList.remove('d-flex');
-                    lockedOverlay.setAttribute('aria-hidden', 'true');
-                }
-                return;
+            const lockedOverlay = document.getElementById(`${category}-locked`);
+            if (lockedOverlay) {
+                lockedOverlay.classList.remove('hidden');
+                lockedOverlay.classList.add('d-flex');
+                lockedOverlay.setAttribute('aria-hidden', 'false');
             }
+        } else {
+            card.classList.remove('locked');
+            card.setAttribute('aria-disabled', 'false');
 
-            // Check age requirement für andere Kategorien (fsk18, etc.)
-            if (data.requiresAge > ageLevel) {
-                card.classList.add('locked');
-                card.setAttribute('aria-disabled', 'true');
-
-                const lockedOverlay = document.getElementById(`${category}-locked`);
-                if (lockedOverlay) {
-                    lockedOverlay.classList.remove('hidden');
-                    lockedOverlay.classList.add('d-flex');
-                    lockedOverlay.setAttribute('aria-hidden', 'false');
-                }
-            } else {
-                card.classList.remove('locked');
-                card.setAttribute('aria-disabled', 'false');
-
-                const lockedOverlay = document.getElementById(`${category}-locked`);
-                if (lockedOverlay) {
-                    lockedOverlay.classList.add('hidden');
-                    lockedOverlay.classList.remove('d-flex');
-                    lockedOverlay.setAttribute('aria-hidden', 'true');
-                }
+            const lockedOverlay = document.getElementById(`${category}-locked`);
+            if (lockedOverlay) {
+                lockedOverlay.classList.add('hidden');
+                lockedOverlay.classList.remove('d-flex');
+                lockedOverlay.setAttribute('aria-hidden', 'true');
             }
-        });
+        }
     }
 
     /**
@@ -398,10 +384,10 @@
         }
     }
 
-
     // ===========================
     // QUESTION COUNTS
     // ===========================
+
     async function loadQuestionCounts() {
         try {
             const instances = window.FirebaseConfig?.getFirebaseInstances?.();
@@ -451,7 +437,6 @@
             useFallbackCounts();
         }
     }
-
 
     function useFallbackCounts() {
         Object.keys(categoryData).forEach(category => {
@@ -511,10 +496,9 @@
     }
 
     /**
-     * Toggle category with validation
-     * ✅ FSK16 is ALWAYS allowed (no server validation needed)
+     * ✅ NEW: Toggle category with server-side validation for FSK18
      */
-    function toggleCategory(element) {
+    async function toggleCategory(element) {
         const category = element.dataset.category;
         if (!category) return;
 
@@ -526,87 +510,87 @@
 
         const data = categoryData[category];
 
+        // ✅ Locked category
         if (element.classList.contains('locked')) {
-            // 🔒 Premium bleibt wie gehabt
+            // Premium
             if (data.requiresPremium) {
                 showPremiumInfo();
                 return;
             }
 
-            // 🔞 FSK18 Altersbeschränkung → nur Hinweis
-            if (category === 'fsk18' && data.requiresAge > 0) {
-                showNotification(
-                    `🔞 Bitte bestätige zuerst dein Alter in den Einstellungen`,
-                    'warning',
-                    4000
-                );
+            // FSK18 - Show modal
+            if (category === 'fsk18') {
+                if (window.SettingsModule && typeof window.SettingsModule.showFSKError === 'function') {
+                    window.SettingsModule.showFSKError(
+                        'fsk18',
+                        'Dieser Inhalt ist ab 18 Jahren freigegeben. Bitte verifiziere dein Alter in den Einstellungen.'
+                    );
+                } else {
+                    showNotification('🔞 Bitte bestätige zuerst dein Alter in den Einstellungen', 'warning', 4000);
+                }
+
+                // ✅ Save pending category for auto-resume after verification
+                pendingCategoryAfterAgeVerification = { element, category, data };
             }
 
             return;
         }
 
-        // ✅ FSK16 ist IMMER erlaubt (keine Server-Validierung!)
-        if (category === 'fsk16') {
+        // ✅ FSK0 & FSK16: No validation needed (always allowed)
+        if (category === 'fsk0' || category === 'fsk16') {
             performToggle(element, category, data);
             return;
         }
 
-        // ✅ FSK18: Server-Validierung NUR für FSK18
+        // ✅ FSK18: Server-side validation MANDATORY
         if (category === 'fsk18') {
-            validateAndToggleCategory(element, category, data);
+            await validateAndToggleFSK18(element, category, data);
             return;
         }
 
-        // Toggle selection (für fsk0 und special)
+        // ✅ Other categories (e.g., special)
         performToggle(element, category, data);
     }
 
     /**
-     * ✅ NEW: Validate FSK access server-side before toggling (only for FSK18)
+     * ✅ NEW: Validate FSK18 access server-side before toggling
      */
-    async function validateAndToggleCategory(element, category, data) {
+    async function validateAndToggleFSK18(element, category, data) {
         try {
-            // Call SettingsModule.validateFSKAccess if available
-            if (window.SettingsModule && typeof window.SettingsModule.validateFSKAccess === 'function') {
-                Logger.info('🔐 Validating FSK access via Cloud Function:', category);
+            Logger.info('🔐 Validating FSK18 access via server...');
 
-                const allowed = await window.SettingsModule.validateFSKAccess(category);
+            // Show loading indicator
+            element.classList.add('checking-access');
 
-                if (allowed) {
-                    Logger.info('✅ FSK access granted, toggling category');
-                    performToggle(element, category, data);
-                } else {
-                    Logger.warn('❌ FSK access denied');
+            // ✅ Use GameState for server validation
+            const allowed = await CategorySelectionModule.gameState.canAccessFSK('fsk18', true);
 
-                    // ✅ Falls validateFSKAccess nicht selbst UI zeigt: erzwingen wir es hier
-                    if (window.SettingsModule && typeof window.SettingsModule.showFSKError === 'function') {
-                        window.SettingsModule.showFSKError(category, `Du musst ${data.requiresAge}+ sein für diese Kategorie`);
-                    } else {
-                        showNotification(`Du musst ${data.requiresAge}+ sein für diese Kategorie`, 'warning');
-                    }
-                }
+            element.classList.remove('checking-access');
 
+            if (allowed) {
+                Logger.info('✅ FSK18 access granted (server validated)');
+
+                // Unlock the card
+                updateCategoryLock('fsk18', false);
+
+                // Perform toggle
+                performToggle(element, category, data);
             } else {
-                // Fallback to client-side check if SettingsModule not available
-                Logger.warn('⚠️ SettingsModule not available, using fallback');
-                const ageLevel = window.NocapUtils
-                    ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
-                    : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+                Logger.warn('❌ FSK18 access denied (server validation failed)');
 
-                if (ageLevel >= 18) {
-                    performToggle(element, category, data);
-                } else {
-                    showNotification('Du musst 18+ sein für diese Kategorie', 'warning');
-                }
+                // SettingsModule already showed error modal via canAccessFSK
+                // No additional notification needed
             }
+
         } catch (error) {
-            Logger.error('❌ Error validating FSK:', error);
+            Logger.error('❌ Error validating FSK18:', error);
+            element.classList.remove('checking-access');
             showNotification('Fehler bei der Altersverifikation', 'error');
         }
     }
 
     /**
-     * ✅ NEW: Perform actual toggle logic (extracted for reuse)
+     * ✅ Perform actual toggle logic (extracted for reuse)
      */
     function performToggle(element, category, data) {
         const isSelected = element.classList.contains('selected');
@@ -861,56 +845,39 @@
             }
         });
 
-        // ✅ Re-check locks after age verification flow on this page
-        const verifyAgeBtn = document.getElementById('verify-age-btn');
-        if (verifyAgeBtn) {
-            addTrackedEventListener(verifyAgeBtn, 'click', () => {
-                // give settings.js a moment to write localStorage
-                setTimeout(() => {
-                    const ageLevel = window.NocapUtils
-                        ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
-                        : parseInt(localStorage.getItem('nocap_age_level')) || 0;
-
-                    updateCategoryLocks(ageLevel);
-                }, 300);
-            });
-        }
-
-        // 🔁 Nach erfolgreicher Altersverifikation automatisch fortsetzen
-        addTrackedEventListener(window, 'nocap:age-verified', (e) => {
-            const ageLevel = e?.detail?.ageLevel ?? (
-                window.NocapUtils
-                    ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
-                    : parseInt(localStorage.getItem('nocap_age_level')) || 0
-            );
+        // ✅ Listen for age verification success
+        addTrackedEventListener(window, 'nocap:age-verified', async (e) => {
+            const ageLevel = e?.detail?.ageLevel;
 
             Logger.debug('🔄 Age verified event received:', ageLevel);
 
-            // Locks neu berechnen
-            updateCategoryLocks(ageLevel);
+            // ✅ Invalidate FSK18 cache and recheck
+            if (CategorySelectionModule.gameState) {
+                CategorySelectionModule.gameState.invalidateFSK18Cache('age-verified');
+            }
 
+            // ✅ Recheck FSK18 access (force refresh from server)
+            await checkFSKAccess();
+
+            // ✅ Auto-resume pending category selection
             if (!pendingCategoryAfterAgeVerification) return;
 
             const { element, category, data } = pendingCategoryAfterAgeVerification;
 
-            // Sicherheitscheck
+            // Safety check
             if (!element || !category || !data) {
                 pendingCategoryAfterAgeVerification = null;
                 return;
             }
 
-            if (data.requiresAge <= ageLevel) {
-                // give UI + storage a tiny moment (Token refresh / UI update)
-                setTimeout(() => {
-                    // Locks nochmal neu (falls CSS/DOM laggt)
-                    updateCategoryLocks(ageLevel);
-
-                    if (!element.classList.contains('locked')) {
-                        Logger.debug('✅ Auto-selecting category after age verification:', category);
-                        performToggle(element, category, data);
-                    }
-                }, 200);
-            }
+            // Give server validation a moment
+            setTimeout(async () => {
+                // Check if FSK18 is now unlocked
+                if (!element.classList.contains('locked')) {
+                    Logger.debug('✅ Auto-selecting category after age verification:', category);
+                    performToggle(element, category, data);
+                }
+            }, 300);
 
             pendingCategoryAfterAgeVerification = null;
         });
@@ -934,109 +901,12 @@
 
         showLoading();
 
-        // ✅ AUDIT FIX: Serverseitige Validierung aller ausgewählten Kategorien
-        try {
-            // Prüfe Firebase & Auth
-            if (!window.FirebaseConfig || !window.FirebaseConfig.isInitialized()) {
-                if (CategorySelectionModule.isDevelopment) {
-                    Logger.debug('⚠️ Firebase not initialized, skipping server validation');
-                }
-                // Fallback: Weiter ohne Validierung (nur für Development)
-                setTimeout(() => {
-                    window.location.href = 'difficulty-selection.html';
-                }, 500);
-                return;
-            }
+        // ✅ Server-side validation will happen in gameplay
+        // No need to validate again here (already validated on selection)
 
-            const instances = window.FirebaseConfig.getFirebaseInstances();
-
-            // Prüfe ob Functions verfügbar (benötigt Blaze-Plan)
-            if (!instances || !instances.functions) {
-                if (CategorySelectionModule.isDevelopment) {
-                    Logger.debug('⚠️ Firebase Functions not available (Blaze plan required), skipping server validation');
-                }
-                // Fallback: Weiter ohne serverseitige Validierung
-                setTimeout(() => {
-                    window.location.href = 'difficulty-selection.html';
-                }, 500);
-                return;
-            }
-
-            const { functions } = instances;
-            const checkAccess = functions.httpsCallable('checkCategoryAccess');
-
-            // Validiere jede Kategorie serverseitig (außer fsk16, das ist immer frei)
-            for (const categoryId of selectedCategories) {
-                // ✅ SKIP validation for FSK16 (always allowed)
-                if (categoryId === 'fsk16') {
-                    if (CategorySelectionModule.isDevelopment) {
-                        Logger.debug(`✅ FSK16 always allowed, skipping validation`);
-                    }
-                    continue;
-                }
-
-                try {
-                    const result = await checkAccess({ categoryId });
-
-                    if (!result.data || !result.data.allowed) {
-                        hideLoading();
-                        showNotification(`Zugriff auf ${categoryData[categoryId]?.name || categoryId} verweigert`, 'error');
-                        // Entferne die Kategorie
-                        CategorySelectionModule.gameState.removeCategory(categoryId);
-                        const card = document.querySelector(`[data-category="${categoryId}"]`);
-                        if (card) {
-                            card.classList.remove('selected');
-                            card.setAttribute('aria-pressed', 'false');
-                        }
-                        return;
-                    }
-
-                    if (CategorySelectionModule.isDevelopment) {
-                        Logger.debug(`✅ Server validated access to ${categoryId}`);
-                    }
-
-                } catch (error) {
-                    hideLoading();
-
-                    if (error.code === 'permission-denied') {
-                        const data = categoryData[categoryId];
-                        if (data?.requiresPremium) {
-                            showPremiumInfo();
-                        } else {
-                            showNotification(
-                                `Keine Berechtigung für ${data?.name || categoryId}. Bitte Altersverifikation prüfen.`,
-                                'error'
-                            );
-                        }
-                        CategorySelectionModule.gameState.removeCategory(categoryId);
-                        return;
-                    }
-
-                    if (error.code === 'unauthenticated') {
-                        showNotification('Bitte melde dich an, um fortzufahren', 'error');
-                        return;
-                    }
-
-                    Logger.error('❌ Server validation failed for category:', categoryId, error);
-                    showNotification('Fehler bei der Validierung. Bitte versuche es erneut.', 'error');
-                    return;
-                }
-            }
-
-            // Alle Kategorien erfolgreich validiert
-            if (CategorySelectionModule.isDevelopment) {
-                Logger.debug('✅ All categories validated successfully');
-            }
-
-            setTimeout(() => {
-                window.location.href = 'difficulty-selection.html';
-            }, 500);
-
-        } catch (error) {
-            hideLoading();
-            Logger.error('❌ Category validation error:', error);
-            showNotification('Fehler beim Fortfahren. Bitte versuche es erneut.', 'error');
-        }
+        setTimeout(() => {
+            window.location.href = 'difficulty-selection.html';
+        }, 500);
     }
 
     function goBack() {
