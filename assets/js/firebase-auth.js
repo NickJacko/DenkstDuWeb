@@ -1,6 +1,13 @@
 /**
  * NO-CAP Firebase Authentication Service
- * Version 4.0 - Full Audit Compliance & Production Ready
+ * Version 5.0 - Silent Auth Layer with ensureAuth()
+ *
+ * NEW IN v5.0:
+ * ✅ ensureAuth() - Silent authentication (creates anonymous if needed)
+ * ✅ getUid() - Get current user UID (convenience method)
+ * ✅ isAnonymous() - Check if current user is anonymous
+ * ✅ Auto-initialization improved
+ * ✅ Better integration with FirebaseInit.js
  *
  * AUDIT FIXES APPLIED:
  * ✅ P0: Strict email/password validation with XSS prevention
@@ -81,7 +88,6 @@
                 });
             }
 
-
             // Start initialization
             this._initPromise = (async () => {
                 try {
@@ -96,6 +102,7 @@
                     if (!window.FirebaseConfig.isInitialized()) {
                         throw new Error('FirebaseConfig not initialized');
                     }
+
                     // ✅ P0: Ensure compat/global firebase object exists when used later
                     if (!window.firebase || !window.firebase.auth || !window.firebase.database) {
                         throw new Error('Global firebase compat SDK not available (window.firebase missing)');
@@ -142,6 +149,121 @@
             })();
 
             return this._initPromise;
+        }
+
+        // ===================================
+        // ✅ NEW: ENSURE AUTH (SILENT)
+        // ===================================
+
+        /**
+         * ✅ NEW v5.0: Ensure user is authenticated (creates anonymous if needed)
+         * This runs silently - no UI impact
+         *
+         * USAGE:
+         * - Called automatically by FirebaseInit.js on page load
+         * - Can be called manually when auth is needed
+         * - Creates anonymous account if no user exists
+         * - Returns existing user if already authenticated
+         *
+         * @returns {Promise<Object>} Firebase user object
+         *
+         * @example
+         * // Ensure auth before doing something
+         * await authService.ensureAuth();
+         * const uid = authService.getUid();
+         */
+        async ensureAuth() {
+            try {
+                // Initialize if needed
+                if (!this.initialized) {
+                    await this.initialize();
+                }
+
+                // Already signed in? Return existing user
+                if (this.isAuthenticated && this.currentUser) {
+                    if (this._isDevelopment) {
+                        console.log('ℹ️ User already authenticated:', {
+                            uid: this.currentUser.uid.substring(0, 8) + '...',
+                            isAnonymous: this.currentUser.isAnonymous
+                        });
+                    }
+                    return this.currentUser;
+                }
+
+                // Get auth instance
+                const { auth } = window.FirebaseConfig.getFirebaseInstances();
+
+                if (!auth) {
+                    throw new Error('Firebase Auth not available');
+                }
+
+                // Sign in anonymously (silent)
+                const result = await auth.signInAnonymously();
+                this.currentUser = result.user;
+                this.isAnonymous = true;
+                this.isAuthenticated = true;
+
+                if (this._isDevelopment) {
+                    console.log('✅ Anonymous sign-in (ensureAuth):',
+                        result.user.uid.substring(0, 8) + '...');
+                }
+
+                return this.currentUser;
+
+            } catch (error) {
+                console.error('❌ ensureAuth failed:', error);
+
+                // ✅ P0 SECURITY: User-friendly error handling
+                const errorMessage = this.getErrorMessage(error.code) || error.message;
+
+                if (window.NocapUtils && window.NocapUtils.showNotification) {
+                    window.NocapUtils.showNotification(
+                        'Authentifizierung fehlgeschlagen',
+                        'error'
+                    );
+                }
+
+                throw error;
+            }
+        }
+
+        // ===================================
+        // ✅ NEW: CONVENIENCE METHODS
+        // ===================================
+
+        /**
+         * ✅ NEW v5.0: Get current user UID
+         * @returns {string|null} User UID or null
+         *
+         * @example
+         * const uid = authService.getUid();
+         * if (uid) {
+         *     console.log('Current user:', uid);
+         * }
+         */
+        getUid() {
+            return this.currentUser?.uid || null;
+        }
+
+        /**
+         * ✅ NEW v5.0: Check if user is anonymous
+         * @returns {boolean} True if anonymous
+         *
+         * @example
+         * if (authService.isAnonymous()) {
+         *     console.log('User is anonymous - show upgrade prompt');
+         * }
+         */
+        isAnonymous() {
+            return this.currentUser?.isAnonymous || false;
+        }
+
+        /**
+         * ✅ ENHANCED: Check if user is authenticated (convenience wrapper)
+         * @returns {boolean} True if authenticated
+         */
+        isAuthenticated() {
+            return this.isAuthenticated && this.currentUser !== null;
         }
 
         // ===========================
@@ -419,6 +541,7 @@
             if (!this.initialized) {
                 await this.initialize();
             }
+
             // ✅ P1 STABILITY: Ensure auth-ready promise exists (can be null after cleanup/errors)
             if (!this._authReadyPromise) {
                 this._authReadyPromise = new Promise((resolve, reject) => {
@@ -1391,7 +1514,7 @@
             window.location.hostname.includes('192.168.')) {
 
             console.log(
-                '%c✅ FirebaseAuthService v4.0 loaded',
+                '%c✅ FirebaseAuthService v5.0 loaded (with ensureAuth)',
                 'color: #FF6F00; font-weight: bold; font-size: 12px; padding: 4px 8px; background: #FFF3E0; border-radius: 4px;'
             );
         }

@@ -103,7 +103,6 @@
                 : userMenuContainer.classList.add('hidden');
         }
     }
-
     async function loadUserData() {
         if (!SettingsState.currentUser) return;
 
@@ -111,21 +110,48 @@
             const displayName = SettingsState.currentUser.displayName || 'Gast';
             updateDisplayName(displayName);
 
-            // ✅ Force token refresh to get latest claims
+            // ✅ Force token refresh to get latest Custom Claims
             await SettingsState.currentUser.getIdToken(true);
             const tokenResult = await SettingsState.currentUser.getIdTokenResult();
 
-            // ✅ FSK0 & FSK16 always available, only FSK18 needs verification
+            // ✅ Check FSK18 Custom Claim
+            const hasFSK18Claim = tokenResult?.claims?.fsk18 === true;
+
+            // ✅ FSK0 & FSK16 always available
             SettingsState.userFSKAccess = {
                 fsk0: true,
                 fsk16: true,
-                fsk18: tokenResult?.claims?.fsk18 === true
+                fsk18: hasFSK18Claim
             };
 
             Logger.info('✅ FSK Access loaded:', SettingsState.userFSKAccess);
-            updateFSKBadges(SettingsState.userFSKAccess);
 
-            // ✅ Sync to localStorage for offline checks
+            // ✅ If anonymous user without FSK18 claim -> try to grant
+            if (!SettingsState.currentUser.isAnonymous && !hasFSK18Claim) {
+                Logger.info('🔄 Non-anonymous user without FSK18 claim, attempting auto-grant...');
+
+                try {
+                    if (SettingsState.functionsInstance) {
+                        const grantFSK18 = SettingsState.functionsInstance.httpsCallable('grantFSK18Access');
+                        const result = await grantFSK18();
+
+                        if (result?.data?.success) {
+                            // ✅ Refresh token to get new Custom Claim
+                            await SettingsState.currentUser.getIdToken(true);
+                            const refreshed = await SettingsState.currentUser.getIdTokenResult();
+
+                            SettingsState.userFSKAccess.fsk18 = refreshed?.claims?.fsk18 === true;
+
+                            Logger.info('✅ FSK18 auto-granted:', SettingsState.userFSKAccess.fsk18);
+                        }
+                    }
+                } catch (error) {
+                    // ✅ Non-fatal: User can manually request FSK18 later
+                    Logger.warn('⚠️ FSK18 auto-grant failed (non-fatal):', error.message);
+                }
+            }
+
+            updateFSKBadges(SettingsState.userFSKAccess);
             syncFSKToLocalStorage(SettingsState.userFSKAccess);
 
             await checkScheduledDeletion();
@@ -134,7 +160,6 @@
             Logger.error('❌ Error loading user data:', error);
         }
     }
-
     /**
      * ✅ Sync FSK access to localStorage (read-only cache)
      */
@@ -512,7 +537,14 @@
     // ===================================
     // FSK VALIDATION
     // ===================================
-
+    /**
+     * ✅ P0 SECURITY: Validate FSK access via Cloud Function
+     * - FSK0 & FSK16: Always allowed (no verification needed)
+     * - FSK18: Requires server-side validation via Custom Claims
+     *
+     * @param {string} category - 'fsk0', 'fsk16', 'fsk18'
+     * @returns {Promise<boolean>} Access granted
+     */
     async function validateFSKAccess(category) {
         if (!SettingsState.currentUser) {
             showError('Bitte melde dich an');
@@ -530,31 +562,68 @@
             return true;
         }
 
-        // ✅ FSK18 requires server-side validation
+        // ✅ FSK18 requires server-side validation via Custom Claims
         if (category === 'fsk18') {
             try {
+                // ✅ Check if user is anonymous
+                if (SettingsState.currentUser.isAnonymous) {
+                    Logger.warn('❌ FSK18 requires Google sign-in (anonymous user)');
+                    showFSKError(category, 'FSK18 erfordert eine Google-Anmeldung. Anonyme Benutzer haben keinen Zugriff.');
+                    return false;
+                }
+
+                // ✅ Force token refresh to get latest Custom Claims
+                await SettingsState.currentUser.getIdToken(true);
+                const tokenResult = await SettingsState.currentUser.getIdTokenResult();
+
+                // ✅ Check Custom Claim
+                const hasFSK18 = tokenResult?.claims?.fsk18 === true;
+
+                if (hasFSK18) {
+                    Logger.info('✅ FSK18 access granted (Custom Claim validated)');
+                    return true;
+                }
+
+                // ✅ No Custom Claim -> Try to grant via Cloud Function
+                Logger.info('🔄 No FSK18 claim found, attempting to grant...');
+
                 if (!SettingsState.functionsInstance) {
                     throw new Error('Functions not initialized');
                 }
 
-                const validate = SettingsState.functionsInstance.httpsCallable('validateFSKAccessCallable');
-                const result = await validate({ category });
+                // ✅ Call grantFSK18Access Cloud Function
+                const grantFSK18 = SettingsState.functionsInstance.httpsCallable('grantFSK18Access');
+                const result = await grantFSK18();
 
-                const allowed = Boolean(result?.data?.allowed);
-                const message = result?.data?.message;
+                if (result?.data?.success) {
+                    Logger.info('✅ FSK18 access granted via Cloud Function');
 
-                if (allowed) {
-                    Logger.info('✅ FSK18 access granted (server validated)');
+                    // ✅ Refresh token to get new Custom Claim
+                    await SettingsState.currentUser.getIdToken(true);
+
+                    // ✅ Update local FSK access state
+                    SettingsState.userFSKAccess.fsk18 = true;
+                    updateFSKBadges(SettingsState.userFSKAccess);
+                    syncFSKToLocalStorage(SettingsState.userFSKAccess);
+
                     return true;
                 }
 
-                Logger.warn('❌ FSK18 access denied:', message || 'Zugriff verweigert');
-                showFSKError(category, message);
+                // ✅ Access denied
+                Logger.warn('❌ FSK18 access denied');
+                showFSKError(category, 'FSK18-Zugriff wurde verweigert. Bitte melde dich mit einem Google-Konto an.');
                 return false;
 
             } catch (error) {
                 Logger.error('FSK18 validation error:', error);
-                showError('Fehler bei der Altersverifikation');
+
+                // ✅ Handle specific error codes
+                if (error.code === 'failed-precondition') {
+                    showFSKError(category, 'FSK18 erfordert eine Google-Anmeldung.');
+                } else {
+                    showError('Fehler bei der FSK18-Validierung');
+                }
+
                 return false;
             }
         }

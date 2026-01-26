@@ -213,15 +213,19 @@
         // ✅ Only read from Settings cache (no gating, no modal, no server requirement)
         try {
             const ageLevelRaw = localStorage.getItem('nocap_age_level');
-            const ageLevel = parseInt(ageLevelRaw, 10) || 0;
+
+            let ageLevel = parseInt(ageLevelRaw, 10);
+            if (!Number.isFinite(ageLevel)) ageLevel = 0;
+
+            ageLevel = Math.max(0, Math.min(18, ageLevel));
 
             IndexPageModule.ageVerified = ageLevel > 0;
             IndexPageModule.isAdult = ageLevel >= 18;
 
-            // alcoholMode is only allowed for 18+, otherwise force off
             IndexPageModule.alcoholMode = ageLevel >= 18;
 
             return ageLevel > 0;
+
         } catch (e) {
             IndexPageModule.ageVerified = false;
             IndexPageModule.isAdult = false;
@@ -668,6 +672,15 @@
 
             if (!checkDOMPurify()) return;
             await initializeFirebase().catch(err => Logger.warn('⚠️ Firebase initialization error:', err));
+// ✅ Ensure we always have a UID (anonymous is enough)
+// Needed for multiplayer entitlement/age checks later (no UI impact)
+            try {
+                if (window.authService && typeof window.authService.ensureAuth === 'function') {
+                    await window.authService.ensureAuth();
+                }
+            } catch (e) {
+                Logger.warn('⚠️ ensureAuth failed (offline mode ok):', e);
+            }
 
             if (typeof GameState === 'undefined') {
                 Logger.error('❌ GameState class not found!');
@@ -710,8 +723,6 @@
             let message = '';
             if (kickReason === 'fsk18_restriction') {
                 message = '⚠️ Du wurdest aus dem Spiel entfernt, da der Host FSK18-Inhalte aktiviert hat.';
-            } else if (kickReason === 'fsk16_restriction') {
-                message = '⚠️ Du wurdest aus dem Spiel entfernt, da der Host FSK16-Inhalte aktiviert hat.';
             }
 
             if (message && window.NocapUtils?.showNotification) {

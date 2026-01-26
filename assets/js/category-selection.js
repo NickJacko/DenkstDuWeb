@@ -383,59 +383,46 @@
             specialLocked.setAttribute('aria-hidden', 'false');
         }
     }
-
-    // ===========================
-    // QUESTION COUNTS
-    // ===========================
-
+    /**
+     * ✅ P0 SECURITY: Load question counts via Cloud Function
+     * FSK18 questions are NEVER directly accessible from client
+     */
     async function loadQuestionCounts() {
-        try {
-            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
-            const database = instances?.database;
-
-            if (!window.FirebaseConfig?.isInitialized?.() || !database?.ref) {
-                Logger.warn('⚠️ Firebase database not available, using fallback counts');
-                useFallbackCounts();
-                return;
-            }
-
-            const categories = Object.keys(categoryData);
-
-            // pro Kategorie separat laden (klein & stabil)
-            await Promise.all(categories.map(async (category) => {
-                try {
-                    const snap = await database.ref(`questions/${category}`).once('value');
-
-                    let count = 0;
-                    if (snap.exists()) {
-                        const val = snap.val();
-
-                        if (Array.isArray(val)) {
-                            count = val.length;
-                        } else if (val && typeof val === 'object') {
-                            count = Object.keys(val).length;
-                        }
-                    } else {
-                        count = getFallbackCount(category);
-                    }
-
-                    CategorySelectionModule.questionCounts[category] = count;
-                    updateQuestionCountUI(category, count);
-
-                } catch (err) {
-                    Logger.warn(`⚠️ Count load failed for ${category}, using fallback`, err);
-                    const fallback = getFallbackCount(category);
-                    CategorySelectionModule.questionCounts[category] = fallback;
-                    updateQuestionCountUI(category, fallback);
-                }
-            }));
-
-            Logger.debug('✅ Question counts loaded:', CategorySelectionModule.questionCounts);
-
-        } catch (error) {
-            Logger.warn('⚠️ Error loading question counts:', error);
-            useFallbackCounts();
+        if (!firebase.database) {
+            console.warn('[category-selection] Firebase Database not initialized');
+            return;
         }
+
+        for (const category of categories) {
+            try {
+                // ✅ FSK18: Load via Cloud Function (server-side validation)
+                if (category.id === 'fsk18') {
+                    const getCount = firebase.functions().httpsCallable('getQuestionCount');
+                    const result = await getCount({ category: 'fsk18' });
+
+                    if (result?.data?.hasAccess) {
+                        category.count = result.data.count || 0;
+                    } else {
+                        category.count = 0;
+                        console.info('[category-selection] FSK18 access denied');
+                    }
+                }
+                // ✅ FSK0, FSK16, special: Direct database access (allowed)
+                else {
+                    const snapshot = await firebase.database()
+                        .ref(`questions/${category.id}`)
+                        .once('value');
+
+                    const questions = snapshot.val();
+                    category.count = questions ? Object.keys(questions).length : 0;
+                }
+            } catch (error) {
+                console.error(`Failed to load count for ${category.id}:`, error);
+                category.count = getFallbackCount(category.id);
+            }
+        }
+
+        updateQuestionCounts();
     }
 
     function useFallbackCounts() {

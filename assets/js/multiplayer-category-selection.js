@@ -29,6 +29,7 @@
 
     const MultiplayerCategoryModule = {
         state: {
+            hostHasPremium: false,
             gameState: null,
             firebaseService: null,
             questionCounts: { fsk0: 200, fsk16: 300, fsk18: 250, special: 150 },
@@ -186,6 +187,15 @@
 
         // CRITICAL: Always set device mode to 'multi' for multiplayer pages
         MultiplayerCategoryModule.gameState.setDeviceMode('multi');
+        // ✅ ensure auth (anonymous ok) so DB operations have a user
+        try {
+            if (window.authService?.ensureAuth) {
+                await window.authService.ensureAuth();
+            }
+        } catch (e) {
+            Logger.warn('⚠️ ensureAuth failed (continuing):', e);
+        }
+
         Logger.debug('📱 Device mode set to: multi');
 
         // CRITICAL: DEVICE MODE ENFORCEMENT
@@ -451,6 +461,8 @@
     async function checkPremiumStatus() {
         try {
             const isPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
+            MultiplayerCategoryModule.state.hostHasPremium = isPremium;
+
 
             Logger.debug(`${isPremium ? '✅' : '🔒'} Premium status: ${isPremium}`);
 
@@ -483,7 +495,6 @@
             }
         }
     }
-
     async function loadQuestionCounts() {
         try {
             if (window.FirebaseConfig?.waitForFirebase) {
@@ -491,30 +502,49 @@
             }
 
             const instances = window.FirebaseConfig?.getFirebaseInstances?.();
-            const database = instances?.database;
+            const functions = instances?.functions;
 
-            if (!database) {
-                Logger.warn('⚠️ Firebase DB not available, using defaults');
+            if (!functions) {
+                Logger.warn('⚠️ Firebase Functions not available, using defaults');
                 return;
             }
 
-            const questionsRef = database.ref('questions');
-            const snapshot = await questionsRef.once('value');
-
-            if (snapshot.exists()) {
-                const questions = snapshot.val();
-                Object.keys(categoryData).forEach(key => {
-                    if (questions[key]) {
-                        if (Array.isArray(questions[key])) {
-                            MultiplayerCategoryModule.state.questionCounts[key] = questions[key].length;
-                        } else if (typeof questions[key] === 'object') {
-                            MultiplayerCategoryModule.state.questionCounts[key] = Object.keys(questions[key]).length;
+            // ✅ Load counts for each category via Cloud Function
+            for (const key of Object.keys(categoryData)) {
+                try {
+                    // ✅ FSK0, FSK16, special: Direct database access (allowed)
+                    if (key === 'fsk0' || key === 'fsk16' || key === 'special') {
+                        const database = instances?.database;
+                        if (database?.ref) {
+                            const snapshot = await database.ref(`questions/${key}`).once('value');
+                            if (snapshot.exists()) {
+                                const questions = snapshot.val();
+                                MultiplayerCategoryModule.state.questionCounts[key] =
+                                    Array.isArray(questions)
+                                        ? questions.length
+                                        : Object.keys(questions).length;
+                            }
                         }
                     }
-                });
+                    // ✅ FSK18: Via Cloud Function (server-side validation)
+                    else if (key === 'fsk18') {
+                        const getQuestionCount = functions.httpsCallable('getQuestionCount');
+                        const result = await getQuestionCount({ category: 'fsk18' });
 
-                Logger.debug('✅ Question counts loaded:', MultiplayerCategoryModule.state.questionCounts);
+                        if (result?.data?.hasAccess) {
+                            MultiplayerCategoryModule.state.questionCounts[key] = result.data.count || 0;
+                            Logger.debug(`✅ FSK18 count loaded: ${result.data.count}`);
+                        } else {
+                            MultiplayerCategoryModule.state.questionCounts[key] = 0;
+                            Logger.debug('🔒 FSK18 access denied, count set to 0');
+                        }
+                    }
+                } catch (error) {
+                    Logger.warn(`⚠️ Failed to load count for ${key}:`, error);
+                }
             }
+
+            Logger.debug('✅ Question counts loaded:', MultiplayerCategoryModule.state.questionCounts);
         } catch (error) {
             Logger.warn('⚠️ Question counts error:', error);
         }
@@ -643,7 +673,7 @@
         const verified = String(getLS('nocap_age_verification') || 'false') === 'true';
         const ageLevel = parseInt(getLS('nocap_age_level') || '0', 10) || 0;
 
-        const hasPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
+        const hasPremium = MultiplayerCategoryModule.state.hostHasPremium === true;
 
         Object.entries(categoryData).forEach(([key, cat]) => {
             const card = document.createElement('div');
@@ -833,6 +863,11 @@
                 showPremiumInfo();
                 return;
             }
+// ✅ Premium is HOST-wide: only host needs premium, but selection must be blocked if host not premium
+            if (key === 'special' && MultiplayerCategoryModule.state.hostHasPremium !== true) {
+                showPremiumInfo();
+                return;
+            }
 
             // ✅ FSK18-SYSTEM: Only FSK18 requires validation
             if (key === 'fsk18') {
@@ -940,7 +975,12 @@
 
             const requiredAge = 18;
 
-            const playersRef = firebase.database().ref(`games/${gameId}/players`);
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const database = instances?.database;
+            if (!database?.ref) return;
+
+            const playersRef = database.ref(`games/${gameId}/players`);
+
             const snapshot = await playersRef.once('value');
 
             if (!snapshot.exists()) return;
@@ -1049,8 +1089,15 @@
 
             if (!database?.ref) return;
 
-            const gameRef = database.ref(`games/${MultiplayerCategoryModule.gameState.gameId}/settings/categories`);
-            await gameRef.set(MultiplayerCategoryModule.gameState.selectedCategories);
+            const gameId = MultiplayerCategoryModule.gameState.gameId;
+
+            await database.ref(`games/${gameId}/settings/categories`)
+                .set(MultiplayerCategoryModule.gameState.selectedCategories);
+
+// ✅ NEW: host-wide premium flag (so guests can use premium questions in this lobby)
+            await database.ref(`games/${gameId}/settings/hostHasPremium`)
+                .set(MultiplayerCategoryModule.state.hostHasPremium === true);
+
 
         } catch (error) {
             Logger.error('❌ Sync error:', error);
@@ -1161,7 +1208,9 @@
                 const database = instances?.database;
 
                 if (database?.ref) {
-                    await database.ref(`games/${existingGameId}/settings/categories`).set(selectedCategories);
+                    await database.ref(`games/${existingGameId}/settings/hostHasPremium`)
+                        .set(MultiplayerCategoryModule.state.hostHasPremium === true);
+
                     Logger.debug('✅ Updated categories in existing game:', selectedCategories);
                 }
             } catch (error) {

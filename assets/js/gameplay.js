@@ -870,8 +870,9 @@ function sanitizeQuestionText(text) {
     // Fallback: Remove HTML tags
     return String(text).replace(/<[^>]*>/g, '').substring(0, 500);
 }
+
 /**
- * ✅ FSK18-SYSTEM: Load category questions from Firebase with FSK validation
+ * ✅ FSK18-SYSTEM: Load category questions with server-side validation for FSK18
  * @param {string} category - Category to load (fsk0, fsk16, fsk18, special)
  * @returns {Promise<Array|null>} Array of questions or null
  */
@@ -879,7 +880,7 @@ async function loadCategoryQuestions(category) {
     if (!GameplayModule.firebaseService) return null;
 
     try {
-        // ✅ FSK18-SYSTEM: Server-side validation for FSK18 questions
+        // ✅ FSK18: Server-side validation required
         if (category === 'fsk18') {
             if (!window.FirebaseConfig?.isInitialized?.()) {
                 console.warn('⚠️ Firebase not initialized - cannot load FSK18 questions');
@@ -900,11 +901,60 @@ async function loadCategoryQuestions(category) {
             }
 
             if (GameplayModule.isDevelopment) {
-                console.log('✅ FSK18 access validated - loading questions');
+                console.log('✅ FSK18 access validated - loading questions via Cloud Function');
+            }
+
+            // ✅ PHASE 3: Use Cloud Function for FSK18 questions
+            const instances = window.FirebaseConfig.getFirebaseInstances();
+            const functions = instances?.functions;
+
+            if (!functions) {
+                console.warn('⚠️ Firebase Functions not available for FSK18');
+                return null;
+            }
+
+            try {
+                const getQuestionsForGame = functions.httpsCallable('getQuestionsForGame');
+                const gameId = GameplayModule.gameState.gameId || 'single-device-game';
+
+                const result = await getQuestionsForGame({
+                    gameId: gameId,
+                    categories: ['fsk18'],
+                    count: 100 // Request sufficient questions
+                });
+
+                if (result?.data?.questions) {
+                    const fsk18Questions = result.data.questions.filter(q =>
+                        q.category === 'fsk18' || q.fsk === 18
+                    );
+
+                    if (GameplayModule.isDevelopment) {
+                        console.log(`✅ Loaded ${fsk18Questions.length} FSK18 questions via Cloud Function`);
+                    }
+
+                    // Extract text from question objects
+                    return fsk18Questions.map(q => {
+                        if (typeof q === 'string') {
+                            return q;
+                        } else if (q && typeof q === 'object' && q.text) {
+                            return q.text;
+                        } else if (q && typeof q === 'object' && q.question) {
+                            return q.question;
+                        } else {
+                            return String(q);
+                        }
+                    });
+                } else {
+                    console.warn('⚠️ No FSK18 questions returned from Cloud Function');
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ Cloud Function error for FSK18:', error);
+                return null;
             }
         }
 
-        // ✅ FSK18-SYSTEM: FSK0 & FSK16 can be loaded without validation
+        // ✅ FSK0, FSK16, special: Direct database access (allowed by rules)
         if (GameplayModule.firebaseService?.database) {
             const questionsRef = GameplayModule.firebaseService.database.ref(`questions/${category}`);
             const snapshot = await questionsRef.once('value');
@@ -921,16 +971,16 @@ async function loadCategoryQuestions(category) {
                     questions = Object.values(questionsData);
                 }
 
-                // ✅ FIX: Extract text from question objects
+                // Extract text from question objects
                 return questions.map(q => {
                     if (typeof q === 'string') {
-                        return q; // Already a string
+                        return q;
                     } else if (q && typeof q === 'object' && q.text) {
-                        return q.text; // Extract text property
+                        return q.text;
                     } else if (q && typeof q === 'object' && q.question) {
-                        return q.question; // Alternative property name
+                        return q.question;
                     } else {
-                        return String(q); // Fallback: convert to string
+                        return String(q);
                     }
                 });
             }

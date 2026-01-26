@@ -105,6 +105,7 @@
             this.playerName = '';             // Current player name
             this.gameId = null;               // 6-digit game code
             this.playerId = null;             // Unique player ID
+            this.uid = null;                  // ✅ NEW: Firebase UID (from authService)
             this.isHost = false;              // Is this user the host?
             this.isGuest = false;             // Is this user a guest?
             this.gamePhase = 'lobby';         // 'lobby' | 'playing' | 'results'
@@ -170,7 +171,6 @@
          */
         getState() {
             try {
-                // Build state object
                 const state = {
                     deviceMode: this.deviceMode,
                     selectedCategories: this.selectedCategories,
@@ -181,6 +181,7 @@
                     playerName: this.playerName,
                     gameId: this.gameId,
                     playerId: this.playerId,
+                    uid: this.uid,                // ✅ NEW: Include UID in state
                     isHost: this.isHost,
                     isGuest: this.isGuest,
                     gamePhase: this.gamePhase,
@@ -211,6 +212,7 @@
                     playerName: '',
                     gameId: null,
                     playerId: null,
+                    uid: null,                    // ✅ NEW: Include UID in fallback state
                     isHost: false,
                     isGuest: false,
                     gamePhase: 'lobby',
@@ -351,6 +353,7 @@
                 this.playerName = this.sanitizeString(state.playerName);
                 this.gameId = this.sanitizeGameId(state.gameId);
                 this.playerId = this.sanitizeString(state.playerId);
+                this.uid = this.sanitizeString(state.uid);           // ✅ NEW: Load UID from state
                 this.isHost = state.isHost === true;
                 this.isGuest = state.isGuest === true;
                 this.gamePhase = this.sanitizeValue(state.gamePhase, ['lobby', 'playing', 'results'], 'lobby');
@@ -444,6 +447,7 @@
                 playerName: (v) => typeof v === 'string',
                 gameId: (v) => v === null || typeof v === 'string',
                 playerId: (v) => v === null || typeof v === 'string',
+                uid: (v) => v === null || typeof v === 'string',  // ✅ NEW: Validate UID type
                 isHost: (v) => typeof v === 'boolean',
                 isGuest: (v) => typeof v === 'boolean',
                 gamePhase: (v) => typeof v === 'string',
@@ -686,6 +690,7 @@
                     playerName: this.sanitizeString(this.playerName),
                     gameId: this.sanitizeGameId(this.gameId),
                     playerId: this.sanitizeString(this.playerId),
+                    uid: this.sanitizeString(this.uid),              // ✅ NEW: Save UID
                     isHost: this.isHost === true,
                     isGuest: this.isGuest === true,
                     gamePhase: this.gamePhase,
@@ -732,6 +737,7 @@
                             playerName: this.sanitizeString(this.playerName),
                             gameId: this.sanitizeGameId(this.gameId),
                             playerId: this.sanitizeString(this.playerId),
+                            uid: this.sanitizeString(this.uid),              // ✅ NEW: Save UID
                             isHost: this.isHost,
                             isGuest: this.isGuest,
                             gamePhase: this.gamePhase,
@@ -876,6 +882,18 @@
             const random = Math.random().toString(36).substring(2, 8);
             const extraRandom = Math.random().toString(36).substring(2, 6);
 
+            // ✅ NEW: Get UID from authService
+            let uid = null;
+            if (window.authService && typeof window.authService.getUid === 'function') {
+                uid = window.authService.getUid();
+            }
+
+            // Fallback if authService not available
+            if (!uid) {
+                this.log('⚠️ authService not available, generating playerId without UID', 'warning');
+                uid = 'anon_' + Math.random().toString(36).substring(2, 10);
+            }
+
             const safeName = this.sanitizeString(this.playerName || 'player')
                 .replace(/[^a-zA-Z0-9]/g, '')
                 .toLowerCase()
@@ -883,10 +901,15 @@
 
             const prefix = isHost ? 'host' : 'guest';
 
+            // ✅ NEW: Store UID separately
+            this.uid = uid;
             this.playerId = `${prefix}_${safeName}_${timestamp}_${random}${extraRandom}`;
+
             this.save(true); // Immediate save
 
             this.log(`✅ Player ID generated: ${this.playerId.substring(0, 20)}...`);
+            this.log(`   UID: ${this.uid.substring(0, 8)}...`, 'debug');
+
             return this.playerId;
         }
 
@@ -909,6 +932,34 @@
 
                 // ✅ FSK18 requires MANDATORY server-side validation
                 if (level === 'fsk18') {
+                    // ✅ NEW: Check if user is authenticated (not anonymous)
+                    if (window.authService && typeof window.authService.isAnonymous === 'function') {
+                        if (window.authService.isAnonymous()) {
+                            this.log('❌ FSK18 requires Google sign-in (anonymous user)', 'warning');
+
+                            // ✅ Cache denial
+                            this._sessionCache.fsk18Access = false;
+                            this._sessionCache.fsk18CheckedAt = Date.now();
+
+                            // ✅ Show user-friendly message
+                            if (window.NocapUtils && window.NocapUtils.showNotification) {
+                                window.NocapUtils.showNotification(
+                                    'FSK18-Inhalte erfordern eine Google-Anmeldung',
+                                    'warning',
+                                    3000
+                                );
+                            }
+
+                            return false;
+                        }
+                    } else {
+                        this.log('⚠️ authService not available, cannot check anonymous status', 'warning');
+                        // Fail closed if authService unavailable
+                        this._sessionCache.fsk18Access = false;
+                        this._sessionCache.fsk18CheckedAt = Date.now();
+                        return false;
+                    }
+
                     const now = Date.now();
                     const cached = this._sessionCache.fsk18Access;
                     const cacheAge = now - this._sessionCache.fsk18CheckedAt;
@@ -927,7 +978,6 @@
                     // ✅ MANDATORY: Validate via SettingsModule (server-side validation)
                     if (!window.SettingsModule ||
                         typeof window.SettingsModule.validateFSKAccess !== 'function') {
-
                         // ✅ SECURITY: Fail closed if SettingsModule unavailable
                         this.log(
                             '❌ SettingsModule not available - FSK18 access denied (fail closed)',
@@ -938,21 +988,11 @@
                         this._sessionCache.fsk18Access = false;
                         this._sessionCache.fsk18CheckedAt = now;
 
-                        // ✅ Show error to user
-                        if (window.SettingsModule &&
-                            typeof window.SettingsModule.showFSKError === 'function') {
-                            window.SettingsModule.showFSKError(
-                                'fsk18',
-                                'FSK18-Zugriff erfordert Altersverifikation. Bitte melde dich an und verifiziere dein Alter in den Einstellungen.'
-                            );
-                        }
-
                         return false;
                     }
 
                     // ✅ Validate via server
                     this.log('🔍 Validating FSK18 access via SettingsModule (server)...', 'debug');
-
                     const allowed = await window.SettingsModule.validateFSKAccess('fsk18');
 
                     // ✅ Update cache with server response
@@ -1343,6 +1383,7 @@
                 isGuest: this.isGuest,
                 gameId: this.gameId,
                 playerId: this.playerId ? this.playerId.substring(0, 20) + '...' : null,
+                uid: this.uid ? this.uid.substring(0, 8) + '...' : null,  // ✅ NEW: Include UID
                 categories: this.selectedCategories,
                 difficulty: this.difficulty,
                 alcoholMode: this.alcoholMode,
@@ -1543,8 +1584,7 @@
 
             // Store old values for event
             const oldState = this.getState();
-
-            // Clear all properties to defaults
+// Clear all properties to defaults
             this.deviceMode = null;
             this.selectedCategories = [];
             this.difficulty = null;
@@ -1554,6 +1594,7 @@
             this.playerName = '';
             this.gameId = null;
             this.playerId = null;
+            this.uid = null;                 // ✅ NEW: Reset UID
             this.isHost = false;
             this.isGuest = false;
             this.gamePhase = 'lobby';

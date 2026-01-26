@@ -4,18 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Refactor multiplayer lobby and category selection UI: redesign QR and share section for mobile, add settings modal, improve FSK auto-kick logic, and streamline difficulty/leaderboard wording">
+    <list default="true" id="68e7c85d-50bd-4848-a998-6338080071ce" name="Changes" comment="Integrate FSK18 server-side validation across all game flows: always unlock FSK0/FSK16, require server check for FSK18 in category/difficulty selection, gameplay, player setup, and results; update UI logic, error handling, and utils for robust age verification and access control">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/GameState.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/GameState.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/category-selection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/difficulty-selection.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-auth.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-auth.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/firebase-init.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/firebase-init.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/gameplay.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/join-game.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/join-game.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-category-selection.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-difficulty-selection.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-gameplay.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-lobby.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/multiplayer-results.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/multiplayer-results.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/player-setup.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/player-setup.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/js/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/settings.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/database.rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database.rules.json" afterDir="false" />
@@ -30,6 +29,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="GitHub Workflow" />
+        <option value="JavaScript File" />
       </list>
     </option>
   </component>
@@ -180,15 +180,8 @@
       <workItem from="1768555261474" duration="25029000" />
       <workItem from="1768812234952" duration="2784000" />
       <workItem from="1768834190520" duration="35661000" />
-      <workItem from="1769067668112" duration="16015000" />
-    </task>
-    <task id="LOCAL-00115" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
-      <option name="closed" value="true" />
-      <created>1768493613303</created>
-      <option name="number" value="00115" />
-      <option name="presentableId" value="LOCAL-00115" />
-      <option name="project" value="LOCAL" />
-      <updated>1768493613303</updated>
+      <workItem from="1769067668112" duration="27021000" />
+      <workItem from="1769442981263" duration="1605000" />
     </task>
     <task id="LOCAL-00116" summary="Add GitHub Actions workflow for automated Firebase Hosting and Functions deployment on main branch">
       <option name="closed" value="true" />
@@ -574,7 +567,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768999547644</updated>
     </task>
-    <option name="localTasksCounter" value="164" />
+    <task id="LOCAL-00164" summary="Integrate FSK18 server-side validation across all game flows: always unlock FSK0/FSK16, require server check for FSK18 in category/difficulty selection, gameplay, player setup, and results; update UI logic, error handling, and utils for robust age verification and access control">
+      <option name="closed" value="true" />
+      <created>1769162808328</created>
+      <option name="number" value="00164" />
+      <option name="presentableId" value="LOCAL-00164" />
+      <option name="project" value="LOCAL" />
+      <updated>1769162808330</updated>
+    </task>
+    <option name="localTasksCounter" value="165" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -595,7 +596,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="add JMStV age rating file (.well-known/age-de.xml) and allow deployment" />
     <MESSAGE value="Update hosting public directory to 'public' and adjust ignore patterns in firebase.json" />
     <MESSAGE value="Move firebase.json and .firebaserc to project root for improved configuration management" />
     <MESSAGE value="Move config and metadata files from public to project root for improved organization" />
@@ -620,7 +620,8 @@
     <MESSAGE value="Refactor category-selection.css and difficulty-selection.css for ultra-compact mobile-first layout: minimize padding, streamline card and button styles, optimize grid spacing, and enhance visual clarity and responsiveness across devices" />
     <MESSAGE value="Refactor multiplayer-category-selection.css and multiplayer-difficulty-selection.css for ultra-minimal mobile-first layout: hide non-essential multiplayer UI, streamline category and player name sections, unify card/button styles, and optimize grid and dialog responsiveness" />
     <MESSAGE value="Refactor multiplayer lobby and category selection UI: redesign QR and share section for mobile, add settings modal, improve FSK auto-kick logic, and streamline difficulty/leaderboard wording" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor multiplayer lobby and category selection UI: redesign QR and share section for mobile, add settings modal, improve FSK auto-kick logic, and streamline difficulty/leaderboard wording" />
+    <MESSAGE value="Integrate FSK18 server-side validation across all game flows: always unlock FSK0/FSK16, require server check for FSK18 in category/difficulty selection, gameplay, player setup, and results; update UI logic, error handling, and utils for robust age verification and access control" />
+    <option name="LAST_COMMIT_MESSAGE" value="Integrate FSK18 server-side validation across all game flows: always unlock FSK0/FSK16, require server check for FSK18 in category/difficulty selection, gameplay, player setup, and results; update UI logic, error handling, and utils for robust age verification and access control" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

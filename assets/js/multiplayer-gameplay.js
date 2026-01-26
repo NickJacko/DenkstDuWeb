@@ -1519,10 +1519,10 @@
             console.log(`🎲 Starting round ${currentQuestionNumber}`);
         }
 
-        // Generate question
-        currentQuestion = generateRandomQuestion();
+        // ✅ PHASE 3: Load question via Cloud Function (FSK18-safe)
+        currentQuestion = await loadQuestionFromCloudFunction();
 
-        // ✅ FSK18-SYSTEM: Verify age for FSK18 with server validation
+        // ✅ FSK18-SYSTEM: Double-check with client-side validation
         if (currentQuestion.category === 'fsk18') {
             const hasAccess = await verifyAgeForQuestion('fsk18');
 
@@ -1572,6 +1572,7 @@
             console.error('❌ Error starting round:', error);
         }
     }
+
     /**
      * ✅ P1 UI/UX: Get server timestamp for timer sync
      */
@@ -1586,47 +1587,95 @@
         }
     }
 
-    function generateRandomQuestion() {
-        const availableQuestions = [];
+    /**
+     * ✅ PHASE 3: Load questions from Cloud Function for FSK18
+     * FSK0 & FSK16 can still use local fallback
+     * @returns {Promise<Object>} Question object {text, category}
+     */
+    async function loadQuestionFromCloudFunction() {
+        try {
+            // Get selected categories
+            const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
+            const selectedCategories = Array.isArray(rawSelected)
+                ? rawSelected
+                : (rawSelected ? Object.values(rawSelected) : []);
 
-        const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
-        const selected = Array.isArray(rawSelected)
-            ? rawSelected
-            : (rawSelected ? Object.values(rawSelected) : []);
+            if (selectedCategories.length === 0) {
+                // No categories - use FSK0 fallback
+                return {
+                    text: "Ich habe schon mal... etwas Interessantes erlebt",
+                    category: "fsk0"
+                };
+            }
 
-        if (selected.length === 0) {
-            // Fallback to all categories
-            Object.keys(questionsDatabase).forEach(category => {
-                questionsDatabase[category].forEach(q => {
-                    availableQuestions.push({
-                        text: sanitizeText(q),
-                        category: category
-                    });
-                });
-            });
-        } else {
-            selected.forEach(category => {
-                if (questionsDatabase[category]) {
-                    questionsDatabase[category].forEach(q => {
-                        availableQuestions.push({
-                            text: sanitizeText(q),
-                            category: category
-                        });
-                    });
+            // ✅ FSK18-SYSTEM: Check if FSK18 is in selected categories
+            const hasFSK18 = selectedCategories.includes('fsk18');
+
+            // ✅ FSK0 & FSK16: Can use local fallback (fast)
+            if (!hasFSK18) {
+                if (MultiplayerGameplayModule.isDevelopment) {
+                    console.log('✅ No FSK18 - using local fallback questions');
                 }
+                return generateRandomQuestionLocal(selectedCategories);
+            }
+
+            // ✅ FSK18: Must load via Cloud Function (secure)
+            if (MultiplayerGameplayModule.isDevelopment) {
+                console.log('🔒 FSK18 detected - loading via Cloud Function');
+            }
+
+            // Get Firebase instances
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const functions = instances?.functions;
+
+            if (!functions) {
+                console.warn('⚠️ Firebase Functions not available - using fallback');
+                return generateRandomQuestionLocal(selectedCategories.filter(c => c !== 'fsk18'));
+            }
+
+            // Call Cloud Function
+            const getQuestionsForGame = functions.httpsCallable('getQuestionsForGame');
+            const gameId = MultiplayerGameplayModule.gameState.gameId || 'multiplayer-game';
+
+            const result = await getQuestionsForGame({
+                gameId: gameId,
+                categories: selectedCategories,
+                count: 50 // Request sufficient questions for variety
             });
-        }
 
-        if (availableQuestions.length === 0) {
-            return {
-                text: "Ich habe schon mal... etwas Interessantes erlebt",
-                category: "fsk0"
-            };
-        }
+            if (result?.data?.questions && result.data.questions.length > 0) {
+                // Pick random question from returned set
+                const questions = result.data.questions;
+                const randomIndex = Math.floor(Math.random() * questions.length);
+                const question = questions[randomIndex];
 
-        return availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+                if (MultiplayerGameplayModule.isDevelopment) {
+                    console.log(`✅ Loaded ${questions.length} questions via Cloud Function`);
+                }
+
+                // Extract question data
+                return {
+                    text: sanitizeText(question.text || question.question || 'Ich habe schon mal...'),
+                    category: question.category || 'fsk0'
+                };
+            }
+
+            // Fallback if Cloud Function returned no questions
+            console.warn('⚠️ Cloud Function returned no questions - using local fallback');
+            return generateRandomQuestionLocal(selectedCategories.filter(c => c !== 'fsk18'));
+
+        } catch (error) {
+            console.error('❌ Error loading questions from Cloud Function:', error);
+
+            // Fallback to local questions (without FSK18)
+            const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
+            const selectedCategories = Array.isArray(rawSelected)
+                ? rawSelected
+                : (rawSelected ? Object.values(rawSelected) : []);
+
+            return generateRandomQuestionLocal(selectedCategories.filter(c => c !== 'fsk18'));
+        }
     }
-
     /**
      * P0 FIX: Display question with textContent only
      * ✅ P1 UI/UX: Add progress indicator

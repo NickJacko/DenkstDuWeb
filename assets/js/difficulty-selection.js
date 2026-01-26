@@ -367,14 +367,43 @@
         try {
             const counts = {};
             const categories = DifficultySelectionModule.gameState.selectedCategories || [];
+            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+            const functions = instances?.functions;
 
             for (const category of categories) {
-                const snapshot = await database.ref(`questions/${category}`).once('value');
+                try {
+                    // ✅ FSK0, FSK16, special: Direct database access (allowed)
+                    if (category === 'fsk0' || category === 'fsk16' || category === 'special') {
+                        const snapshot = await database.ref(`questions/${category}`).once('value');
 
-                if (snapshot.exists()) {
-                    const q = snapshot.val();
-                    counts[category] = Array.isArray(q) ? q.length : (q ? Object.keys(q).length : 0);
-                } else {
+                        if (snapshot.exists()) {
+                            const q = snapshot.val();
+                            counts[category] = Array.isArray(q) ? q.length : (q ? Object.keys(q).length : 0);
+                        } else {
+                            counts[category] = FALLBACK_DIFFICULTY_LIMITS[category]?.medium || 50;
+                        }
+                    }
+                    // ✅ FSK18: Via Cloud Function (server-side validation)
+                    else if (category === 'fsk18') {
+                        if (functions) {
+                            const getQuestionCount = functions.httpsCallable('getQuestionCount');
+                            const result = await getQuestionCount({ category: 'fsk18' });
+
+                            if (result?.data?.hasAccess) {
+                                counts[category] = result.data.count || 0;
+                                Logger.debug(`✅ FSK18 count loaded via Cloud Function: ${result.data.count}`);
+                            } else {
+                                counts[category] = 0;
+                                Logger.debug('🔒 FSK18 access denied, count set to 0');
+                            }
+                        } else {
+                            // Fallback if Functions not available
+                            Logger.warn('⚠️ Firebase Functions not available, using fallback');
+                            counts[category] = FALLBACK_DIFFICULTY_LIMITS[category]?.medium || 50;
+                        }
+                    }
+                } catch (error) {
+                    Logger.warn(`⚠️ Failed to load count for ${category}:`, error);
                     counts[category] = FALLBACK_DIFFICULTY_LIMITS[category]?.medium || 50;
                 }
             }

@@ -259,27 +259,156 @@
     },
 
     "questions": {
-      ".read": "auth != null",
       ".write": false,
 
-      "$category": {
-        ".validate": "$category === 'fsk0' || $category === 'fsk16' || $category === 'fsk18' || $category === 'special'",
+      "fsk0": {
+        ".read": "auth != null",
+        "$questionId": {
+          ".validate": "newData.hasChildren(['text']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 300"
+        }
+      },
 
+      "fsk16": {
+        ".read": "auth != null",
+        "$questionId": {
+          ".validate": "newData.hasChildren(['text']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 300"
+        }
+      },
+
+      "fsk18": {
+        ".read": false,
+        "$questionId": {
+          ".validate": "newData.hasChildren(['text']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 300"
+        }
+      },
+
+      "special": {
+        ".read": "auth != null",
         "$questionId": {
           ".validate": "newData.hasChildren(['text']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 300"
         }
       }
     },
-
     "users": {
       ".indexOn": ["createdAt", "lastLogin"],
 
       "$userId": {
+        // ✅ Lesen: Nur eigener User
         ".read": "auth != null && auth.uid === $userId",
-        ".write": "auth != null && auth.uid === $userId",
+
+        // ❌ Schreiben: EXPLIZIT VERBOTEN auf Root-Level
+        ".write": false,
 
         ".validate": "newData.hasChildren(['createdAt'])",
 
+        // ========================================
+        // ✅ PROFILE - User darf schreiben
+        // ========================================
+        "profile": {
+          ".read": "auth != null && auth.uid === $userId",
+          ".write": "auth != null && auth.uid === $userId",
+
+          "displayName": {
+            ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 30"
+          },
+
+          "email": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/)"
+          },
+
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() > 0 && !data.exists()"
+          },
+
+          "lastLogin": {
+            ".validate": "newData.isNumber() && newData.val() > 0"
+          }
+        },
+
+        // ========================================
+        // ✅ ENTITLEMENTS - NUR SERVER DARF SCHREIBEN
+        // ========================================
+        "entitlements": {
+          ".read": "auth != null && auth.uid === $userId",
+          ".write": false,  // ❌ User darf NIE schreiben!
+
+          "fsk18": {
+            ".validate": "newData.hasChildren(['active', 'grantedAt', 'method'])",
+
+            "active": {
+              ".validate": "newData.isBoolean()"
+            },
+
+            "grantedAt": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+
+            "method": {
+              ".validate": "newData.isString() && (newData.val() === 'google' || newData.val() === 'purchase' || newData.val() === 'manual')"
+            },
+
+            "expiresAt": {
+              ".validate": "(newData.isNumber() && newData.val() > newData.parent().child('grantedAt').val()) || newData.val() === null"
+            },
+
+            "revokedAt": {
+              ".validate": "(newData.isNumber() && newData.val() > 0) || newData.val() === null"
+            }
+          },
+
+          "premium": {
+            ".validate": "newData.hasChildren(['active', 'grantedAt'])",
+
+            "active": {
+              ".validate": "newData.isBoolean()"
+            },
+
+            "grantedAt": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+
+            "expiresAt": {
+              ".validate": "(newData.isNumber() && newData.val() > newData.parent().child('grantedAt').val()) || newData.val() === null"
+            }
+          }
+        },
+
+        // ========================================
+        // ✅ PREFERENCES - User darf schreiben
+        // ========================================
+        "preferences": {
+          ".read": "auth != null && auth.uid === $userId",
+          ".write": "auth != null && auth.uid === $userId",
+
+          "notifications": {
+            ".validate": "newData.isBoolean()"
+          },
+
+          "theme": {
+            ".validate": "newData.isString() && (newData.val() === 'light' || newData.val() === 'dark' || newData.val() === 'auto')"
+          }
+        },
+
+        // ========================================
+        // ✅ SAVED GAMES - User darf schreiben
+        // ========================================
+        "saved_games": {
+          ".read": "auth != null && auth.uid === $userId",
+          ".write": "auth != null && auth.uid === $userId",
+          ".indexOn": ["savedAt", "deviceMode"],
+
+          "$gameId": {
+            ".validate": "newData.hasChildren(['players', 'timestamp', 'deviceMode']) && newData.child('players').hasChildren() && newData.child('timestamp').isNumber() && newData.child('timestamp').val() > 0 && newData.child('deviceMode').isString() && (newData.child('deviceMode').val() === 'single' || newData.child('deviceMode').val() === 'multi')",
+
+            "savedAt": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            }
+          }
+        },
+
+        // ========================================
+        // ⚠️ DEPRECATED - Für Migration beibehalten
+        // ========================================
         "isPremium": {
           ".write": false,
           ".validate": "newData.isBoolean()"
@@ -295,46 +424,9 @@
           ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 16 || newData.val() === 18)"
         },
 
-        "createdAt": {
-          ".validate": "newData.isNumber() && newData.val() > 0 && !data.exists()"
-        },
-
-        "lastLogin": {
-          ".validate": "newData.isNumber() && newData.val() > 0"
-        },
-
-        "email": {
-          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/)"
-        },
-
-        "displayName": {
-          ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 30"
-        },
-
         "pendingDeletion": {
+          ".write": false,
           ".validate": "newData.isBoolean()"
-        },
-
-        "saved_games": {
-          ".indexOn": ["savedAt", "deviceMode"],
-
-          "$gameId": {
-            ".validate": "newData.hasChildren(['players', 'timestamp', 'deviceMode']) && newData.child('players').hasChildren() && newData.child('timestamp').isNumber() && newData.child('timestamp').val() > 0 && newData.child('deviceMode').isString() && (newData.child('deviceMode').val() === 'single' || newData.child('deviceMode').val() === 'multi')",
-
-            "savedAt": {
-              ".validate": "newData.isNumber() && newData.val() > 0"
-            }
-          }
-        },
-
-        "preferences": {
-          "notifications": {
-            ".validate": "newData.isBoolean()"
-          },
-
-          "theme": {
-            ".validate": "newData.isString() && (newData.val() === 'light' || newData.val() === 'dark' || newData.val() === 'auto')"
-          }
         }
       }
     },

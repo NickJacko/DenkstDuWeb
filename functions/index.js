@@ -477,7 +477,318 @@ exports.setAgeVerification = functions
             throw new functions.https.HttpsError("internal", "Fehler bei der Altersverifikation");
         }
     });
+/**
+ * ✅ P0 SECURITY: Grant FSK18 access via Custom Claims
+ * Only for Google-signed-in users
+ *
+ * Trigger: HTTPS Callable
+ * Auth: Required (non-anonymous)
+ */
+exports.grantFSK18Access = functions
+    .region("europe-west1")
+    .runWith({ memory: "256MB", timeoutSeconds: 10 })
+    .https.onCall(async (data, context) => {
+        const functionName = "grantFSK18Access";
 
+        requireAuth(context);
+
+        const uid = context.auth.uid;
+
+        try {
+            // ✅ Check if user is anonymous
+            const userRecord = await admin.auth().getUser(uid);
+
+            if (!userRecord.providerData || userRecord.providerData.length === 0) {
+                log.security(functionName, "Anonymous user attempted FSK18 access", { uid });
+                throw new functions.https.HttpsError(
+                    "failed-precondition",
+                    "FSK18 erfordert Google-Anmeldung (anonyme Benutzer nicht erlaubt)"
+                );
+            }
+
+            // ✅ Check if user signed in with Google
+            const hasGoogleProvider = userRecord.providerData.some(
+                provider => provider.providerId === "google.com"
+            );
+
+            if (!hasGoogleProvider) {
+                log.security(functionName, "Non-Google user attempted FSK18 access", { uid });
+                throw new functions.https.HttpsError(
+                    "failed-precondition",
+                    "FSK18 erfordert Google-Anmeldung"
+                );
+            }
+
+            // ✅ Set Custom Claim
+            const existingClaims = userRecord.customClaims || {};
+            await admin.auth().setCustomUserClaims(uid, {
+                ...existingClaims,
+                fsk18: true,
+                fsk18GrantedAt: Date.now()
+            });
+
+            // ✅ Write to Database (audit trail)
+            const db = admin.database();
+            await db.ref(`users/${uid}/entitlements/fsk18`).set({
+                active: true,
+                grantedAt: admin.database.ServerValue.TIMESTAMP,
+                method: "google",
+                expiresAt: null
+            });
+
+            log.info(functionName, "FSK18 granted", { uid, method: "google" });
+
+            return {
+                success: true,
+                message: "FSK18-Zugriff gewährt"
+            };
+
+        } catch (error) {
+            log.error(functionName, "Failed to grant FSK18", error, { uid });
+
+            if (error instanceof functions.https.HttpsError) {
+                throw error;
+            }
+
+            throw new functions.https.HttpsError(
+                "internal",
+                "Fehler beim Gewähren von FSK18-Zugriff"
+            );
+        }
+    });
+
+/**
+ * ✅ P0 SECURITY: Validate FSK18 access via Custom Claims
+ *
+ * Trigger: HTTPS Callable
+ * Auth: Required
+ *
+ * @returns {Object} { hasAccess: true/false, method: string, grantedAt: number }
+ */
+exports.validateFSK18AccessViaCustomClaims = functions
+    .region("europe-west1")
+    .runWith({ memory: "256MB", timeoutSeconds: 10 })
+    .https.onCall(async (data, context) => {
+        const functionName = "validateFSK18AccessViaCustomClaims";
+
+        requireAuth(context);
+
+        const uid = context.auth.uid;
+
+        try {
+            // ✅ Get Custom Claims from token (fast path)
+            const token = context.auth.token || {};
+
+            if (token.fsk18 === true) {
+                log.info(functionName, "FSK18 validated via token", { uid });
+                return {
+                    hasAccess: true,
+                    method: "token",
+                    grantedAt: token.fsk18GrantedAt || null
+                };
+            }
+
+            // ✅ Fallback: Get fresh claims from server
+            const userRecord = await admin.auth().getUser(uid);
+            const customClaims = userRecord.customClaims || {};
+
+            if (customClaims.fsk18 === true) {
+                log.info(functionName, "FSK18 validated via server claims", { uid });
+                return {
+                    hasAccess: true,
+                    method: "server",
+                    grantedAt: customClaims.fsk18GrantedAt || null
+                };
+            }
+
+            // ✅ Check database entitlement (final fallback)
+            const db = admin.database();
+            const entitlementSnapshot = await db
+                .ref(`users/${uid}/entitlements/fsk18`)
+                .once("value");
+
+            const entitlement = entitlementSnapshot.val();
+
+            if (entitlement && entitlement.active === true) {
+                // ✅ Entitlement exists but claim missing - sync claims
+                log.warn(functionName, "FSK18 entitlement exists but claim missing - syncing", { uid });
+
+                await admin.auth().setCustomUserClaims(uid, {
+                    ...customClaims,
+                    fsk18: true,
+                    fsk18GrantedAt: entitlement.grantedAt || Date.now()
+                });
+
+                return {
+                    hasAccess: true,
+                    method: "database",
+                    grantedAt: entitlement.grantedAt
+                };
+            }
+
+            // ✅ No access
+            log.info(functionName, "FSK18 access denied (no entitlement)", { uid });
+
+            return {
+                hasAccess: false,
+                method: null,
+                grantedAt: null
+            };
+
+        } catch (error) {
+            log.error(functionName, "FSK18 validation failed", error, { uid });
+
+            throw new functions.https.HttpsError(
+                "internal",
+                "Fehler bei der FSK18-Validierung"
+            );
+        }
+    });
+
+/**
+ * ✅ P0 SECURITY: Auto-grant FSK18 for Google users on creation
+ *
+ * Trigger: onCreate (Firebase Auth)
+ */
+exports.autoGrantFSK18OnGoogleSignIn = functions
+    .region("europe-west1")
+    .auth.user()
+    .onCreate(async (user) => {
+        const functionName = "autoGrantFSK18OnGoogleSignIn";
+        const uid = user.uid;
+
+        try {
+            // ✅ Skip anonymous users
+            if (!user.providerData || user.providerData.length === 0) {
+                log.info(functionName, "Skipping FSK18 for anonymous user", { uid });
+                return null;
+            }
+
+            // ✅ Check if user signed in with Google
+            const hasGoogleProvider = user.providerData.some(
+                provider => provider.providerId === "google.com"
+            );
+
+            if (!hasGoogleProvider) {
+                log.info(functionName, "User did not sign in with Google, skipping FSK18", { uid });
+                return null;
+            }
+
+            // ✅ Grant FSK18 automatically
+            await admin.auth().setCustomUserClaims(uid, {
+                fsk18: true,
+                fsk18GrantedAt: Date.now()
+            });
+
+            // ✅ Write to Database
+            const db = admin.database();
+            await db.ref(`users/${uid}/entitlements/fsk18`).set({
+                active: true,
+                grantedAt: admin.database.ServerValue.TIMESTAMP,
+                method: "google",
+                expiresAt: null
+            });
+
+            log.info(functionName, "Auto-granted FSK18 to Google user", { uid });
+
+            return null;
+
+        } catch (error) {
+            log.error(functionName, "Failed to auto-grant FSK18", error, { uid });
+            // Non-fatal: User can request FSK18 manually
+            return null;
+        }
+    });
+
+/**
+ * ✅ P0 SECURITY: Revoke FSK18 access
+ *
+ * Trigger: HTTPS Callable
+ * Auth: Required (self-revoke only, or admin)
+ *
+ * @param {Object} data - { targetUid: string } (optional, defaults to self)
+ */
+exports.revokeFSK18Access = functions
+    .region("europe-west1")
+    .runWith({ memory: "256MB", timeoutSeconds: 10 })
+    .https.onCall(async (data, context) => {
+        const functionName = "revokeFSK18Access";
+
+        requireAuth(context);
+
+        const callerUid = context.auth.uid;
+        const targetUid = data?.targetUid || callerUid;
+
+        // ✅ Only allow self-revoke (or admin with custom claim)
+        if (targetUid !== callerUid) {
+            const token = context.auth.token || {};
+            if (token.admin !== true) {
+                throw new functions.https.HttpsError(
+                    "permission-denied",
+                    "Nur Admins können andere Benutzer einschränken"
+                );
+            }
+        }
+
+        try {
+            // ✅ Remove Custom Claim
+            const userRecord = await admin.auth().getUser(targetUid);
+            const existingClaims = userRecord.customClaims || {};
+
+            delete existingClaims.fsk18;
+            delete existingClaims.fsk18GrantedAt;
+
+            await admin.auth().setCustomUserClaims(targetUid, existingClaims);
+
+            // ✅ Update Database
+            const db = admin.database();
+            await db.ref(`users/${targetUid}/entitlements/fsk18`).update({
+                active: false,
+                revokedAt: admin.database.ServerValue.TIMESTAMP
+            });
+
+            log.info(functionName, "FSK18 revoked", { callerUid, targetUid });
+
+            return {
+                success: true,
+                message: "FSK18-Zugriff widerrufen"
+            };
+
+        } catch (error) {
+            log.error(functionName, "Failed to revoke FSK18", error, { callerUid, targetUid });
+
+            throw new functions.https.HttpsError(
+                "internal",
+                "Fehler beim Widerrufen von FSK18-Zugriff"
+            );
+        }
+    });
+// --------------------
+// ✅ FSK18 CONTENT SECURITY (Phase 3)
+// --------------------
+
+// ✅ FSK18 Content Security (Phase 3) - Lazy Load
+let getQuestionCountModule, getQuestionsForGameModule;
+
+try {
+    getQuestionCountModule = require("./getQuestionCount");
+    if (getQuestionCountModule?.getQuestionCount) {
+        exports.getQuestionCount = getQuestionCountModule.getQuestionCount;
+        log.info("init", "getQuestionCount loaded");
+    }
+} catch (error) {
+    log.warn("init", "getQuestionCount module not found", { error: error.message });
+}
+
+try {
+    getQuestionsForGameModule = require("./getQuestionsForGame");
+    if (getQuestionsForGameModule?.getQuestionsForGame) {
+        exports.getQuestionsForGame = getQuestionsForGameModule.getQuestionsForGame;
+        log.info("init", "getQuestionsForGame loaded");
+    }
+} catch (error) {
+    log.warn("init", "getQuestionsForGame module not found", { error: error.message });
+}
 /**
  * ✅ P0 SECURITY: Check premium status (Gen1 Callable)
  * Returns { hasPremium: boolean }
@@ -882,87 +1193,79 @@ exports.joinGameSecure = functions
         log.info(functionName, "Player joined", { uid, gameId, gameCode });
         return { gameId };
     });
+// --------------------
+// LAZY-LOAD MODULES → DIREKTES LADEN
+// --------------------
 
-// --------------------
-// Lazy-load (prevents deploy discovery timeout)
-// --------------------
+// ✅ FIX: Direct loading instead of lazy (prevents deployment timeout)
 let accountDeletion, realtimeSecurity;
 
-// Account Deletion Functions
-exports.scheduleAccountDeletion = functions
-    .region("europe-west1")
-    .https.onCall(async (data, context) => {
-        if (!accountDeletion) {
-            accountDeletion = require("./account-deletion");
-        }
-        return accountDeletion.scheduleAccountDeletion(data, context);
-    });
+try {
+    accountDeletion = require("./account-deletion");
+    log.info("init", "account-deletion module loaded");
+} catch (error) {
+    log.warn("init", "account-deletion module not found (optional)", { error: error.message });
+}
 
-exports.cancelAccountDeletion = functions
-    .region("europe-west1")
-    .https.onCall(async (data, context) => {
-        if (!accountDeletion) {
-            accountDeletion = require("./account-deletion");
-        }
-        return accountDeletion.cancelAccountDeletion(data, context);
-    });
+try {
+    realtimeSecurity = require("./realtime-security");
+    log.info("init", "realtime-security module loaded");
+} catch (error) {
+    log.warn("init", "realtime-security module not found (optional)", { error: error.message });
+}
 
-exports.processScheduledDeletions = functions
-    .region("europe-west1")
-    .runWith({ memory: "512MB", timeoutSeconds: 120 })
-    .pubsub.schedule("0 3 * * *") // 3 AM täglich
-    .onRun(async () => {
-        if (!accountDeletion) {
-            accountDeletion = require("./account-deletion");
-        }
-        return accountDeletion.processScheduledDeletions();
-    });
+// Account Deletion Functions (if module exists)
+if (accountDeletion) {
+    exports.scheduleAccountDeletion = functions
+        .region("europe-west1")
+        .https.onCall(async (data, context) => {
+            return accountDeletion.scheduleAccountDeletion(data, context);
+        });
 
-// Realtime Security Functions
-exports.validateGameUpdate = functions
-    .region("europe-west1")
-    .database.ref("games/{gameId}")
-    .onUpdate(async (change, context) => {
-        if (!realtimeSecurity) {
-            realtimeSecurity = require("./realtime-security");
-        }
-        return realtimeSecurity.validateGameUpdate(change, context);
-    });
+    exports.cancelAccountDeletion = functions
+        .region("europe-west1")
+        .https.onCall(async (data, context) => {
+            return accountDeletion.cancelAccountDeletion(data, context);
+        });
 
-exports.detectRapidUpdates = functions
-    .region("europe-west1")
-    .database.ref("games/{gameId}")
-    .onWrite(async (snap, context) => {
-        if (!realtimeSecurity) {
-            realtimeSecurity = require("./realtime-security");
-        }
-        return realtimeSecurity.detectRapidUpdates(snap, context);
-    });
+    exports.processScheduledDeletions = functions
+        .region("europe-west1")
+        .runWith({ memory: "512MB", timeoutSeconds: 120 })
+        .pubsub.schedule("0 3 * * *")
+        .onRun(async () => {
+            return accountDeletion.processScheduledDeletions();
+        });
+}
 
-exports.monitorGameDeletion = functions
-    .region("europe-west1")
-    .database.ref("games/{gameId}")
-    .onDelete(async (snap, context) => {
-        if (!realtimeSecurity) {
-            realtimeSecurity = require("./realtime-security");
-        }
-        return realtimeSecurity.monitorGameDeletion(snap, context);
-    });
+// Realtime Security Functions (if module exists)
+if (realtimeSecurity) {
+    exports.validateGameUpdate = functions
+        .region("europe-west1")
+        .database.ref("games/{gameId}")
+        .onUpdate(async (change, context) => {
+            return realtimeSecurity.validateGameUpdate(change, context);
+        });
 
-exports.cleanupOldViolations = functions
-    .region("europe-west1")
-    .runWith({ memory: "256MB", timeoutSeconds: 60 })
-    .pubsub.schedule("0 4 * * *") // 4 AM täglich
-    .onRun(async () => {
-        if (!realtimeSecurity) {
-            realtimeSecurity = require("./realtime-security");
-        }
-        return realtimeSecurity.cleanupOldViolations();
-    });
+    exports.detectRapidUpdates = functions
+        .region("europe-west1")
+        .database.ref("games/{gameId}")
+        .onWrite(async (snap, context) => {
+            return realtimeSecurity.detectRapidUpdates(snap, context);
+        });
 
-/**
- * ✅ Simple health-check endpoint (Gen1)
- */
-exports.ping = functions.https.onRequest((req, res) => {
-    res.status(200).send("ok");
-});
+    exports.monitorGameDeletion = functions
+        .region("europe-west1")
+        .database.ref("games/{gameId}")
+        .onDelete(async (snap, context) => {
+            return realtimeSecurity.monitorGameDeletion(snap, context);
+        });
+
+    exports.cleanupOldViolations = functions
+        .region("europe-west1")
+        .runWith({memory: "256MB", timeoutSeconds: 60})
+        .pubsub.schedule("0 4 * * *")
+        .onRun(async () => {
+            return realtimeSecurity.cleanupOldViolations();
+        });
+
+}
