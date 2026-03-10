@@ -1014,8 +1014,9 @@
 
                 // Store age level in player data for host validation
                 try {
-                    await firebase.database()
-                        .ref(`games/${gameId}/players/${uid}/ageLevel`)
+                    const _db = window.FirebaseConfig?.getFirebaseInstances?.()?.database;
+                    if (!_db?.ref) throw new Error('database not available');
+                    await _db.ref(`games/${gameId}/players/${uid}/ageLevel`)
                         .set(userAgeLevel);
 
                     Logger.debug('✅ Player age level stored:', userAgeLevel);
@@ -1028,10 +1029,8 @@
             JoinGameModule.gameState.gameId = gameId;
             JoinGameModule.gameState.gameCode = gameCode;
             JoinGameModule.gameState.playerId =
-                (JoinGameModule.firebaseService?.getCurrentUser?.()?.uid) ||
-                (firebase?.auth?.()?.currentUser?.uid) ||
+                JoinGameModule.firebaseService?.getCurrentUser?.()?.uid ||
                 JoinGameModule.gameState.playerId;
-
             JoinGameModule.gameState.authUid = JoinGameModule.gameState.playerId;
             JoinGameModule.gameState.setPlayerName(playerName);
 

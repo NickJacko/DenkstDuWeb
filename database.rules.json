@@ -293,17 +293,13 @@
       ".indexOn": ["createdAt", "lastLogin"],
 
       "$userId": {
-        // ✅ Lesen: Nur eigener User
+
         ".read": "auth != null && auth.uid === $userId",
 
-        // ❌ Schreiben: EXPLIZIT VERBOTEN auf Root-Level
         ".write": false,
 
         ".validate": "newData.hasChildren(['createdAt'])",
 
-        // ========================================
-        // ✅ PROFILE - User darf schreiben
-        // ========================================
         "profile": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -325,12 +321,9 @@
           }
         },
 
-        // ========================================
-        // ✅ ENTITLEMENTS - NUR SERVER DARF SCHREIBEN
-        // ========================================
         "entitlements": {
           ".read": "auth != null && auth.uid === $userId",
-          ".write": false,  // ❌ User darf NIE schreiben!
+          ".write": false,
 
           "fsk18": {
             ".validate": "newData.hasChildren(['active', 'grantedAt', 'method'])",
@@ -373,9 +366,6 @@
           }
         },
 
-        // ========================================
-        // ✅ PREFERENCES - User darf schreiben
-        // ========================================
         "preferences": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -389,9 +379,6 @@
           }
         },
 
-        // ========================================
-        // ✅ SAVED GAMES - User darf schreiben
-        // ========================================
         "saved_games": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -406,9 +393,6 @@
           }
         },
 
-        // ========================================
-        // ⚠️ DEPRECATED - Für Migration beibehalten
-        // ========================================
         "isPremium": {
           ".write": false,
           ".validate": "newData.isBoolean()"

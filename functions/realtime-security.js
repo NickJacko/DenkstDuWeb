@@ -12,7 +12,7 @@ if (admin.apps.length === 0) admin.initializeApp();
 const CONFIG = {
   MAX_VIOLATIONS_BEFORE_BAN: 3,
   VIOLATION_WINDOW_HOURS: 24,
-  ADMIN_EMAIL: "admin@denkstduweb.app",
+  ADMIN_EMAIL: "admin@no-cap.app",
   SLACK_WEBHOOK: process.env.SLACK_WEBHOOK_URL || null,
 
   MAX_SCORE_PER_ROUND: 100,
@@ -113,10 +113,10 @@ async function validateFSKCategory(gameData, userId) {
   if (restricted.length === 0) return { valid: true };
 
   try {
-    const userSnap = await admin.database().ref(`users/${userId}`).once("value");
-    const userData = userSnap.val() || {};
-    const ageVerified = userData.ageVerified === true;
-    const ageLevel = Number(userData.ageLevel || 0);
+    const userRecord = await admin.auth().getUser(userId);
+    const claims = userRecord.customClaims || {};
+    const ageVerified = claims.fsk18 === true || claims.fsk16 === true;
+    const ageLevel = claims.fsk18 ? 18 : claims.fsk16 ? 16 : 0;
 
     for (const category of restricted) {
       if (!ageVerified) return { valid: false, reason: "age_not_verified", details: "Age verification required" };
@@ -151,7 +151,7 @@ async function recordViolation(gameId, userId, violation) {
 async function queueAdminEmail(data) {
   const emailData = {
     to: CONFIG.ADMIN_EMAIL,
-    from: "security@denkstduweb.app",
+    from: "security@no-cap.app",
     subject: `🚨 Security Alert: ${data.type}`,
     html: `
 <h2>🚨 Security Alert</h2>

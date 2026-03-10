@@ -631,7 +631,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.7);
-    z-index: 9999;
+    z-index: 9000;
     align-items: center;
     justify-content: center;
 }
@@ -889,4 +889,16 @@
     .mode-btn {
         border: 2px solid white;
     }
+
+    /* ============================================================================
+   AGE GATE MODAL (Hard-Block)
+   ============================================================================ */
+#age-gate-modal #age-gate-confirm-btn:not(:disabled):active {
+    transform: scale(0.98);
+    background: #5568d3 !important;
+}
+
+#age-gate-modal #age-gate-confirm-btn:not(:disabled) {
+    opacity: 1 !important;
+}
 }

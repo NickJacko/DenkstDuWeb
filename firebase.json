@@ -44,14 +44,6 @@
         "destination": "/privacy.html"
       },
       {
-        "source": "/settings",
-        "destination": "/settings.html"
-      },
-      {
-        "source": "/results",
-        "destination": "/results.html"
-      },
-      {
         "source": "/404",
         "destination": "/404.html"
       },
@@ -168,7 +160,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=31536000, immutable"
+            "value": "public, max-age=3600, must-revalidate"
           },
           {
             "key": "Content-Type",
@@ -233,7 +225,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://firebase.googleapis.com https://www.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://firebasestorage.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://europe-west1-denkstduwebsite.cloudfunctions.net wss://*.firebaseio.com https://*.firebaseapp.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+            "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com https://firebase.googleapis.com https://www.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://firebasestorage.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://europe-west1-denkstduwebsite.cloudfunctions.net wss://*.firebaseio.com https://*.firebaseapp.com https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
           },
           {
             "key": "Set-Cookie",
@@ -278,7 +270,7 @@
           },
           {
             "key": "Cross-Origin-Embedder-Policy",
-            "value": "require-corp"
+            "value": "unsafe-none"
           }
         ]
       }

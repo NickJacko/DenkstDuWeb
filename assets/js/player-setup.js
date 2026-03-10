@@ -138,21 +138,19 @@
             attempts++;
         }
 
-        console.warn('⚠️ Firebase initialization timeout');
+        Logger.warn('⚠️ Firebase initialization timeout');
         return false;
     }
 
     async function initialize() {
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('👥 Initializing player setup...');
-        }
+        Logger.debug('👥 Initializing player setup...');
 
         showLoading();
 
         try {
             // Check DOMPurify
             if (typeof DOMPurify === 'undefined') {
-                console.error('❌ CRITICAL: DOMPurify not loaded!');
+                Logger.error('❌ CRITICAL: DOMPurify not loaded!');
                 alert('Sicherheitsfehler: Die Anwendung kann nicht gestartet werden.');
                 hideLoading();
                 return;
@@ -160,7 +158,7 @@
 
             // Check for required dependencies
             if (typeof window.GameState === 'undefined') {
-                console.error('❌ PlayerSetupModule.gameState not found');
+                Logger.error('❌ GameState not found');
                 showNotification('Fehler beim Laden. Bitte Seite neu laden.', 'error');
                 hideLoading();
                 return;
@@ -209,13 +207,10 @@
 
             hideLoading();
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log('✅ Player setup initialized');
-                console.log('Game State:', PlayerSetupModule.gameState.getDebugInfo());
-            }
+            Logger.debug('✅ Player setup initialized');
 
         } catch (error) {
-            console.error('❌ Initialization error:', error);
+            Logger.error('❌ Initialization error:', error);
             showNotification('Fehler beim Laden', 'error');
             hideLoading();
         }
@@ -232,42 +227,41 @@
         const deviceMode = PlayerSetupModule.gameState.deviceMode;
 
         if (!deviceMode) {
-            console.error('❌ No device mode set');
+            Logger.error('❌ No device mode set');
             showNotification('Spielmodus nicht gesetzt', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
         if (deviceMode !== 'single') {
-            console.error(`❌ Wrong device mode: ${deviceMode} (expected "single")`);
+            Logger.error(`❌ Wrong device mode: ${deviceMode} (expected "single")`);
             showNotification('Nicht im Einzelgerät-Modus', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('✅ Device mode validated: single');
-        }
+        Logger.debug('✅ Device mode validated: single');
 
         return true;
     }
 
     function validatePrerequisites() {
-        if (!PlayerSetupModule.gameState.checkValidity()) {
+        if (!PlayerSetupModule.gameState.deviceMode ||
+            !PlayerSetupModule.gameState.selectedCategories?.length) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
         }
 
         if (!PlayerSetupModule.gameState.selectedCategories || PlayerSetupModule.gameState.selectedCategories.length === 0) {
-            console.error('❌ No categories selected');
+            Logger.error('❌ No categories selected');
             showNotification('Keine Kategorien ausgewählt!', 'error');
             setTimeout(() => window.location.href = 'category-selection.html', 2000);
             return false;
         }
 
         if (!PlayerSetupModule.gameState.difficulty) {
-            console.error('❌ No difficulty selected');
+            Logger.error('❌ No difficulty selected');
             showNotification('Kein Schwierigkeitsgrad ausgewählt!', 'error');
             setTimeout(() => window.location.href = 'difficulty-selection.html', 2000);
             return false;
@@ -286,9 +280,10 @@
 
             if (PlayerSetupModule.alcoholMode) {
                 // ✅ Settings-only: same read path as settings.js
-                const ageLevel = window.NocapUtils
-                    ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
-                    : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+                const ageLevel = parseInt(
+                    window.NocapUtils?.getLocalStorage?.('nocap_age_level') ??
+                    localStorage.getItem('nocap_age_level') ?? '0'
+                ) || 0;
 
                 if (ageLevel < 18) {
                     PlayerSetupModule.alcoholMode = false;
@@ -303,11 +298,9 @@
                 difficultyIcon.textContent = PlayerSetupModule.alcoholMode ? '🍺' : '💧';
             }
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log(`🍺 Alcohol mode: ${PlayerSetupModule.alcoholMode}`);
-            }
+            Logger.debug(`🍺 Alcohol mode: ${PlayerSetupModule.alcoholMode}`);
         } catch (error) {
-            console.error('Error checking alcohol mode:', error);
+            Logger.error('Error checking alcohol mode:', error);
             PlayerSetupModule.alcoholMode = false;
 
             const difficultyIcon = document.getElementById('difficulty-icon');
@@ -324,9 +317,7 @@
 
     async function loadQuestionCounts() {
         try {
-            if (PlayerSetupModule.isDevelopment) {
-                console.log('📊 Loading question counts...');
-            }
+            Logger.debug('📊 Loading question counts...');
             const instances = window.FirebaseConfig?.getFirebaseInstances?.();
             const database = instances?.database;
             const functions = instances?.functions;
@@ -374,7 +365,7 @@
                         }
                     }
                 } catch (error) {
-                    console.warn(`Error loading ${category}:`, error);
+                    Logger.warn(`⚠️ Error loading count for ${category}:`, error);
                     PlayerSetupModule.questionCounts[category] = getFallbackCount(category);
                 }
             }
@@ -382,12 +373,10 @@
             hideOfflineMode();
             updateTotalQuestions();
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log('✅ Question counts loaded:', PlayerSetupModule.questionCounts);
-            }
+            Logger.debug('✅ Question counts loaded:', PlayerSetupModule.questionCounts);
 
         } catch (error) {
-            console.error('Error loading question counts:', error);
+            Logger.error('❌ Error loading question counts:', error);
             showOfflineMode();
             await loadLocalBackup();
         }
@@ -397,27 +386,9 @@
      * ✅ P1 STABILITY: Load local backup when offline
      */
     async function loadLocalBackup() {
-        try {
-            const response = await fetch('/assets/data/questions-backup.json');
-            if (response.ok) {
-                const backup = await response.json();
-                if (backup.counts) {
-                    Object.assign(PlayerSetupModule.state.questionCounts, backup.counts);
-                } else {
-                    useFallbackCounts();
-                }
-                updateTotalQuestions();
-
-                if (PlayerSetupModule.isDevelopment) {
-                    console.log('✅ Loaded local backup:', PlayerSetupModule.questionCounts);
-                }
-            } else {
-                throw new Error('Backup file not found');
-            }
-        } catch (error) {
-            console.warn('⚠️ Could not load backup, using fallback:', error);
-            useFallbackCounts();
-        }
+        // Kein lokales Backup vorhanden – direkt Fallback verwenden
+        Logger.warn('⚠️ Offline-Modus: Nutze Fallback-Fragenzahlen');
+        useFallbackCounts();
     }
 
     /**
@@ -487,8 +458,8 @@
                 .replace(/[^\w\säöüÄÖÜß\-]/g, '') // Only alphanumeric, spaces, umlauts, hyphens
                 .trim();
 
-            // Limit to 15 characters
-            return sanitized.substring(0, 15);
+            // Limit to 20 characters (aligned with GameState + DB rules)
+            return sanitized.substring(0, 20);
         }
 
         // Fallback if NocapUtils not available
@@ -499,7 +470,7 @@
             .replace(/[<>'"]/g, '')                // Remove dangerous chars
             .replace(/[^\w\säöüÄÖÜß\-]/g, '')     // Only safe chars
             .trim()
-            .substring(0, 15);
+            .substring(0, 20);
 
         return sanitized;
     };
@@ -516,9 +487,7 @@
         const savedPlayers = PlayerSetupModule.gameState.players || PlayerSetupModule.gameState.get?.('players');
 
         if (savedPlayers && Array.isArray(savedPlayers) && savedPlayers.length > 0) {
-            if (PlayerSetupModule.isDevelopment) {
-                console.log('🔄 Loading previous players from GameState:', savedPlayers);
-            }
+            Logger.debug('🔄 Loading previous players from GameState:', savedPlayers);
 
             const inputs = document.querySelectorAll('.player-input');
 
@@ -581,9 +550,7 @@
             PlayerSetupModule.gameState.save();
         }
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('📝 Players updated in GameState:', players);
-        }
+        Logger.debug('📝 Players updated in GameState:', players);
     }
 
     function addPlayerInput() {
@@ -654,9 +621,7 @@
 
         input.focus();
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log(`➕ Added player input #${newIndex + 1}`);
-        }
+        Logger.debug(`➕ Added player input #${newIndex + 1}`);
     }
 
     function removePlayerInput(index) {
@@ -726,9 +691,7 @@
         updateUI();
         updateAddButton();
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log(`➖ Removed player input #${index + 1}`);
-        }
+        Logger.debug(`➖ Removed player input #${index + 1}`);
     }
 
     // ===========================
@@ -747,9 +710,7 @@
             PlayerSetupModule.undoStack.shift();
         }
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('📚 Undo stack:', PlayerSetupModule.undoStack);
-        }
+        Logger.debug('📚 Undo stack:', PlayerSetupModule.undoStack);
     }
 
     /**
@@ -785,9 +746,7 @@
 
             showNotification('Rückgängig gemacht', 'success', 1500);
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log(`↩️ Undid removal of "${lastAction.playerName}"`);
-            }
+            Logger.debug(`↩️ Undid removal of "${lastAction.playerName}"`);
         }
     }
 
@@ -861,11 +820,9 @@
 
             showNotification('✅ Alle Spielerdaten gelöscht', 'success', 3000);
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log('🗑️ All player data deleted');
-            }
+            Logger.debug('🗑️ All player data deleted');
         } catch (error) {
-            console.error('Error deleting player data:', error);
+            Logger.error('Error deleting player data:', error);
             showNotification('Fehler beim Löschen der Daten', 'error');
         }
     }
@@ -1005,9 +962,7 @@
             players.splice(index - 1, 0, movedPlayer);
             moved = true;
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log(`⬆️ Moved player ${index + 1} up`);
-            }
+            Logger.debug(`⬆️ Moved player ${index + 1} up`);
         } else if (e.key === 'ArrowDown' && index < players.length - 1) {
             // Move player down
             e.preventDefault();
@@ -1015,9 +970,7 @@
             players.splice(index + 1, 0, movedPlayer);
             moved = true;
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log(`⬇️ Moved player ${index + 1} down`);
-            }
+            Logger.debug(`⬇️ Moved player ${index + 1} down`);
         }
 
         if (moved) {
@@ -1055,9 +1008,7 @@
         // ✅ AUDIT FIX: Accessibility attributes
         this.setAttribute('aria-grabbed', 'true');
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log(`🎯 Started dragging player ${parseInt(this.dataset.index) + 1}`);
-        }
+        Logger.debug(`🎯 Started dragging player ${parseInt(this.dataset.index) + 1}`);
     }
 
     function handleDragEnd() {
@@ -1125,9 +1076,7 @@
 
             showNotification('Reihenfolge aktualisiert!', 'success', 2000);
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log(`🔄 Reordered: ${fromIndex + 1} → ${toIndex + 1}`);
-            }
+            Logger.debug(`🔄 Reordered: ${fromIndex + 1} → ${toIndex + 1}`);
         }
 
         return false;
@@ -1314,9 +1263,7 @@
         };
         addTrackedEventListener(document, 'keydown', keypressHandler);
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log(`✅ Setup ${PlayerSetupModule.state.eventListenerCleanup.length} tracked event listeners`);
-        }
+        Logger.debug(`✅ Setup ${PlayerSetupModule.state.eventListenerCleanup.length} tracked event listeners`);
     }
 
     // ===========================
@@ -1332,16 +1279,12 @@
 
         // ✅ FSK0 & FSK16 immer erlaubt - keine Prüfung nötig
         if (!categories.includes('fsk18')) {
-            if (PlayerSetupModule.isDevelopment) {
-                console.log('✅ No FSK18 content - proceeding without validation');
-            }
+            Logger.debug('✅ No FSK18 content - proceeding without validation');
             return true;
         }
 
         // ✅ FSK18: Server-Validierung erforderlich
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('🔒 FSK18 content detected - validating access...');
-        }
+        Logger.debug('🔒 FSK18 content detected - validating access...');
 
         // Check Firebase availability
         if (!window.FirebaseConfig?.isInitialized?.()) {
@@ -1358,9 +1301,7 @@
             const hasAccess = await PlayerSetupModule.gameState.canAccessFSK('fsk18', true);
 
             if (!hasAccess) {
-                if (PlayerSetupModule.isDevelopment) {
-                    console.log('❌ FSK18 access denied');
-                }
+                Logger.debug('❌ FSK18 access denied');
 
                 // Show age verification modal
                 if (window.SettingsModule?.showFSKError) {
@@ -1379,14 +1320,12 @@
                 return false;
             }
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log('✅ FSK18 access validated');
-            }
+            Logger.debug('✅ FSK18 access validated');
 
             return true;
 
         } catch (error) {
-            console.error('❌ FSK18 validation error:', error);
+            Logger.error('❌ FSK18 validation error:', error);
             showNotification(
                 '⚠️ Fehler bei der Altersverifikation. Bitte versuche es erneut.',
                 'error',
@@ -1397,9 +1336,7 @@
     }
 
     async function startGame() {
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('🚀 Starting game...');
-        }
+        Logger.debug('🚀 Starting game...');
 
         const players = getPlayersList();
 
@@ -1449,9 +1386,7 @@
 
         showNotification('Spiel wird gestartet...', 'success', 1500);
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('Game starting with state:', PlayerSetupModule.gameState.getDebugInfo());
-        }
+        Logger.debug('Game starting with state:', PlayerSetupModule.gameState.getDebugInfo());
 
         setTimeout(() => {
             window.location.href = 'gameplay.html';
@@ -1464,9 +1399,7 @@
     // ===========================
 
     function goBack() {
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('⬅️ Going back to difficulty selection...');
-        }
+        Logger.debug('⬅️ Going back to difficulty selection...');
 
         // ✅ P1 STABILITY: Save current players before going back
         const players = getPlayersList();
@@ -1481,9 +1414,7 @@
             }
             PlayerSetupModule.gameState.save();
 
-            if (PlayerSetupModule.isDevelopment) {
-                console.log('💾 Saved current players:', players);
-            }
+            Logger.debug('💾 Saved current players:', players);
         }
 
         showLoading();
@@ -1528,9 +1459,7 @@
         // Clear the array
         PlayerSetupModule.state.eventListenerCleanup.length = 0;
 
-        if (PlayerSetupModule.isDevelopment) {
-            console.log('✅ Player setup cleanup completed - all event listeners removed');
-        }
+        Logger.debug('✅ Player setup cleanup completed - all event listeners removed');
     }
 
     addTrackedEventListener(window, 'beforeunload', cleanup);

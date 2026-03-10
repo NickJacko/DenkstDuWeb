@@ -799,7 +799,7 @@
 
                     if (firebase.appCheck && appCheckKey) {
                         try {
-                            const DISABLE_APP_CHECK = true; // <-- für jetzt: true (bis AppCheck korrekt konfiguriert ist)
+                            const DISABLE_APP_CHECK = false;
 
                             if (!DISABLE_APP_CHECK && isProduction && firebase.appCheck && appCheckKey) {
                                 try {
@@ -955,18 +955,11 @@
             try {
                 // Method 1: Enable disk persistence (IndexedDB)
                 // Note: This must be called before any database operations
-                database.ref();
-
-                // Enable offline capabilities
-                database.goOffline();
-
-                // Wait a moment to ensure offline mode is set
-                await new Promise(resolve => setTimeout(resolve, 100));
-
-                database.goOnline();
+                // Firebase RTDB verwaltet Offline-Persistence automatisch
+                database.ref(); // Initialisiert die Verbindung
 
                 if (isDevelopment) {
-                    console.log('✅ Database offline persistence enabled (IndexedDB)');
+                    console.log('✅ Database ready (Firebase manages offline persistence)');
                 }
 
                 // ✅ OPTIMIZATION: Keep local cache size reasonable (10MB)
@@ -1442,7 +1435,6 @@
             await initializeFirebase();
 
             // Setup monitoring after successful initialization
-            setupConnectionMonitoring(window.firebaseDatabase);
             setupAuthStateListener();
 
             // ✅ P1 PERFORMANCE: Setup telemetry heartbeat (180s interval)
@@ -1450,17 +1442,15 @@
 
             // ✅ FIX: Always sign in anonymously (required for Database access)
             // Privacy consent is separate from authentication
-            setTimeout(async () => {
-                try {
-                    await signInAnonymously();
-                    if (isDevelopment) {
-                        console.log('✅ Auto sign-in successful');
-                    }
-                } catch (error) {
-                    console.warn('⚠️ Auto sign-in failed:', error.message);
-                    // Non-fatal: user can manually trigger auth later
+            try {
+                await signInAnonymously();
+                if (isDevelopment) {
+                    console.log('✅ Auto sign-in successful');
                 }
-            }, 500);
+            } catch (error) {
+                console.warn('⚠️ Auto sign-in failed:', error.message);
+                // Non-fatal: user can manually trigger auth later
+            }
 
         } catch (error) {
             console.error('❌ Firebase auto-initialization failed:', error);

@@ -332,8 +332,6 @@
         const errorIdEl = modal.querySelector('.error-id code');
         errorIdEl.textContent = errorId;
 
-        // Show modal
-        modal.style.display = 'flex';
         modal.classList.add('visible');
 
         // ✅ P1 STABILITY: Setup event handlers
@@ -353,7 +351,6 @@
 
         // Close modal
         closeBtn.onclick = () => {
-            modal.style.display = 'none';
             modal.classList.remove('visible');
         };
 
@@ -557,6 +554,7 @@
      */
     function sendToFirebaseAnalytics(errorInfo, type) {
         if (!window.firebase?.analytics) return;
+        if (window.NocapCookies?.hasAnalyticsConsent?.() !== true) return;
 
         try {
             firebase.analytics().logEvent('exception', {
@@ -619,7 +617,7 @@
 
         // Register global error handlers
         window.onerror = handleError;
-        window.onunhandledrejection = handleUnhandledRejection;
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
         state.initialized = true;
 

@@ -518,8 +518,14 @@
         try {
             // Firebase Analytics
             if (window.firebase && window.firebase.analytics) {
-                firebase.analytics();
-                console.log('✅ Analytics enabled');
+                // Nur initialisieren wenn measurementId vorhanden
+                const measurementId = window.FirebaseConfig?.getConfig?.()?.measurementId;
+                if (measurementId) {
+                    firebase.analytics();
+                    if (isDevelopment) console.log('✅ Analytics enabled');
+                } else if (isDevelopment) {
+                    console.log('ℹ️ Analytics skipped – keine measurementId konfiguriert');
+                }
             }
 
             // Google Analytics (falls verwendet)
@@ -607,7 +613,9 @@
     }
 
     function onKeydown(e) {
-        if (e.key === 'Escape') handleDecline();
+    // ESC schließt Banner NICHT – Nutzer muss explizit wählen (DSGVO-konform)
+    // Alternativ: nur visuell ausblenden ohne Speichern
+    // if (e.key === 'Escape') hideBanner();
     }
 
     /**
@@ -658,7 +666,14 @@
      * Handle custom settings (redirect to privacy page)
      */
     function handleSettings() {
-        window.location.href = 'privacy.html#cookie-settings';
+        // Zeige granulares Einstellungs-Modal falls vorhanden,
+        // sonst Fallback auf Privacy-Seite
+        const settingsModal = document.getElementById('cookie-settings-modal');
+        if (settingsModal) {
+            settingsModal.classList.add('show');
+        } else {
+            window.location.href = 'privacy.html#cookie-settings';
+        }
     }
 
     // ===================================

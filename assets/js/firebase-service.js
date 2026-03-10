@@ -397,7 +397,15 @@
                 console.warn('⚠️ Invalid FSK level:', requiredLevel);
                 return false;
             }
-            return this._userMeta.ageLevel >= requiredLevel;
+            // FSK0 und FSK16: lokaler Cache reicht
+            if (requiredLevel <= 16) {
+                return this._userMeta.ageLevel >= requiredLevel;
+            }
+            // FSK18: NIEMALS client-seitig entscheiden – immer über Cloud Function
+            // Diese Methode gibt für FSK18 grundsätzlich false zurück
+            // → Verwende validateFSK18AccessViaCustomClaims() stattdessen
+            console.warn('⚠️ canAccessFSK(18) ist nicht erlaubt – nutze Cloud Function');
+            return false;
         }
 
         // ===========================
@@ -904,7 +912,10 @@
             if (typeof patch.isOnline === 'boolean') allowed.isOnline = patch.isOnline;
 
             const updates = {};
-            updates[`games/${gameId}/players/${playerId}`] = allowed;
+            updates[`games/${gameId}/players/${playerId}/isReady`] = allowed.isReady ?? null;
+            updates[`games/${gameId}/players/${playerId}/isOnline`] = allowed.isOnline ?? null;
+            // Nur gesetzte Felder schreiben
+            Object.keys(updates).forEach(k => updates[k] === null && delete updates[k]);
             updates[`games/${gameId}/lastUpdate`] = firebase.database.ServerValue.TIMESTAMP;
 
             await this._withTimeout(
@@ -1124,10 +1135,14 @@
 
             try {
                 const roundResultsRef = this.database.ref(`games/${gameId}/roundResults`);
-                await roundResultsRef.push({
-                    ...roundResult,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
+                await this._withTimeout(
+                    roundResultsRef.push({
+                        ...roundResult,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    }),
+                    this.DB_OPERATION_TIMEOUT,
+                    'Write round result'
+                );
 
                 if (this.isDevelopment) {
                     console.log(`✅ Round result written`);
@@ -1727,12 +1742,12 @@
          * Event callbacks for UI integration
          */
         _eventCallbacks = {
-            onError: [],
-            onStatusChange: [],
-            onConnectionChange: [],
-            onGameUpdate: [],
-            onPlayerJoined: [],
-            onPlayerLeft: []
+            error: [],           // war: onError
+            statusChange: [],    // war: onStatusChange
+            connectionChange: [], // war: onConnectionChange
+            gameUpdate: [],      // war: onGameUpdate
+            playerJoined: [],    // war: onPlayerJoined
+            playerLeft: []       // war: onPlayerLeft
         };
 
         /**
@@ -1915,7 +1930,7 @@
             window.location.hostname === '127.0.0.1';
 
         if (isDev) {
-            console.log('%c✅ FirebaseGameService v8.0 loaded (Security + DSGVO Enhanced)',
+            console.log('%c✅ FirebaseGameService v6.0 loaded (Security + DSGVO Enhanced)',
                 'color: #FF6F00; font-weight: bold; font-size: 12px');
         }
     }

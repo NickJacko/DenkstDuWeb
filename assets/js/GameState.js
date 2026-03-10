@@ -903,7 +903,11 @@
 
             // ✅ NEW: Store UID separately
             this.uid = uid;
-            this.playerId = `${prefix}_${safeName}_${timestamp}_${random}${extraRandom}`;
+            // Im Multiplayer: playerId MUSS die Firebase UID sein (DB-Rules)
+            // generatePlayerId() nur für Single-Device verwenden
+            this.playerId = uid.startsWith('anon_') 
+                ? `${prefix}_${safeName}_${timestamp}_${random}${extraRandom}`
+                : uid; // Firebase UID direkt als playerId im Multiplayer
 
             this.save(true); // Immediate save
 
@@ -933,8 +937,8 @@
                 // ✅ FSK18 requires MANDATORY server-side validation
                 if (level === 'fsk18') {
                     // ✅ NEW: Check if user is authenticated (not anonymous)
-                    if (window.authService && typeof window.authService.isAnonymous === 'function') {
-                        if (window.authService.isAnonymous()) {
+                    if (window.authService && typeof window.authService.checkIsAnonymous === 'function') {
+                        if (window.authService.checkIsAnonymous()) {
                             this.log('❌ FSK18 requires Google sign-in (anonymous user)', 'warning');
 
                             // ✅ Cache denial
@@ -1584,7 +1588,7 @@
 
             // Store old values for event
             const oldState = this.getState();
-// Clear all properties to defaults
+            // Clear all properties to defaults
             this.deviceMode = null;
             this.selectedCategories = [];
             this.difficulty = null;

@@ -163,11 +163,8 @@
             // Load game results
             await loadGameResults();
 
-            // ✅ FSK18-SYSTEM: Validate FSK18 access BEFORE authorization
-            const hasFSK18Access = await validateFSK18Access();
-            if (!hasFSK18Access) {
-                throw new Error('FSK18_ACCESS_DENIED');
-            }
+            // NEU: FSK18-Check nur für Fun Facts, nicht als Page-Block
+            // FSK18 access is checked per-element (displayFunFacts) - no page-level block needed
 
             // ✅ P0 SECURITY: Verify user is authorized to view results
             if (!verifyUserAuthorization()) {
@@ -1081,11 +1078,9 @@
         window.open(url, '_blank', 'noopener,noreferrer');
     }
 
-    /**
-     * ✅ P1 UI/UX: Share via Telegram
-     */
-    function shareViaTelegram() {
-        const message = generateShareMessage();
+    // NEU:
+    async function shareViaTelegram() {
+        const message = await generateShareMessage();
         const url = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(message)}`;
         window.open(url, '_blank', 'noopener,noreferrer');
     }
@@ -1103,8 +1098,7 @@
                 // Fallback
                 const textArea = document.createElement('textarea');
                 textArea.value = link;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
+                textArea.className = 'clipboard-helper';
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');

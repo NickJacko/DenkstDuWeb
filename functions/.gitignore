@@ -13,7 +13,7 @@ firebase-debug.*.log
 firestore-debug.log
 ui-debug.log
 database-debug.log
-
+firebase-client-config.json
 # ===== NODE MODULES =====
 node_modules/
 functions/node_modules/

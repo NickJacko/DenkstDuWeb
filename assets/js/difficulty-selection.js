@@ -260,7 +260,7 @@
     async function validateGameState() {
         const firebaseOk = !!window.FirebaseConfig?.isInitialized?.();
 
-        if (!DifficultySelectionModule.gameState.checkValidity()) {
+        if (!DifficultySelectionModule.gameState.deviceMode) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -416,22 +416,9 @@
     }
 
     async function loadCountsFromLocalFile() {
-        try {
-            const response = await fetch('/assets/data/difficulty-limits.json');
-
-            if (response.ok) {
-                const data = await response.json();
-                DifficultySelectionModule.questionCountsCache = data.counts || FALLBACK_DIFFICULTY_LIMITS;
-
-                Logger.debug('✅ Question counts loaded from local file:', DifficultySelectionModule.questionCountsCache);
-            } else {
-                throw new Error('Local file not found');
-            }
-        } catch (error) {
-            Logger.warn('⚠️ Could not load local file, using hardcoded fallback');
-            DifficultySelectionModule.questionCountsCache = FALLBACK_DIFFICULTY_LIMITS;
-        }
-
+        // Kein lokales File vorhanden – direkt Fallback verwenden
+        Logger.warn('⚠️ Firebase nicht verfügbar, nutze Fallback-Counts');
+        DifficultySelectionModule.questionCountsCache = FALLBACK_DIFFICULTY_LIMITS;
         updateDifficultyCardsWithCounts();
     }
 
@@ -691,9 +678,13 @@
     function handleAlcoholToggle(event) {
         const isEnabled = event.target.checked;
 
-        const ageLevel = window.NocapUtils
-            ? parseInt(window.NocapUtils.getLocalStorage('nocap_age_level')) || 0
-            : parseInt(localStorage.getItem('nocap_age_level')) || 0;
+        // ⚠️ UI-Hint only: Alkohol-Modus ist kein FSK18-Content,
+        // aber wir schützen den Toggle trotzdem mit dem gespeicherten Alters-Hint.
+        // Autoritativer Check erfolgt in checkAlcoholMode() beim Seitenstart.
+        const ageLevel = parseInt(
+            window.NocapUtils?.getLocalStorage?.('nocap_age_level') ??
+            localStorage.getItem('nocap_age_level') ?? '0'
+        ) || 0;
 
         if (isEnabled && ageLevel < 18) {
             event.target.checked = false;
@@ -874,7 +865,6 @@
     const showLoading = window.NocapUtils?.showLoading || function() {
         const loading = document.getElementById('loading');
         if (loading) {
-            loading.style.display = 'flex';
             loading.classList.add('show');
         }
     };
@@ -883,7 +873,6 @@
         const loading = document.getElementById('loading');
         if (loading) {
             loading.classList.remove('show');
-            loading.style.display = 'none';
         }
     };
 

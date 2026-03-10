@@ -787,17 +787,16 @@
         elementsArray.forEach((element, index) => {
             if (!element) return;
 
-            element.style.opacity = '0';
-            element.style.transform = 'translateY(20px)';
+            element.classList.add('anim-hidden');
 
             setTimeout(() => {
-                element.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-                element.style.opacity = '1';
-                element.style.transform = 'translateY(0)';
+                element.classList.remove('anim-hidden');
+                element.classList.add('anim-enter');
+                setTimeout(() => element.classList.remove('anim-enter'), 500);
             }, index * delay);
         });
     }
-
+    
     /**
      * Animate element removal
      * @param {HTMLElement} element - Element to remove
@@ -816,9 +815,7 @@
             return;
         }
 
-        element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-        element.style.opacity = '0';
-        element.style.transform = 'translateX(-20px)';
+        element.classList.add('anim-exit');
 
         setTimeout(() => {
             if (callback && typeof callback === 'function') {
@@ -838,14 +835,9 @@
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (prefersReducedMotion) return;
 
-        element.style.transition = 'transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
-        element.style.transform = 'scale(1.1)';
-
-        setTimeout(() => {
-            element.style.transform = 'scale(1)';
-        }, 150);
+        element.classList.add('anim-bounce');
+        setTimeout(() => element.classList.remove('anim-bounce'), 300);
     }
-
     /**
      * ✅ P1 FIX: Fade transition between elements
      * @param {HTMLElement} hideElement - Element to hide
@@ -1323,8 +1315,10 @@
             }
 
             // Fallback: Send to custom endpoint if available
-            if (window.NocapConfig && window.NocapConfig.telemetryEndpoint) {
-                fetch(window.NocapConfig.telemetryEndpoint, {
+        if (window.NocapConfig && window.NocapConfig.telemetryEndpoint) {
+            const hasConsent = window.NocapCookies?.hasAnalyticsConsent?.() === true;
+            if (!hasConsent) return;
+            fetch(window.NocapConfig.telemetryEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2018,13 +2012,10 @@
         // ✅ FSK18-SYSTEM: FSK18 requires server validation
         // This is a CLIENT-SIDE HINT ONLY - server validation is mandatory
         if (level === 18) {
-            try {
-                const ageLevel = parseInt(localStorage.getItem('nocap_age_level') || '0', 10);
-                return ageLevel >= 18;
-            } catch (error) {
-                Logger.warn('⚠️ Could not check age level:', error);
-                return false;
-            }
+            // ✅ SECURITY: Fail-closed – localStorage ist kein Berechtigungsnachweis.
+            // FSK18 muss zwingend über gameState.canAccessFSK('fsk18') server-validiert werden.
+            Logger.warn('⚠️ NocapUtils.canAccessFSK(18) ersetzt keine Server-Validierung – Zugriff verweigert.');
+            return false;
         }
 
         // Unknown FSK level - deny access

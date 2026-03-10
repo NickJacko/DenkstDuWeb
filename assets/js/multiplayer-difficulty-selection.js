@@ -193,8 +193,7 @@
             return false;
         }
 
-        if (typeof MultiplayerDifficultyModule.gameState.checkValidity === 'function' &&
-            !MultiplayerDifficultyModule.gameState.checkValidity()) {
+        if (!MultiplayerDifficultyModule.gameState.selectedCategories?.length) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -576,7 +575,11 @@
                     const database = instances?.database;
 
                     if (database?.ref) {
-                        await database.ref(`games/${existingGameId}/settings/difficulty`).set(MultiplayerDifficultyModule.gameState.difficulty);
+                        await database.ref(`games/${existingGameId}/settings`).update({
+                            difficulty: MultiplayerDifficultyModule.gameState.difficulty,
+                            alcoholMode: MultiplayerDifficultyModule.alcoholMode,
+                            updatedAt: Date.now()
+                        });
                         Logger.debug('✅ Updated difficulty in existing game:', MultiplayerDifficultyModule.gameState.difficulty);
                     }
                 } catch (error) {

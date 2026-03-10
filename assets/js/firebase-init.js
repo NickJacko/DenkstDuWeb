@@ -113,7 +113,7 @@
 
             if (isDevelopment) {
                 const uid = authService.getUid();
-                const isAnon = authService.isAnonymous();
+                const isAnon = authService.checkIsAnonymous?.() ?? false;
                 console.log(`✅ Auto-auth completed: ${isAnon ? 'Anonymous' : 'Authenticated'} (${uid?.substring(0, 8)}...)`);
             }
 
@@ -121,7 +121,7 @@
             window.dispatchEvent(new CustomEvent('firebase:authReady', {
                 detail: {
                     uid: authService.getUid(),
-                    isAnonymous: authService.isAnonymous(),
+                    isAnonymous: authService.checkIsAnonymous?.() ?? false,
                     timestamp: Date.now()
                 }
             }));
@@ -212,12 +212,7 @@
 
     // ✅ NEW: Also setup auto-auth when config is loaded dynamically
     window.addEventListener("firebase:configLoaded", () => {
-        initializeFirebase();
-
-        // Setup auto-auth after re-init
-        setTimeout(() => {
-            setupAutoAuth();
-        }, 100);
+        initializeFirebase(); // setupAutoAuth() is called inside initializeFirebase() already
     });
 
     // ===============================
@@ -283,7 +278,7 @@
          * Check if user is anonymous (convenience method)
          */
         isAnonymous() {
-            return window.authService?.isAnonymous() || false;
+            return window.authService?.checkIsAnonymous?.() ?? false;
         }
     });
 

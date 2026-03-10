@@ -272,30 +272,18 @@ exports.validateFSKAccess = functions
                 return res.status(200).json({ result: { allowed: true, category } });
             }
 
-            // ✅ FSK18 requires age verification
+            // ✅ FSK18 requires Custom Claim (server-authoritative)
             if (category === "fsk18") {
-                const userSnapshot = await admin.database().ref(`users/${uid}`).once("value");
-                const userData = userSnapshot.val();
+                const userRecord = await admin.auth().getUser(uid);
+                const claims = userRecord.customClaims || {};
 
-                if (!userData?.ageVerified) {
+                if (claims.fsk18 !== true) {
                     return res.status(200).json({
                         result: {
                             allowed: false,
-                            reason: "age_not_verified",
+                            reason: "no_fsk18_claim",
                             message: "Altersverifikation erforderlich"
                         },
-                    });
-                }
-
-                const ageLevel = Number(userData.ageLevel || 0);
-
-                if (ageLevel < 18) {
-                    return res.status(200).json({
-                        result: {
-                            allowed: false,
-                            reason: "age_too_young",
-                            message: "FSK 18 erforderlich"
-                        }
                     });
                 }
 
@@ -338,26 +326,16 @@ exports.validateFSKAccessCallable = functions
             return { allowed: true, category };
         }
 
-        // ✅ FSK18 requires age verification
+        // ✅ FSK18 requires Custom Claim (server-authoritative)
         if (category === "fsk18") {
-            const userSnapshot = await admin.database().ref(`users/${uid}`).once("value");
-            const userData = userSnapshot.val();
+            const userRecord = await admin.auth().getUser(uid);
+            const claims = userRecord.customClaims || {};
 
-            if (!userData?.ageVerified) {
+            if (claims.fsk18 !== true) {
                 return {
                     allowed: false,
-                    reason: "age_not_verified",
+                    reason: "no_fsk18_claim",
                     message: "Altersverifikation erforderlich"
-                };
-            }
-
-            const ageLevel = Number(userData.ageLevel || 0);
-
-            if (ageLevel < 18) {
-                return {
-                    allowed: false,
-                    reason: "age_too_young",
-                    message: "FSK 18 erforderlich"
                 };
             }
 
@@ -1020,10 +998,9 @@ exports.createGameSecure = functions
         const difficulty = String(data?.difficulty || "easy").trim();
         const alcoholMode = Boolean(data?.alcoholMode);
 
-        if (playerName.length < 2 || playerName.length > 15) {
-            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-15 Zeichen haben");
+        if (playerName.length < 2 || playerName.length > 20) {
+            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-20 Zeichen haben");
         }
-
         if (!["easy", "medium", "hard"].includes(difficulty)) {
             throw new functions.https.HttpsError("invalid-argument", "Ungültige difficulty");
         }
@@ -1129,8 +1106,8 @@ exports.joinGameSecure = functions
         if (!gameCode || !/^[A-Z0-9]{6}$/.test(gameCode)) {
             throw new functions.https.HttpsError("invalid-argument", "Ungültiger gameCode");
         }
-        if (playerName.length < 2 || playerName.length > 15) {
-            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-15 Zeichen haben");
+        if (playerName.length < 2 || playerName.length > 20) {
+            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-20 Zeichen haben");
         }
 
         const db = admin.database();

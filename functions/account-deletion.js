@@ -9,8 +9,8 @@ const CONFIG = {
     GRACE_PERIOD_HOURS: 48,
     // In Gen1: Nutze "firebase functions:config:set deletion.secret=..." ODER env var.
     DELETION_SECRET: process.env.DELETION_SECRET || null,
-    EMAIL_SENDER: "noreply@denkstduweb.app",
-    EMAIL_SUPPORT: "support@denkstduweb.app",
+    EMAIL_SENDER: "noreply@no-cap.app",
+    EMAIL_SUPPORT: "support@no-cap.app",
 };
 
 // --------------------

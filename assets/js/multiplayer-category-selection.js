@@ -412,14 +412,7 @@
             return false;
         }
 
-        if (!MultiplayerCategoryModule.gameState.isHost) {
-            Logger.error('❌ Not host');
-            showNotification('Du bist nicht der Host', 'error');
-            setTimeout(() => window.location.href = 'multiplayer-lobby.html', 2000);
-            return false;
-        }
-
-        if (!MultiplayerCategoryModule.gameState.checkValidity()) {
+        if (!MultiplayerCategoryModule.gameState.deviceMode) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -994,8 +987,7 @@
                 const playerAge = player.ageLevel || 0;
 
                 if (playerAge < requiredAge) {
-                    await firebase.database()
-                        .ref(`games/${gameId}/players/${playerId}`)
+                        await database.ref(`games/${gameId}/players/${playerId}`)
                         .remove();
 
                     kickedCount++;
@@ -1208,9 +1200,11 @@
                 const database = instances?.database;
 
                 if (database?.ref) {
-                    await database.ref(`games/${existingGameId}/settings/hostHasPremium`)
-                        .set(MultiplayerCategoryModule.state.hostHasPremium === true);
-
+                    await database.ref(`games/${existingGameId}/settings`).update({
+                        categories: selectedCategories,
+                        hostHasPremium: MultiplayerCategoryModule.state.hostHasPremium === true,
+                        updatedAt: Date.now()
+                    });
                     Logger.debug('✅ Updated categories in existing game:', selectedCategories);
                 }
             } catch (error) {

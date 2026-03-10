@@ -134,12 +134,7 @@
     const PRESENCE_UPDATE_INTERVAL = 10000; // 10 seconds
 
     function getPlayerKey() {
-        try {
-            const uid = firebase?.auth?.()?.currentUser?.uid;
-            return uid || currentUserId || MultiplayerLobbyModule.gameState?.playerId || null;
-        } catch (e) {
-            return currentUserId || MultiplayerLobbyModule.gameState?.playerId || null;
-        }
+        return currentUserId || MultiplayerLobbyModule.gameState?.playerId || null;
     }
 
 
@@ -539,7 +534,8 @@
 
 
 
-        if (!MultiplayerLobbyModule.gameState.checkValidity()) {
+        if (!MultiplayerLobbyModule.gameState.playerName &&
+            !MultiplayerLobbyModule.gameState.gameId) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -1414,7 +1410,9 @@
         }
 
         // Reference to .info/connected
-        connectedRef = firebase.database().ref('.info/connected');
+        const _db = window.FirebaseConfig?.getFirebaseInstances?.()?.database;
+        if (!_db?.ref) return;
+        connectedRef = _db.ref('.info/connected');
 
         connectedRef.on('value', (snapshot) => {
             if (snapshot.val() === true) {
@@ -1694,7 +1692,6 @@
     }
 
     async function leaveGame() {
-        if (!confirm('Lobby wirklich verlassen?')) return;
 
         try {
             if (currentGameId) {
@@ -1936,14 +1933,19 @@
                 // presenceRef listener itself isn't used (only onDisconnect), but null it to avoid reuse
                 presenceRef = null;
             }
-        } catch (e) {}
+        } catch (e) {
+            Logger.error('❌ Error occurred while cleaning up presence listeners:', e);
+        }
         // ✅ FSK18-SYSTEM: Remove category monitor
         if (currentGameId) {
             try {
-                const categoriesRef = firebase.database().ref(`games/${currentGameId}/settings/categories`);
-                categoriesRef.off();
+                const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+                const db = instances?.database;
+                if (db?.ref) {
+                    db.ref(`games/${currentGameId}/settings/categories`).off();
+                }
             } catch (e) {
-                // Silent fail
+                Logger.error('❌ Error occurred while removing category monitor:', e);
             }
         }
         // ✅ P2 PERFORMANCE: Cleanup event listeners

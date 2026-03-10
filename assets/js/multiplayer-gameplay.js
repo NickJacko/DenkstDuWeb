@@ -168,7 +168,7 @@
 
     // ✅ P1 DSGVO: Data cleanup tracking
     let answerCleanupScheduled = false;
-    const ANSWER_RETENTION_TIME = 5 * 60 * 1000; // 5 minutes
+    const ANSWER_RETENTION_TIME = 10 * 60 * 1000; // 10 minutes (after game is over)
 
     
 
@@ -180,7 +180,9 @@
      * ✅ P1 STABILITY: Monitor Firebase connection status
      */
     function setupConnectionMonitoring() {
-        connectedRef = firebase.database().ref('.info/connected');
+        const _db = window.FirebaseConfig?.getFirebaseInstances?.()?.database;
+        if (!_db?.ref) return;
+        connectedRef = _db.ref('.info/connected');
         connectedCb = (snapshot) => {
             if (snapshot.val() === true) {
                 if (connectionState === 'disconnected') {
@@ -438,14 +440,9 @@
 
         return purified.substring(0, 20);
     }
+
     function getPlayerKey() {
-        try {
-            const auth = firebase && firebase.auth ? firebase.auth() : null;
-            const uid = auth && auth.currentUser ? auth.currentUser.uid : null;
-            return uid || MultiplayerGameplayModule.gameState?.playerId || null;
-        } catch (e) {
-            return MultiplayerGameplayModule.gameState?.playerId || null;
-        }
+        return MultiplayerGameplayModule.gameState?.playerId || null;
     }
 
 
@@ -2200,13 +2197,19 @@
                 statusEl.classList.add(myResult.isCorrect ? 'status-correct' : 'status-incorrect');
             }
 
+            const isAlcohol = MultiplayerGameplayModule.gameState?.alcoholMode === true;
             const sipsText = myResult.sips === 0 ?
                 '🎯 Keine! Perfekt!' :
-                `${myResult.sips} 🍺`;
+                isAlcohol ? `${myResult.sips} 🍺` : `${myResult.sips} Punkte`;
 
             const sipsEl = document.getElementById('personal-sips');
             if (sipsEl) {
                 sipsEl.textContent = sipsText;
+            }
+
+            const sipsLabelEl = document.getElementById('personal-sips-label');
+            if (sipsLabelEl) {
+                sipsLabelEl.textContent = isAlcohol ? 'Schlücke:' : 'Punkte:';
             }
         }
 
@@ -2227,8 +2230,8 @@
             else resultItem.classList.add('wrong');
 
             const avatar = result.playerName.substring(0, 2).toUpperCase();
-            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
-
+            const isAlcohol = MultiplayerGameplayModule.gameState?.alcoholMode === true;
+            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : isAlcohol ? `${result.sips} 🍺` : `${result.sips} Punkte`;
             // P0 FIX: Build with textContent
             const playerResult = document.createElement('div');
             playerResult.className = 'player-result';
@@ -2382,8 +2385,8 @@
             statsDiv.className = 'leaderboard-player-stats';
 
             const sipsSpan = document.createElement('span');
-            sipsSpan.textContent = `🍺 ${player.totalSips} `;
-
+            const isAlcohol = MultiplayerGameplayModule.gameState?.alcoholMode === true;
+            sipsSpan.textContent = isAlcohol ? `🍺 ${player.totalSips} ` : `🎯 ${player.totalSips} Punkte `;
             const correctSpan = document.createElement('span');
             correctSpan.textContent = `🎯 ${player.correctGuesses}/${player.totalGuesses} richtig`;
 

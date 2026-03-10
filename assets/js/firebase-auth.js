@@ -29,8 +29,8 @@
             // ===================================
 
             this.currentUser = null;
-            this.isAnonymous = false;
-            this.isAuthenticated = false;
+            this._isAnonymous = false;
+            this._isAuthenticated = false;
             this.initialized = false;
 
             // ===================================
@@ -180,7 +180,7 @@
                 }
 
                 // Already signed in? Return existing user
-                if (this.isAuthenticated && this.currentUser) {
+                if (this._isAuthenticated && this.currentUser) {
                     if (this._isDevelopment) {
                         console.log('ℹ️ User already authenticated:', {
                             uid: this.currentUser.uid.substring(0, 8) + '...',
@@ -200,8 +200,8 @@
                 // Sign in anonymously (silent)
                 const result = await auth.signInAnonymously();
                 this.currentUser = result.user;
-                this.isAnonymous = true;
-                this.isAuthenticated = true;
+                this._isAnonymous = true;
+                this._isAuthenticated = true;
 
                 if (this._isDevelopment) {
                     console.log('✅ Anonymous sign-in (ensureAuth):',
@@ -254,7 +254,7 @@
          *     console.log('User is anonymous - show upgrade prompt');
          * }
          */
-        isAnonymous() {
+        checkIsAnonymous() {
             return this.currentUser?.isAnonymous || false;
         }
 
@@ -262,8 +262,8 @@
          * ✅ ENHANCED: Check if user is authenticated (convenience wrapper)
          * @returns {boolean} True if authenticated
          */
-        isAuthenticated() {
-            return this.isAuthenticated && this.currentUser !== null;
+        checkIsAuthenticated() {
+            return this._isAuthenticated && this.currentUser !== null;
         }
 
         // ===========================
@@ -299,7 +299,7 @@
             // Call immediately with current state
             if (this.initialized) {
                 try {
-                    callback(this.currentUser, this.isAnonymous);
+                    callback(this.currentUser, this._isAnonymous);
                 } catch (error) {
                     console.error('❌ Observer callback error:', error);
                 }
@@ -319,8 +319,8 @@
         _handleAuthStateChange(user) {
             if (user) {
                 this.currentUser = user;
-                this.isAnonymous = user.isAnonymous;
-                this.isAuthenticated = true;
+                this._isAnonymous = user.isAnonymous;
+                this._isAuthenticated = true;
 
                 if (this._isDevelopment) {
                     console.log('✅ User authenticated:', {
@@ -350,8 +350,8 @@
 
             } else {
                 this.currentUser = null;
-                this.isAnonymous = false;
-                this.isAuthenticated = false;
+                this._isAnonymous = false;
+                this._isAuthenticated = false;
 
                 if (this._isDevelopment) {
                     console.log('⚠️ No user authenticated');
@@ -509,7 +509,7 @@
 
                 setTimeout(() => {
                     // nur redirecten, wenn immer noch kein User da ist
-                    if (!this.isAuthenticated || !this.currentUser) {
+                    if (!this._isAuthenticated || !this.currentUser) {
                         window.location.href = redirectTo;
                     }
                 }, 1500);
@@ -533,7 +533,7 @@
          */
         async waitForAuth(timeout = 10000) {
             // Return immediately if already authenticated
-            if (this.isAuthenticated && this.currentUser) {
+            if (this._isAuthenticated && this.currentUser) {
                 return this.currentUser;
             }
 
@@ -592,7 +592,7 @@
                 }
 
                 // Check if already authenticated
-                if (this.isAuthenticated && !this.isAnonymous) {
+                if (this._isAuthenticated && !this._isAnonymous) {
                     if (this._isDevelopment) {
                         console.log('ℹ️ User already signed in (non-anonymous)');
                     }
@@ -696,7 +696,7 @@
                 const sanitizedEmail = emailValidation.email;
 
                 // Upgrade anonymous account if applicable
-                if (this.isAnonymous && this.currentUser) {
+                if (this._isAnonymous && this.currentUser) {
                     const credential = window.firebase.auth.EmailAuthProvider.credential(
                         sanitizedEmail,
                         password
@@ -869,7 +869,7 @@
                 // We only use the default scopes: profile, email (implicit)
 
                 // Upgrade anonymous account if applicable
-                if (this.isAnonymous && this.currentUser) {
+                if (this._isAnonymous && this.currentUser) {
                     const userCredential = await this.currentUser.linkWithPopup(provider);
 
                     if (this._isDevelopment) {
@@ -997,7 +997,7 @@
                     await this.initialize();
                 }
 
-                if (!this.isAuthenticated) {
+                if (!this._isAuthenticated) {
                     return {
                         success: false,
                         error: 'No user authenticated'
@@ -1059,7 +1059,7 @@
                     await this.initialize();
                 }
 
-                if (!this.isAuthenticated) {
+                if (!this._isAuthenticated) {
                     return {};
                 }
 
@@ -1353,7 +1353,7 @@
          * @returns {boolean} Anonymous status
          */
         isUserAnonymous() {
-            return this.isAnonymous;
+            return this._isAnonymous;
         }
 
         /**
@@ -1361,7 +1361,7 @@
          * @returns {boolean} Authentication status
          */
         isUserAuthenticated() {
-            return this.isAuthenticated;
+            return this._isAuthenticated;
         }
 
         /**
@@ -1393,7 +1393,7 @@
          */
         async isPremiumUser() {
             // ⚠️ P0 WARNING: Anonymous users cannot have premium
-            if (!this.isAuthenticated || this.isAnonymous) {
+            if (!this._isAuthenticated || this.isAnonymous) {
                 return false;
             }
 
@@ -1469,8 +1469,8 @@
 
             // Reset state
             this.currentUser = null;
-            this.isAnonymous = false;
-            this.isAuthenticated = false;
+            this._isAnonymous = false;
+            this._isAuthenticated = false;
             this.initialized = false;
             this._initPromise = null;
             this._authReadyPromise = null;
@@ -1505,7 +1505,7 @@
                 }
             };
 
-            window.addEventListener('firebase:connection', initHandler, { once: true });
+            window.addEventListener('firebase:connected', initHandler, { once: true });
         }
 
         // Development logging

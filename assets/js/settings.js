@@ -411,7 +411,10 @@
         }
 
         const input = document.getElementById('display-name-input');
-        const newName = input.value.trim();
+        const rawName = input.value.trim();
+        const newName = (typeof DOMPurify !== 'undefined')
+            ? DOMPurify.sanitize(rawName, { ALLOWED_TAGS: [] }).substring(0, 20)
+            : rawName.replace(/[<>"'&]/g, '').substring(0, 20);
 
         if (!newName || newName.length < 2) {
             showError('Name muss mindestens 2 Zeichen lang sein');
@@ -583,35 +586,11 @@
                     Logger.info('✅ FSK18 access granted (Custom Claim validated)');
                     return true;
                 }
-
-                // ✅ No Custom Claim -> Try to grant via Cloud Function
-                Logger.info('🔄 No FSK18 claim found, attempting to grant...');
-
-                if (!SettingsState.functionsInstance) {
-                    throw new Error('Functions not initialized');
-                }
-
-                // ✅ Call grantFSK18Access Cloud Function
-                const grantFSK18 = SettingsState.functionsInstance.httpsCallable('grantFSK18Access');
-                const result = await grantFSK18();
-
-                if (result?.data?.success) {
-                    Logger.info('✅ FSK18 access granted via Cloud Function');
-
-                    // ✅ Refresh token to get new Custom Claim
-                    await SettingsState.currentUser.getIdToken(true);
-
-                    // ✅ Update local FSK access state
-                    SettingsState.userFSKAccess.fsk18 = true;
-                    updateFSKBadges(SettingsState.userFSKAccess);
-                    syncFSKToLocalStorage(SettingsState.userFSKAccess);
-
-                    return true;
-                }
-
-                // ✅ Access denied
-                Logger.warn('❌ FSK18 access denied');
-                showFSKError(category, 'FSK18-Zugriff wurde verweigert. Bitte melde dich mit einem Google-Konto an.');
+                
+                // NEU: Kein Auto-Grant – User muss aktiv verifizieren
+                // No Custom Claim -> User must verify age explicitly
+                Logger.warn('❌ FSK18 claim missing - manual age verification required');
+                showFSKError(category, 'FSK18-Inhalte erfordern eine Altersverifikation. Bitte verifiziere dein Alter in den Einstellungen.');
                 return false;
 
             } catch (error) {
@@ -848,13 +827,20 @@
     // ===================================
 
     function showSuccess(message) {
-        alert('✅ ' + message);
+        if (window.NocapUtils?.showNotification) {
+            window.NocapUtils.showNotification(String(message), 'success', 4000);
+        } else {
+            alert('✅ ' + message);
+        }
     }
-
     function showError(message) {
-        alert('❌ ' + message);
+        if (window.NocapUtils?.showNotification) {
+            window.NocapUtils.showNotification(String(message), 'error', 5000);
+        } else {
+            alert('❌ ' + message);
+        }
     }
-
+    
     function setButtonLoading(button, isLoading) {
         if (!button) return;
 
