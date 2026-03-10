@@ -545,7 +545,7 @@
         const messagingSenderId = getMetaContent('messaging-sender-id');
         const appId = getMetaContent('app-id');
         const measurementId = getMetaContent('measurement-id');
-        const appCheckKey = getMetaContent('app-check-key'); // ✅ NEW: App Check key support
+        const appCheckKey = getMetaContent('nocap-app-check-key'); // ✅ Custom name prevents Firebase auto-init
 
         if (!apiKey || !authDomain || !projectId) {
             return null;
@@ -799,7 +799,7 @@
 
                     if (firebase.appCheck && appCheckKey) {
                         try {
-                            const DISABLE_APP_CHECK = false;
+                            const DISABLE_APP_CHECK = false; // Only runs in production (isProduction guard below)
 
                             if (!DISABLE_APP_CHECK && isProduction && firebase.appCheck && appCheckKey) {
                                 try {
@@ -955,11 +955,18 @@
             try {
                 // Method 1: Enable disk persistence (IndexedDB)
                 // Note: This must be called before any database operations
-                // Firebase RTDB verwaltet Offline-Persistence automatisch
-                database.ref(); // Initialisiert die Verbindung
+                database.ref();
+
+                // Enable offline capabilities
+                database.goOffline();
+
+                // Wait a moment to ensure offline mode is set
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                database.goOnline();
 
                 if (isDevelopment) {
-                    console.log('✅ Database ready (Firebase manages offline persistence)');
+                    console.log('✅ Database offline persistence enabled (IndexedDB)');
                 }
 
                 // ✅ OPTIMIZATION: Keep local cache size reasonable (10MB)
@@ -1435,6 +1442,7 @@
             await initializeFirebase();
 
             // Setup monitoring after successful initialization
+            setupConnectionMonitoring(window.firebaseDatabase);
             setupAuthStateListener();
 
             // ✅ P1 PERFORMANCE: Setup telemetry heartbeat (180s interval)
@@ -1442,15 +1450,17 @@
 
             // ✅ FIX: Always sign in anonymously (required for Database access)
             // Privacy consent is separate from authentication
-            try {
-                await signInAnonymously();
-                if (isDevelopment) {
-                    console.log('✅ Auto sign-in successful');
+            setTimeout(async () => {
+                try {
+                    await signInAnonymously();
+                    if (isDevelopment) {
+                        console.log('✅ Auto sign-in successful');
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Auto sign-in failed:', error.message);
+                    // Non-fatal: user can manually trigger auth later
                 }
-            } catch (error) {
-                console.warn('⚠️ Auto sign-in failed:', error.message);
-                // Non-fatal: user can manually trigger auth later
-            }
+            }, 500);
 
         } catch (error) {
             console.error('❌ Firebase auto-initialization failed:', error);
