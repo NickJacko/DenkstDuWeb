@@ -522,8 +522,9 @@ function saveGameProgress() {
             }
         }
 
-        // ✅ P1 STABILITY: Try Firebase sync (non-blocking)
-        if (GameplayModule.firebaseService?.database?.ref) {
+        // ✅ P1 STABILITY: Try Firebase sync (non-blocking, multiplayer only)
+        const isMulti = GameplayModule.currentGame?.deviceMode === 'multi';
+        if (isMulti && GameplayModule.firebaseService?.database?.ref) {
 
             syncGameProgressToFirebase(progressData).catch(error => {
                 Logger.warn('⚠️ Firebase sync failed (non-critical):', error);
