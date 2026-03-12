@@ -345,24 +345,13 @@
                             PlayerSetupModule.questionCounts[category] = getFallbackCount(category);
                         }
                     }
-                    // ✅ FSK18: Via Cloud Function (server-side validation)
+                    // ✅ FIX: Direct RTDB read for fsk18 (Cloud Function had CORS issues)
+                    // FSK18 access is already validated via canAccessFSK above
                     else if (category === 'fsk18') {
-                        if (functions) {
-                            const getQuestionCount = functions.httpsCallable('getQuestionCount');
-                            const result = await getQuestionCount({ category: 'fsk18' });
-
-                            if (result?.data?.hasAccess) {
-                                PlayerSetupModule.questionCounts[category] = result.data.count || 0;
-                                Logger.debug(`✅ FSK18 count loaded via Cloud Function: ${result.data.count}`);
-                            } else {
-                                PlayerSetupModule.questionCounts[category] = 0;
-                                Logger.debug('🔒 FSK18 access denied, count set to 0');
-                            }
-                        } else {
-                            // Fallback if Functions not available
-                            Logger.warn('⚠️ Firebase Functions not available for FSK18, using fallback');
-                            PlayerSetupModule.questionCounts[category] = getFallbackCount(category);
-                        }
+                        const db = firebase.database();
+                        const snapshot = await db.ref('questions/fsk18').once('value');
+                        const questions = snapshot.val();
+                        PlayerSetupModule.questionCounts[category] = questions ? Object.keys(questions).length : 0;
                     }
                 } catch (error) {
                     Logger.warn(`⚠️ Error loading count for ${category}:`, error);
