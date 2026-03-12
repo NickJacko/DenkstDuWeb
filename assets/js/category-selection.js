@@ -232,7 +232,7 @@
 
     function validateGameState() {
         // Device mode is already set to 'single' during initialization
-        if (!CategorySelectionModule.gameState.deviceMode) {
+        if (!CategorySelectionModule.gameState.checkValidity()) {
             showNotification('Ungültiger Spielzustand', 'error');
             setTimeout(() => window.location.href = 'index.html', 2000);
             return false;
@@ -323,8 +323,10 @@
                 specialCard.classList.add('checking-premium');
             }
 
-            // ✅ P0 FIX: MANDATORY server-side validation via Cloud Function
-            const isPremium = await CategorySelectionModule.gameState.isPremiumUser();
+            // ✅ FIX: isPremiumUser lives on firebaseService, not gameState
+            const isPremium = typeof window.firebaseService?.isPremiumUser === 'function'
+                ? window.firebaseService.isPremiumUser()
+                : false;
 
             Logger.debug(`✅ Premium status (server-validated): ${isPremium}`);
 
@@ -387,50 +389,35 @@
      * ✅ P0 SECURITY: Load question counts via Cloud Function
      * FSK18 questions are NEVER directly accessible from client
      */
-async function loadQuestionCounts() {
-    const instances = window.FirebaseConfig?.getFirebaseInstances?.();
-    const database = instances?.database;
-
-    if (!database?.ref) {
-        Logger.warn('⚠️ Firebase Database nicht verfügbar, nutze Fallback-Counts');
-        useFallbackCounts();
-        return;
-    }
-
-    for (const [categoryId, data] of Object.entries(categoryData)) {
-        try {
-            if (categoryId === 'fsk18') {
-                const getCount = firebase.functions().httpsCallable('getQuestionCount');
-                const result = await getCount({ category: 'fsk18' });
-
-                if (result?.data?.hasAccess) {
-                    CategorySelectionModule.state.questionCounts[categoryId] = result.data.count || 0;
-                } else {
-                    CategorySelectionModule.state.questionCounts[categoryId] = 0;
-                }
-            } else {
-                const snapshot = await database.ref(`questions/${categoryId}`).once('value');
-                const questions = snapshot.val();
-                CategorySelectionModule.state.questionCounts[categoryId] = questions
-                    ? Object.keys(questions).length
-                    : 0;
-            }
-
-            updateQuestionCountUI(categoryId, CategorySelectionModule.state.questionCounts[categoryId]);
-
-        } catch (error) {
-            Logger.error(`❌ Fehler beim Laden von ${categoryId}:`, error);
-            CategorySelectionModule.state.questionCounts[categoryId] = getFallbackCount(categoryId);
-            updateQuestionCountUI(categoryId, CategorySelectionModule.state.questionCounts[categoryId]);
+    async function loadQuestionCounts() {
+        if (!firebase.database) {
+            console.warn('[category-selection] Firebase Database not initialized');
+            return;
         }
-    }
-}
 
+        for (const category of categories) {
+            try {
+                // ✅ FIX: Direct RTDB read for all categories including fsk18
+                // FSK18 access is already checked/locked above via canAccessFSK
+                const snapshot = await firebase.database()
+                    .ref(`questions/${category.id}`)
+                    .once('value');
+
+                const questions = snapshot.val();
+                category.count = questions ? Object.keys(questions).length : 0;
+            } catch (error) {
+                console.error(`Failed to load count for ${category.id}:`, error);
+                category.count = getFallbackCount(category.id);
+            }
+        }
+
+        updateQuestionCounts();
+    }
 
     function useFallbackCounts() {
         Object.keys(categoryData).forEach(category => {
-            CategorySelectionModule.state.questionCounts[category] = getFallbackCount(category);
-            updateQuestionCountUI(category, CategorySelectionModule.state.questionCounts[category]);
+            CategorySelectionModule.questionCounts[category] = getFallbackCount(category);
+            updateQuestionCountUI(category, CategorySelectionModule.questionCounts[category]);
         });
 
         Logger.debug('✅ Using fallback counts');
@@ -517,10 +504,7 @@ async function loadQuestionCounts() {
                 } else {
                     showNotification('🔞 Bitte bestätige zuerst dein Alter in den Einstellungen', 'warning', 4000);
                 }
-            // ✅ isPremiumUser via SettingsModule (Cloud Function)
-            const isPremium = window.SettingsModule?.isPremiumUser
-                ? await window.SettingsModule.isPremiumUser()
-                : false;
+
                 // ✅ Save pending category for auto-resume after verification
                 pendingCategoryAfterAgeVerification = { element, category, data };
             }
