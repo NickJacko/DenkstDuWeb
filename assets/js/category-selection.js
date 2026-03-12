@@ -395,23 +395,24 @@
             return;
         }
 
-        for (const category of categories) {
+        for (const categoryId of Object.keys(categoryData)) {
             try {
-                // ✅ FIX: Direct RTDB read for all categories including fsk18
-                // FSK18 access is already checked/locked above via canAccessFSK
                 const snapshot = await firebase.database()
-                    .ref(`questions/${category.id}`)
+                    .ref(`questions/${categoryId}`)
                     .once('value');
 
                 const questions = snapshot.val();
-                category.count = questions ? Object.keys(questions).length : 0;
+                CategorySelectionModule.state.questionCounts[categoryId] =
+                    questions ? Object.keys(questions).length : 0;
             } catch (error) {
-                console.error(`Failed to load count for ${category.id}:`, error);
-                category.count = getFallbackCount(category.id);
+                console.error(`Failed to load count for ${categoryId}:`, error);
+                CategorySelectionModule.state.questionCounts[categoryId] = getFallbackCount(categoryId);
             }
         }
 
-        updateQuestionCounts();
+        Object.keys(categoryData).forEach(categoryId => {
+            updateQuestionCountUI(categoryId, CategorySelectionModule.state.questionCounts[categoryId] || 0);
+        });
     }
 
     function useFallbackCounts() {

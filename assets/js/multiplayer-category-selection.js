@@ -453,7 +453,9 @@
 
     async function checkPremiumStatus() {
         try {
-            const isPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
+            const isPremium = typeof window.firebaseService?.isPremiumUser === 'function'
+                ? window.firebaseService.isPremiumUser()
+                : false;
             MultiplayerCategoryModule.state.hostHasPremium = isPremium;
 
 
@@ -521,15 +523,12 @@
                     }
                     // ✅ FSK18: Via Cloud Function (server-side validation)
                     else if (key === 'fsk18') {
-                        const getQuestionCount = functions.httpsCallable('getQuestionCount');
-                        const result = await getQuestionCount({ category: 'fsk18' });
-
-                        if (result?.data?.hasAccess) {
-                            MultiplayerCategoryModule.state.questionCounts[key] = result.data.count || 0;
-                            Logger.debug(`✅ FSK18 count loaded: ${result.data.count}`);
-                        } else {
-                            MultiplayerCategoryModule.state.questionCounts[key] = 0;
-                            Logger.debug('🔒 FSK18 access denied, count set to 0');
+                        const database = instances?.database;
+                        if (database?.ref) {
+                            const snapshot = await database.ref('questions/fsk18').once('value');
+                            const questions = snapshot.val();
+                            MultiplayerCategoryModule.state.questionCounts[key] = questions
+                                ? Object.keys(questions).length : 0;
                         }
                     }
                 } catch (error) {
