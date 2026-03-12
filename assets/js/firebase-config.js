@@ -545,7 +545,10 @@
         const messagingSenderId = getMetaContent('messaging-sender-id');
         const appId = getMetaContent('app-id');
         const measurementId = getMetaContent('measurement-id');
-        const appCheckKey = getMetaContent('nocap-app-check-key'); // ✅ Custom name prevents Firebase auto-init
+        const appCheckKey = (() => {
+            const meta = document.querySelector('meta[name="nocap-app-check-key"]');
+            return meta ? meta.getAttribute('content') : null;
+        })(); // ✅ Direct lookup — bypasses firebase- prefix in getMetaContent
 
         if (!apiKey || !authDomain || !projectId) {
             return null;
