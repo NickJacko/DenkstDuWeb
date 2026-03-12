@@ -521,14 +521,18 @@
                             }
                         }
                     }
-                    // ✅ FSK18: Via Cloud Function (server-side validation)
                     else if (key === 'fsk18') {
-                        const database = instances?.database;
-                        if (database?.ref) {
-                            const snapshot = await database.ref('questions/fsk18').once('value');
-                            const questions = snapshot.val();
-                            MultiplayerCategoryModule.state.questionCounts[key] = questions
-                                ? Object.keys(questions).length : 0;
+                        const isLocked = document.querySelector('[data-category="fsk18"]')?.classList.contains('locked');
+                        if (isLocked) {
+                        MultiplayerCategoryModule.state.questionCounts[key] = 0;
+                        } else {
+                            const database = instances?.database;
+                            if (database?.ref) {
+                                const snapshot = await database.ref('questions/fsk18').once('value');
+                                const questions = snapshot.val();
+                                MultiplayerCategoryModule.state.questionCounts[key] = questions
+                                    ? Object.keys(questions).length : 0;
+                            }
                         }
                     }
                 } catch (error) {

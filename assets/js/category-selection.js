@@ -395,20 +395,28 @@
             return;
         }
 
-        for (const categoryId of Object.keys(categoryData)) {
-            try {
-                const snapshot = await firebase.database()
-                    .ref(`questions/${categoryId}`)
-                    .once('value');
+            const hasFSK18 = !document.querySelector('[data-category="fsk18"]')?.classList.contains('locked');
 
-                const questions = snapshot.val();
-                CategorySelectionModule.state.questionCounts[categoryId] =
-                    questions ? Object.keys(questions).length : 0;
-            } catch (error) {
-                console.error(`Failed to load count for ${categoryId}:`, error);
-                CategorySelectionModule.state.questionCounts[categoryId] = getFallbackCount(categoryId);
+            for (const categoryId of Object.keys(categoryData)) {
+                // Skip fsk18 if user has no access (avoids permission_denied error)
+                if (categoryId === 'fsk18' && !hasFSK18) {
+                    CategorySelectionModule.state.questionCounts[categoryId] = 0;
+                    continue;
+                }
+            
+                try {
+                    const snapshot = await firebase.database()
+                        .ref(`questions/${categoryId}`)
+                        .once('value');
+
+                    const questions = snapshot.val();
+                    CategorySelectionModule.state.questionCounts[categoryId] =
+                        questions ? Object.keys(questions).length : 0;
+                } catch (error) {
+                    console.error(`Failed to load count for ${categoryId}:`, error);
+                    CategorySelectionModule.state.questionCounts[categoryId] = getFallbackCount(categoryId);
+                }
             }
-        }
 
         Object.keys(categoryData).forEach(categoryId => {
             updateQuestionCountUI(categoryId, CategorySelectionModule.state.questionCounts[categoryId] || 0);

@@ -348,10 +348,15 @@
                     // ✅ FIX: Direct RTDB read for fsk18 (Cloud Function had CORS issues)
                     // FSK18 access is already validated via canAccessFSK above
                     else if (category === 'fsk18') {
-                        const db = firebase.database();
-                        const snapshot = await db.ref('questions/fsk18').once('value');
-                        const questions = snapshot.val();
-                        PlayerSetupModule.questionCounts[category] = questions ? Object.keys(questions).length : 0;
+                        const hasFSK18 = PlayerSetupModule.gameState.selectedCategories?.includes('fsk18')
+                            && await PlayerSetupModule.gameState.canAccessFSK('fsk18');
+                        if (hasFSK18) {
+                            const snapshot = await database.ref('questions/fsk18').once('value');
+                            const questions = snapshot.val();
+                            PlayerSetupModule.questionCounts[category] = questions ? Object.keys(questions).length : 0;
+                        } else {
+                            PlayerSetupModule.questionCounts[category] = 0;
+                        }
                     }
                 } catch (error) {
                     Logger.warn(`⚠️ Error loading count for ${category}:`, error);
