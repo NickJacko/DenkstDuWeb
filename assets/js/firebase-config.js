@@ -797,60 +797,32 @@
                     const appCheckKey =
                         window.FIREBASE_APP_CHECK_KEY ||
                         firebaseConfig.appCheckKey ||
-                        null; // ✅ No hardcoded fallback key (must be provided via env/meta/config)
+                        null;
 
-
-                    if (firebase.appCheck && appCheckKey) {
+                    if (appCheckKey && isProduction) {
                         try {
-                            const DISABLE_APP_CHECK = false; // Only runs in production (isProduction guard below)
+                            // ✅ Wait up to 2s for firebase.appCheck to be available (defer race condition)
+                            let appCheckSDK = firebase.appCheck;
+                            if (!appCheckSDK) {
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                                appCheckSDK = firebase.appCheck;
+                            }
 
-                            if (!DISABLE_APP_CHECK && isProduction && firebase.appCheck && appCheckKey) {
-                                try {
-                                    const appCheck = firebase.appCheck();
-                                    await appCheck.activate(appCheckKey, true);
-                                    if (isDevelopment) console.log('✅ App Check activated');
-                                } catch (e) {
-                                    console.warn('⚠️ AppCheck activation failed:', e?.message || e);
-                                }
+                            if (appCheckSDK) {
+                                const appCheck = appCheckSDK();
+                                await appCheck.activate(appCheckKey, true);
+                                console.log('%c✅ App Check activated', 'color: #4CAF50; font-weight: bold');
                             } else {
-                                if (isDevelopment) console.log('ℹ️ App Check skipped (disabled or not in prod)');
+                                console.warn('⚠️ App Check SDK not available after wait');
                             }
-
-                            // ✅ P1 STABILITY: Log to telemetry
-                            if (!isDevelopment && window.NocapUtils && window.NocapUtils.logInfo) {
-                                window.NocapUtils.logInfo('FirebaseConfig', 'App Check activated', {
-                                    autoRefresh: true,
-                                    timestamp: Date.now()
-                                });
-                            }
-
                         } catch (error) {
-                            // ✅ P1 STABILITY: Graceful fallback on App Check errors
-                            console.warn('%c⚠️  App Check activation failed (continuing without protection)',
-                                'color: #FF9800; font-weight: bold');
-                            console.warn('   Error details:', error.message);
-
-                            // ✅ P1 STABILITY: Log error to telemetry
-                            if (!isDevelopment && window.NocapUtils && window.NocapUtils.logError) {
-                                window.NocapUtils.logError('FirebaseConfig', error, {
-                                    context: 'App Check activation',
-                                    key: appCheckKey ? 'present' : 'missing'
-                                });
-                            }
-
-                            // ✅ P1 STABILITY: Allow app to continue without App Check
-                            // Firebase will work, but without bot protection
-                            if (isDevelopment) {
-                                console.log('%cℹ️  App will continue without App Check protection',
-                                    'color: #2196F3; font-style: italic');
-                            }
+                            // Non-fatal: app continues without App Check
+                            console.warn('⚠️ App Check activation failed (continuing without):', error?.message || error);
                         }
                     } else if (isDevelopment) {
-                        console.log('%c⚠️  App Check disabled (Development mode)',
-                            'color: #FF9800');
-                    } else {
-                        console.warn('%c⚠️  App Check not available (missing key or SDK)',
-                            'color: #FF5722; font-weight: bold');
+                        console.log('%cℹ️ App Check skipped (Development mode)', 'color: #FF9800');
+                    } else if (!appCheckKey) {
+                        console.warn('⚠️ App Check key missing — bot protection disabled');
                     }
                 } else {
                     app = firebase.app();
