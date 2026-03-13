@@ -1329,8 +1329,20 @@
                 updatePlayersCount();
 
                 if (currentGameData.currentRound) {
-                    // ✅ Always sync via handleNewRound (loads even if already same round but question missing)
-                    handleNewRound(currentGameData.currentRound);
+                    // Check if round actually exists in DB - if not, host must create it
+                    const roundSnap = await firebase.database()
+                        .ref(`games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentGameData.currentRound}`)
+                        .once('value');
+
+                    if (roundSnap.exists()) {
+                        handleNewRound(currentGameData.currentRound);
+                    } else if (MultiplayerGameplayModule.gameState.isHost) {
+                        currentQuestionNumber = Number(currentGameData.currentRound) || 1;
+                        await startNewRound();
+                    } else {
+                        // Guest: wait for host to create the round
+                        handleNewRound(currentGameData.currentRound);
+                    }
                 } else if (MultiplayerGameplayModule.gameState.isHost) {
                     // ✅ Host starts first round
                     currentQuestionNumber = 1;        // set round number

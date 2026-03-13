@@ -1410,9 +1410,7 @@
         }
 
         // Reference to .info/connected
-        const _db = window.FirebaseConfig?.getFirebaseInstances?.()?.database;
-        if (!_db?.ref) return;
-        connectedRef = _db.ref('.info/connected');
+        connectedRef = firebase.database().ref('.info/connected');
 
         connectedRef.on('value', (snapshot) => {
             if (snapshot.val() === true) {
@@ -1609,9 +1607,18 @@
             await gameRef.update({
                 status: 'playing',
                 startedAt: Date.now(),
-                currentRound: 1,  // Initialize first round
                 lastUpdate: firebase.database.ServerValue.TIMESTAMP
             });
+
+            // ✅ FIX: Update gameCode status so join-game.js client-check catches it
+            try {
+                const gameCode = MultiplayerLobbyModule.gameState.gameCode || currentGameData?.gameCode;
+                if (gameCode) {
+                    await firebase.database().ref(`gameCodes/${gameCode}/status`).set('playing');
+                }
+            } catch (e) {
+                console.warn('⚠️ Could not update gameCode status:', e.message);
+            }
 
             // ✅ CRITICAL FIX: Save MultiplayerLobbyModule.gameState BEFORE redirect - TRIPLE REDUNDANCY!
             MultiplayerLobbyModule.gameState.gamePhase = 'playing';
@@ -1692,7 +1699,6 @@
     }
 
     async function leaveGame() {
-
         try {
             if (currentGameId) {
                 // ✅ remove myself from players
@@ -1933,9 +1939,7 @@
                 // presenceRef listener itself isn't used (only onDisconnect), but null it to avoid reuse
                 presenceRef = null;
             }
-        } catch (e) {
-            Logger.error('❌ Error occurred while cleaning up presence listeners:', e);
-        }
+        } catch (e) {}
         // ✅ FSK18-SYSTEM: Remove category monitor
         if (currentGameId) {
             try {
@@ -1945,7 +1949,7 @@
                     db.ref(`games/${currentGameId}/settings/categories`).off();
                 }
             } catch (e) {
-                Logger.error('❌ Error occurred while removing category monitor:', e);
+                // Silent fail
             }
         }
         // ✅ P2 PERFORMANCE: Cleanup event listeners
