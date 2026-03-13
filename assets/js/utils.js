@@ -2254,8 +2254,18 @@
             const AGE_GATE_KEY = 'nocap_age_gate_confirmed';
             const CONSENT_KEY = 'nocap_privacy_consent';
 
+            function hasConsent() {
+                // Check both keys: nocap_privacy_consent (new) and nocap_cookie_consent (legacy)
+                if (localStorage.getItem(CONSENT_KEY) === 'true') return true;
+                try {
+                    const legacy = JSON.parse(localStorage.getItem('nocap_cookie_consent') || 'null');
+                    if (legacy && legacy.necessary === true) return true;
+                } catch (e) {}
+                return false;
+            }
+
             function checkConsent() {
-                if (localStorage.getItem(CONSENT_KEY) === 'true') {
+                if (hasConsent()) {
                     resolve();
                 } else {
                     window.addEventListener('nocap:consentChanged', function onConsent() {
