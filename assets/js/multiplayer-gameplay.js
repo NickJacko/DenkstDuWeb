@@ -1295,8 +1295,9 @@
                     if (currentGameData.currentRound && currentPhase !== 'overall-results') {
                         const round = Number(currentGameData.currentRound) || 0;
 
-                        // If we haven't loaded anything yet (e.g., guest joined early), force-load current round
-                        if (!currentQuestion || round !== currentQuestionNumber) {
+                        // Host already initiated this round via nextQuestion() — skip to avoid race
+                        const isHostAndAlreadyInitiated = MultiplayerGameplayModule.gameState.isHost && round === currentQuestionNumber;
+                        if (!isHostAndAlreadyInitiated && (!currentQuestion || round !== currentQuestionNumber)) {
                             handleNewRound(round);
                         }
                     }
@@ -1508,6 +1509,9 @@
         roundListenerRef = roundRef; // Store reference for cleanup
 
         roundListener = roundRef.on('value', (snapshot) => {
+            // Stale listener guard: ignore if this listener is for a different round
+            if (roundNumber !== currentQuestionNumber) return;
+
             if (snapshot.exists()) {
                 currentRoundData = snapshot.val();
 
@@ -2417,6 +2421,8 @@
         try {
             currentQuestionNumber++;
             hasSubmittedThisRound = false; // Reset anti-cheat
+            currentQuestion = null;        // Reset so live-listener guard re-triggers for guests
+            currentRoundData = null;
 
             // ✅ P1 UI/UX: Stop and reset timer
             stopTimer();
