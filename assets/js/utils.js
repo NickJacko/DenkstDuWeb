@@ -2242,6 +2242,102 @@
     // 📤 EXPORT FUNCTIONS TO GLOBAL SCOPE
     // ============================================================================
 
+    /**
+     * Ensures Age-Gate and Cookie-Banner have been accepted.
+     * Injects the Age-Gate modal dynamically if not yet confirmed.
+     * Resolves only after both gates are passed.
+     * Safe to call on any page — no HTML required.
+     * @returns {Promise<void>}
+     */
+    function ensureGatesAccepted() {
+        return new Promise(function(resolve) {
+            const AGE_GATE_KEY = 'nocap_age_gate_confirmed';
+            const CONSENT_KEY = 'nocap_privacy_consent';
+
+            function checkConsent() {
+                if (localStorage.getItem(CONSENT_KEY) === 'true') {
+                    resolve();
+                } else {
+                    window.addEventListener('nocap:consentChanged', function onConsent() {
+                        window.removeEventListener('nocap:consentChanged', onConsent);
+                        resolve();
+                    });
+                }
+            }
+
+            if (localStorage.getItem(AGE_GATE_KEY) === '1') {
+                checkConsent();
+                return;
+            }
+
+            const overlay = document.createElement('div');
+            overlay.id = 'nocap-age-gate-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'age-gate-dyn-title');
+            overlay.style.cssText = [
+                'position:fixed', 'inset:0', 'z-index:9999',
+                'background:rgba(0,0,0,0.92)',
+                'display:flex', 'align-items:center', 'justify-content:center',
+                'padding:1rem'
+            ].join(';');
+
+            overlay.innerHTML = [
+                '<div style="background:#1a1a2e;border-radius:16px;padding:2rem;max-width:400px;width:100%;',
+                'text-align:center;border:1px solid rgba(255,255,255,0.1);">',
+                '<div style="font-size:3rem;margin-bottom:1rem;">🧢</div>',
+                '<h2 id="age-gate-dyn-title" style="color:#fff;margin-bottom:0.5rem;font-size:1.4rem;">',
+                'Willkommen bei No-Cap</h2>',
+                '<p style="color:rgba(255,255,255,0.7);margin-bottom:1.5rem;font-size:0.9rem;">',
+                'Bitte bestätige, dass du die folgenden Bedingungen akzeptierst:</p>',
+                '<div style="text-align:left;margin-bottom:1.5rem;display:flex;flex-direction:column;gap:0.75rem;">',
+                '<label style="display:flex;align-items:flex-start;gap:0.75rem;color:rgba(255,255,255,0.85);',
+                'cursor:pointer;font-size:0.9rem;">',
+                '<input type="checkbox" id="age-gate-dyn-check-1" ',
+                'style="margin-top:3px;flex-shrink:0;width:18px;height:18px;cursor:pointer;">',
+                '<span>Ich bestätige, dass ich die App <strong>verantwortungsvoll</strong> nutze ',
+                'und ggf. die Zustimmung eines Erziehungsberechtigten habe.</span></label>',
+                '<label style="display:flex;align-items:flex-start;gap:0.75rem;color:rgba(255,255,255,0.85);',
+                'cursor:pointer;font-size:0.9rem;">',
+                '<input type="checkbox" id="age-gate-dyn-check-2" ',
+                'style="margin-top:3px;flex-shrink:0;width:18px;height:18px;cursor:pointer;">',
+                '<span>Ich akzeptiere die ',
+                '<a href="/privacy.html" target="_blank" style="color:#667eea;">Datenschutzerklärung</a>',
+                ' und die <a href="/imprint.html" target="_blank" style="color:#667eea;">Nutzungsbedingungen</a>.',
+                '</span></label></div>',
+                '<button id="age-gate-dyn-confirm" type="button" disabled ',
+                'style="width:100%;padding:0.875rem;border-radius:12px;border:none;background:#667eea;',
+                'color:#fff;font-size:1rem;font-weight:600;cursor:pointer;opacity:0.5;transition:opacity 0.2s;" ',
+                'aria-label="Bestätigen und Spiel betreten">✅ Bestätigen & Spielen</button>',
+                '<p style="color:rgba(255,255,255,0.4);font-size:0.75rem;margin-top:1rem;">',
+                'Diese Bestätigung wird einmalig gespeichert.</p>',
+                '</div>'
+            ].join('');
+
+            document.body.appendChild(overlay);
+
+            const check1 = document.getElementById('age-gate-dyn-check-1');
+            const check2 = document.getElementById('age-gate-dyn-check-2');
+            const btn = document.getElementById('age-gate-dyn-confirm');
+
+            function updateBtn() {
+                const ok = check1 && check2 && check1.checked && check2.checked;
+                btn.disabled = !ok;
+                btn.style.opacity = ok ? '1' : '0.5';
+            }
+
+            check1.addEventListener('change', updateBtn);
+            check2.addEventListener('change', updateBtn);
+
+            btn.addEventListener('click', function() {
+                if (!check1.checked || !check2.checked) return;
+                localStorage.setItem(AGE_GATE_KEY, '1');
+                overlay.remove();
+                checkConsent();
+            });
+        });
+    }
+
     window.NocapUtils = Object.freeze({
         // Version
         version: '6.1', // ✅ FIREBASE FIX: Added waitForFirebaseInit
@@ -2349,7 +2445,10 @@
         setAgeVerification,
         clearAgeVerification,
         getAgeVerificationTimeLeft,
-        formatAgeVerificationExpiry
+        formatAgeVerificationExpiry,
+
+        // Gates: Age-Gate + Cookie-Banner (call on every page)
+        ensureGatesAccepted
     });
 
     if (isDevelopment) {

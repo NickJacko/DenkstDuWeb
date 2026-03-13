@@ -143,6 +143,10 @@
     // ===========================
 
     async function initialize() {
+        if (window.NocapUtils && window.NocapUtils.ensureGatesAccepted) {
+            await window.NocapUtils.ensureGatesAccepted();
+        }
+
         if (MultiplayerLobbyModule.isDevelopment) {
             console.log('🎮 Initializing multiplayer lobby...');
         }

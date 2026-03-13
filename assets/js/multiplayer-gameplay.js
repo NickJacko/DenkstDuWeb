@@ -455,6 +455,10 @@
     // ===========================
 
     async function initialize() {
+        if (window.NocapUtils && window.NocapUtils.ensureGatesAccepted) {
+            await window.NocapUtils.ensureGatesAccepted();
+        }
+
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log('🎮 Initializing multiplayer gameplay...');
         }
@@ -687,9 +691,10 @@
                 const hostId = hostSnap.val();
                 let isHost = hostId === u.uid;
 
-                // Check if we were the host via localStorage (UID may have changed after reload)
+                // Check if we were the host via saved state (UID may have changed after reload)
                 let wasHostByLocalStorage = false;
                 if (!isHost) {
+                    // Check localStorage
                     try {
                         const savedState = JSON.parse(localStorage.getItem('nocap_game_state') || '{}');
                         if (savedState.isHost === true && savedState.gameId === gameId) {
@@ -697,7 +702,17 @@
                             isHost = true;
                         }
                     } catch (_) {}
-                    // Also check sessionStorage
+                    // Check sessionStorage nocap_game_state (lobby writes full state here)
+                    if (!wasHostByLocalStorage) {
+                        try {
+                            const ssState = JSON.parse(sessionStorage.getItem('nocap_game_state') || '{}');
+                            if (ssState.isHost === true && ssState.gameId === gameId) {
+                                wasHostByLocalStorage = true;
+                                isHost = true;
+                            }
+                        } catch (_) {}
+                    }
+                    // Check sessionStorage nocap_is_host key
                     if (!wasHostByLocalStorage) {
                         try {
                             if (sessionStorage.getItem('nocap_is_host') === 'true') {

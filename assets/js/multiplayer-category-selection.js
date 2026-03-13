@@ -155,6 +155,10 @@
 // ===========================
 
     async function initialize() {
+        if (window.NocapUtils && window.NocapUtils.ensureGatesAccepted) {
+            await window.NocapUtils.ensureGatesAccepted();
+        }
+
         Logger.debug('🌐 Initializing multiplayer category selection...');
 
         // P0 FIX: Check DOMPurify
@@ -412,12 +416,6 @@
             return false;
         }
 
-        if (!MultiplayerCategoryModule.gameState.deviceMode) {
-            showNotification('Ungültiger Spielzustand', 'error');
-            setTimeout(() => window.location.href = 'index.html', 2000);
-            return false;
-        }
-
         Logger.debug('✅ Game state valid');
         return true;
     }
@@ -453,9 +451,7 @@
 
     async function checkPremiumStatus() {
         try {
-            const isPremium = typeof window.firebaseService?.isPremiumUser === 'function'
-                ? window.firebaseService.isPremiumUser()
-                : false;
+            const isPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
             MultiplayerCategoryModule.state.hostHasPremium = isPremium;
 
 
@@ -521,18 +517,17 @@
                             }
                         }
                     }
+                    // ✅ FSK18: Via Cloud Function (server-side validation)
                     else if (key === 'fsk18') {
-                        const isLocked = document.querySelector('[data-category="fsk18"]')?.classList.contains('locked');
-                        if (isLocked) {
-                        MultiplayerCategoryModule.state.questionCounts[key] = 0;
+                        const getQuestionCount = functions.httpsCallable('getQuestionCount');
+                        const result = await getQuestionCount({ category: 'fsk18' });
+
+                        if (result?.data?.hasAccess) {
+                            MultiplayerCategoryModule.state.questionCounts[key] = result.data.count || 0;
+                            Logger.debug(`✅ FSK18 count loaded: ${result.data.count}`);
                         } else {
-                            const database = instances?.database;
-                            if (database?.ref) {
-                                const snapshot = await database.ref('questions/fsk18').once('value');
-                                const questions = snapshot.val();
-                                MultiplayerCategoryModule.state.questionCounts[key] = questions
-                                    ? Object.keys(questions).length : 0;
-                            }
+                            MultiplayerCategoryModule.state.questionCounts[key] = 0;
+                            Logger.debug('🔒 FSK18 access denied, count set to 0');
                         }
                     }
                 } catch (error) {
@@ -990,7 +985,7 @@
                 const playerAge = player.ageLevel || 0;
 
                 if (playerAge < requiredAge) {
-                        await database.ref(`games/${gameId}/players/${playerId}`)
+                    await database.ref(`games/${gameId}/players/${playerId}`)
                         .remove();
 
                     kickedCount++;

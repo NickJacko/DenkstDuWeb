@@ -1031,6 +1031,7 @@
             JoinGameModule.gameState.playerId =
                 JoinGameModule.firebaseService?.getCurrentUser?.()?.uid ||
                 JoinGameModule.gameState.playerId;
+
             JoinGameModule.gameState.authUid = JoinGameModule.gameState.playerId;
             JoinGameModule.gameState.setPlayerName(playerName);
 
@@ -1173,7 +1174,7 @@
         if (errorMessage.includes('voll') || errorMessage.includes('full')) {
             return '👥 Dieses Spiel ist bereits voll. Versuche ein anderes Spiel.';
         }
-        if (errorMessage.includes('gestartet') || errorMessage.includes('started')) {
+        if (errorMessage.includes('Lobby') || errorMessage.includes('lobby') || errorMessage.includes('gestartet') || errorMessage.includes('started')) {
             return '🎮 Dieses Spiel wurde bereits gestartet. Du kannst nicht mehr beitreten.';
         }
         if (errorMessage.includes('beendet') || errorMessage.includes('finished')) {
@@ -1273,6 +1274,22 @@
 
 
     async function startApp() {
+        // ✅ DSGVO: Age-Gate + Cookie-Consent auf allen Seiten erzwingen
+        if (window.NocapUtils && window.NocapUtils.ensureGatesAccepted) {
+            await window.NocapUtils.ensureGatesAccepted();
+        } else {
+            // Fallback: warte auf Cookie-Consent falls utils noch nicht geladen
+            const hasConsent = localStorage.getItem('nocap_privacy_consent') === 'true';
+            if (!hasConsent) {
+                await new Promise(resolve => {
+                    window.addEventListener('nocap:consentChanged', function h() {
+                        window.removeEventListener('nocap:consentChanged', h);
+                        resolve();
+                    });
+                });
+            }
+        }
+
         const firebaseReady = await waitForFirebase();
         if (firebaseReady) {
             await initialize();

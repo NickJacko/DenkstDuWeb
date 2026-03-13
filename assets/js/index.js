@@ -671,7 +671,9 @@
             IndexPageModule.state.initialized = true;
 
             if (!checkDOMPurify()) return;
-            setupAgeGate();
+            if (window.NocapUtils && window.NocapUtils.ensureGatesAccepted) {
+                await window.NocapUtils.ensureGatesAccepted();
+            }
             await initializeFirebase().catch(err => Logger.warn('⚠️ Firebase initialization error:', err));
 // ✅ Ensure we always have a UID (anonymous is enough)
 // Needed for multiplayer entitlement/age checks later (no UI impact)
@@ -744,41 +746,4 @@
     } else {
         initialize();
     }
-
-    // ===================================
-// 🔐 AGE GATE MODAL
-// ===================================
-function setupAgeGate() {
-    const modal = document.getElementById('age-gate-modal');
-    if (!modal) return;
-
-    // Bereits bestätigt → Modal ausblenden
-    if (localStorage.getItem('nocap_age_gate_confirmed') === '1') {
-        modal.style.display = 'none';
-        return;
-    }
-
-    // Modal anzeigen
-    modal.style.display = 'flex';
-
-    const check1 = document.getElementById('age-gate-check-1');
-    const check2 = document.getElementById('age-gate-check-2');
-    const confirmBtn = document.getElementById('age-gate-confirm-btn');
-
-    function updateBtn() {
-        const allChecked = check1?.checked && check2?.checked;
-        confirmBtn.disabled = !allChecked;
-        confirmBtn.style.opacity = allChecked ? '1' : '0.5';
-    }
-
-    check1?.addEventListener('change', updateBtn);
-    check2?.addEventListener('change', updateBtn);
-
-    confirmBtn?.addEventListener('click', function() {
-        if (!check1?.checked || !check2?.checked) return;
-        localStorage.setItem('nocap_age_gate_confirmed', '1');
-        modal.style.display = 'none';
-    });
-}
-
 })(window);
