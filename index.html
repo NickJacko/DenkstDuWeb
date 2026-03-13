@@ -5,14 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>No-Cap - Das ultimative Schätzspiel</title>
 
+    
     <!-- SEO Meta Tags -->
     <meta name="description" content="No-Cap - Das ultimative Multiplayer Schätzspiel für unvergessliche Abende! Spiele online mit bis zu 8 Freunden. Schätze, wer was gemacht hat und lache über peinliche Geständnisse. Kostenlos spielen!">
-    <meta name="keywords" content="Schätzspiel, Partyspiel, Multiplayer, Online Spiel, Trinkspiel, Freunde, No-Cap, Gesellschaftsspiel, Handy Spiel, Quiz">
+    <meta name="keywords" content="Schätzspiel, Partyspiel, Multiplayer, Online Spiel, Freunde, No-Cap, Gesellschaftsspiel, Handy Spiel, Quiz, Bluffspiel">
     <meta name="author" content="No-Cap Team">
     <meta name="theme-color" content="#667eea">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://no-cap.app">
-
+    <!-- ✅ SEO: Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "No-Cap",
+      "url": "https://no-cap.app",
+      "description": "Das ultimative Multiplayer Schätzspiel für unvergessliche Abende mit Freunden.",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web",
+      "inLanguage": "de",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Nick-Mark Jacklin"
+      }
+    }
+    </script>
     <!-- ✅ AUDIT FIX: Security Headers werden via firebase.json HTTP Headers gesetzt -->
     <!-- CSP, X-Frame-Options, X-Content-Type-Options sind in firebase.json konfiguriert -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -53,7 +75,7 @@
     <meta name="firebase-messaging-sender-id" content="27029260611">
     <meta name="firebase-app-id" content="1:27029260611:web:3c7da4db0bf92e8ce247f6">
     <meta name="firebase-measurement-id" content="G-BNKNW95HK8">
-    <meta name="nocap-app-check-key" content="6LeSPUQsAAAAANnUhOAey-M8Mgr0eeT9-inR7wKZ">
+    <meta name="nocap-app-check-key" content="6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l">
 
     <!-- ✅ PERFORMANCE: Nur benötigte Font-Weights laden (400, 600, 700) -->
     <!-- ✅ P1 STABILITY: preconnect für Google Fonts (verhindert DNS-Lookup-Delay) -->
@@ -301,7 +323,7 @@
                     <div class="step-number" aria-label="Schritt 4">4</div>
                     <div class="step-content">
                         <h5 class="step-title">Auflösung & Konsequenz</h5>
-                        <p class="step-description" id="step4-text">Wer falsch lag, muss trinken!</p>
+                                               <p class="step-description" id="step4-text">Wer falsch lag, bekommt Punkte!</p>   
                     </div>
                 </div>
             </div>
@@ -384,10 +406,9 @@
                 <div class="settings-item">
                     <label for="birthdate-input">Geburtsdatum (Ü18 Verifikation)</label>
                     <div class="input-group">
-                        <input type="date" id="birthdate-input" class="settings-input" max="2026-01-12">
-                        <button class="btn-save" id="verify-age-btn" type="button">Verifizieren</button>
+                    <input type="date" id="birthdate-input" class="settings-input">  
                     </div>
-                    <p class="settings-hint">Erforderlich für FSK 16/18 Inhalte</p>
+                        <p class="settings-hint">Erforderlich für FSK 18 Inhalte</p>
                 </div>
                 <div class="settings-item">
                     <label>FSK Zugriff</label>
@@ -450,55 +471,6 @@
         <div class="modal-buttons">
             <button class="btn-secondary" id="close-fsk-modal-btn" type="button">Verstanden</button>
             <button class="btn-primary" id="goto-age-verification-btn" type="button">Alter verifizieren</button>
-        </div>
-    </div>
-</div>
-
-<!-- ✅ DSGVO Cookie-Einstellungen Modal -->
-<div id="cookie-settings-modal" class="cookie-settings-overlay" role="dialog" aria-modal="true" aria-labelledby="cookie-settings-title" hidden>
-    <div class="cookie-settings-dialog">
-        <div class="cookie-settings-header">
-            <h2 id="cookie-settings-title">🍪 Cookie-Einstellungen</h2>
-            <button class="cookie-settings-close" id="cookie-settings-close" type="button" aria-label="Einstellungen schließen">✕</button>
-        </div>
-        <div class="cookie-settings-body">
-            <p class="cookie-settings-intro">
-                Wähle, welche Cookies du zulassen möchtest. Notwendige Cookies sind für das Funktionieren des Spiels erforderlich und können nicht deaktiviert werden.
-            </p>
-
-            <!-- Notwendig -->
-            <div class="cookie-settings-item">
-                <div class="cookie-settings-info">
-                    <strong>Notwendige Cookies</strong>
-                    <span class="cookie-settings-desc">Firebase-Authentifizierung, Spielzustand, Session-Management. Ohne diese Cookies funktioniert das Spiel nicht.</span>
-                </div>
-                <div class="cookie-settings-toggle">
-                    <span class="cookie-toggle-always">Immer aktiv</span>
-                </div>
-            </div>
-
-            <!-- Analyse -->
-            <div class="cookie-settings-item">
-                <div class="cookie-settings-info">
-                    <strong>Analyse-Cookies</strong>
-                    <span class="cookie-settings-desc">Firebase Analytics hilft uns, das Spielerlebnis zu verbessern. Es werden keine persönlichen Daten weitergegeben.</span>
-                </div>
-                <div class="cookie-settings-toggle">
-                    <label class="cookie-toggle-label" for="cookie-toggle-analytics">
-                        <input type="checkbox" id="cookie-toggle-analytics" class="cookie-toggle-input" aria-label="Analyse-Cookies aktivieren">
-                        <span class="cookie-toggle-track"></span>
-                        <span class="cookie-toggle-thumb"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-        <div class="cookie-settings-footer">
-            <button class="cookie-btn cookie-btn-decline" id="cookie-settings-save-necessary" type="button">
-                Nur notwendige speichern
-            </button>
-            <button class="cookie-btn cookie-btn-accept" id="cookie-settings-save" type="button">
-                Auswahl speichern
-            </button>
         </div>
     </div>
 </div>
