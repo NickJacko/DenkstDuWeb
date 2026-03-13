@@ -548,7 +548,20 @@
         if (!stateRestored) {
             console.warn('⚠️ No saved state found - attempting recovery');
 
-            // Try sessionStorage
+            // Try sessionStorage nocap_game_state first (lobby writes full state here)
+            try {
+                const sessionFullState = sessionStorage.getItem('nocap_game_state');
+                if (sessionFullState) {
+                    const parsed = JSON.parse(sessionFullState);
+                    if (parsed && parsed.gameId) {
+                        restoreGameState(parsed);
+                        stateRestored = true;
+                        console.log('📝 Recovered full state from sessionStorage nocap_game_state');
+                    }
+                }
+            } catch (e) {}
+
+            // Try sessionStorage individual keys
             try {
                 const sessionState = sessionStorage.getItem('nocap_game_id');
                 if (sessionState) {
@@ -1596,7 +1609,7 @@
 
                 const answers = currentRoundData.answers || {};
                 const answerCount = Object.keys(answers).length;
-                const playerCount = Object.keys(currentPlayers).length;
+                const playerCount = getActivePlayerCount();
 
                 if (MultiplayerGameplayModule.isDevelopment) {
                     console.log(`📊 Round update: ${answerCount}/${playerCount} answers`);
@@ -1921,6 +1934,15 @@
         }
     }
 
+    function getActivePlayerCount() {
+        // Count unique players by name to avoid ghost entries from UID changes after reload
+        const names = new Set();
+        Object.values(currentPlayers).forEach(p => {
+            if (p && p.name) names.add(p.name.trim().toLowerCase());
+        });
+        return Math.max(names.size, Object.keys(currentPlayers).length > 0 ? 1 : 0);
+    }
+
     function resetForNewQuestion() {
         // Cancel any pending results display from previous round
         if (resultsDebounceTimer) {
@@ -1970,7 +1992,7 @@
     }
 
     function updatePlayersCount() {
-        totalPlayers = Object.keys(currentPlayers).length;
+        totalPlayers = getActivePlayerCount();
 
         const playersCountEl = document.getElementById('players-count');
         if (playersCountEl) {
@@ -2240,7 +2262,7 @@
                 const roundData = snapshot.val();
                 const answers = roundData.answers || {};
                 const answerCount = Object.keys(answers).length;
-                const playerCount = Object.keys(currentPlayers).length;
+                const playerCount = getActivePlayerCount();
 
                 if (MultiplayerGameplayModule.isDevelopment) {
                     console.log(`🔍 Check: ${answerCount}/${playerCount} answers`);
@@ -2340,9 +2362,18 @@
                 sips = difference * multiplier;
             }
 
+            // Prefer name from currentPlayers (live DB) over stored answer name
+            const pid = playerAnswer.playerId;
+            const playerFromDB = pid && currentPlayers[pid];
+            const resolvedName = (playerFromDB && playerFromDB.name && playerFromDB.name !== 'Spieler' && playerFromDB.name !== 'Host')
+                ? playerFromDB.name
+                : (playerAnswer.playerName && playerAnswer.playerName !== 'Spieler' && playerAnswer.playerName !== 'Host')
+                    ? playerAnswer.playerName
+                    : (playerFromDB && playerFromDB.name) || playerAnswer.playerName || 'Spieler';
+
             return {
-                playerId: playerAnswer.playerId,
-                playerName: sanitizePlayerName(playerAnswer.playerName),
+                playerId: pid,
+                playerName: sanitizePlayerName(resolvedName),
                 answer: playerAnswer.answer,
                 estimation: playerAnswer.estimation,
                 difference: difference,
