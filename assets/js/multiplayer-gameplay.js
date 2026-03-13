@@ -138,6 +138,7 @@
     let currentPhase = 'question';
     let hasSubmittedThisRound = false; // P0: Anti-cheat
     let resultsDebounceTimer = null;   // Track results timeout so it can be cancelled
+    let isLoadingRound = false;        // Prevent parallel loadRoundFromFirebase calls
     let timerSyncRef = null;
     let timerSyncCb = null;
 
@@ -1298,10 +1299,15 @@
                     if (currentGameData.currentRound && currentPhase !== 'overall-results') {
                         const round = Number(currentGameData.currentRound) || 0;
 
-                        // Host already initiated this round via nextQuestion() — skip to avoid race
-                        const isHostAndAlreadyInitiated = MultiplayerGameplayModule.gameState.isHost && round === currentQuestionNumber;
-                        if (!isHostAndAlreadyInitiated && (!currentQuestion || round !== currentQuestionNumber)) {
-                            handleNewRound(round);
+                        // Never go backwards — if host already incremented locally, ignore stale lower round from Firebase
+                        if (round < currentQuestionNumber) {
+                            // stale update, ignore
+                        } else {
+                            // Host already initiated this round via nextQuestion() — skip to avoid race
+                            const isHostAndAlreadyInitiated = MultiplayerGameplayModule.gameState.isHost && round === currentQuestionNumber;
+                            if (!isHostAndAlreadyInitiated && (!currentQuestion || round !== currentQuestionNumber)) {
+                                handleNewRound(round);
+                            }
                         }
                     }
                 } catch (error) {
@@ -1412,6 +1418,14 @@
         }
     }
     async function loadRoundFromFirebase(roundNumber) {
+        // Stale guard: abort if round has already moved on
+        if (roundNumber < currentQuestionNumber) {
+            console.warn(`⚠️ Ignoring stale loadRound(${roundNumber}), currentRound=${currentQuestionNumber}`);
+            return;
+        }
+        // Prevent parallel loads for the same round
+        if (isLoadingRound) return;
+        isLoadingRound = true;
         try {
             if (MultiplayerGameplayModule.isDevelopment) {
                 console.log(`📥 Loading round ${roundNumber}...`);
@@ -1420,8 +1434,12 @@
             const roundRef = firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${roundNumber}`);
             const snapshot = await roundRef.once('value');
 
+            // Re-check after await — round may have changed
+            if (roundNumber < currentQuestionNumber) return;
+
             if (!snapshot.exists()) {
                 console.warn(`⚠️ Round ${roundNumber} not in DB yet - retrying in 1s...`);
+                isLoadingRound = false;
                 setTimeout(() => loadRoundFromFirebase(roundNumber), 1000);
                 return;
             }
@@ -1429,65 +1447,56 @@
             const roundData = snapshot.val();
             if (!roundData || !roundData.question) {
                 console.warn('⚠️ Round exists but no question yet - retrying in 1s...');
+                isLoadingRound = false;
                 setTimeout(() => loadRoundFromFirebase(roundNumber), 1000);
                 return;
             }
 
-            if (snapshot.exists()) {
-                currentQuestion = roundData.question;
+            currentQuestion = roundData.question;
 
-                // ✅ FSK18-SYSTEM: Verify age for loaded question with server validation
-                if (currentQuestion && currentQuestion.category === 'fsk18') {
-                    const hasAccess = await verifyAgeForQuestion('fsk18');
-
-                    if (!hasAccess) {
-                        // Block FSK18 content - show fallback question
-                        currentQuestion = {
-                            text: "Diese Frage ist für dein Alter nicht freigegeben",
-                            category: "fsk0"
-                        };
-
-                        if (MultiplayerGameplayModule.isDevelopment) {
-                            console.log('🔒 FSK18 question blocked - showing fallback');
-                        }
-                    }
-                }
-
-                if (currentQuestion) {
-                    displayQuestion(currentQuestion);
-                    setupRoundListener(roundNumber);
-
-                    // ✅ P1 UI/UX: Sync timer from server
-                    const gameSnapshot = await firebase.database()
-                        .ref(`games/${MultiplayerGameplayModule.gameState.gameId}`)
-                        .once('value');
-
-                    if (gameSnapshot.exists()) {
-                        const gameData = gameSnapshot.val();
-
-                        if (gameData.timerPaused) {
-                            isPaused = true;
-                            pausedTimeRemaining = gameData.timerRemaining || 0;
-                            updatePauseButton();
-                        } else if (gameData.timerStartTime && roundData.timerDuration) {
-                            startTimer(gameData.timerStartTime, roundData.timerDuration);
-                        }
-                    }
-
-                    if (MultiplayerGameplayModule.isDevelopment) {
-                        console.log('✅ Round loaded');
-                    }
+            // FSK18 check
+            if (currentQuestion && currentQuestion.category === 'fsk18') {
+                const hasAccess = await verifyAgeForQuestion('fsk18');
+                if (!hasAccess) {
+                    currentQuestion = { text: 'Diese Frage ist für dein Alter nicht freigegeben', category: 'fsk0' };
                 }
             }
+
+            // Final stale check before touching UI
+            if (roundNumber < currentQuestionNumber) return;
+
+            displayQuestion(currentQuestion);
+            setupRoundListener(roundNumber);
+
+            // Sync timer from server
+            const gameSnapshot = await firebase.database()
+                .ref(`games/${MultiplayerGameplayModule.gameState.gameId}`)
+                .once('value');
+
+            if (gameSnapshot.exists()) {
+                const gameData = gameSnapshot.val();
+                if (gameData.timerPaused) {
+                    isPaused = true;
+                    pausedTimeRemaining = gameData.timerRemaining || 0;
+                    updatePauseButton();
+                } else if (gameData.timerStartTime && roundData.timerDuration) {
+                    startTimer(gameData.timerStartTime, roundData.timerDuration);
+                }
+            }
+
+            if (MultiplayerGameplayModule.isDevelopment) {
+                console.log('✅ Round loaded');
+            }
         } catch (error) {
-            // Permission denied = player not yet in /players/ (re-register race condition)
-            // Retry after 1.5s to give re-register time to complete
             if (error.code === 'PERMISSION_DENIED' || (error.message && error.message.includes('permission'))) {
-                console.warn('⚠️ Round read permission denied - retrying after re-register...');
+                console.warn('⚠️ Round read permission denied - retrying...');
+                isLoadingRound = false;
                 setTimeout(() => loadRoundFromFirebase(roundNumber), 1500);
             } else {
                 console.error('❌ Error loading round:', error);
             }
+        } finally {
+            isLoadingRound = false;
         }
     }
 
@@ -1851,6 +1860,7 @@
             clearTimeout(resultsDebounceTimer);
             resultsDebounceTimer = null;
         }
+        isLoadingRound = false; // Allow next round to load
         userAnswer = null;
         userEstimation = null;
         hasSubmittedThisRound = false;
