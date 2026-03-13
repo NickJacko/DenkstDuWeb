@@ -137,6 +137,7 @@
     let currentQuestionNumber = 0;
     let currentPhase = 'question';
     let hasSubmittedThisRound = false; // P0: Anti-cheat
+    let resultsDebounceTimer = null;   // Track results timeout so it can be cancelled
     let timerSyncRef = null;
     let timerSyncCb = null;
 
@@ -1232,11 +1233,12 @@
                     currentPlayers = currentGameData.players || {};
                     updatePlayersCount();
 
-                    // ✅ FIX: Determine role from DB (source of truth) on EVERY update
+                    // ✅ FIX: Determine role from DB — only update when uid is reliably known
                     try {
                         const uid = firebase.auth().currentUser?.uid || MultiplayerGameplayModule.gameState.playerId;
                         if (uid && currentGameData.hostId) {
                             const isHostNow = currentGameData.hostId === uid;
+                            // Only write isHost/isGuest when uid is confirmed — never overwrite with stale null
                             MultiplayerGameplayModule.gameState.isHost = isHostNow;
                             MultiplayerGameplayModule.gameState.isGuest = !isHostNow;
                             MultiplayerGameplayModule.gameState.playerId = uid;
@@ -1266,6 +1268,7 @@
                                 }));
                             } catch (_) {}
                         }
+                        // If uid is null/unknown: keep existing isHost value — do NOT reset to false
                     } catch (e) {
                         console.warn('⚠️ Could not determine host role:', e.message);
                     }
@@ -1543,9 +1546,15 @@
                     currentRoundData = currentRoundData || {};
                     currentRoundData.answers = answers;
 
-                    // small debounce to allow last write to settle
-                    setTimeout(() => {
-                        // don't block by phase — but avoid double-show
+                    // Cancel any previous pending results timeout
+                    if (resultsDebounceTimer) clearTimeout(resultsDebounceTimer);
+
+                    // Snapshot roundNumber at scheduling time — if round changes before 250ms, abort
+                    const scheduledRound = roundNumber;
+                    resultsDebounceTimer = setTimeout(() => {
+                        resultsDebounceTimer = null;
+                        // Only show results if we're still on the same round
+                        if (scheduledRound !== currentQuestionNumber) return;
                         if (currentPhase !== 'results' && currentPhase !== 'overall-results') {
                             calculateAndShowResults();
                         }
@@ -1837,6 +1846,11 @@
     }
 
     function resetForNewQuestion() {
+        // Cancel any pending results display from previous round
+        if (resultsDebounceTimer) {
+            clearTimeout(resultsDebounceTimer);
+            resultsDebounceTimer = null;
+        }
         userAnswer = null;
         userEstimation = null;
         hasSubmittedThisRound = false;
@@ -2413,9 +2427,24 @@
      * ✅ P0 SECURITY: Next question (HOST ONLY)
      */
     async function nextQuestion() {
-        // ✅ P0 SECURITY: Validate host role
-        if (!validateHostRole('Nächste Frage starten')) {
-            return;
+        // Re-confirm host role from current DB snapshot before acting
+        // (avoids race condition where isHost was briefly false during live-listener update)
+        if (!MultiplayerGameplayModule.gameState.isHost) {
+            try {
+                const uid = firebase.auth().currentUser?.uid || MultiplayerGameplayModule.gameState.playerId;
+                const snap = await firebase.database()
+                    .ref(`games/${MultiplayerGameplayModule.gameState.gameId}/hostId`).once('value');
+                if (snap.val() !== uid) {
+                    showNotification('Nur der Host kann diese Aktion ausführen', 'warning', 3000);
+                    return;
+                }
+                // We are actually the host — fix local state
+                MultiplayerGameplayModule.gameState.isHost = true;
+                MultiplayerGameplayModule.gameState.isGuest = false;
+            } catch (e) {
+                showNotification('Nur der Host kann diese Aktion ausführen', 'warning', 3000);
+                return;
+            }
         }
 
         try {
