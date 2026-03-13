@@ -162,7 +162,7 @@
     let questionTimer = null;
     let timerAnimationFrame = null;
     let timerStartTime = null;
-    let timerDuration = 30000; // 30 seconds default
+    let timerDuration = 30000; // 30 seconds default (ms internally)
     let isPaused = false;
     let pausedTimeRemaining = 0;
 
@@ -1416,13 +1416,20 @@
             const roundRef = firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${roundNumber}`);
             const snapshot = await roundRef.once('value');
 
+            if (!snapshot.exists()) {
+                console.warn(`⚠️ Round ${roundNumber} not in DB yet - retrying in 1s...`);
+                setTimeout(() => loadRoundFromFirebase(roundNumber), 1000);
+                return;
+            }
+
+            const roundData = snapshot.val();
+            if (!roundData || !roundData.question) {
+                console.warn('⚠️ Round exists but no question yet - retrying in 1s...');
+                setTimeout(() => loadRoundFromFirebase(roundNumber), 1000);
+                return;
+            }
+
             if (snapshot.exists()) {
-                const roundData = snapshot.val();
-                if (!roundData || !roundData.question) {
-                    console.warn('⚠️ Round exists but no question yet - retrying in 1s...');
-                    setTimeout(() => loadRoundFromFirebase(roundNumber), 1000);
-                    return;
-                }
                 currentQuestion = roundData.question;
 
                 // ✅ FSK18-SYSTEM: Verify age for loaded question with server validation
@@ -2080,10 +2087,13 @@
                 `games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentQuestionNumber}/answers/${playerKey}`
             );
 
-
             await answerRef.set({
-                ...answerData,
-                submittedAt: Date.now()
+                answer: userAnswer,
+                estimation: userEstimation,
+                submittedAt: Date.now(),
+                playerId: playerKey,
+                playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
+                isHost: MultiplayerGameplayModule.gameState.isHost || false
             });
 // ✅ Ensure round listener exists (guest might have joined before round was loaded)
             if (!roundListenerRef) {

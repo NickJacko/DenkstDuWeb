@@ -90,7 +90,7 @@
 
         "timerRemaining": {
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 300"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 300000"
         },
 
         "settings": {
@@ -192,7 +192,7 @@
 
             "timerDuration": {
               ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
-              ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300"
+              ".validate": "newData.isNumber() && newData.val() >= 5000 && newData.val() <= 300000"
             },
 
             "summary": {
@@ -205,7 +205,13 @@
 
               "$uid": {
                 ".write": "auth != null && $uid === auth.uid",
-                ".validate": "newData.hasChildren(['answer','estimation','submittedAt']) && newData.child('answer').isBoolean() && newData.child('estimation').isNumber() && newData.child('estimation').val() >= 0 && newData.child('estimation').val() <= 50 && newData.child('submittedAt').isNumber() && newData.child('submittedAt').val() > 0"
+                ".validate": "newData.hasChildren(['answer','estimation','submittedAt']) && newData.child('answer').isBoolean() && newData.child('estimation').isNumber() && newData.child('estimation').val() >= 0 && newData.child('estimation').val() <= 50 && newData.child('submittedAt').isNumber() && newData.child('submittedAt').val() > 0",
+                "answer": { ".validate": "newData.isBoolean()" },
+                "estimation": { ".validate": "newData.isNumber()" },
+                "submittedAt": { ".validate": "newData.isNumber()" },
+                "playerId": { ".validate": "newData.isString()" },
+                "playerName": { ".validate": "newData.isString()" },
+                "isHost": { ".validate": "newData.isBoolean()" }
               }
             }
           }
@@ -294,13 +300,10 @@
       ".indexOn": ["createdAt", "lastLogin"],
 
       "$userId": {
-
         ".read": "auth != null && auth.uid === $userId",
-
         ".write": false,
 
         ".validate": "newData.hasChildren(['createdAt'])",
-
         "profile": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -321,10 +324,9 @@
             ".validate": "newData.isNumber() && newData.val() > 0"
           }
         },
-
         "entitlements": {
           ".read": "auth != null && auth.uid === $userId",
-          ".write": false, 
+          ".write": false,
 
           "fsk18": {
             ".validate": "newData.hasChildren(['active', 'grantedAt', 'method'])",
@@ -366,8 +368,6 @@
             }
           }
         },
-
-
         "preferences": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -380,7 +380,6 @@
             ".validate": "newData.isString() && (newData.val() === 'light' || newData.val() === 'dark' || newData.val() === 'auto')"
           }
         },
-
         "saved_games": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -394,7 +393,6 @@
             }
           }
         },
-
         "isPremium": {
           ".write": false,
           ".validate": "newData.isBoolean()"
