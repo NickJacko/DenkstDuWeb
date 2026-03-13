@@ -120,7 +120,7 @@
 
           "$playerId": {
             ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
-            ".write": "auth != null && (auth.uid === $playerId || root.child('games').child($gameId).child('hostId').val() === auth.uid) && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+            ".write": "auth != null && (auth.uid === $playerId || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
 
             ".validate": "newData.hasChildren(['name', 'joinedAt'])",
 
@@ -203,7 +203,7 @@
               ".indexOn": ["submittedAt"],
 
               "$uid": {
-                ".write": "auth != null && $uid === auth.uid && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+                ".write": "auth != null && $uid === auth.uid",
                 ".validate": "newData.hasChildren(['answer','estimation','submittedAt']) && newData.child('answer').isBoolean() && newData.child('estimation').isNumber() && newData.child('estimation').val() >= 0 && newData.child('estimation').val() <= 50 && newData.child('submittedAt').isNumber() && newData.child('submittedAt').val() > 0"
               }
             }

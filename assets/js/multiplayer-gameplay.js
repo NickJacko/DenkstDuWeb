@@ -647,6 +647,7 @@
                             playerId: u.uid,
                             isHost,
                             isGuest: !isHost,
+                            joinedAt: Date.now(),
                             rejoinedAt: Date.now(),
                             online: true
                         });
