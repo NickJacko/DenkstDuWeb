@@ -1125,7 +1125,7 @@
                     const summary = {
                         totalAnswers: Object.keys(answers).length,
                         yesCount: Object.values(answers).filter(a => a.answer === true).length,
-                        aggregatedAt: firebase.database.ServerValue.TIMESTAMP
+                        aggregatedAt: Date.now()
                     };
 
                     // Save summary
@@ -1229,6 +1229,16 @@
                             MultiplayerGameplayModule.gameState.isGuest = !isHostNow;
                             MultiplayerGameplayModule.gameState.playerId = uid;
 
+                            // ✅ Recover categories from DB if missing
+                            if (!MultiplayerGameplayModule.gameState.selectedCategories?.length && currentGameData.settings?.categories) {
+                                const cats = currentGameData.settings.categories;
+                                MultiplayerGameplayModule.gameState.selectedCategories =
+                                    Array.isArray(cats) ? cats : Object.values(cats);
+                            }
+                            if (!MultiplayerGameplayModule.gameState.difficulty && currentGameData.settings?.difficulty) {
+                                MultiplayerGameplayModule.gameState.difficulty = currentGameData.settings.difficulty;
+                            }
+
                             // ✅ Persist (MERGE, not overwrite)
                             try {
                                 const existing = JSON.parse(localStorage.getItem('nocap_game_state') || '{}');
@@ -1238,7 +1248,9 @@
                                     playerId: uid,
                                     isHost: isHostNow,
                                     isGuest: !isHostNow,
-                                    deviceMode: 'multi'
+                                    deviceMode: 'multi',
+                                    selectedCategories: MultiplayerGameplayModule.gameState.selectedCategories,
+                                    difficulty: MultiplayerGameplayModule.gameState.difficulty
                                 }));
                             } catch (_) {}
                         }
@@ -1300,6 +1312,18 @@
                         MultiplayerGameplayModule.gameState.isGuest = !isHostNow;
                         MultiplayerGameplayModule.gameState.playerId = uid;
 
+                        // ✅ Recover selectedCategories + difficulty from DB settings if missing
+                        if (!MultiplayerGameplayModule.gameState.selectedCategories?.length && currentGameData.settings) {
+                            const cats = currentGameData.settings.categories;
+                            if (cats) {
+                                MultiplayerGameplayModule.gameState.selectedCategories =
+                                    Array.isArray(cats) ? cats : Object.values(cats);
+                            }
+                        }
+                        if (!MultiplayerGameplayModule.gameState.difficulty && currentGameData.settings?.difficulty) {
+                            MultiplayerGameplayModule.gameState.difficulty = currentGameData.settings.difficulty;
+                        }
+
                         // Persist for next reload
                         try {
                             const existing = JSON.parse(localStorage.getItem('nocap_game_state') || '{}');
@@ -1309,9 +1333,10 @@
                                 playerId: uid,
                                 isHost: isHostNow,
                                 isGuest: !isHostNow,
-                                deviceMode: 'multi'
+                                deviceMode: 'multi',
+                                selectedCategories: MultiplayerGameplayModule.gameState.selectedCategories,
+                                difficulty: MultiplayerGameplayModule.gameState.difficulty
                             }));
-
                         } catch (_) {}
                     }
                 } catch (e) {
@@ -1593,7 +1618,7 @@
             const roundRef = firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentQuestionNumber}`);
             await roundRef.set({
                 question: currentQuestion,
-                startedAt: firebase.database.ServerValue.TIMESTAMP,
+                startedAt: Date.now(),
                 timerDuration: timerDuration
             });
 
@@ -1674,88 +1699,83 @@
     }
 
     async function loadQuestionFromCloudFunction() {
-        try {
-            // Get selected categories
-            const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
-            const selectedCategories = Array.isArray(rawSelected)
-                ? rawSelected
-                : (rawSelected ? Object.values(rawSelected) : []);
+        const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
+        const selectedCategories = Array.isArray(rawSelected)
+            ? rawSelected
+            : (rawSelected ? Object.values(rawSelected) : []);
 
-            if (selectedCategories.length === 0) {
-                // No categories - use FSK0 fallback
-                return {
-                    text: "Ich habe schon mal... etwas Interessantes erlebt",
-                    category: "fsk0"
-                };
-            }
+        // No categories selected — hard fallback
+        if (selectedCategories.length === 0) {
+            console.warn('⚠️ No categories in gameState — using emergency fallback');
+            return { text: 'Ich habe schon mal... etwas Interessantes erlebt', category: 'fsk0' };
+        }
 
-            // ✅ FSK18-SYSTEM: Check if FSK18 is in selected categories
-            const hasFSK18 = selectedCategories.includes('fsk18');
+        const hasFSK18 = selectedCategories.includes('fsk18');
 
-            // ✅ FSK0 & FSK16: Can use local fallback (fast)
-            if (!hasFSK18) {
-                if (MultiplayerGameplayModule.isDevelopment) {
-                    console.log('✅ No FSK18 - using local fallback questions');
+        // ── FSK18: Cloud Function (server-side age check) ──────────────────────
+        if (hasFSK18) {
+            try {
+                const instances = window.FirebaseConfig?.getFirebaseInstances?.();
+                const functions = instances?.functions;
+                if (functions) {
+                    const getQuestionsForGame = functions.httpsCallable('getQuestionsForGame');
+                    const result = await getQuestionsForGame({
+                        gameId: MultiplayerGameplayModule.gameState.gameId || 'multiplayer-game',
+                        categories: selectedCategories,
+                        count: 50
+                    });
+                    if (result?.data?.questions?.length > 0) {
+                        const questions = result.data.questions;
+                        const q = questions[Math.floor(Math.random() * questions.length)];
+                        return {
+                            text: sanitizeText(q.text || q.question || 'Ich habe schon mal...'),
+                            category: q.category || 'fsk0'
+                        };
+                    }
                 }
-                return generateRandomQuestionLocal(selectedCategories);
+            } catch (e) {
+                console.warn('⚠️ FSK18 Cloud Function failed, falling back to non-FSK18:', e.message);
             }
+            // FSK18 failed — fall through to RTDB with FSK18 removed
+        }
 
-            // ✅ FSK18: Must load via Cloud Function (secure)
-            if (MultiplayerGameplayModule.isDevelopment) {
-                console.log('🔒 FSK18 detected - loading via Cloud Function');
-            }
+        // ── FSK0 / FSK16 / special: Direct RTDB read ──────────────────────────
+        const safeCategories = selectedCategories.filter(c => c !== 'fsk18');
+        if (safeCategories.length === 0) safeCategories.push('fsk0');
 
-            // Get Firebase instances
-            const instances = window.FirebaseConfig?.getFirebaseInstances?.();
-            const functions = instances?.functions;
+        try {
+            const db = firebase.database();
 
-            if (!functions) {
-                console.warn('⚠️ Firebase Functions not available - using fallback');
-                return generateRandomQuestionLocal(selectedCategories.filter(c => c !== 'fsk18'));
-            }
+            // Load all questions for selected categories in parallel
+            const snapshots = await Promise.all(
+                safeCategories.map(cat => db.ref(`questions/${cat}`).once('value'))
+            );
 
-            // Call Cloud Function
-            const getQuestionsForGame = functions.httpsCallable('getQuestionsForGame');
-            const gameId = MultiplayerGameplayModule.gameState.gameId || 'multiplayer-game';
-
-            const result = await getQuestionsForGame({
-                gameId: gameId,
-                categories: selectedCategories,
-                count: 50 // Request sufficient questions for variety
+            // Flatten into one pool
+            const pool = [];
+            snapshots.forEach((snap, i) => {
+                if (snap.exists()) {
+                    const cat = safeCategories[i];
+                    Object.values(snap.val()).forEach(q => {
+                        if (q.text) pool.push({ text: q.text, category: cat });
+                    });
+                }
             });
 
-            if (result?.data?.questions && result.data.questions.length > 0) {
-                // Pick random question from returned set
-                const questions = result.data.questions;
-                const randomIndex = Math.floor(Math.random() * questions.length);
-                const question = questions[randomIndex];
-
-                if (MultiplayerGameplayModule.isDevelopment) {
-                    console.log(`✅ Loaded ${questions.length} questions via Cloud Function`);
-                }
-
-                // Extract question data
-                return {
-                    text: sanitizeText(question.text || question.question || 'Ich habe schon mal...'),
-                    category: question.category || 'fsk0'
-                };
+            if (pool.length > 0) {
+                // Avoid repeating the last question
+                const filtered = pool.filter(q => q.text !== currentQuestion?.text);
+                const source = filtered.length > 0 ? filtered : pool;
+                return source[Math.floor(Math.random() * source.length)];
             }
 
-            // Fallback if Cloud Function returned no questions
-            console.warn('⚠️ Cloud Function returned no questions - using local fallback');
-            return generateRandomQuestionLocal(selectedCategories.filter(c => c !== 'fsk18'));
-
-        } catch (error) {
-            console.error('❌ Error loading questions from Cloud Function:', error);
-
-            // Fallback to local questions (without FSK18)
-            const rawSelected = MultiplayerGameplayModule.gameState.selectedCategories || [];
-            const selectedCategories = Array.isArray(rawSelected)
-                ? rawSelected
-                : (rawSelected ? Object.values(rawSelected) : []);
-
-            return generateRandomQuestionLocal(selectedCategories.filter(c => c !== 'fsk18'));
+            console.warn('⚠️ RTDB returned no questions — using local fallback');
+        } catch (e) {
+            console.warn('⚠️ RTDB question load failed:', e.message);
         }
+
+        // ── Last resort: hardcoded fallback ───────────────────────────────────
+        return generateRandomQuestionLocal(safeCategories);
     }
     /**
      * P0 FIX: Display question with textContent only
@@ -2022,6 +2042,11 @@
             return;
         }
 
+        if (!currentQuestionNumber || currentQuestionNumber < 1) {
+            showNotification('Frage wird noch geladen...', 'warning');
+            return;
+        }
+
         const answerData = {
             playerId: playerKey,
             playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
@@ -2039,7 +2064,7 @@
 
             await answerRef.set({
                 ...answerData,
-                submittedAt: firebase.database.ServerValue.TIMESTAMP
+                submittedAt: Date.now()
             });
 // ✅ Ensure round listener exists (guest might have joined before round was loaded)
             if (!roundListenerRef) {
