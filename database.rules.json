@@ -176,6 +176,7 @@
 
           "$roundId": {
             ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
+            ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
 
             ".validate": "newData.hasChildren(['question', 'startedAt'])",
 
@@ -365,7 +366,6 @@
             }
           }
         },
-
         "preferences": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -378,7 +378,6 @@
             ".validate": "newData.isString() && (newData.val() === 'light' || newData.val() === 'dark' || newData.val() === 'auto')"
           }
         },
-
         "saved_games": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -392,7 +391,6 @@
             }
           }
         },
-
         "isPremium": {
           ".write": false,
           ".validate": "newData.isBoolean()"
