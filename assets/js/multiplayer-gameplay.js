@@ -1868,6 +1868,7 @@
         document.querySelectorAll('.answer-btn').forEach(btn => {
             btn.classList.remove('selected');
             btn.setAttribute('aria-checked', 'false');
+            btn.disabled = false;
         });
 
         const personalBox = document.getElementById('personal-result');
