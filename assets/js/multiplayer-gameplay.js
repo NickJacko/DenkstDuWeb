@@ -441,6 +441,9 @@
         return purified.substring(0, 20);
     }
     function getPlayerKey() {
+        // Always use live auth.uid — must match $uid in DB Rules
+        const uid = firebase.auth().currentUser?.uid;
+        if (uid) return uid;
         return MultiplayerGameplayModule.gameState?.playerId || null;
     }
 
@@ -653,14 +656,23 @@
         try {
             const u = authedUser;
             if (u && MultiplayerGameplayModule.gameState.gameId) {
-                const playerRef = firebase.database().ref(
-                    `games/${MultiplayerGameplayModule.gameState.gameId}/players/${u.uid}`
-                );
+                const gameId = MultiplayerGameplayModule.gameState.gameId;
+
+                // Read hostId from DB to determine role correctly
+                const hostSnap = await firebase.database()
+                    .ref(`games/${gameId}/hostId`).once('value');
+                const hostId = hostSnap.val();
+                const isHost = hostId === u.uid;
+
+                // Update gameState role now (before setupFirebaseListeners)
+                MultiplayerGameplayModule.gameState.isHost = isHost;
+                MultiplayerGameplayModule.gameState.isGuest = !isHost;
+
+                const playerRef = firebase.database().ref(`games/${gameId}/players/${u.uid}`);
                 const snap = await playerRef.once('value');
                 if (!snap.exists()) {
-                    const isHost = MultiplayerGameplayModule.gameState.isHost || false;
                     await playerRef.set({
-                        name: MultiplayerGameplayModule.gameState.playerName || 'Spieler',
+                        name: MultiplayerGameplayModule.gameState.playerName || (isHost ? 'Host' : 'Spieler'),
                         playerId: u.uid,
                         isHost,
                         isGuest: !isHost,
@@ -668,7 +680,7 @@
                         rejoinedAt: Date.now(),
                         online: true
                     });
-                    console.log('✅ Player re-registered in DB');
+                    console.log('✅ Player re-registered in DB as', isHost ? 'host' : 'guest');
                 }
             }
         } catch (e) {
@@ -1457,7 +1469,14 @@
                 }
             }
         } catch (error) {
-            console.error('❌ Error loading round:', error);
+            // Permission denied = player not yet in /players/ (re-register race condition)
+            // Retry after 1.5s to give re-register time to complete
+            if (error.code === 'PERMISSION_DENIED' || (error.message && error.message.includes('permission'))) {
+                console.warn('⚠️ Round read permission denied - retrying after re-register...');
+                setTimeout(() => loadRoundFromFirebase(roundNumber), 1500);
+            } else {
+                console.error('❌ Error loading round:', error);
+            }
         }
     }
 

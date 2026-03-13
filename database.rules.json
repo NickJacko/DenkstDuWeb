@@ -7,7 +7,7 @@
       ".indexOn": ["hostId", "createdAt", "status"],
 
       "$gameId": {
-        ".read": "auth != null && (data.child('players').child(auth.uid).exists() || data.child('hostId').val() === auth.uid)",
+        ".read": "auth != null",
         ".write": false,
 
         ".validate": "newData.hasChildren(['hostId', 'gameCode', 'status', 'createdAt']) && newData.child('players').hasChildren()",
@@ -94,7 +94,7 @@
         },
 
         "settings": {
-          ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
+          ".read": "auth != null",
           ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
 
           ".validate": "newData.hasChildren(['categories', 'difficulty', 'alcoholMode'])",
@@ -119,7 +119,7 @@
           ".indexOn": ["joinedAt", "online", "isHost"],
 
           "$playerId": {
-            ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
+            ".read": "auth != null",
             ".write": "auth != null && (auth.uid === $playerId || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
 
             ".validate": "newData.hasChildren(['name', 'joinedAt'])",
@@ -175,7 +175,7 @@
           ".indexOn": ["startedAt"],
 
           "$roundId": {
-            ".read": "auth != null && (root.child('games').child($gameId).child('players').child(auth.uid).exists() || root.child('games').child($gameId).child('hostId').val() === auth.uid)",
+            ".read": "auth != null",
             ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
 
             ".validate": "newData.hasChildren(['question', 'startedAt'])",
@@ -324,7 +324,7 @@
 
         "entitlements": {
           ".read": "auth != null && auth.uid === $userId",
-          ".write": false,
+          ".write": false, 
 
           "fsk18": {
             ".validate": "newData.hasChildren(['active', 'grantedAt', 'method'])",
@@ -366,6 +366,8 @@
             }
           }
         },
+
+
         "preferences": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -378,6 +380,7 @@
             ".validate": "newData.isString() && (newData.val() === 'light' || newData.val() === 'dark' || newData.val() === 'auto')"
           }
         },
+
         "saved_games": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -391,6 +394,7 @@
             }
           }
         },
+
         "isPremium": {
           ".write": false,
           ".validate": "newData.isBoolean()"
