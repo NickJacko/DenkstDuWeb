@@ -520,12 +520,17 @@ html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* iOS Safari: Hintergrundfarbe auf html verhindert weißen Overscroll-Bereich */
+    background: #667eea;
+    min-height: 100%;
 }
 
 body {
     font-family: var(--font-family);
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    background-attachment: fixed;
     min-height: 100vh;
+    min-height: -webkit-fill-available;
     overflow-x: hidden;
     position: relative;
     color: white;
