@@ -45,6 +45,29 @@
           ".validate": "newData.isNumber() && newData.val() > 0"
         },
 
+        "showOverallResults": {
+          ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+          ".validate": "newData.isBoolean()"
+        },
+
+        "overallStats": {
+          ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)"
+        },
+
+        "gameState": {
+          ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+          ".validate": "newData.isString() && (newData.val() === 'active' || newData.val() === 'finished' || newData.val() === 'paused')"
+        },
+
+        "endedAt": {
+          ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        },
+
+        "finalStats": {
+          ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)"
+        },
+
         "lastActivity": {
           ".write": "auth != null && ((root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true) || root.child('games').child($gameId).child('players').child(auth.uid).exists())",
           ".validate": "newData.isNumber() && newData.val() > 0"
@@ -369,7 +392,6 @@
             }
           }
         },
-
         "preferences": {
           ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null && auth.uid === $userId",
@@ -395,7 +417,6 @@
             }
           }
         },
-
         "isPremium": {
           ".write": false,
           ".validate": "newData.isBoolean()"
