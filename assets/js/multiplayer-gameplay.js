@@ -168,7 +168,7 @@
 
     // ✅ P1 DSGVO: Data cleanup tracking
     let answerCleanupScheduled = false;
-    const ANSWER_RETENTION_TIME = 10 * 60 * 1000; // 10 minutes (after game is over)
+    const ANSWER_RETENTION_TIME = 10 * 60 * 1000; // 10 minutes (safe margin after round ends)
 
     
 
@@ -440,7 +440,6 @@
 
         return purified.substring(0, 20);
     }
-
     function getPlayerKey() {
         return MultiplayerGameplayModule.gameState?.playerId || null;
     }
@@ -629,36 +628,39 @@
             }
         });
 
-        // Recover missing playerId from Firebase Auth
+// ✅ FIX: Recover missing playerId from Firebase Auth (needed after sessionStorage recovery)
         try {
             const u = firebase.auth().currentUser;
             if (u && u.uid) {
                 MultiplayerGameplayModule.gameState.playerId = u.uid;
-
-                // Re-register player in DB if missing (handles reload/tracking prevention)
-                const gameId = MultiplayerGameplayModule.gameState.gameId;
-                if (gameId) {
-                    const playerRef = firebase.database().ref(`games/${gameId}/players/${u.uid}`);
-                    const snap = await playerRef.once('value');
-                    if (!snap.exists()) {
-                        const isHost = MultiplayerGameplayModule.gameState.isHost === true;
-                        await playerRef.set({
-                            name: MultiplayerGameplayModule.gameState.playerName || 'Spieler',
-                            playerId: u.uid,
-                            isHost,
-                            isGuest: !isHost,
-                            joinedAt: Date.now(),
-                            rejoinedAt: Date.now(),
-                            online: true
-                        });
-                        console.log('✅ Re-registered player in DB after recovery');
-                    }
+            }
+        } catch (e) {
+            console.warn('⚠️ Could not read firebase.auth().currentUser:', e.message);
+        }
+// ✅ FIX: Re-register player in DB if missing (after auth UID change on reload)
+        try {
+            const u = firebase.auth().currentUser;
+            if (u && MultiplayerGameplayModule.gameState.gameId) {
+                const playerRef = firebase.database().ref(
+                    `games/${MultiplayerGameplayModule.gameState.gameId}/players/${u.uid}`
+                );
+                const snap = await playerRef.once('value');
+                if (!snap.exists()) {
+                    const isHost = MultiplayerGameplayModule.gameState.isHost || false;
+                    await playerRef.set({
+                        name: MultiplayerGameplayModule.gameState.playerName || 'Spieler',
+                        playerId: u.uid,
+                        isHost,
+                        isGuest: !isHost,
+                        joinedAt: Date.now(),
+                        rejoinedAt: Date.now(),
+                        online: true
+                    });
                 }
             }
         } catch (e) {
-            console.warn('⚠️ Could not recover player registration:', e.message);
+            console.warn('⚠️ Re-register failed:', e.message);
         }
-
         // Setup Firebase listeners
         await setupFirebaseListeners();
 
@@ -1354,7 +1356,8 @@
             if (snapshot.exists()) {
                 const roundData = snapshot.val();
                 if (!roundData || !roundData.question) {
-                    console.warn('⚠️ Round exists but no question yet - waiting...');
+                    console.warn('⚠️ Round exists but no question yet - retrying in 1s...');
+                    setTimeout(() => loadRoundFromFirebase(roundNumber), 1000);
                     return;
                 }
                 currentQuestion = roundData.question;
@@ -1609,6 +1612,42 @@
      * FSK0 & FSK16 can still use local fallback
      * @returns {Promise<Object>} Question object {text, category}
      */
+    function generateRandomQuestionLocal(categories) {
+        const fallbackQuestionsDatabase = {
+            fsk0: [
+                "Ich habe schon mal... ein ganzes Buch an einem Tag gelesen",
+                "Ich habe schon mal... Pizza zum Frühstück gegessen",
+                "Ich habe schon mal... mehr als 12 Stunden am Stück geschlafen",
+                "Ich habe schon mal... einen ganzen Tag im Pyjama verbracht",
+                "Ich habe schon mal... beim Kochen das Essen anbrennen lassen",
+                "Ich habe schon mal... eine Nacht komplett durchgemacht",
+                "Ich habe schon mal... einen fremden Hund gestreichelt",
+                "Ich habe schon mal... im Regen getanzt",
+                "Ich habe schon mal... etwas Wichtiges vergessen",
+                "Ich habe schon mal... im Kino geweint"
+            ],
+            fsk16: [
+                "Ich habe schon mal... so getan, als wäre ich krank, um nicht zur Schule zu müssen",
+                "Ich habe schon mal... bis 3 Uhr morgens Netflix geschaut",
+                "Ich habe schon mal... vergessen, wo ich mein Auto geparkt habe",
+                "Ich habe schon mal... jemandem etwas erzählt, das nicht ganz der Wahrheit entsprach",
+                "Ich habe schon mal... einen Test nicht bestanden",
+                "Ich habe schon mal... jemanden aus Versehen ignoriert",
+                "Ich habe schon mal... Geld für etwas Sinnloses ausgegeben",
+                "Ich habe schon mal... eine Party verlassen ohne mich zu verabschieden"
+            ]
+        };
+
+        const validCategories = (categories || ['fsk0']).filter(c => c !== 'fsk18' && fallbackQuestionsDatabase[c]);
+        if (validCategories.length === 0) validCategories.push('fsk0');
+
+        const randomCategory = validCategories[Math.floor(Math.random() * validCategories.length)];
+        const pool = fallbackQuestionsDatabase[randomCategory];
+        const text = pool[Math.floor(Math.random() * pool.length)];
+
+        return { text, category: randomCategory };
+    }
+
     async function loadQuestionFromCloudFunction() {
         try {
             // Get selected categories
@@ -2217,19 +2256,13 @@
                 statusEl.classList.add(myResult.isCorrect ? 'status-correct' : 'status-incorrect');
             }
 
-            const isAlcohol = MultiplayerGameplayModule.gameState?.alcoholMode === true;
             const sipsText = myResult.sips === 0 ?
                 '🎯 Keine! Perfekt!' :
-                isAlcohol ? `${myResult.sips} 🍺` : `${myResult.sips} Punkte`;
+                `${myResult.sips} 🍺`;
 
             const sipsEl = document.getElementById('personal-sips');
             if (sipsEl) {
                 sipsEl.textContent = sipsText;
-            }
-
-            const sipsLabelEl = document.getElementById('personal-sips-label');
-            if (sipsLabelEl) {
-                sipsLabelEl.textContent = isAlcohol ? 'Schlücke:' : 'Punkte:';
             }
         }
 
@@ -2250,8 +2283,8 @@
             else resultItem.classList.add('wrong');
 
             const avatar = result.playerName.substring(0, 2).toUpperCase();
-            const isAlcohol = MultiplayerGameplayModule.gameState?.alcoholMode === true;
-            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : isAlcohol ? `${result.sips} 🍺` : `${result.sips} Punkte`;
+            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
+
             // P0 FIX: Build with textContent
             const playerResult = document.createElement('div');
             playerResult.className = 'player-result';
@@ -2405,8 +2438,8 @@
             statsDiv.className = 'leaderboard-player-stats';
 
             const sipsSpan = document.createElement('span');
-            const isAlcohol = MultiplayerGameplayModule.gameState?.alcoholMode === true;
-            sipsSpan.textContent = isAlcohol ? `🍺 ${player.totalSips} ` : `🎯 ${player.totalSips} Punkte `;
+            sipsSpan.textContent = `🍺 ${player.totalSips} `;
+
             const correctSpan = document.createElement('span');
             correctSpan.textContent = `🎯 ${player.correctGuesses}/${player.totalGuesses} richtig`;
 
