@@ -629,17 +629,29 @@
         });
 
 // ✅ FIX: Recover missing playerId from Firebase Auth (needed after sessionStorage recovery)
-        try {
-            const u = firebase.auth().currentUser;
-            if (u && u.uid) {
-                MultiplayerGameplayModule.gameState.playerId = u.uid;
+        // Wait for auth state to be ready (currentUser can be null during init)
+        let authedUser = firebase.auth().currentUser;
+        if (!authedUser) {
+            try {
+                authedUser = await new Promise((resolve) => {
+                    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                        unsubscribe();
+                        resolve(user);
+                    });
+                    setTimeout(() => resolve(null), 5000); // 5s timeout
+                });
+            } catch (e) {
+                console.warn('⚠️ Auth state wait failed:', e.message);
             }
-        } catch (e) {
-            console.warn('⚠️ Could not read firebase.auth().currentUser:', e.message);
         }
-// ✅ FIX: Re-register player in DB if missing (after auth UID change on reload)
+
+        if (authedUser && authedUser.uid) {
+            MultiplayerGameplayModule.gameState.playerId = authedUser.uid;
+        }
+
+        // ✅ FIX: Re-register player in DB if missing (after auth UID change on reload)
         try {
-            const u = firebase.auth().currentUser;
+            const u = authedUser;
             if (u && MultiplayerGameplayModule.gameState.gameId) {
                 const playerRef = firebase.database().ref(
                     `games/${MultiplayerGameplayModule.gameState.gameId}/players/${u.uid}`
@@ -656,11 +668,13 @@
                         rejoinedAt: Date.now(),
                         online: true
                     });
+                    console.log('✅ Player re-registered in DB');
                 }
             }
         } catch (e) {
             console.warn('⚠️ Re-register failed:', e.message);
         }
+
         // Setup Firebase listeners
         await setupFirebaseListeners();
 
@@ -1567,7 +1581,6 @@
             const roundRef = firebase.database().ref(`games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentQuestionNumber}`);
             await roundRef.set({
                 question: currentQuestion,
-                answers: {},
                 startedAt: firebase.database.ServerValue.TIMESTAMP,
                 timerDuration: timerDuration
             });
