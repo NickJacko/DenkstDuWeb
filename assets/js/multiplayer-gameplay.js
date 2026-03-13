@@ -557,6 +557,14 @@
                     console.log('📝 Recovered gameId from sessionStorage:', sessionState);
                     stateRestored = true;
                 }
+                // Also recover playerName and isHost from sessionStorage
+                const sessionName = sessionStorage.getItem('nocap_player_name');
+                const sessionIsHost = sessionStorage.getItem('nocap_is_host');
+                if (sessionName) MultiplayerGameplayModule.gameState.playerName = sessionName;
+                if (sessionIsHost !== null) {
+                    MultiplayerGameplayModule.gameState.isHost = sessionIsHost === 'true';
+                    MultiplayerGameplayModule.gameState.isGuest = sessionIsHost !== 'true';
+                }
             } catch (e) {
                 console.warn('[WARNING] Could not recover state from sessionStorage:', e.message);
             }
@@ -660,21 +668,57 @@
             if (u && MultiplayerGameplayModule.gameState.gameId) {
                 const gameId = MultiplayerGameplayModule.gameState.gameId;
 
-                // Read hostId from DB to determine role correctly
+                // Read hostId from DB to determine role
                 const hostSnap = await firebase.database()
                     .ref(`games/${gameId}/hostId`).once('value');
                 const hostId = hostSnap.val();
-                const isHost = hostId === u.uid;
+                let isHost = hostId === u.uid;
+
+                // Check if we were the host via localStorage (UID may have changed after reload)
+                let wasHostByLocalStorage = false;
+                if (!isHost) {
+                    try {
+                        const savedState = JSON.parse(localStorage.getItem('nocap_game_state') || '{}');
+                        if (savedState.isHost === true && savedState.gameId === gameId) {
+                            wasHostByLocalStorage = true;
+                            isHost = true;
+                        }
+                    } catch (_) {}
+                    // Also check sessionStorage
+                    if (!wasHostByLocalStorage) {
+                        try {
+                            if (sessionStorage.getItem('nocap_is_host') === 'true') {
+                                wasHostByLocalStorage = true;
+                                isHost = true;
+                            }
+                        } catch (_) {}
+                    }
+                }
 
                 // Update gameState role now (before setupFirebaseListeners)
                 MultiplayerGameplayModule.gameState.isHost = isHost;
                 MultiplayerGameplayModule.gameState.isGuest = !isHost;
 
+                // Read player name
+                let playerName = MultiplayerGameplayModule.gameState.playerName;
+                if (!playerName) {
+                    try {
+                        const ss = sessionStorage.getItem('nocap_player_name');
+                        if (ss) { playerName = ss; }
+                        else {
+                            const savedState = JSON.parse(localStorage.getItem('nocap_game_state') || '{}');
+                            playerName = savedState.playerName || (isHost ? 'Host' : 'Spieler');
+                        }
+                        MultiplayerGameplayModule.gameState.playerName = playerName;
+                    } catch (_) { playerName = isHost ? 'Host' : 'Spieler'; }
+                }
+
+                // STEP 1: Write /players/$uid FIRST (auth.uid === $playerId always allowed)
                 const playerRef = firebase.database().ref(`games/${gameId}/players/${u.uid}`);
                 const snap = await playerRef.once('value');
                 if (!snap.exists()) {
                     await playerRef.set({
-                        name: MultiplayerGameplayModule.gameState.playerName || (isHost ? 'Host' : 'Spieler'),
+                        name: playerName,
                         playerId: u.uid,
                         isHost,
                         isGuest: !isHost,
@@ -683,6 +727,17 @@
                         online: true
                     });
                     console.log('✅ Player re-registered in DB as', isHost ? 'host' : 'guest');
+                } else {
+                    const existingName = snap.val().name;
+                    if (!existingName || existingName === 'Spieler' || existingName === 'Host') {
+                        await playerRef.update({ name: playerName });
+                    }
+                }
+
+                // STEP 2: Update hostId AFTER player entry with isHost:true exists
+                if (wasHostByLocalStorage) {
+                    await firebase.database().ref(`games/${gameId}`).update({ hostId: u.uid });
+                    console.log('✅ Host UID updated in Firebase after reload');
                 }
             }
         } catch (e) {
@@ -1359,6 +1414,18 @@
                                 selectedCategories: MultiplayerGameplayModule.gameState.selectedCategories,
                                 difficulty: MultiplayerGameplayModule.gameState.difficulty
                             }));
+                        } catch (_) {}
+                        // Also persist to sessionStorage for reliable recovery
+                        try {
+                            sessionStorage.setItem('nocap_game_id', MultiplayerGameplayModule.gameState.gameId);
+                            sessionStorage.setItem('nocap_is_host', String(isHostNow));
+                            if (MultiplayerGameplayModule.gameState.playerName) {
+                                sessionStorage.setItem('nocap_player_name', MultiplayerGameplayModule.gameState.playerName);
+                            } else if (currentGameData.players?.[uid]?.name) {
+                                const nameFromDB = currentGameData.players[uid].name;
+                                sessionStorage.setItem('nocap_player_name', nameFromDB);
+                                MultiplayerGameplayModule.gameState.playerName = nameFromDB;
+                            }
                         } catch (_) {}
                     }
                 } catch (e) {
