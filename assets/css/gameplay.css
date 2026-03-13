@@ -16,9 +16,9 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) fixed;
     height: 100vh;
-    height: 100dvh; /* Dynamic Viewport Height - berücksichtigt Mobile Toolbar */
+    height: 100dvh;
     overflow: hidden;
     touch-action: manipulation;
     position: relative;

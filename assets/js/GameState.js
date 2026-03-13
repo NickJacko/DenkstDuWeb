@@ -934,36 +934,8 @@
                     return true;
                 }
 
-                // ✅ FSK18 requires MANDATORY server-side validation
+// FSK18 requires MANDATORY server-side validation via Custom Claim
                 if (level === 'fsk18') {
-                    // ✅ NEW: Check if user is authenticated (not anonymous)
-                    if (window.authService && typeof window.authService.checkIsAnonymous === 'function') {
-                        if (window.authService.checkIsAnonymous()) {
-                            this.log('❌ FSK18 requires Google sign-in (anonymous user)', 'warning');
-
-                            // ✅ Cache denial
-                            this._sessionCache.fsk18Access = false;
-                            this._sessionCache.fsk18CheckedAt = Date.now();
-
-                            // ✅ Show user-friendly message
-                            if (window.NocapUtils && window.NocapUtils.showNotification) {
-                                window.NocapUtils.showNotification(
-                                    'FSK18-Inhalte erfordern eine Google-Anmeldung',
-                                    'warning',
-                                    3000
-                                );
-                            }
-
-                            return false;
-                        }
-                    } else {
-                        this.log('⚠️ authService not available, cannot check anonymous status', 'warning');
-                        // Fail closed if authService unavailable
-                        this._sessionCache.fsk18Access = false;
-                        this._sessionCache.fsk18CheckedAt = Date.now();
-                        return false;
-                    }
-
                     const now = Date.now();
                     const cached = this._sessionCache.fsk18Access;
                     const cacheAge = now - this._sessionCache.fsk18CheckedAt;

@@ -629,14 +629,33 @@
             }
         });
 
-// ✅ FIX: Recover missing playerId from Firebase Auth (needed after sessionStorage recovery)
+        // Recover missing playerId from Firebase Auth
         try {
             const u = firebase.auth().currentUser;
             if (u && u.uid) {
                 MultiplayerGameplayModule.gameState.playerId = u.uid;
+
+                // Re-register player in DB if missing (handles reload/tracking prevention)
+                const gameId = MultiplayerGameplayModule.gameState.gameId;
+                if (gameId) {
+                    const playerRef = firebase.database().ref(`games/${gameId}/players/${u.uid}`);
+                    const snap = await playerRef.once('value');
+                    if (!snap.exists()) {
+                        const isHost = MultiplayerGameplayModule.gameState.isHost === true;
+                        await playerRef.set({
+                            name: MultiplayerGameplayModule.gameState.playerName || 'Spieler',
+                            playerId: u.uid,
+                            isHost,
+                            isGuest: !isHost,
+                            rejoinedAt: Date.now(),
+                            online: true
+                        });
+                        console.log('✅ Re-registered player in DB after recovery');
+                    }
+                }
             }
         } catch (e) {
-            console.warn('⚠️ Could not read firebase.auth().currentUser:', e.message);
+            console.warn('⚠️ Could not recover player registration:', e.message);
         }
 
         // Setup Firebase listeners
