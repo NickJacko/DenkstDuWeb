@@ -451,7 +451,10 @@
 
     async function checkPremiumStatus() {
         try {
-            const isPremium = await MultiplayerCategoryModule.gameState.isPremiumUser();
+            // Premium not yet implemented — always false
+            const isPremium = typeof MultiplayerCategoryModule.gameState.isPremiumUser === 'function'
+                ? await MultiplayerCategoryModule.gameState.isPremiumUser()
+                : false;
             MultiplayerCategoryModule.state.hostHasPremium = isPremium;
 
 

@@ -272,18 +272,30 @@ exports.validateFSKAccess = functions
                 return res.status(200).json({ result: { allowed: true, category } });
             }
 
-            // ✅ FSK18 requires Custom Claim (server-authoritative)
+            // ✅ FSK18 requires age verification
             if (category === "fsk18") {
-                const userRecord = await admin.auth().getUser(uid);
-                const claims = userRecord.customClaims || {};
+                const userSnapshot = await admin.database().ref(`users/${uid}`).once("value");
+                const userData = userSnapshot.val();
 
-                if (claims.fsk18 !== true) {
+                if (!userData?.ageVerified) {
                     return res.status(200).json({
                         result: {
                             allowed: false,
-                            reason: "no_fsk18_claim",
+                            reason: "age_not_verified",
                             message: "Altersverifikation erforderlich"
                         },
+                    });
+                }
+
+                const ageLevel = Number(userData.ageLevel || 0);
+
+                if (ageLevel < 18) {
+                    return res.status(200).json({
+                        result: {
+                            allowed: false,
+                            reason: "age_too_young",
+                            message: "FSK 18 erforderlich"
+                        }
                     });
                 }
 
@@ -326,16 +338,26 @@ exports.validateFSKAccessCallable = functions
             return { allowed: true, category };
         }
 
-        // ✅ FSK18 requires Custom Claim (server-authoritative)
+        // ✅ FSK18 requires age verification
         if (category === "fsk18") {
-            const userRecord = await admin.auth().getUser(uid);
-            const claims = userRecord.customClaims || {};
+            const userSnapshot = await admin.database().ref(`users/${uid}`).once("value");
+            const userData = userSnapshot.val();
 
-            if (claims.fsk18 !== true) {
+            if (!userData?.ageVerified) {
                 return {
                     allowed: false,
-                    reason: "no_fsk18_claim",
+                    reason: "age_not_verified",
                     message: "Altersverifikation erforderlich"
+                };
+            }
+
+            const ageLevel = Number(userData.ageLevel || 0);
+
+            if (ageLevel < 18) {
+                return {
+                    allowed: false,
+                    reason: "age_too_young",
+                    message: "FSK 18 erforderlich"
                 };
             }
 
@@ -745,18 +767,39 @@ exports.revokeFSK18Access = functions
 // ✅ FSK18 CONTENT SECURITY (Phase 3)
 // --------------------
 
-// ✅ FSK18 Content Security (Phase 3) - Lazy Load
-let getQuestionCountModule, getQuestionsForGameModule;
-
-try {
-    getQuestionCountModule = require("./getQuestionCount");
-    if (getQuestionCountModule?.getQuestionCount) {
-        exports.getQuestionCount = getQuestionCountModule.getQuestionCount;
-        log.info("init", "getQuestionCount loaded");
-    }
-} catch (error) {
-    log.warn("init", "getQuestionCount module not found", { error: error.message });
-}
+// ✅ getQuestionCount inline (module not separate)
+exports.getQuestionCount = functions
+    .region("europe-west1")
+    .runWith({ memory: "256MB", timeoutSeconds: 10 })
+    .https.onCall(async (data, context) => {
+        const functionName = "getQuestionCount";
+        if (!context.auth) {
+            throw new functions.https.HttpsError("unauthenticated", "Login required");
+        }
+        const category = String(data?.category || "").trim();
+        if (!category) {
+            throw new functions.https.HttpsError("invalid-argument", "category required");
+        }
+        // FSK18 requires custom claim
+        if (category === "fsk18") {
+            const claims = context.auth.token || {};
+            if (!claims.fsk18) {
+                return { hasAccess: false, count: 0 };
+            }
+        }
+        try {
+            const snap = await admin.database()
+                .ref(`questions/${category}`)
+                .once("value");
+            const val = snap.val();
+            const count = val ? (Array.isArray(val) ? val.length : Object.keys(val).length) : 0;
+            log.info(functionName, `count for ${category}: ${count}`);
+            return { hasAccess: true, count };
+        } catch (err) {
+            log.error(functionName, "DB read failed", { error: err.message });
+            throw new functions.https.HttpsError("internal", "Could not read questions");
+        }
+    });
 
 try {
     getQuestionsForGameModule = require("./getQuestionsForGame");
@@ -998,9 +1041,10 @@ exports.createGameSecure = functions
         const difficulty = String(data?.difficulty || "easy").trim();
         const alcoholMode = Boolean(data?.alcoholMode);
 
-        if (playerName.length < 2 || playerName.length > 20) {
-            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-20 Zeichen haben");
+        if (playerName.length < 2 || playerName.length > 15) {
+            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-15 Zeichen haben");
         }
+
         if (!["easy", "medium", "hard"].includes(difficulty)) {
             throw new functions.https.HttpsError("invalid-argument", "Ungültige difficulty");
         }
@@ -1106,8 +1150,8 @@ exports.joinGameSecure = functions
         if (!gameCode || !/^[A-Z0-9]{6}$/.test(gameCode)) {
             throw new functions.https.HttpsError("invalid-argument", "Ungültiger gameCode");
         }
-        if (playerName.length < 2 || playerName.length > 20) {
-            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-20 Zeichen haben");
+        if (playerName.length < 2 || playerName.length > 15) {
+            throw new functions.https.HttpsError("invalid-argument", "playerName muss 2-15 Zeichen haben");
         }
 
         const db = admin.database();
@@ -1176,7 +1220,7 @@ exports.joinGameSecure = functions
 
 // ✅ FIX: Direct loading instead of lazy (prevents deployment timeout)
 let accountDeletion, realtimeSecurity;
-
+let getQuestionsForGameModule;
 try {
     accountDeletion = require("./account-deletion");
     log.info("init", "account-deletion module loaded");
