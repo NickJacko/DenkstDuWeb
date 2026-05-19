@@ -131,9 +131,43 @@
     const MAX_GAME_CODE_LENGTH = 6;
     const MIN_PLAYER_NAME_LENGTH = 2;
     const MAX_PLAYER_NAME_LENGTH = 20;
+    const INVITE_GAME_CODE_KEY = 'nocap_invite_game_code';
 
     // ✅ P1 STABILITY: Optimized debounce (300ms instead of 800ms)
     const CHECK_DEBOUNCE_MS = 300;
+
+    function saveInviteGameCode(code) {
+        if (!code || typeof code !== 'string') return;
+        try {
+            sessionStorage.setItem(INVITE_GAME_CODE_KEY, code);
+        } catch (e) {
+            if (JoinGameModule.isDevelopment) {
+                Logger.warn('⚠️ Could not save invite code to sessionStorage', e);
+            }
+        }
+    }
+
+    function loadInviteGameCode() {
+        try {
+            const stored = sessionStorage.getItem(INVITE_GAME_CODE_KEY);
+            return typeof stored === 'string' ? stored : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function clearInviteGameCode() {
+        try {
+            sessionStorage.removeItem(INVITE_GAME_CODE_KEY);
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    function getInviteCodeFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('code') || urlParams.get('gameId') || urlParams.get('invite');
+    }
 
     // ✅ P0 FIX: Strict regex patterns
     const GAME_CODE_REGEX = /^[A-Z0-9]{6}$/;
@@ -379,8 +413,9 @@
     // ===========================
 
     function handleUrlParameter() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const gameId = urlParams.get('gameId') || urlParams.get('code');
+        const urlGameCode = getInviteCodeFromUrl();
+        const storedGameCode = loadInviteGameCode();
+        const gameId = urlGameCode || storedGameCode;
 
         if (!gameId) {
             return;
@@ -389,7 +424,8 @@
         const sanitized = sanitizeGameCode(gameId);
 
         if (sanitized && sanitized.length === MAX_GAME_CODE_LENGTH) {
-            Logger.debug(`📋 URL-Parameter: ${sanitized}`);
+            Logger.debug(`📋 Invite-Code verwendet: ${sanitized}`);
+            saveInviteGameCode(sanitized);
 
             const gameCodeInput = document.getElementById('game-code');
             if (gameCodeInput) {
@@ -400,8 +436,9 @@
                 }, 500);
             }
         } else {
-            Logger.warn('⚠️ Invalid gameId in URL');
+            Logger.warn('⚠️ Ungültiger Spiel-Code in URL');
             showNotification('Ungültiger Spiel-Code in URL', 'warning');
+            clearInviteGameCode();
         }
     }
 
@@ -1094,6 +1131,9 @@
 
             // Save GameState too
             try { JoinGameModule.gameState.save?.(true); } catch (e) {}
+
+            // Clear stored invite code once the join flow completed successfully
+            clearInviteGameCode();
 
             // ✅ P0 FIX: Pass gameId in URL as final fallback
             setTimeout(() => {
