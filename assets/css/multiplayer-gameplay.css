@@ -120,6 +120,7 @@ body {
 .game-phase {
     display: none;
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -502,6 +503,11 @@ body {
    ============================================================================ */
 .submit-section {
     margin-bottom: 1rem;
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(102, 126, 234, 0), rgba(118, 75, 162, 0.15));
+    padding-top: 0.5rem;
 }
 
 .submit-btn {

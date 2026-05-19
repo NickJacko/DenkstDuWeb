@@ -504,6 +504,14 @@
             MultiplayerDifficultyModule.gameState.setDifficulty(difficulty);
         } else {
             MultiplayerDifficultyModule.gameState.difficulty = difficulty;
+            MultiplayerDifficultyModule.gameState.save?.(true);
+        }
+
+        // Persist the selected difficulty immediately so lobby initialization can recover it reliably
+        try {
+            MultiplayerDifficultyModule.gameState.save?.(true);
+        } catch (e) {
+            Logger.warn('⚠️ Could not immediately save difficulty:', e);
         }
 
         updateContinueButton();
@@ -587,11 +595,14 @@
                 }
             }
 
-            showNotification('Weiter zur Lobby...', 'success', 500);
+            try {
+                MultiplayerDifficultyModule.gameState.save?.(true);
+            } catch (e) {
+                Logger.warn('⚠️ Failed to save state before lobby redirect:', e);
+            }
 
-            setTimeout(() => {
-                window.location.href = 'multiplayer-lobby.html';
-            }, 500);
+            showNotification('Weiter zur Lobby...', 'success', 500);
+            window.location.href = 'multiplayer-lobby.html';
 
         } catch (error) {
             Logger.error('❌ Proceed error:', error);

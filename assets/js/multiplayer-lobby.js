@@ -580,9 +580,12 @@
             const createGameFn = functionsInstance.httpsCallable('createGameSecure');
 
 
-            const selectedCategories = MultiplayerLobbyModule.gameState.selectedCategories || [];
+            const rawCategories = MultiplayerLobbyModule.gameState.selectedCategories || [];
+            const selectedCategories = Array.isArray(rawCategories)
+                ? rawCategories
+                : Object.values(rawCategories).filter(cat => typeof cat === 'string');
             const difficulty = MultiplayerLobbyModule.gameState.difficulty || 'medium';
-            const alcoholMode = Boolean(MultiplayerLobbyModule.gameState.alcoholMode); // falls du hast, sonst false
+            const alcoholMode = Boolean(MultiplayerLobbyModule.gameState.alcoholMode);
 
             const res = await createGameFn({
                 playerName: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
