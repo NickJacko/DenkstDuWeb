@@ -587,6 +587,15 @@
             const difficulty = MultiplayerLobbyModule.gameState.difficulty || 'medium';
             const alcoholMode = Boolean(MultiplayerLobbyModule.gameState.alcoholMode);
 
+            if (MultiplayerLobbyModule.isDevelopment) {
+                console.log('🔧 Creating game with:', {
+                    selectedCategories,
+                    difficulty,
+                    alcoholMode,
+                    playerName: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName)
+                });
+            }
+
             const res = await createGameFn({
                 playerName: sanitizePlayerName(MultiplayerLobbyModule.gameState.playerName),
                 difficulty,
@@ -624,7 +633,25 @@
 
         } catch (error) {
             console.error('❌ Create game error:', error);
-            showNotification('Fehler beim Erstellen', 'error');
+
+            let errorMessage = 'Fehler beim Erstellen';
+            const code = error?.code || '';
+            const message = error?.message || '';
+            const details = error?.details || null;
+
+            if (code.toString().toLowerCase().includes('permission-denied')) {
+                errorMessage = 'Keine Berechtigung für die ausgewählte Kategorie. FSK18-Zugriff erforderlich.';
+            } else if (code.toString().toLowerCase().includes('invalid-argument')) {
+                errorMessage = message || 'Ungültige Eingabedaten für die Spielerstellung.';
+            } else if (message) {
+                errorMessage = message;
+            }
+
+            if (details) {
+                console.error('❌ Create game details:', details);
+            }
+
+            showNotification(errorMessage, 'error', 5000);
         }
     }
 
