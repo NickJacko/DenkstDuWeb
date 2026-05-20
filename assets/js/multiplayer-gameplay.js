@@ -3092,7 +3092,6 @@
             return;
         }
 
-        const isFSK16 = isFSK16Question(currentQuestion);
         const answerData = {
             playerId: playerKey,
             playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
@@ -3107,14 +3106,7 @@
                 `games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentQuestionNumber}/answers/${playerKey}`
             );
 
-            await answerRef.set({
-                answer: userAnswer,
-                estimation: isFSK16 ? null : userEstimation,
-                submittedAt: Date.now(),
-                playerId: playerKey,
-                playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
-                isHost: MultiplayerGameplayModule.gameState.isHost || false
-            });
+            await answerRef.set(answerData);
 // ✅ Ensure round listener exists (guest might have joined before round was loaded)
             if (!roundListenerRef) {
                 setupRoundListener(currentQuestionNumber);
