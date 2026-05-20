@@ -29,6 +29,11 @@ body {
     position: relative;
 }
 
+body, .app-container {
+    min-height: 100vh;
+    height: 100vh;
+}
+
 /* ============================================================================
    UTILITY CLASSES
    ============================================================================ */
@@ -140,7 +145,10 @@ body {
 .game-phase.active {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    max-height: calc(100vh - 5rem);
 }
 
 .game-phase > * {
@@ -504,6 +512,44 @@ body {
         font-size: 1.15rem;
     }
 
+    .game-phase.active {
+        max-height: calc(100vh - 5rem);
+    }
+
+    .question-card,
+    .estimation-section,
+    .guess-section,
+    .results-header,
+    .waiting-screen,
+    .players-status,
+    .host-controls,
+    .personal-result-box {
+        padding: 0.95rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .answer-section,
+    .submit-section {
+        margin-bottom: 0.8rem;
+    }
+
+    .guess-player-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+
+    .players-status {
+        max-height: 180px;
+        overflow-y: auto;
+    }
+
+    .number-grid {
+        grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+    }
+
+    .current-selection {
+        margin-bottom: 1rem;
+    }
+
     .guess-player-grid {
         gap: 0.65rem;
     }
@@ -738,16 +784,7 @@ body {
     flex-direction: column;
     justify-content: space-between;
     min-height: 0;
-    overflow: hidden;
-}
-
-.results-header {
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(30px);
-    border-radius: 1rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    text-align: center;
+    overflow-y: auto;
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
 }

@@ -2776,6 +2776,18 @@
 
         updateAnswerButtonLabels(question);
 
+        const estimationSection = document.querySelector('.estimation-section');
+        const selectionDisplay = document.getElementById('current-selection');
+        if (isFSK16Question(question)) {
+            if (estimationSection) estimationSection.classList.add('hidden');
+            if (selectionDisplay) selectionDisplay.classList.remove('show');
+        } else {
+            if (estimationSection) estimationSection.classList.remove('hidden');
+            if (selectionDisplay && userEstimation !== null) {
+                selectionDisplay.classList.add('show');
+            }
+        }
+
         // ✅ P1 UI/UX: Update progress indicator
         const progressEl = document.getElementById('question-progress');
         if (progressEl) {
@@ -3282,7 +3294,7 @@
         const guessDescription = document.getElementById('guess-description');
 
         if (guessSummary) {
-            guessSummary.textContent = `Es haben ${actualYesCount} von ${totalPlayers} Spielern mit "Ja" geantwortet.`;
+            guessSummary.textContent = `Es haben ${actualYesCount} Spieler mit "Ja" geantwortet.`;
         }
         if (guessDescription) {
             guessDescription.textContent = actualYesCount === 0
