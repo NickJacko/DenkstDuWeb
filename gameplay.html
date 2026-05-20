@@ -178,6 +178,18 @@
 
             <div class="results-grid" id="results-grid" role="list" aria-label="Spielergebnisse"></div>
 
+            <div class="guess-section hidden" id="guess-section" aria-live="polite">
+                <h3 class="guess-title">🎯 Wer hat "Ja" gesagt?</h3>
+                <p class="guess-description" id="guess-description">
+                    Wähle die Spieler aus, von denen du denkst, dass sie mit "Ja" geantwortet haben.
+                </p>
+                <div class="guess-player-grid" id="player-guess-grid" role="group" aria-label="Spieler auswählen"></div>
+                <button class="guess-submit-btn nav-btn primary" id="guess-submit-btn" type="button">
+                    Auswahl prüfen
+                </button>
+                <div class="guess-feedback" id="guess-feedback" aria-live="polite"></div>
+            </div>
+
             <div class="results-navigation">
                 <button class="nav-btn primary"
                         id="next-question-btn"

@@ -519,6 +519,7 @@
     let roundListenerRef = null; // Store the Firebase ref for proper cleanup
     let currentGameData = null;
     let currentRoundData = null;
+    let currentGuessSelection = [];
     let currentPlayers = {};
     let currentQuestion = null;
     let userAnswer = null;
@@ -1247,6 +1248,11 @@
         const submitBtn = document.getElementById('submit-btn');
         if (submitBtn) {
             addTrackedEventListener(submitBtn, 'click', submitAnswers);
+        }
+
+        const guessSubmitBtn = document.getElementById('guess-submit-btn');
+        if (guessSubmitBtn) {
+            addTrackedEventListener(guessSubmitBtn, 'click', evaluateGuessSelection);
         }
 
         // Host controls
@@ -2721,6 +2727,33 @@
         }
     }
 
+    function isFSK16Question(question) {
+        return question && (question.category === 'fsk16' || question.fsk === 16);
+    }
+
+    function hideGuessSelectionUI() {
+        const guessSection = document.getElementById('guess-section');
+        const playerGuessGrid = document.getElementById('player-guess-grid');
+        const guessFeedback = document.getElementById('guess-feedback');
+        const guessSubmitBtn = document.getElementById('guess-submit-btn');
+
+        if (guessSection) {
+            guessSection.classList.add('hidden');
+        }
+        if (playerGuessGrid) {
+            while (playerGuessGrid.firstChild) {
+                playerGuessGrid.removeChild(playerGuessGrid.firstChild);
+            }
+        }
+        if (guessFeedback) {
+            guessFeedback.textContent = '';
+        }
+        if (guessSubmitBtn) {
+            guessSubmitBtn.disabled = true;
+            guessSubmitBtn.classList.remove('enabled');
+        }
+    }
+
     function getActivePlayerCount() {
         // Count unique players by name to avoid ghost entries from UID changes after reload
         const names = new Set();
@@ -2764,6 +2797,7 @@
         }
 
         updateNumberSelection();
+        hideGuessSelectionUI();
         updateSubmitButton();
     }
 
@@ -3025,6 +3059,16 @@
             }
             showNotification('Antworten gesendet! 🎯', 'success', 2000);
             showPhase('waiting');
+
+            const immediateAnswers = {
+                ...(currentRoundData?.answers || {}),
+                [playerKey]: {
+                    answer: userAnswer,
+                    playerId: playerKey,
+                    playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName)
+                }
+            };
+            updateWaitingStatus(immediateAnswers);
             updateSubmitButton();
 
             setTimeout(() => {
@@ -3313,6 +3357,109 @@
 
             resultsGrid.appendChild(resultItem);
         });
+
+        if (isFSK16Question(currentQuestion)) {
+            buildGuessSelectionUI(actualYesCount);
+        } else {
+            hideGuessSelectionUI();
+        }
+    }
+
+    function buildGuessSelectionUI(actualYesCount) {
+        const guessSection = document.getElementById('guess-section');
+        const playerGuessGrid = document.getElementById('player-guess-grid');
+        const guessSubmitBtn = document.getElementById('guess-submit-btn');
+        const guessFeedback = document.getElementById('guess-feedback');
+
+        if (!guessSection || !playerGuessGrid || !guessSubmitBtn || !guessFeedback) return;
+
+        currentGuessSelection = [];
+        while (playerGuessGrid.firstChild) {
+            playerGuessGrid.removeChild(playerGuessGrid.firstChild);
+        }
+        guessFeedback.textContent = '';
+
+        Object.values(currentPlayers).forEach(player => {
+            const sanitizedName = sanitizePlayerName(player.name || 'Spieler');
+            const button = document.createElement('button');
+            button.className = 'guess-player-btn';
+            button.type = 'button';
+            button.textContent = sanitizedName;
+            button.setAttribute('aria-pressed', 'false');
+            button.setAttribute('data-player-name', sanitizedName);
+            addTrackedEventListener(button, 'click', () => toggleGuessPlayer(sanitizedName));
+            playerGuessGrid.appendChild(button);
+        });
+
+        const pluralLabel = actualYesCount === 1 ? 'Spieler hat' : 'Spieler haben';
+        const description = document.getElementById('guess-description');
+        if (description) {
+            description.textContent = `Es haben ${actualYesCount} ${pluralLabel} mit "Ja" geantwortet. Wähle die passenden Spieler aus.`;
+        }
+
+        guessSubmitBtn.disabled = true;
+        guessSubmitBtn.classList.remove('enabled');
+        guessSubmitBtn.setAttribute('aria-disabled', 'true');
+        guessSection.classList.remove('hidden');
+        updateGuessSubmitButtonState();
+    }
+
+    function updateGuessSubmitButtonState() {
+        const guessSubmitBtn = document.getElementById('guess-submit-btn');
+        if (!guessSubmitBtn) return;
+
+        const enabled = Array.isArray(currentGuessSelection) && currentGuessSelection.length > 0;
+        guessSubmitBtn.disabled = !enabled;
+        guessSubmitBtn.classList.toggle('enabled', enabled);
+        guessSubmitBtn.setAttribute('aria-disabled', String(!enabled));
+    }
+
+    function toggleGuessPlayer(playerName) {
+        const index = currentGuessSelection.indexOf(playerName);
+        const button = document.querySelector(`button[data-player-name="${CSS.escape(playerName)}"]`);
+
+        if (index === -1) {
+            currentGuessSelection.push(playerName);
+            if (button) {
+                button.classList.add('selected');
+                button.setAttribute('aria-pressed', 'true');
+            }
+        } else {
+            currentGuessSelection.splice(index, 1);
+            if (button) {
+                button.classList.remove('selected');
+                button.setAttribute('aria-pressed', 'false');
+            }
+        }
+        updateGuessSubmitButtonState();
+    }
+
+    function evaluateGuessSelection() {
+        const actualYesPlayers = Object.values(currentRoundData.answers || {})
+            .filter(answer => answer.answer === true)
+            .map(answer => answer.playerName);
+
+        const guessedPlayers = currentGuessSelection || [];
+        const missedCount = actualYesPlayers.filter(name => !guessedPlayers.includes(name)).length;
+        const falsePositiveCount = guessedPlayers.filter(name => !actualYesPlayers.includes(name)).length;
+        const totalErrors = missedCount + falsePositiveCount;
+        const multiplier = difficultyMultipliers[MultiplayerGameplayModule.gameState.difficulty] || 1;
+        const drinks = totalErrors * multiplier;
+
+        const feedback = document.getElementById('guess-feedback');
+        if (feedback) {
+            if (totalErrors === 0) {
+                feedback.textContent = 'Perfekt! Du hast alle Ja-Spieler richtig erkannt. Keine Schlücke.';
+            } else {
+                feedback.textContent = `Falsche Einschätzung: ${totalErrors} Fehler → ${drinks} ${drinks === 1 ? 'Schluck' : 'Schlücke'}. Richtige Ja-Spieler: ${actualYesPlayers.length > 0 ? actualYesPlayers.join(', ') : 'Niemand'}.`;
+            }
+        }
+
+        const guessSubmitBtn = document.getElementById('guess-submit-btn');
+        if (guessSubmitBtn) {
+            guessSubmitBtn.disabled = true;
+            guessSubmitBtn.classList.remove('enabled');
+        }
     }
 
     // ===========================
