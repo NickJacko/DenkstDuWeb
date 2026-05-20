@@ -537,6 +537,7 @@
 
     let connectedRef = null;
     let connectedCb = null;
+    let playerPresenceRef = null;
 
     // Overall stats tracking
     let overallStats = {
@@ -587,6 +588,8 @@
                 connectionState = 'connected';
                 reconnectAttempts = 0;
                 updateConnectionUI(true);
+                initializePlayerPresence();
+                updatePlayerOnlineStatus(true);
             } else {
                 console.warn('⚠️ Disconnected from Firebase');
                 connectionState = 'disconnected';
@@ -595,6 +598,38 @@
             }
         };
         connectedRef.on('value', connectedCb);
+    }
+
+    async function initializePlayerPresence() {
+        const playerKey = getPlayerKey();
+        const gameId = MultiplayerGameplayModule.gameState.gameId;
+        if (!playerKey || !gameId) return;
+
+        const playerRef = firebase.database().ref(`games/${gameId}/players/${playerKey}`);
+        playerPresenceRef = playerRef;
+        try {
+            playerPresenceRef.onDisconnect().update({
+                online: false,
+                disconnectedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+        } catch (e) {
+            console.warn('⚠️ Could not register onDisconnect presence handler:', e.message);
+        }
+    }
+
+    async function updatePlayerOnlineStatus(isOnline) {
+        const playerKey = getPlayerKey();
+        const gameId = MultiplayerGameplayModule.gameState.gameId;
+        if (!playerKey || !gameId) return;
+
+        try {
+            await firebase.database().ref(`games/${gameId}/players/${playerKey}`).update({
+                online: isOnline,
+                ...(isOnline ? { rejoinedAt: Date.now() } : { disconnectedAt: Date.now() })
+            });
+        } catch (e) {
+            console.warn('⚠️ Could not update player presence flag:', e.message);
+        }
     }
 
     /**
@@ -1150,9 +1185,16 @@
                     console.log('✅ Player re-registered in DB as', isHost ? 'host' : 'guest');
                 } else {
                     const existingName = snap.val().name;
+                    const updateData = {
+                        online: true,
+                        rejoinedAt: Date.now(),
+                        isHost,
+                        isGuest: !isHost
+                    };
                     if (!existingName || existingName === 'Spieler' || existingName === 'Host') {
-                        await playerRef.update({ name: playerName });
+                        updateData.name = playerName;
                     }
+                    await playerRef.update(updateData);
                 }
 
                 // STEP 2: Update hostId AFTER player entry with isHost:true exists
@@ -2020,12 +2062,12 @@
             if (snapshot.exists()) {
                 currentRoundData = snapshot.val();
 
-                const answers = currentRoundData.answers || {};
+                const answers = filterRoundAnswersForActivePlayers(currentRoundData.answers || {});
                 const answerCount = Object.keys(answers).length;
                 const playerCount = getActivePlayerCount();
 
                 if (MultiplayerGameplayModule.isDevelopment) {
-                    console.log(`📊 Round update: ${answerCount}/${playerCount} answers`);
+                    console.log(`📊 Round update: ${answerCount}/${playerCount} active answers`);
                 }
 
 // ✅ Always update waiting UI when applicable
@@ -2044,7 +2086,7 @@
                     try { updateSubmitButton(); } catch(_) {}
                 }
 
-                const guesses = currentRoundData.guesses || {};
+                const guesses = filterRoundGuessesForActivePlayers(currentRoundData.guesses || {});
                 const guessCount = Object.keys(guesses).length;
                 const actualYesCount = Object.values(answers).filter(a => a.answer === true).length;
 
@@ -2826,13 +2868,39 @@
         }
     }
 
+    function isPlayerActive(player) {
+        return player && player.online !== false;
+    }
+
+    function getActivePlayers() {
+        return Object.entries(currentPlayers).filter(([, player]) => isPlayerActive(player));
+    }
+
+    function getActivePlayerIds() {
+        return getActivePlayers().map(([playerId]) => playerId);
+    }
+
     function getActivePlayerCount() {
-        // Count unique players by name to avoid ghost entries from UID changes after reload
+        // Count only currently online players and normalize duplicate names from stale UIDs
         const names = new Set();
-        Object.values(currentPlayers).forEach(p => {
+        getActivePlayers().forEach(([, p]) => {
             if (p && p.name) names.add(p.name.trim().toLowerCase());
         });
-        return Math.max(names.size, Object.keys(currentPlayers).length > 0 ? 1 : 0);
+        return Math.max(names.size, getActivePlayers().length > 0 ? 1 : 0);
+    }
+
+    function filterRoundAnswersForActivePlayers(answers = {}) {
+        const activeIds = new Set(getActivePlayerIds());
+        return Object.fromEntries(
+            Object.entries(answers).filter(([playerId]) => activeIds.has(playerId))
+        );
+    }
+
+    function filterRoundGuessesForActivePlayers(guesses = {}) {
+        const activeIds = new Set(getActivePlayerIds());
+        return Object.fromEntries(
+            Object.entries(guesses).filter(([playerId]) => activeIds.has(playerId))
+        );
     }
 
     function resetForNewQuestion() {
@@ -3163,7 +3231,7 @@
 
             if (snapshot.exists()) {
                 const roundData = snapshot.val();
-                const answers = roundData.answers || {};
+                const answers = filterRoundAnswersForActivePlayers(roundData.answers || {});
                 const answerCount = Object.keys(answers).length;
                 const playerCount = getActivePlayerCount();
 
@@ -3249,7 +3317,8 @@
         statusContainer.innerHTML = '';
 
         Object.entries(currentPlayers).forEach(([playerId, player]) => {
-            const hasAnswered = !!answers[playerId] || !!answers[player.uid] || !!answers[player.playerId];
+            const isOnline = isPlayerActive(player);
+            const hasAnswered = isOnline && (!!answers[playerId] || !!answers[player.uid] || !!answers[player.playerId]);
 
             const statusItem = document.createElement('div');
             statusItem.className = 'player-status-item';
@@ -3259,8 +3328,8 @@
             nameSpan.textContent = sanitizePlayerName(player.name || 'Spieler');
 
             const statusSpan = document.createElement('span');
-            statusSpan.className = `status-indicator ${hasAnswered ? 'status-done' : 'status-waiting'}`;
-            statusSpan.textContent = hasAnswered ? '✅ Fertig' : '⏳ Wartet...';
+            statusSpan.className = `status-indicator ${!isOnline ? 'status-offline' : hasAnswered ? 'status-done' : 'status-waiting'}`;
+            statusSpan.textContent = !isOnline ? '🔌 Offline' : hasAnswered ? '✅ Fertig' : '⏳ Wartet...';
 
             statusItem.appendChild(nameSpan);
             statusItem.appendChild(statusSpan);
@@ -3278,9 +3347,9 @@
             return;
         }
 
-        const answers = currentRoundData.answers;
+        const answers = filterRoundAnswersForActivePlayers(currentRoundData.answers || {});
         const actualYesCount = Object.values(answers).filter(a => a.answer === true).length;
-        const guesses = currentRoundData.guesses || {};
+        const guesses = filterRoundGuessesForActivePlayers(currentRoundData.guesses || {});
 
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log(`✅ Results: ${actualYesCount} said yes`);
@@ -3383,7 +3452,7 @@
         const resultsSummaryEl = document.getElementById('results-summary');
         if (resultsSummaryEl) {
             resultsSummaryEl.textContent =
-                `✅ ${actualYesCount} von ${totalPlayers || results.length} Spielern haben mit "Ja" geantwortet`;
+                `✅ ${actualYesCount} von ${totalPlayers || results.length} aktiven Spielern haben mit "Ja" geantwortet`;
         }
 
         // Find current player's result
@@ -3503,7 +3572,7 @@
         }
         guessFeedback.textContent = '';
 
-        Object.entries(currentPlayers).forEach(([playerId, player]) => {
+        getActivePlayers().forEach(([playerId, player]) => {
             const sanitizedName = sanitizePlayerName(player.name || 'Spieler');
             const button = document.createElement('button');
             button.className = 'guess-player-btn';
