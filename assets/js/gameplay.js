@@ -234,6 +234,12 @@ function hideGuessSelectionUI() {
     if (guessSubmitBtn) {
         guessSubmitBtn.disabled = true;
         guessSubmitBtn.classList.remove('enabled');
+        guessSubmitBtn.setAttribute('aria-disabled', 'true');
+    }
+
+    const guessPhase = document.getElementById('guess-phase');
+    if (guessPhase) {
+        guessPhase.classList.add('hidden');
     }
 }
 
@@ -1562,8 +1568,66 @@ function loadQuestion(question) {
         questionCategory.textContent = categoryNames[question.category] || '🎮 Spiel';
     }
 
+    updateAnswerButtonLabels(question);
+
+    const estimationSection = document.getElementById('estimation-section');
+    if (estimationSection) {
+        estimationSection.classList.toggle('hidden', isFSK16Question(question));
+    }
+
     // ✅ P1 DSGVO: Update FSK badge for age-restricted content
     updateFSKBadge(question);
+}
+
+function getAnswerLabels(question) {
+    if (!question || !question.text) {
+        return { yes: 'Ja', no: 'Nein' };
+    }
+
+    const text = question.text.toLowerCase();
+    const pastTensePatterns = [
+        'ich habe',
+        'ich war',
+        'schon mal',
+        'jemals',
+        'noch nie',
+        'habe ich',
+        'habe ich schon'
+    ];
+
+    const conditionalPatterns = [
+        'ich würde',
+        'ich könnte',
+        'ich finde',
+        'ich glaube',
+        'ich möchte',
+        'würde',
+        'glaube',
+        'finde'
+    ];
+
+    if (pastTensePatterns.some(pattern => text.includes(pattern))) {
+        return { yes: 'Ja, habe ich', no: 'Nein, noch nie' };
+    }
+
+    if (conditionalPatterns.some(pattern => text.includes(pattern))) {
+        return { yes: 'Ja, trifft zu', no: 'Nein, trifft nicht zu' };
+    }
+
+    return { yes: 'Ja', no: 'Nein' };
+}
+
+function updateAnswerButtonLabels(question) {
+    const labels = getAnswerLabels(question);
+    const yesBtnLabel = document.querySelector('#yes-btn > div:nth-child(2)');
+    const noBtnLabel = document.querySelector('#no-btn > div:nth-child(2)');
+
+    if (yesBtnLabel) {
+        yesBtnLabel.textContent = labels.yes;
+    }
+    if (noBtnLabel) {
+        noBtnLabel.textContent = labels.no;
+    }
 }
 
 function updateGameDisplay() {
@@ -1718,7 +1782,12 @@ function updateSubmitButton() {
     const submitBtn = document.getElementById('submit-btn');
     if (!submitBtn) return;
 
-    if (GameplayModule.currentAnswer !== null && GameplayModule.currentEstimation !== null) {
+    const requiresEstimation = !isFSK16Question(GameplayModule.currentGame.currentQuestion);
+    const hasAnswer = GameplayModule.currentAnswer !== null;
+    const hasEstimation = GameplayModule.currentEstimation !== null;
+    const canSubmit = hasAnswer && (!requiresEstimation || hasEstimation);
+
+    if (canSubmit) {
         submitBtn.classList.add('enabled');
         submitBtn.disabled = false;
         submitBtn.setAttribute('aria-disabled', 'false');
@@ -1734,15 +1803,18 @@ function updateSubmitButton() {
 // ===========================
 
 function submitAnswer() {
-    if (GameplayModule.currentAnswer === null || GameplayModule.currentEstimation === null) {
-        showNotification('Bitte wähle eine Antwort und eine Schätzung aus!', 'warning');
+    const currentQuestion = GameplayModule.currentGame.currentQuestion;
+    const isFSK16 = isFSK16Question(currentQuestion);
+
+    if (GameplayModule.currentAnswer === null || (!isFSK16 && GameplayModule.currentEstimation === null)) {
+        showNotification(isFSK16 ? 'Bitte wähle eine Antwort!' : 'Bitte wähle eine Antwort und eine Schätzung aus!', 'warning');
         return;
     }
 
     const currentPlayerName = GameplayModule.currentGame.players[GameplayModule.currentGame.currentPlayerIndex];
 
     GameplayModule.currentGame.currentAnswers[currentPlayerName] = GameplayModule.currentAnswer;
-    GameplayModule.currentGame.currentEstimates[currentPlayerName] = GameplayModule.currentEstimation;
+    GameplayModule.currentGame.currentEstimates[currentPlayerName] = isFSK16 ? null : GameplayModule.currentEstimation;
 
     if (GameplayModule.isDevelopment) {
         Logger.debug(`📤 ${currentPlayerName} answered:`, {
@@ -1762,7 +1834,12 @@ function submitAnswer() {
         updateGameDisplay();
         showPlayerChangePopup();
     } else {
-        showResults();
+        const actualYesCount = Object.values(GameplayModule.currentGame.currentAnswers).filter(answer => answer === true).length;
+        if (isFSK16Question(GameplayModule.currentGame.currentQuestion)) {
+            showGuessView(actualYesCount);
+        } else {
+            showResults();
+        }
     }
 }
 
@@ -1936,11 +2013,7 @@ function displayResults(results, actualYesCount) {
         resultsGrid.appendChild(resultItem);
     });
 
-    if (isFSK16Question(GameplayModule.currentGame.currentQuestion)) {
-        buildGuessSelectionUI(actualYesCount);
-    } else {
-        hideGuessSelectionUI();
-    }
+    hideGuessSelectionUI();
 }
 
 function buildGuessSelectionUI(actualYesCount) {
@@ -1951,6 +2024,7 @@ function buildGuessSelectionUI(actualYesCount) {
 
     if (!guessSection || !playerGuessGrid || !guessSubmitBtn || !guessFeedback) return;
 
+    GameplayModule.currentGame.currentGuessRequiredCount = actualYesCount;
     GameplayModule.currentGame.currentGuessSelection = [];
     while (playerGuessGrid.firstChild) {
         playerGuessGrid.removeChild(playerGuessGrid.firstChild);
@@ -1971,7 +2045,9 @@ function buildGuessSelectionUI(actualYesCount) {
     const pluralLabel = actualYesCount === 1 ? 'Spieler hat' : 'Spieler haben';
     const description = document.getElementById('guess-description');
     if (description) {
-        description.textContent = `Es haben ${actualYesCount} ${pluralLabel} mit "Ja" geantwortet. Wähle die passenden Spieler aus.`;
+        description.textContent = actualYesCount === 0
+            ? 'Niemand hat mit "Ja" geantwortet. Wähle keine Spieler aus.'
+            : `Es haben ${actualYesCount} ${pluralLabel} mit "Ja" geantwortet. Wähle genau ${actualYesCount} Spieler aus.`;
     }
 
     guessSubmitBtn.disabled = true;
@@ -1985,7 +2061,12 @@ function updateGuessSubmitButtonState() {
     const guessSubmitBtn = document.getElementById('guess-submit-btn');
     if (!guessSubmitBtn) return;
 
-    const enabled = Array.isArray(GameplayModule.currentGame.currentGuessSelection) && GameplayModule.currentGame.currentGuessSelection.length > 0;
+    const selectedCount = Array.isArray(GameplayModule.currentGame.currentGuessSelection)
+        ? GameplayModule.currentGame.currentGuessSelection.length
+        : 0;
+    const requiredCount = GameplayModule.currentGame.currentGuessRequiredCount || 0;
+    const enabled = selectedCount === requiredCount;
+
     guessSubmitBtn.disabled = !enabled;
     guessSubmitBtn.classList.toggle('enabled', enabled);
     guessSubmitBtn.setAttribute('aria-disabled', String(!enabled));
@@ -1996,17 +2077,27 @@ function toggleGuessPlayer(playerName) {
         GameplayModule.currentGame.currentGuessSelection = [];
     }
 
-    const index = GameplayModule.currentGame.currentGuessSelection.indexOf(playerName);
+    const requiredCount = GameplayModule.currentGame.currentGuessRequiredCount || 0;
+    const currentSelection = GameplayModule.currentGame.currentGuessSelection;
+    const index = currentSelection.indexOf(playerName);
     const button = document.querySelector(`button[data-player-name="${CSS.escape(playerName)}"]`);
 
     if (index === -1) {
-        GameplayModule.currentGame.currentGuessSelection.push(playerName);
+        if (requiredCount > 0 && currentSelection.length >= requiredCount) {
+            const feedback = document.getElementById('guess-feedback');
+            if (feedback) {
+                feedback.textContent = `Du darfst nur ${requiredCount} Spieler auswählen.`;
+            }
+            return;
+        }
+
+        currentSelection.push(playerName);
         if (button) {
             button.classList.add('selected');
             button.setAttribute('aria-pressed', 'true');
         }
     } else {
-        GameplayModule.currentGame.currentGuessSelection.splice(index, 1);
+        currentSelection.splice(index, 1);
         if (button) {
             button.classList.remove('selected');
             button.setAttribute('aria-pressed', 'false');
@@ -2025,12 +2116,29 @@ function evaluateGuessSelection() {
     const difficultyMultiplier = getDifficultyMultiplier();
     const drinks = totalErrors * difficultyMultiplier;
 
-    const feedback = document.getElementById('guess-feedback');
-    if (feedback) {
+    const results = GameplayModule.currentGame.players.map(playerName => {
+        const isYes = GameplayModule.currentGame.currentAnswers[playerName] === true;
+        const guessed = guessedPlayers.includes(playerName);
+        const missed = isYes && !guessed ? 1 : 0;
+        const falsePositive = !isYes && guessed ? 1 : 0;
+        const errorCount = missed + falsePositive;
+
+        return {
+            playerName,
+            answer: isYes,
+            estimation: guessedPlayers.length,
+            difference: errorCount,
+            isCorrect: errorCount === 0,
+            sips: errorCount * difficultyMultiplier
+        };
+    });
+
+    const guessSummary = document.getElementById('guess-feedback');
+    if (guessSummary) {
         if (totalErrors === 0) {
-            feedback.textContent = 'Perfekt! Du hast alle Ja-Spieler richtig erkannt. Keine Schlücke.';
+            guessSummary.textContent = 'Perfekt! Du hast alle Ja-Spieler richtig erkannt. Keine Schlücke.';
         } else {
-            feedback.textContent = `Falsche Einschätzung: ${totalErrors} Fehler → ${drinks} ${drinks === 1 ? 'Schluck' : 'Schlücke'}. Richtige Ja-Spieler: ${actualYesPlayers.length > 0 ? actualYesPlayers.join(', ') : 'Niemand'}.`;
+            guessSummary.textContent = `Falsche Einschätzung: ${totalErrors} Fehler → ${drinks} ${drinks === 1 ? 'Schluck' : 'Schlücke'}. Richtige Ja-Spieler: ${actualYesPlayers.length > 0 ? actualYesPlayers.join(', ') : 'Niemand'}.`;
         }
     }
 
@@ -2039,6 +2147,9 @@ function evaluateGuessSelection() {
         guessSubmitBtn.disabled = true;
         guessSubmitBtn.classList.remove('enabled');
     }
+
+    displayResults(results, actualYesPlayers.length);
+    showResultsView();
 }
 
 function showResultsView() {
@@ -2047,15 +2158,39 @@ function showResultsView() {
     const submitSection = document.getElementById('submit-section');
     const currentPlayerCard = document.querySelector('.current-player-card');
     const resultsSection = document.getElementById('results-section');
+    const guessPhase = document.getElementById('guess-phase');
 
     // ✅ CSP FIX: Use CSS classes instead of inline styles
     if (answerSection) answerSection.classList.add('hidden');
     if (estimationSection) estimationSection.classList.add('hidden');
     if (submitSection) submitSection.classList.add('hidden');
     if (currentPlayerCard) currentPlayerCard.classList.add('hidden');
+    if (guessPhase) guessPhase.classList.add('hidden');
     if (resultsSection) resultsSection.classList.remove('hidden');
 
     showNotification('Ergebnisse werden angezeigt...', 'success', 2000);
+}
+
+function showGuessView(actualYesCount) {
+    const answerSection = document.getElementById('answer-section');
+    const estimationSection = document.getElementById('estimation-section');
+    const submitSection = document.getElementById('submit-section');
+    const currentPlayerCard = document.querySelector('.current-player-card');
+    const resultsSection = document.getElementById('results-section');
+    const guessPhase = document.getElementById('guess-phase');
+    const guessSummary = document.getElementById('guess-summary');
+
+    if (answerSection) answerSection.classList.add('hidden');
+    if (estimationSection) estimationSection.classList.add('hidden');
+    if (submitSection) submitSection.classList.add('hidden');
+    if (currentPlayerCard) currentPlayerCard.classList.add('hidden');
+    if (resultsSection) resultsSection.classList.add('hidden');
+    if (guessPhase) guessPhase.classList.remove('hidden');
+    if (guessSummary) {
+        guessSummary.textContent = `Es haben ${actualYesCount} von ${GameplayModule.currentGame.players.length} Spielern mit "Ja" geantwortet.`;
+    }
+
+    buildGuessSelectionUI(actualYesCount);
 }
 
 function showGameView() {
@@ -2064,12 +2199,14 @@ function showGameView() {
     const submitSection = document.getElementById('submit-section');
     const currentPlayerCard = document.querySelector('.current-player-card');
     const resultsSection = document.getElementById('results-section');
+    const guessPhase = document.getElementById('guess-phase');
 
     // ✅ CSP FIX: Use CSS classes instead of inline styles
     if (answerSection) answerSection.classList.remove('hidden');
     if (estimationSection) estimationSection.classList.remove('hidden');
     if (submitSection) submitSection.classList.remove('hidden');
     if (currentPlayerCard) currentPlayerCard.classList.remove('hidden');
+    if (guessPhase) guessPhase.classList.add('hidden');
     if (resultsSection) resultsSection.classList.add('hidden');
 }
 

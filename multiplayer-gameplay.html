@@ -183,6 +183,24 @@
         </div>
     </section>
 
+    <!-- PHASE 2.5: Guess Selection -->
+    <section class="game-phase" id="guess-phase" role="region" aria-label="Ja-Spieler auswählen">
+        <div class="guess-screen" id="guess-section">
+            <header class="guess-header">
+                <h2 class="guess-title" id="guess-title">🎯 Wer hat "Ja" gesagt?</h2>
+                <p class="guess-summary" id="guess-summary">Berechne die Ja-Antworten...</p>
+            </header>
+            <p class="guess-description" id="guess-description">
+                Wähle die Spieler aus, von denen du denkst, dass sie mit "Ja" geantwortet haben.
+            </p>
+            <div class="guess-player-grid" id="player-guess-grid" role="group" aria-label="Spieler auswählen"></div>
+            <button class="guess-submit-btn nav-btn primary" id="guess-submit-btn" type="button" disabled aria-disabled="true">
+                Auswahl prüfen
+            </button>
+            <div class="guess-feedback" id="guess-feedback" aria-live="polite"></div>
+        </div>
+    </section>
+
     <!-- PHASE 3: Round Results -->
     <section class="game-phase" id="results-phase" role="region" aria-label="Rundenergebnisse">
         <div class="results-screen">
@@ -214,18 +232,6 @@
 
             <div class="results-grid" id="results-grid" role="list">
                 <!-- Results populated dynamically -->
-            </div>
-
-            <div class="guess-section hidden" id="guess-section" aria-live="polite">
-                <h3 class="guess-title">🎯 Wer hat "Ja" gesagt?</h3>
-                <p class="guess-description" id="guess-description">
-                    Schau dir die Runde an und tippe, welche Spieler mit "Ja" geantwortet haben.
-                </p>
-                <div class="guess-player-grid" id="player-guess-grid" role="group" aria-label="Spieler auswählen"></div>
-                <button class="guess-submit-btn nav-btn primary" id="guess-submit-btn" type="button">
-                    Auswahl prüfen
-                </button>
-                <div class="guess-feedback" id="guess-feedback" aria-live="polite"></div>
             </div>
 
             <!-- Host Controls -->

@@ -12,6 +12,12 @@
     box-sizing: border-box;
 }
 
+html, body {
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+}
+
 body {
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -77,15 +83,17 @@ body {
 .app-container {
     min-height: 100vh;
     min-height: -webkit-fill-available;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 1rem;
+    padding: 0.75rem;
     padding-top: max(3.75rem, env(safe-area-inset-top, 0) + 3.75rem);
-    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0));
     max-width: 450px;
     margin: 0 auto;
     position: relative;
     z-index: 1;
+    overflow: hidden;
 }
 
 /* ============================================================================
@@ -121,11 +129,9 @@ body {
     display: none;
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 1rem;
-    padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0));
+    overflow: hidden;
+    padding: 0.75rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
     max-width: 480px;
     margin: 0 auto;
     width: 100%;
@@ -134,6 +140,7 @@ body {
 .game-phase.active {
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
 }
 
 .game-phase > * {
@@ -148,10 +155,10 @@ body {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08));
     backdrop-filter: blur(35px);
     -webkit-backdrop-filter: blur(35px);
-    border-radius: 1.625rem;
+    border-radius: 1.4rem;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 1.625rem 1.375rem;
-    margin-bottom: 1.25rem;
+    padding: 1.4rem 1.15rem;
+    margin-bottom: 1rem;
     text-align: center;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     position: relative;
@@ -278,22 +285,22 @@ body {
 
 .answer-btn {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08));
-    border: 2.5px solid rgba(255, 255, 255, 0.3);
+    border: 2.2px solid rgba(255, 255, 255, 0.28);
     color: white;
-    padding: 1.375rem 1.125rem;
-    border-radius: 1.25rem;
-    font-size: 1.05rem;
+    padding: 1.15rem 0.95rem;
+    border-radius: 1.15rem;
+    font-size: 1rem;
     font-weight: 700;
     font-family: 'Poppins', sans-serif;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.28px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    min-height: 100px;
+    gap: 0.65rem;
+    min-height: 88px;
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     box-shadow: 0 5px 18px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -353,10 +360,10 @@ body {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    border-radius: 1.5rem;
+    border-radius: 1.35rem;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 1.5rem 1.25rem 1.75rem;
-    margin-bottom: 1.25rem;
+    padding: 1.25rem 1rem 1.4rem;
+    margin-bottom: 1rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     overflow: visible;
 }
@@ -444,6 +451,87 @@ body {
 }
 
 /* ============================================================================
+   SMALL SCREENS & LOW HEIGHT REFINEMENTS
+   ============================================================================ */
+@media (max-width: 420px), (max-height: 700px) {
+    .app-container {
+        padding: 0.6rem;
+        padding-top: max(3.2rem, env(safe-area-inset-top, 0) + 3.2rem);
+    }
+
+    .game-phase {
+        padding: 0.5rem;
+    }
+
+    .question-card {
+        padding: 1.1rem 1rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .question-text {
+        font-size: 1.05rem;
+    }
+
+    .question-category {
+        padding: 0.45rem 0.9rem;
+        font-size: 0.82rem;
+    }
+
+    .answer-btn {
+        padding: 1rem 0.8rem;
+        min-height: 82px;
+        font-size: 0.95rem;
+    }
+
+    .answer-buttons {
+        gap: 0.75rem;
+    }
+
+    .estimation-section {
+        padding: 1.1rem 0.95rem 1.2rem;
+    }
+
+    .estimation-title {
+        font-size: 1.1rem;
+    }
+
+    .number-grid {
+        gap: 0.7rem;
+    }
+
+    .submit-btn {
+        padding: 1.1rem 1.3rem;
+        font-size: 1.15rem;
+    }
+
+    .guess-player-grid {
+        gap: 0.65rem;
+    }
+
+    .guess-player-btn {
+        padding: 0.75rem 0.85rem;
+        font-size: 0.92rem;
+    }
+
+    .results-header {
+        padding: 0.9rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .results-title {
+        font-size: 1rem;
+    }
+
+    .results-summary {
+        font-size: 0.9rem;
+    }
+
+    .player-status-item {
+        padding: 0.85rem 0.9rem;
+    }
+}
+
+/* ============================================================================
    CURRENT SELECTION
    ============================================================================ */
 .current-selection {
@@ -502,12 +590,12 @@ body {
    SUBMIT BUTTON
    ============================================================================ */
 .submit-section {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     position: sticky;
     bottom: 0;
     z-index: 1;
     background: linear-gradient(180deg, rgba(102, 126, 234, 0), rgba(118, 75, 162, 0.15));
-    padding-top: 0.5rem;
+    padding-top: 0.45rem;
 }
 
 .submit-btn {
@@ -641,11 +729,16 @@ body {
 /* ============================================================================
    RESULTS PHASE
    ============================================================================ */
-.results-screen {
+.results-screen,
+.guess-screen,
+.waiting-screen {
     padding: 0.3125rem 0;
     flex: 1;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .results-header {

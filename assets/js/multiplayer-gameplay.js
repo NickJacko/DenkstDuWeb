@@ -520,6 +520,8 @@
     let currentGameData = null;
     let currentRoundData = null;
     let currentGuessSelection = [];
+    let currentGuessRequiredCount = 0;
+    let hasSubmittedGuessThisRound = false;
     let currentPlayers = {};
     let currentQuestion = null;
     let userAnswer = null;
@@ -2028,10 +2030,11 @@
 
 // ✅ Always update waiting UI when applicable
                 if (currentPhase === 'waiting') {
-                    updateWaitingStatus(answers);
+                    const progressData = currentPhase === 'waiting' && currentRoundData && currentRoundData.guesses ? currentRoundData.guesses : answers;
+                    updateWaitingStatus(progressData || answers);
                 }
 
-// ✅ CRITICAL: If I have submitted and all answers are in, show results (independent of currentPhase)
+// ✅ CRITICAL: If I have submitted and all answers are in, show results or enter guess phase
                 const myKey = getPlayerKey();
                 const iHaveAnswered = !!(myKey && answers && answers[myKey]);
 
@@ -2041,10 +2044,14 @@
                     try { updateSubmitButton(); } catch(_) {}
                 }
 
+                const guesses = currentRoundData.guesses || {};
+                const guessCount = Object.keys(guesses).length;
+                const actualYesCount = Object.values(answers).filter(a => a.answer === true).length;
 
                 if (hasSubmittedThisRound && iHaveAnswered && answerCount >= playerCount && playerCount >= 2) {
                     currentRoundData = currentRoundData || {};
                     currentRoundData.answers = answers;
+                    currentRoundData.guesses = guesses;
 
                     // Cancel any previous pending results timeout
                     if (resultsDebounceTimer) clearTimeout(resultsDebounceTimer);
@@ -2053,8 +2060,17 @@
                     const scheduledRound = roundNumber;
                     resultsDebounceTimer = setTimeout(() => {
                         resultsDebounceTimer = null;
-                        // Only show results if we're still on the same round
                         if (scheduledRound !== currentQuestionNumber) return;
+
+                        if (isFSK16Question(currentQuestion)) {
+                            if (guessCount < playerCount) {
+                                if (currentPhase !== 'guess') {
+                                    showGuessPhase(actualYesCount);
+                                }
+                                return;
+                            }
+                        }
+
                         if (currentPhase !== 'results' && currentPhase !== 'overall-results') {
                             calculateAndShowResults();
                         }
@@ -2716,6 +2732,8 @@
             categoryEl.textContent = categoryNames[question.category] || '🎮 Spiel';
         }
 
+        updateAnswerButtonLabels(question);
+
         // ✅ P1 UI/UX: Update progress indicator
         const progressEl = document.getElementById('question-progress');
         if (progressEl) {
@@ -2724,6 +2742,60 @@
 
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log('📝 Question displayed');
+        }
+    }
+
+    function getAnswerLabels(question) {
+        if (!question || !question.text) {
+            return { yes: 'Ja', no: 'Nein' };
+        }
+
+        const text = question.text.toLowerCase();
+        const pastTensePatterns = [
+            'ich habe',
+            'ich war',
+            'schon mal',
+            'jemals',
+            'noch nie',
+            'habe ich',
+            'habe ich schon'
+        ];
+
+        const conditionalPatterns = [
+            'ich würde',
+            'ich würde',
+            'ich könnte',
+            'ich finde',
+            'ich glaube',
+            'ich möchte',
+            'würde',
+            'glaube',
+            'finde'
+        ];
+
+        const isPast = pastTensePatterns.some(pattern => text.includes(pattern));
+        if (isPast) {
+            return { yes: 'Ja, habe ich', no: 'Nein, noch nie' };
+        }
+
+        const isConditional = conditionalPatterns.some(pattern => text.includes(pattern));
+        if (isConditional) {
+            return { yes: 'Ja, trifft zu', no: 'Nein, trifft nicht zu' };
+        }
+
+        return { yes: 'Ja', no: 'Nein' };
+    }
+
+    function updateAnswerButtonLabels(question) {
+        const labels = getAnswerLabels(question);
+        const yesBtnLabel = document.querySelector('#yes-btn > div:nth-child(2)');
+        const noBtnLabel = document.querySelector('#no-btn > div:nth-child(2)');
+
+        if (yesBtnLabel) {
+            yesBtnLabel.textContent = labels.yes;
+        }
+        if (noBtnLabel) {
+            noBtnLabel.textContent = labels.no;
         }
     }
 
@@ -2773,6 +2845,9 @@
         userAnswer = null;
         userEstimation = null;
         hasSubmittedThisRound = false;
+        hasSubmittedGuessThisRound = false;
+        currentGuessSelection = [];
+        currentGuessRequiredCount = 0;
 
         document.querySelectorAll('.answer-btn').forEach(btn => {
             btn.classList.remove('selected');
@@ -2939,7 +3014,12 @@
             return;
         }
 
-        if (userAnswer !== null && userEstimation !== null) {
+        const requiresEstimation = !isFSK16Question(currentQuestion);
+        const hasAnswer = userAnswer !== null;
+        const hasEstimation = userEstimation !== null;
+        const canSubmit = hasAnswer && (!requiresEstimation || hasEstimation);
+
+        if (canSubmit) {
             submitBtn.classList.add('enabled');
             submitBtn.disabled = false;
             submitBtn.setAttribute('aria-disabled', 'false');
@@ -2986,8 +3066,9 @@
             return;
         }
 
-        if (userAnswer === null || userEstimation === null) {
-            showNotification('Bitte wähle Antwort UND Schätzung!', 'warning');
+        const isFSK16 = isFSK16Question(currentQuestion);
+        if (userAnswer === null || (!isFSK16 && userEstimation === null)) {
+            showNotification(isFSK16 ? 'Bitte wähle eine Antwort!' : 'Bitte wähle Antwort UND Schätzung!', 'warning');
             return;
         }
 
@@ -2995,8 +3076,7 @@
             console.log('📤 Submitting answers:', { answer: userAnswer, estimation: userEstimation });
         }
 
-        // P0: Validate estimation range
-        if (userEstimation < 0 || userEstimation > totalPlayers) {
+        if (!isFSK16 && (userEstimation < 0 || userEstimation > totalPlayers)) {
             showNotification('Ungültige Schätzung!', 'error');
             return;
         }
@@ -3012,11 +3092,12 @@
             return;
         }
 
+        const isFSK16 = isFSK16Question(currentQuestion);
         const answerData = {
             playerId: playerKey,
             playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
             answer: userAnswer,
-            estimation: userEstimation,
+            estimation: isFSK16 ? null : userEstimation,
             isHost: MultiplayerGameplayModule.gameState.isHost,
             timestamp: Date.now()
         };
@@ -3028,7 +3109,7 @@
 
             await answerRef.set({
                 answer: userAnswer,
-                estimation: userEstimation,
+                estimation: isFSK16 ? null : userEstimation,
                 submittedAt: Date.now(),
                 playerId: playerKey,
                 playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
@@ -3058,7 +3139,6 @@
                 console.log('✅ Answer submitted');
             }
             showNotification('Antworten gesendet! 🎯', 'success', 2000);
-            showPhase('waiting');
 
             const immediateAnswers = {
                 ...(currentRoundData?.answers || {}),
@@ -3068,7 +3148,7 @@
                     playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName)
                 }
             };
-            updateWaitingStatus(immediateAnswers);
+            showWaitingPhase('Warte auf alle Spieler, die ihre Antwort absenden...', immediateAnswers);
             updateSubmitButton();
 
             setTimeout(() => {
@@ -3104,7 +3184,12 @@
                         console.log('✅ All answered!');
                     }
                     currentRoundData = roundData;
-                    calculateAndShowResults();
+                    if (isFSK16Question(currentQuestion)) {
+                        const actualYesCount = Object.values(answers).filter(a => a.answer === true).length;
+                        showGuessPhase(actualYesCount);
+                    } else {
+                        calculateAndShowResults();
+                    }
                 }
             }
         } catch (error) {
@@ -3130,6 +3215,32 @@
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log(`📍 Phase: ${phase}`);
         }
+    }
+
+    function showGuessPhase(actualYesCount) {
+        const guessSummary = document.getElementById('guess-summary');
+        const guessDescription = document.getElementById('guess-description');
+
+        if (guessSummary) {
+            guessSummary.textContent = `Es haben ${actualYesCount} von ${totalPlayers} Spielern mit "Ja" geantwortet.`;
+        }
+        if (guessDescription) {
+            guessDescription.textContent = actualYesCount === 0
+                ? 'Niemand hat mit "Ja" geantwortet. Wähle keine Spieler aus.'
+                : `Wähle genau ${actualYesCount} Spieler aus, die mit "Ja" geantwortet haben.`;
+        }
+
+        buildGuessSelectionUI(actualYesCount);
+        showPhase('guess');
+    }
+
+    function showWaitingPhase(message, statusData = {}) {
+        const waitingDescription = document.querySelector('#waiting-phase .waiting-description');
+        if (waitingDescription) {
+            waitingDescription.textContent = message;
+        }
+        updateWaitingStatus(statusData);
+        showPhase('waiting');
     }
 
     // ===========================
@@ -3177,23 +3288,13 @@
 
         const answers = currentRoundData.answers;
         const actualYesCount = Object.values(answers).filter(a => a.answer === true).length;
+        const guesses = currentRoundData.guesses || {};
 
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log(`✅ Results: ${actualYesCount} said yes`);
         }
 
-        // Calculate results
         const results = Object.values(answers).map(playerAnswer => {
-            const difference = Math.abs(playerAnswer.estimation - actualYesCount);
-            const isCorrect = difference === 0;
-
-            let sips = 0;
-            if (!isCorrect) {
-                const multiplier = difficultyMultipliers[MultiplayerGameplayModule.gameState.difficulty] || 1;
-                sips = difference * multiplier;
-            }
-
-            // Prefer name from currentPlayers (live DB) over stored answer name
             const pid = playerAnswer.playerId;
             const playerFromDB = pid && currentPlayers[pid];
             const resolvedName = (playerFromDB && playerFromDB.name && playerFromDB.name !== 'Spieler' && playerFromDB.name !== 'Host')
@@ -3201,6 +3302,36 @@
                 : (playerAnswer.playerName && playerAnswer.playerName !== 'Spieler' && playerAnswer.playerName !== 'Host')
                     ? playerAnswer.playerName
                     : (playerFromDB && playerFromDB.name) || playerAnswer.playerName || 'Spieler';
+
+            if (isFSK16Question(currentQuestion)) {
+                const playerGuess = guesses[pid] || {};
+                const selectedIds = Array.isArray(playerGuess.selectedPlayerIds) ? playerGuess.selectedPlayerIds : [];
+                const missedCount = Object.values(answers)
+                    .filter(answer => answer.answer === true)
+                    .map(answer => answer.playerId)
+                    .filter(id => !selectedIds.includes(id)).length;
+                const falsePositiveCount = selectedIds.filter(id => !Object.values(answers).some(answer => answer.playerId === id && answer.answer === true)).length;
+                const difference = missedCount + falsePositiveCount;
+                const multiplier = difficultyMultipliers[MultiplayerGameplayModule.gameState.difficulty] || 1;
+                const sips = difference * multiplier;
+                return {
+                    playerId: pid,
+                    playerName: sanitizePlayerName(resolvedName),
+                    answer: playerAnswer.answer,
+                    estimation: selectedIds.length,
+                    difference: difference,
+                    isCorrect: difference === 0,
+                    sips: sips
+                };
+            }
+
+            const difference = Math.abs((playerAnswer.estimation || 0) - actualYesCount);
+            const isCorrect = difference === 0;
+            let sips = 0;
+            if (!isCorrect) {
+                const multiplier = difficultyMultipliers[MultiplayerGameplayModule.gameState.difficulty] || 1;
+                sips = difference * multiplier;
+            }
 
             return {
                 playerId: pid,
@@ -3340,7 +3471,11 @@
 
             const playerAnswer = document.createElement('div');
             playerAnswer.className = 'player-answer';
-            playerAnswer.textContent = `Tipp: ${result.estimation}`;
+            if (isFSK16Question(currentQuestion)) {
+                playerAnswer.textContent = `Gewählte Spieler: ${result.estimation}`;
+            } else {
+                playerAnswer.textContent = `Tipp: ${result.estimation}`;
+            }
 
             playerInfo.appendChild(playerName);
             playerInfo.appendChild(playerAnswer);
@@ -3358,11 +3493,7 @@
             resultsGrid.appendChild(resultItem);
         });
 
-        if (isFSK16Question(currentQuestion)) {
-            buildGuessSelectionUI(actualYesCount);
-        } else {
-            hideGuessSelectionUI();
-        }
+        hideGuessSelectionUI();
     }
 
     function buildGuessSelectionUI(actualYesCount) {
@@ -3373,33 +3504,37 @@
 
         if (!guessSection || !playerGuessGrid || !guessSubmitBtn || !guessFeedback) return;
 
+        currentGuessRequiredCount = actualYesCount;
         currentGuessSelection = [];
         while (playerGuessGrid.firstChild) {
             playerGuessGrid.removeChild(playerGuessGrid.firstChild);
         }
         guessFeedback.textContent = '';
 
-        Object.values(currentPlayers).forEach(player => {
+        Object.entries(currentPlayers).forEach(([playerId, player]) => {
             const sanitizedName = sanitizePlayerName(player.name || 'Spieler');
             const button = document.createElement('button');
             button.className = 'guess-player-btn';
             button.type = 'button';
             button.textContent = sanitizedName;
             button.setAttribute('aria-pressed', 'false');
+            button.setAttribute('data-player-id', playerId);
             button.setAttribute('data-player-name', sanitizedName);
-            addTrackedEventListener(button, 'click', () => toggleGuessPlayer(sanitizedName));
+            addTrackedEventListener(button, 'click', () => toggleGuessPlayer(playerId));
             playerGuessGrid.appendChild(button);
         });
 
         const pluralLabel = actualYesCount === 1 ? 'Spieler hat' : 'Spieler haben';
         const description = document.getElementById('guess-description');
         if (description) {
-            description.textContent = `Es haben ${actualYesCount} ${pluralLabel} mit "Ja" geantwortet. Wähle die passenden Spieler aus.`;
+            description.textContent = actualYesCount === 0
+                ? 'Niemand hat mit "Ja" geantwortet. Wähle keine Spieler aus.'
+                : `Es haben ${actualYesCount} ${pluralLabel} mit "Ja" geantwortet. Wähle genau ${actualYesCount} Spieler aus.`;
         }
 
-        guessSubmitBtn.disabled = true;
-        guessSubmitBtn.classList.remove('enabled');
-        guessSubmitBtn.setAttribute('aria-disabled', 'true');
+        guessSubmitBtn.disabled = actualYesCount !== 0;
+        guessSubmitBtn.classList.toggle('enabled', actualYesCount === 0);
+        guessSubmitBtn.setAttribute('aria-disabled', String(actualYesCount !== 0));
         guessSection.classList.remove('hidden');
         updateGuessSubmitButtonState();
     }
@@ -3408,18 +3543,25 @@
         const guessSubmitBtn = document.getElementById('guess-submit-btn');
         if (!guessSubmitBtn) return;
 
-        const enabled = Array.isArray(currentGuessSelection) && currentGuessSelection.length > 0;
+        const enabled = Array.isArray(currentGuessSelection) && currentGuessSelection.length === currentGuessRequiredCount;
         guessSubmitBtn.disabled = !enabled;
         guessSubmitBtn.classList.toggle('enabled', enabled);
         guessSubmitBtn.setAttribute('aria-disabled', String(!enabled));
     }
 
-    function toggleGuessPlayer(playerName) {
-        const index = currentGuessSelection.indexOf(playerName);
-        const button = document.querySelector(`button[data-player-name="${CSS.escape(playerName)}"]`);
+    function toggleGuessPlayer(playerId) {
+        const index = currentGuessSelection.indexOf(playerId);
+        const button = document.querySelector(`button[data-player-id="${CSS.escape(playerId)}"]`);
 
         if (index === -1) {
-            currentGuessSelection.push(playerName);
+            if (currentGuessRequiredCount > 0 && currentGuessSelection.length >= currentGuessRequiredCount) {
+                const feedback = document.getElementById('guess-feedback');
+                if (feedback) {
+                    feedback.textContent = `Du darfst nur ${currentGuessRequiredCount} Spieler auswählen.`;
+                }
+                return;
+            }
+            currentGuessSelection.push(playerId);
             if (button) {
                 button.classList.add('selected');
                 button.setAttribute('aria-pressed', 'true');
@@ -3434,7 +3576,51 @@
         updateGuessSubmitButtonState();
     }
 
-    function evaluateGuessSelection() {
+    async function evaluateGuessSelection() {
+        if (isFSK16Question(currentQuestion) && currentPhase === 'guess') {
+            const playerKey = getPlayerKey();
+            if (!playerKey) {
+                showNotification('Spieler-ID fehlt – bitte Lobby neu öffnen', 'error');
+                return;
+            }
+
+            const selectedIds = currentGuessSelection.slice();
+            if (selectedIds.length !== currentGuessRequiredCount) {
+                showNotification(`Wähle genau ${currentGuessRequiredCount} Spieler aus.`, 'warning');
+                return;
+            }
+
+            try {
+                await firebase.database().ref(
+                    `games/${MultiplayerGameplayModule.gameState.gameId}/rounds/round_${currentQuestionNumber}/guesses/${playerKey}`
+                ).set({
+                    selectedPlayerIds: selectedIds,
+                    playerId: playerKey,
+                    playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
+                    submittedAt: Date.now()
+                });
+
+                hasSubmittedGuessThisRound = true;
+                const immediateGuesses = {
+                    ...(currentRoundData?.guesses || {}),
+                    [playerKey]: {
+                        selectedPlayerIds: selectedIds,
+                        playerId: playerKey,
+                        playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName)
+                    }
+                };
+                showWaitingPhase('Warte auf die Vorhersagen aller Spieler...', immediateGuesses);
+
+                if (MultiplayerGameplayModule.isDevelopment) {
+                    console.log('✅ Guess submitted');
+                }
+            } catch (error) {
+                console.error('❌ Fehler beim Senden der Auswahl:', error);
+                showNotification('Fehler beim Senden der Auswahl', 'error');
+            }
+            return;
+        }
+
         const actualYesPlayers = Object.values(currentRoundData.answers || {})
             .filter(answer => answer.answer === true)
             .map(answer => answer.playerName);
