@@ -3230,7 +3230,7 @@
             answer: userAnswer,
             estimation: isFSK16 ? 0 : userEstimation,
             isHost: MultiplayerGameplayModule.gameState.isHost,
-            timestamp: Date.now()
+            submittedAt: Date.now()
         };
 
         try {
