@@ -42,6 +42,8 @@
     <link rel="stylesheet" href="/assets/css/join-game.css">
     <!-- ✅ NEW: Settings Modal Styles -->
     <link rel="stylesheet" href="/assets/css/settings.css">
+    <!-- ✅ AUDIT FIX: Cookie-Banner Styles -->
+    <link rel="stylesheet" href="/assets/css/cookie-banner.css">
 
     <!-- ✅ SECURITY: DOMPurify lokal gehostet (no SRI needed for local files) -->
     <script src="/assets/lib/purify.min.js"></script>
@@ -61,6 +63,8 @@
     <script defer src="/assets/js/firebase-service.js"></script>
     <!-- ✅ NEW: Settings Script -->
     <script defer src="/assets/js/settings.js"></script>
+    <!-- ✅ AUDIT FIX: Cookie-Banner Script -->
+    <script defer src="/assets/js/cookie-banner.js"></script>
     <script defer src="/assets/js/join-game.js"></script>
 
     <!-- ✅ ERROR BOUNDARY: Global Error Handling -->
@@ -206,6 +210,40 @@
             </button>
             <button class="btn btn-primary" id="join-btn" type="button" disabled aria-disabled="true" aria-label="Spiel beitreten">
                 ➡️ Beitreten
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ AUDIT FIX: DSGVO Cookie-Banner -->
+<div class="cookie-banner" id="cookie-banner" role="region" aria-label="Cookie-Einstellungen">
+    <div class="cookie-content">
+        <div class="cookie-text">
+            <strong id="cookie-banner-title">🍪 Cookie-Hinweis</strong>
+            <p>
+                Wir nutzen Firebase für Multiplayer-Funktionen und optionale Analyse-Tools zur Verbesserung des Spielerlebnisses.
+                Durch Nutzung des Spiels stimmst du der Verwendung notwendiger Cookies zu.
+                Weitere Informationen findest du in unserer <a href="privacy.html">Datenschutzerklärung</a>.
+            </p>
+        </div>
+        <div class="cookie-buttons">
+            <button class="cookie-btn cookie-btn-accept"
+                    id="cookie-accept"
+                    type="button"
+                    aria-label="Alle Cookies akzeptieren - Einschließlich optionaler Analyse-Cookies">
+                Alle akzeptieren
+            </button>
+            <button class="cookie-btn cookie-btn-decline"
+                    id="cookie-decline"
+                    type="button"
+                    aria-label="Nur notwendige Cookies akzeptieren - Keine Analyse-Cookies">
+                Nur notwendige
+            </button>
+            <button class="cookie-btn cookie-btn-settings"
+                    id="cookie-settings"
+                    type="button"
+                    aria-label="Cookie-Einstellungen öffnen - Individuelle Auswahl treffen">
+                Einstellungen
             </button>
         </div>
     </div>
