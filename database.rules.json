@@ -200,7 +200,7 @@
 
           "$roundId": {
             ".read": "auth != null",
-            ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+            ".write": "auth != null",
 
             ".validate": "newData.hasChildren(['question', 'startedAt'])",
 
