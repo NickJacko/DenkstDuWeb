@@ -738,12 +738,46 @@
         }
     }
 
+    function clearSavedMultiplayerState() {
+        const keys = [
+            'nocap_game_state',
+            'nocap_game_id',
+            'nocap_is_host',
+            'nocap_player_name',
+            'nocap_rejoin',
+            'nocap_offline_state',
+            'nocap_game_progress'
+        ];
+
+        keys.forEach((key) => {
+            try {
+                if (window.NocapUtils && typeof window.NocapUtils.removeLocalStorage === 'function') {
+                    window.NocapUtils.removeLocalStorage(key);
+                } else {
+                    localStorage.removeItem(key);
+                }
+            } catch (error) {
+                Logger.warn(`⚠️ Could not remove saved state key ${key}:`, error);
+            }
+
+            try {
+                sessionStorage.removeItem(key);
+            } catch (error) {
+                Logger.warn(`⚠️ Could not remove saved session state key ${key}:`, error);
+            }
+        });
+    }
+
     // ===================================
     // 🎬 DOM READY (NUR EINMAL!)
     // ===================================
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', () => {
+            clearSavedMultiplayerState();
+            initialize();
+        });
     } else {
+        clearSavedMultiplayerState();
         initialize();
     }
 })(window);
