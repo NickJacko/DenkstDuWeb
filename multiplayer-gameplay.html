@@ -263,7 +263,17 @@
                 <h3 class="host-title">
                     👑 Host-Kontrollen
                 </h3>
-                <div class="nav-buttons">
+                <!-- FSK16 pre-reveal controls (shown before Aufdecken) -->
+                <div class="nav-buttons hidden" id="fsk16-reveal-controls">
+                    <button class="nav-btn primary enabled" id="fsk16-reveal-btn" type="button">
+                        🔍 Aufdecken
+                    </button>
+                    <button class="nav-btn secondary enabled" id="fsk16-skip-btn" type="button">
+                        ⏭️ Nächste Frage
+                    </button>
+                </div>
+                <!-- Standard controls (shown after reveal or for non-FSK16) -->
+                <div class="nav-buttons" id="standard-host-controls">
                     <button class="nav-btn primary" id="next-question-btn" type="button">
                         ➡️ Nächste Frage
                     </button>
