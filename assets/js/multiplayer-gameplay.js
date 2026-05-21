@@ -2138,20 +2138,20 @@
                         resultsDebounceTimer = null;
                         if (scheduledRound !== currentQuestionNumber) return;
 
-                                if (isFSK16Question(currentQuestion)) {
+                        if (isFSK16Question(currentQuestion)) {
                             if (guessCount < playerCount) {
                                 if (currentPhase !== 'guess') {
                                     showGuessPhase(actualYesCount);
                                 }
                                 return;
                             }
+                        }
 
-                            if (!currentRoundData.revealed) {
-                                if (currentPhase !== 'reveal') {
-                                    showRevealPhase();
-                                }
-                                return;
+                        if (!currentRoundData.revealed) {
+                            if (currentPhase !== 'reveal') {
+                                showRevealPhase();
                             }
+                            return;
                         }
 
                         if (currentPhase !== 'results' && currentPhase !== 'overall-results') {
