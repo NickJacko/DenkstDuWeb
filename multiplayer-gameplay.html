@@ -201,6 +201,30 @@
         </div>
     </section>
 
+    <!-- PHASE 2.75: Reveal Phase -->
+    <section class="game-phase" id="reveal-phase" role="region" aria-label="Ergebnisse aufdecken">
+        <div class="reveal-screen">
+            <header class="reveal-header">
+                <h2 class="reveal-title">🔍 Zwischenergebnisse</h2>
+                <p class="reveal-summary" id="reveal-summary">Alle Spieler haben ihre Auswahl getroffen.</p>
+            </header>
+            <p class="reveal-description" id="reveal-description">
+                Warten auf den Host, bis er die Ergebnisse aufdeckt.
+            </p>
+            <div class="host-controls host-only" id="reveal-host-controls">
+                <button class="nav-btn primary" id="reveal-results-btn" type="button">
+                    🟢 Ergebnisse aufdecken
+                </button>
+                <button class="nav-btn secondary" id="reveal-skip-btn" type="button">
+                    ⏭️ Nächste Frage
+                </button>
+            </div>
+            <div class="player-waiting guest-only" id="reveal-player-controls">
+                <p class="waiting-host-text">⏳ Warte, bis der Host die Runde beendet oder die Ergebnisse offenlegt.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- PHASE 3: Round Results -->
     <section class="game-phase" id="results-phase" role="region" aria-label="Rundenergebnisse">
         <div class="results-screen">

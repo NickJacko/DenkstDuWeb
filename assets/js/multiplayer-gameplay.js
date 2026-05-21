@@ -877,6 +877,30 @@
         return MultiplayerGameplayModule.gameState?.playerId || null;
     }
 
+    async function getAuthUid(timeoutMs = 5000) {
+        const currentUid = firebase.auth().currentUser?.uid;
+        if (currentUid) {
+            return currentUid;
+        }
+
+        return await new Promise((resolve) => {
+            let settled = false;
+            const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                if (settled) return;
+                settled = true;
+                try { unsubscribe(); } catch (_) {}
+                resolve(user?.uid || null);
+            });
+
+            setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                try { unsubscribe(); } catch (_) {}
+                resolve(null);
+            }, timeoutMs);
+        });
+    }
+
 
     // ===========================
     // INITIALIZATION
@@ -1297,6 +1321,16 @@
         const guessSubmitBtn = document.getElementById('guess-submit-btn');
         if (guessSubmitBtn) {
             addTrackedEventListener(guessSubmitBtn, 'click', evaluateGuessSelection);
+        }
+
+        const revealResultsBtn = document.getElementById('reveal-results-btn');
+        if (revealResultsBtn) {
+            addTrackedEventListener(revealResultsBtn, 'click', revealRoundResults);
+        }
+
+        const revealSkipBtn = document.getElementById('reveal-skip-btn');
+        if (revealSkipBtn) {
+            addTrackedEventListener(revealSkipBtn, 'click', nextQuestion);
         }
 
         // Host controls
@@ -2104,10 +2138,17 @@
                         resultsDebounceTimer = null;
                         if (scheduledRound !== currentQuestionNumber) return;
 
-                        if (isFSK16Question(currentQuestion)) {
+                                if (isFSK16Question(currentQuestion)) {
                             if (guessCount < playerCount) {
                                 if (currentPhase !== 'guess') {
                                     showGuessPhase(actualYesCount);
+                                }
+                                return;
+                            }
+
+                            if (!currentRoundData.revealed) {
+                                if (currentPhase !== 'reveal') {
+                                    showRevealPhase();
                                 }
                                 return;
                             }
@@ -3161,7 +3202,18 @@
             return;
         }
 
-        const playerKey = getPlayerKey();
+        const authUid = await getAuthUid(5000);
+        if (!authUid) {
+            console.warn('⚠️ Auth UID unavailable before submit, aborting answer write');
+            showNotification('Authentifizierung nicht bereit. Bitte Seite neu laden.', 'error');
+            return;
+        }
+
+        if (MultiplayerGameplayModule.gameState.playerId !== authUid) {
+            MultiplayerGameplayModule.gameState.playerId = authUid;
+        }
+
+        const playerKey = authUid;
         if (!playerKey) {
             showNotification('Spieler-ID fehlt – bitte Lobby neu öffnen', 'error');
             return;
@@ -3304,6 +3356,54 @@
 
         buildGuessSelectionUI(actualYesCount);
         showPhase('guess');
+    }
+
+    function showRevealPhase() {
+        const revealSummary = document.getElementById('reveal-summary');
+        const revealDescription = document.getElementById('reveal-description');
+        const revealButton = document.getElementById('reveal-results-btn');
+        const revealSkipBtn = document.getElementById('reveal-skip-btn');
+
+        if (revealSummary) {
+            revealSummary.textContent = 'Zwischenergebnisse: Alle haben geraten. Der Host kann nun die Ergebnisse aufdecken oder direkt zur nächsten Frage weitergehen.';
+        }
+        if (revealDescription) {
+            revealDescription.textContent = MultiplayerGameplayModule.gameState.isHost
+                ? 'Du bist der Host. Wähle „Ergebnisse aufdecken“, um die Runde zu zeigen, oder „Nächste Frage“, um weiterzuspielen.'
+                : 'Warte darauf, dass der Host die Runde beendet oder die Ergebnisse aufdeckt.';
+        }
+        if (revealButton) {
+            revealButton.disabled = !MultiplayerGameplayModule.gameState.isHost;
+            revealButton.classList.toggle('enabled', MultiplayerGameplayModule.gameState.isHost);
+            revealButton.setAttribute('aria-disabled', String(!MultiplayerGameplayModule.gameState.isHost));
+        }
+        if (revealSkipBtn) {
+            revealSkipBtn.disabled = !MultiplayerGameplayModule.gameState.isHost;
+            revealSkipBtn.classList.toggle('enabled', MultiplayerGameplayModule.gameState.isHost);
+            revealSkipBtn.setAttribute('aria-disabled', String(!MultiplayerGameplayModule.gameState.isHost));
+        }
+
+        showPhase('reveal');
+    }
+
+    async function revealRoundResults() {
+        const gameId = MultiplayerGameplayModule.gameState.gameId;
+        if (!gameId || !currentQuestionNumber) {
+            showNotification('Rundeninformationen fehlen.', 'error');
+            return;
+        }
+
+        try {
+            await firebase.database().ref(
+                `games/${gameId}/rounds/round_${currentQuestionNumber}/revealed`
+            ).set(true);
+            if (MultiplayerGameplayModule.isDevelopment) {
+                console.log('✅ Round revealed by host');
+            }
+        } catch (error) {
+            console.error('❌ Fehler beim Aufdecken der Ergebnisse:', error);
+            showNotification('Fehler beim Aufdecken der Ergebnisse', 'error');
+        }
     }
 
     function showWaitingPhase(message, statusData = {}) {

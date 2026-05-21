@@ -237,6 +237,23 @@
                 "playerName": { ".validate": "newData.isString()" },
                 "isHost": { ".validate": "newData.isBoolean()" }
               }
+            },
+
+            "guesses": {
+              ".indexOn": ["submittedAt"],
+
+              "$uid": {
+                ".write": "auth != null && $uid === auth.uid",
+                ".validate": "newData.hasChildren(['selectedPlayerIds','playerId','playerName','submittedAt']) && newData.child('playerId').isString() && newData.child('playerName').isString() && newData.child('submittedAt').isNumber() && newData.child('submittedAt').val() > 0",
+                "playerId": { ".validate": "newData.isString()" },
+                "playerName": { ".validate": "newData.isString()" },
+                "submittedAt": { ".validate": "newData.isNumber()" }
+              }
+            },
+
+            "revealed": {
+              ".write": "auth != null && root.child('games').child($gameId).child('hostId').val() === auth.uid",
+              ".validate": "newData.isBoolean()"
             }
           }
         }
