@@ -3176,7 +3176,7 @@
             playerId: playerKey,
             playerName: sanitizePlayerName(MultiplayerGameplayModule.gameState.playerName),
             answer: userAnswer,
-            estimation: isFSK16 ? null : userEstimation,
+            estimation: isFSK16 ? 0 : userEstimation,
             isHost: MultiplayerGameplayModule.gameState.isHost,
             timestamp: Date.now()
         };
