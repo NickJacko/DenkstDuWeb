@@ -969,10 +969,6 @@ body, .app-container {
     border-color: rgba(244, 67, 54, 0.4);
 }
 
-.result-item.pre-reveal {
-    border-color: rgba(255, 193, 7, 0.4);
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.06));
-}
 
 #fsk16-reveal-controls {
     display: flex;

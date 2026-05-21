@@ -3626,9 +3626,16 @@
 
         const resultsSummaryEl = document.getElementById('results-summary');
         if (resultsSummaryEl) {
-            resultsSummaryEl.textContent = preReveal
-                ? '🎭 Alle haben ihre Wahl getroffen – bereit zum Aufdecken?'
-                : `✅ ${actualYesCount} von ${totalPlayers || results.length} aktiven Spielern haben mit "Ja" geantwortet`;
+            if (isFSK16Question(currentQuestion) && !preReveal) {
+                const yesPlayers = results.filter(r => r.answer === true).map(r => r.playerName);
+                resultsSummaryEl.textContent = yesPlayers.length > 0
+                    ? `✅ Ja gesagt: ${yesPlayers.join(', ')}`
+                    : '✅ Niemand hat mit "Ja" geantwortet';
+            } else {
+                resultsSummaryEl.textContent = preReveal
+                    ? `🎭 ${actualYesCount} von ${totalPlayers || results.length} Spielern haben mit "Ja" geantwortet – bereit zum Aufdecken?`
+                    : `✅ ${actualYesCount} von ${totalPlayers || results.length} aktiven Spielern haben mit "Ja" geantwortet`;
+            }
         }
 
         // Find current player's result
@@ -3637,7 +3644,7 @@
 
         const personalBox = document.getElementById('personal-result');
         if (personalBox) {
-            if (preReveal || !myResult) {
+            if (!myResult) {
                 personalBox.classList.add('hidden');
             } else {
                 personalBox.classList.remove('hidden');
@@ -3681,16 +3688,12 @@
             resultItem.setAttribute('role', 'listitem');
 
             const isMe = result.playerId === currentPlayerId;
-            if (preReveal) {
-                resultItem.classList.add('pre-reveal');
-            } else {
-                if (isMe) resultItem.classList.add('is-me');
-                else if (result.isCorrect) resultItem.classList.add('correct-not-me');
-                else resultItem.classList.add('wrong');
-            }
+            if (isMe) resultItem.classList.add('is-me');
+            else if (!preReveal && result.isCorrect) resultItem.classList.add('correct-not-me');
+            else if (!preReveal) resultItem.classList.add('wrong');
 
             const avatar = result.playerName.substring(0, 2).toUpperCase();
-            const sipsText = preReveal ? '❓' : (result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`);
+            const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
 
             // P0 FIX: Build with textContent
             const playerResult = document.createElement('div');
@@ -3708,27 +3711,25 @@
             playerName.className = 'player-name';
             playerName.textContent = result.playerName;
 
-            const playerAnswer = document.createElement('div');
-            playerAnswer.className = 'player-answer';
-            if (isFSK16Question(currentQuestion) && preReveal) {
-                const names = Array.isArray(result.selectedNames) && result.selectedNames.length > 0
-                    ? result.selectedNames.join(', ')
-                    : 'Niemanden';
-                playerAnswer.textContent = `Tipp: ${names}`;
-            } else if (isFSK16Question(currentQuestion)) {
-                playerAnswer.textContent = `Gewählte Spieler: ${result.estimation}`;
-            } else {
-                playerAnswer.textContent = `Tipp: ${result.estimation}`;
-            }
-
             playerInfo.appendChild(playerName);
-            playerInfo.appendChild(playerAnswer);
+
+            if (!isFSK16Question(currentQuestion)) {
+                const playerAnswer = document.createElement('div');
+                playerAnswer.className = 'player-answer';
+                playerAnswer.textContent = `Tipp: ${result.estimation}`;
+                playerInfo.appendChild(playerAnswer);
+            } else if (!preReveal) {
+                const playerAnswer = document.createElement('div');
+                playerAnswer.className = 'player-answer';
+                playerAnswer.textContent = result.answer ? '✅ Ja' : '❌ Nein';
+                playerInfo.appendChild(playerAnswer);
+            }
 
             playerResult.appendChild(playerAvatar);
             playerResult.appendChild(playerInfo);
 
             const sipsPenalty = document.createElement('div');
-            sipsPenalty.className = `sips-penalty ${!preReveal && result.sips === 0 ? 'none' : ''}`;
+            sipsPenalty.className = `sips-penalty ${result.sips === 0 ? 'none' : ''}`;
             sipsPenalty.textContent = sipsText;
 
             resultItem.appendChild(playerResult);
