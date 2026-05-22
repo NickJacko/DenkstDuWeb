@@ -472,7 +472,7 @@
 
             // ✅ P0 SECURITY: Validate array contents
             if (state.selectedCategories) {
-                const validCategories = ['fsk0', 'fsk16', 'fsk18', 'special'];
+                const validCategories = ['fsk0', 'fsk16', 'fsk18', 'special', 'imposter'];
                 for (const cat of state.selectedCategories) {
                     if (typeof cat !== 'string' || !validCategories.includes(cat)) {
                         this.log(`❌ Validation failed: invalid category "${cat}"`, 'error');
@@ -599,12 +599,12 @@
                 return [];
             }
 
-            const allowedCategories = ['fsk0', 'fsk16', 'fsk18', 'special'];
+            const allowedCategories = ['fsk0', 'fsk16', 'fsk18', 'special', 'imposter'];
             return categories
                 .filter(cat => typeof cat === 'string')
                 .map(cat => cat.toLowerCase().trim())
                 .filter(cat => allowedCategories.includes(cat))
-                .slice(0, 4); // Max 4 categories
+                .slice(0, 5); // Max 5 categories
         }
 
         sanitizeGameId(gameId) {
@@ -1318,7 +1318,7 @@
         }
 
         addCategory(category) {
-            const sanitized = this.sanitizeValue(category, ['fsk0', 'fsk16', 'fsk18', 'special']);
+            const sanitized = this.sanitizeValue(category, ['fsk0', 'fsk16', 'fsk18', 'special', 'imposter']);
             if (sanitized && !this.selectedCategories.includes(sanitized)) {
                 const old = [...this.selectedCategories];
                 this.selectedCategories.push(sanitized);
