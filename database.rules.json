@@ -215,7 +215,7 @@
 
           "imposters": {
             ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
-            "$uid": { ".validate": "newData.isBoolean()" }
+            "$uid": { ".validate": "newData.isString() && newData.val().length > 0" }
           },
 
           "starter": {
