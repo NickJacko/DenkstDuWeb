@@ -267,8 +267,8 @@ exports.validateFSKAccess = functions
                 return res.status(400).json({ error: "Kategorie ist erforderlich" });
             }
 
-            // ✅ FSK0 & FSK16 always allowed (no verification needed)
-            if (category === "fsk0" || category === "fsk16" || category === "special") {
+            // ✅ FSK0, FSK16, imposter always allowed (no verification needed)
+            if (category === "fsk0" || category === "fsk16" || category === "special" || category === "imposter") {
                 return res.status(200).json({ result: { allowed: true, category } });
             }
 
@@ -333,8 +333,8 @@ exports.validateFSKAccessCallable = functions
             throw new functions.https.HttpsError("invalid-argument", "Kategorie ist erforderlich");
         }
 
-        // ✅ FSK0 & FSK16 always allowed (no verification needed)
-        if (category === "fsk0" || category === "fsk16" || category === "special") {
+        // ✅ FSK0, FSK16, imposter always allowed (no verification needed)
+        if (category === "fsk0" || category === "fsk16" || category === "special" || category === "imposter") {
             return { allowed: true, category };
         }
 
@@ -871,7 +871,7 @@ exports.checkCategoryAccess = functions
             throw new functions.https.HttpsError("invalid-argument", "categoryId fehlt");
         }
 
-        const allowedCategories = new Set(["fsk0", "fsk16", "fsk18", "special"]);
+        const allowedCategories = new Set(["fsk0", "fsk16", "fsk18", "special", "imposter"]);
         if (!allowedCategories.has(categoryId)) {
             throw new functions.https.HttpsError("invalid-argument", "Unbekannte Kategorie");
         }
@@ -953,7 +953,7 @@ function generateGameCode() {
 
 // helper: normalize & validate categories
 function normalizeCategories(input) {
-    const allowed = new Set(["fsk0", "fsk16", "fsk18", "special"]);
+    const allowed = new Set(["fsk0", "fsk16", "fsk18", "special", "imposter"]);
     const arr = Array.isArray(input) ? input : [];
     const cleaned = arr.map(v => String(v || "").trim()).filter(Boolean);
 

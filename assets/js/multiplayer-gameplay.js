@@ -1480,17 +1480,7 @@
      * @param {number} duration - Duration in milliseconds
      */
     function startTimer(serverStartTime, duration = timerDuration) {
-        stopTimer(); // Clear any existing timer
-
-        timerStartTime = serverStartTime || Date.now();
-        timerDuration = duration;
-        isPaused = false;
-
-        if (MultiplayerGameplayModule.isDevelopment) {
-            console.log('⏱️ Starting timer:', { serverStartTime, duration });
-        }
-
-        updateTimerDisplay();
+        // Timer disabled – players advance manually
     }
 
     /**
@@ -1621,22 +1611,7 @@
      * ✅ P1 UI/UX: Handle timer expiration
      */
     function handleTimerExpired() {
-        if (MultiplayerGameplayModule.isDevelopment) {
-            console.log('⏱️ Timer expired!');
-        }
-
-        showNotification('Zeit abgelaufen! ⏰', 'warning', 3000);
-
-        // Auto-submit if not submitted yet
-        if (!hasSubmittedThisRound && userAnswer !== null && userEstimation !== null) {
-            submitAnswers();
-        } else if (!hasSubmittedThisRound) {
-            showNotification('Du hast nicht rechtzeitig geantwortet!', 'error', 3000);
-            // Submit empty answer to not block others
-            if (userAnswer === null) userAnswer = false;
-            if (userEstimation === null) userEstimation = 0;
-            submitAnswers();
-        }
+        // Timer disabled – no auto-advance
     }
 
     // ===========================
