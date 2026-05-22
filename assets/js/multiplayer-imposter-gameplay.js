@@ -38,6 +38,7 @@
     let hasVoted        = false;
     let hasDecided      = false;
     let selectedVotes   = [];        // UIDs selected for voting
+    let lastRoundNumber = 0;         // detects new rounds for flag resets
     let gameListener    = null;
     let roundListener   = null;
     let connectedRef    = null;
@@ -363,6 +364,16 @@
         currentRound = round;
         isImposter = Array.isArray(round.imposters) && round.imposters.includes(myUid);
 
+        // New round started — reset all per-round flags for every player
+        const roundNum = round.roundNumber || 0;
+        if (roundNum !== lastRoundNumber) {
+            lastRoundNumber  = roundNum;
+            hasClickedWeiter = false;
+            hasVoted         = false;
+            hasDecided       = false;
+            selectedVotes    = [];
+        }
+
         if (round.phase === 'ended') {
             // Host computes schlucke if not yet written (e.g., non-host imposter triggered end)
             if (isHost && round.resolution && !round.schlucke) {
@@ -376,8 +387,8 @@
         }
 
         if (round.phase === 'word' || round.phase === 'waiting') {
-            // If user already clicked Weiter locally, stay in voting
-            if (currentPhase === 'voting') return;
+            // Stay in voting only if it's the SAME round and the player already clicked Weiter
+            if (currentPhase === 'voting' && hasClickedWeiter) return;
             showPhase('word');
             renderWordPhase(round);
             return;
