@@ -1552,7 +1552,7 @@ function endGame() {
 function loadQuestion(question) {
     const categoryNames = {
         'fsk0': '👨‍👩‍👧‍👦 Familie & Freunde',
-        'fsk16': '🎉 Party Time',
+        'fsk16': '🎤 Wer würde?',
         'fsk18': '🔥 Heiß & Gewagt',
         'special': '⭐ Special Edition'
     };

@@ -26,14 +26,14 @@
     {
       "id": "fallback_fsk16_1",
       "question": "Wie viele Biere sind noch im Kühlschrank?",
-      "category": "Party Time",
+      "category": "Wer würde?",
       "difficulty": "easy",
       "type": "estimation"
     },
     {
       "id": "fallback_fsk16_2",
       "question": "Wie viele Leute sind auf der Party?",
-      "category": "Party Time",
+      "category": "Wer würde?",
       "difficulty": "medium",
       "type": "estimation"
     }

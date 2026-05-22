@@ -90,14 +90,14 @@
 
     const categoryIcons = {
         fsk0: '👨‍👩‍👧‍👦',
-        fsk16: '🎉',
+        fsk16: '🎤',
         fsk18: '🔥',
         special: '⭐'
     };
 
     const categoryNames = {
         fsk0: 'Familie & Freunde',
-        fsk16: 'Party Time',
+        fsk16: 'Wer würde?',
         fsk18: 'Heiß & Gewagt',
         special: 'Special Edition'
     };

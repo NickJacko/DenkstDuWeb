@@ -175,7 +175,7 @@
 
     const categoryData = {
         fsk0: { name: 'Familie & Freunde', icon: '👨‍👩‍👧‍👦' },
-        fsk16: { name: 'Party Time', icon: '🎉' },
+        fsk16: { name: 'Wer würde?', icon: '🎤' },
         fsk18: { name: 'Heiß & Gewagt', icon: '🔥' },
         special: { name: 'Special Edition', icon: '⭐' }
     };

@@ -109,12 +109,12 @@
             description: 'Lustige und harmlose Fragen für die ganze Familie'
         },
         fsk16: {
-            name: 'Party Time',
-            icon: '🎉',
+            name: 'Wer würde?',
+            icon: '🎤',
             color: '#FF9800',
             requiresAge: 0, // ✅ Always unlocked
             requiresPremium: false,
-            description: 'Freche und witzige Fragen für Partys mit Freunden'
+            description: 'Wer würde was tun? Freche Aussagen und Einschätzungen für die Party!'
         },
         fsk18: {
             name: 'Heiß & Gewagt',

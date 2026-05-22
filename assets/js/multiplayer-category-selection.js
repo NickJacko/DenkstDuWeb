@@ -119,13 +119,13 @@
             requiresAge: 0
         },
         fsk16: {
-            name: 'Party Time',
-            icon: '🎉',
+            name: 'Wer würde?',
+            icon: '🎤',
             color: '#FF9800',
             fsk: 'FSK 16',
             ageRange: 'Für alle', // ✅ FSK18-SYSTEM: Always unlocked
-            description: 'Freche und witzige Fragen für Partys mit Freunden',
-            examples: ['...auf einer Party eingeschlafen?', '...den Namen vergessen?'],
+            description: 'Wer würde was tun? Freche Aussagen und Einschätzungen für die Party!',
+            examples: ['Ich würde mit jemandem aus dieser Runde...', 'Ich glaube, mein Nachbar...'],
             requiresAge: 0 // ✅ FSK18-SYSTEM: No age requirement
         },
         fsk18: {

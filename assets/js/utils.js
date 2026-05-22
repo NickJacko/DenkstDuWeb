@@ -1167,10 +1167,10 @@
             },
             'fsk16': {
                 id: 'fsk16',
-                name: 'Party & Frech',
-                icon: '🎉',
+                name: 'Wer würde?',
+                icon: '🎤',
                 color: '#FF9800',
-                description: 'Lustige Party-Fragen',
+                description: 'Freche Aussagen und Einschätzungen für die Party',
                 requiredAge: 16
             },
             'fsk18': {
