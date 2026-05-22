@@ -2145,7 +2145,12 @@
                         }
 
                         if (!currentRoundData.revealed) {
-                            if (currentPhase !== 'reveal') {
+                            if (currentQuestion?.category === 'fsk0') {
+                                // fsk0 skips the reveal step — go straight to results
+                                if (currentPhase !== 'results' && currentPhase !== 'overall-results') {
+                                    calculateAndShowResults();
+                                }
+                            } else if (currentPhase !== 'reveal') {
                                 showRevealPhase();
                             }
                             return;
