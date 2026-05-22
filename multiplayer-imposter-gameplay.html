@@ -163,24 +163,30 @@
 
         <!-- Normal players: vote -->
         <div class="glass-card voting-card" id="voting-normal" hidden>
-            <h2 class="voting-title">Wer ist der Imposter?</h2>
-            <p class="voting-subtitle">
-                Wähle <strong id="required-count-display">1</strong> Person aus:
-            </p>
 
-            <div class="player-vote-grid" id="player-vote-grid" role="group" aria-label="Spieler auswählen">
-                <!-- Dynamically filled -->
+            <!-- Voting form (hidden after submitting) -->
+            <div id="voting-form">
+                <h2 class="voting-title">Wer ist der Imposter?</h2>
+                <p class="voting-subtitle">
+                    Wähle <strong id="required-count-display">1</strong> Person aus:
+                </p>
+                <div class="player-vote-grid" id="player-vote-grid" role="group" aria-label="Spieler auswählen">
+                    <!-- Dynamically filled -->
+                </div>
+                <div class="vote-actions">
+                    <button class="btn-submit-vote" id="submit-vote-btn" type="button" disabled aria-disabled="true">
+                        Abstimmen ✓
+                    </button>
+                </div>
             </div>
 
-            <div class="vote-actions">
-                <button class="btn-submit-vote" id="submit-vote-btn" type="button" disabled aria-disabled="true">
-                    Abstimmen ✓
-                </button>
+            <!-- Shown after submitting vote -->
+            <div class="voted-waiting hidden" id="voted-waiting" role="status" aria-live="polite">
+                <div class="voted-waiting-icon">⏳</div>
+                <p class="voted-waiting-title">Stimme abgegeben!</p>
+                <p class="voted-waiting-subtitle">Warte bis alle abgestimmt haben...</p>
             </div>
 
-            <p class="vote-submitted-msg hidden" id="vote-submitted-msg" role="alert" aria-live="polite">
-                ✅ Deine Stimme wurde abgegeben! Warte auf den Imposter...
-            </p>
         </div>
 
         <!-- Imposter: decision -->

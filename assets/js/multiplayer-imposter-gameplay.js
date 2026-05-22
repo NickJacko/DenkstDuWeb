@@ -550,6 +550,11 @@
         } else {
             if (normalCard)   normalCard.hidden   = false;
             if (imposterCard) imposterCard.hidden = true;
+            // Reset voting form / waiting state for new round
+            const form    = document.getElementById('voting-form');
+            const waiting = document.getElementById('voted-waiting');
+            if (form)    form.classList.remove('hidden');
+            if (waiting) waiting.classList.add('hidden');
             renderPlayerVoteGrid();
             updateVoteSubmitButton();
         }
@@ -629,11 +634,11 @@
             return;
         }
 
-        // Show waiting message
-        const msg = document.getElementById('vote-submitted-msg');
-        if (msg) msg.classList.remove('hidden');
-
-        document.querySelectorAll('.player-vote-btn').forEach(b => b.disabled = true);
+        // Swap voting form → waiting state
+        const form = document.getElementById('voting-form');
+        const waiting = document.getElementById('voted-waiting');
+        if (form)    form.classList.add('hidden');
+        if (waiting) waiting.classList.remove('hidden');
     }
 
     // ───────────────────────────────────────────────
