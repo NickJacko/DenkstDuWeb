@@ -530,6 +530,7 @@
     let currentQuestionNumber = 0;
     let currentPhase = 'question';
     let hasSubmittedThisRound = false; // P0: Anti-cheat
+    let fsk16PreReveal = false;        // Tracks FSK16 intermediate state (before Aufdecken)
     let resultsDebounceTimer = null;   // Track results timeout so it can be cancelled
     let isLoadingRound = false;        // Prevent parallel loadRoundFromFirebase calls
     let timerSyncRef = null;
@@ -1331,6 +1332,16 @@
         const revealSkipBtn = document.getElementById('reveal-skip-btn');
         if (revealSkipBtn) {
             addTrackedEventListener(revealSkipBtn, 'click', nextQuestion);
+        }
+
+        const fsk16RevealBtn = document.getElementById('fsk16-reveal-btn');
+        if (fsk16RevealBtn) {
+            addTrackedEventListener(fsk16RevealBtn, 'click', revealRoundResults);
+        }
+
+        const fsk16SkipBtn = document.getElementById('fsk16-skip-btn');
+        if (fsk16SkipBtn) {
+            addTrackedEventListener(fsk16SkipBtn, 'click', nextQuestion);
         }
 
         // Host controls
@@ -2145,6 +2156,17 @@
                                 }
                                 return;
                             }
+                            // All FSK16 guesses in → skip reveal phase, go directly to results
+                            const isRevealed = !!currentRoundData.revealed;
+                            if (currentPhase !== 'results' && currentPhase !== 'overall-results') {
+                                fsk16PreReveal = !isRevealed;
+                                calculateAndShowResults(!isRevealed);
+                            } else if (currentPhase === 'results' && isRevealed && fsk16PreReveal) {
+                                // Reveal happened while on intermediate results → show full results
+                                fsk16PreReveal = false;
+                                calculateAndShowResults(false);
+                            }
+                            return;
                         }
 
                         if (!currentRoundData.revealed) {
@@ -2967,6 +2989,7 @@
         userEstimation = null;
         hasSubmittedThisRound = false;
         hasSubmittedGuessThisRound = false;
+        fsk16PreReveal = false;
         currentGuessSelection = [];
         currentGuessRequiredCount = 0;
 
@@ -3453,7 +3476,7 @@
     // RESULTS CALCULATION
     // ===========================
 
-    function calculateAndShowResults() {
+    function calculateAndShowResults(preReveal = false) {
         if (!currentRoundData || !currentRoundData.answers) {
             console.error('❌ No round data');
             return;
@@ -3464,7 +3487,7 @@
         const guesses = filterRoundGuessesForActivePlayers(currentRoundData.guesses || {});
 
         if (MultiplayerGameplayModule.isDevelopment) {
-            console.log(`✅ Results: ${actualYesCount} said yes`);
+            console.log(`✅ Results: ${actualYesCount} said yes, preReveal=${preReveal}`);
         }
 
         const results = Object.values(answers).map(playerAnswer => {
@@ -3479,6 +3502,10 @@
             if (isFSK16Question(currentQuestion)) {
                 const playerGuess = guesses[pid] || {};
                 const selectedIds = Array.isArray(playerGuess.selectedPlayerIds) ? playerGuess.selectedPlayerIds : [];
+                const selectedNames = selectedIds.map(id => {
+                    const p = currentPlayers[id];
+                    return p ? sanitizePlayerName(p.name || 'Spieler') : '?';
+                });
                 const missedCount = Object.values(answers)
                     .filter(answer => answer.answer === true)
                     .map(answer => answer.playerId)
@@ -3492,6 +3519,7 @@
                     playerName: sanitizePlayerName(resolvedName),
                     answer: playerAnswer.answer,
                     estimation: selectedIds.length,
+                    selectedNames: selectedNames,
                     difference: difference,
                     isCorrect: difference === 0,
                     sips: sips
@@ -3520,39 +3548,74 @@
         // Sort by sips (descending)
         results.sort((a, b) => b.sips - a.sips);
 
-        // Update overall stats
-        overallStats.totalRounds = currentQuestionNumber;
+        // Update overall stats only on full reveal (not pre-reveal)
+        if (!preReveal) {
+            overallStats.totalRounds = currentQuestionNumber;
 
-        results.forEach(result => {
-            if (!overallStats.playerStats[result.playerId]) {
-                overallStats.playerStats[result.playerId] = {
-                    name: result.playerName,
-                    totalSips: 0,
-                    correctGuesses: 0,
-                    totalGuesses: 0
-                };
-            }
+            results.forEach(result => {
+                if (!overallStats.playerStats[result.playerId]) {
+                    overallStats.playerStats[result.playerId] = {
+                        name: result.playerName,
+                        totalSips: 0,
+                        correctGuesses: 0,
+                        totalGuesses: 0
+                    };
+                }
 
-            const playerStats = overallStats.playerStats[result.playerId];
-            playerStats.totalSips += result.sips;
-            playerStats.totalGuesses++;
-            if (result.isCorrect) {
-                playerStats.correctGuesses++;
-            }
-        });
+                const playerStats = overallStats.playerStats[result.playerId];
+                playerStats.totalSips += result.sips;
+                playerStats.totalGuesses++;
+                if (result.isCorrect) {
+                    playerStats.correctGuesses++;
+                }
+            });
+        }
 
-        displayRoundResults(results, actualYesCount);
+        displayRoundResults(results, actualYesCount, preReveal);
         showPhase('results');
+        updateFSK16RevealUI(preReveal);
 
         if (MultiplayerGameplayModule.isDevelopment) {
             console.log('📊 Results displayed');
         }
     }
 
+    function updateFSK16RevealUI(preReveal) {
+        const fsk16RevealControls = document.getElementById('fsk16-reveal-controls');
+        const standardHostControls = document.getElementById('standard-host-controls');
+        const isHost = MultiplayerGameplayModule.gameState.isHost;
+
+        if (!isFSK16Question(currentQuestion)) {
+            if (fsk16RevealControls) fsk16RevealControls.classList.add('hidden');
+            if (standardHostControls) standardHostControls.classList.remove('hidden');
+            return;
+        }
+
+        if (preReveal) {
+            if (fsk16RevealControls) {
+                fsk16RevealControls.classList.remove('hidden');
+                const revealBtn = document.getElementById('fsk16-reveal-btn');
+                const skipBtn = document.getElementById('fsk16-skip-btn');
+                if (revealBtn) {
+                    revealBtn.disabled = !isHost;
+                    revealBtn.classList.toggle('enabled', isHost);
+                }
+                if (skipBtn) {
+                    skipBtn.disabled = !isHost;
+                    skipBtn.classList.toggle('enabled', isHost);
+                }
+            }
+            if (standardHostControls) standardHostControls.classList.add('hidden');
+        } else {
+            if (fsk16RevealControls) fsk16RevealControls.classList.add('hidden');
+            if (standardHostControls) standardHostControls.classList.remove('hidden');
+        }
+    }
+
     /**
      * P0 FIX: Display results with textContent only
      */
-    function displayRoundResults(results, actualYesCount) {
+    function displayRoundResults(results, actualYesCount, preReveal = false) {
         // Show question
         if (currentQuestion && currentQuestion.text) {
             const resultsQuestionEl = document.getElementById('results-question-text');
@@ -3563,47 +3626,53 @@
 
         const resultsSummaryEl = document.getElementById('results-summary');
         if (resultsSummaryEl) {
-            resultsSummaryEl.textContent =
-                `✅ ${actualYesCount} von ${totalPlayers || results.length} aktiven Spielern haben mit "Ja" geantwortet`;
+            if (isFSK16Question(currentQuestion) && !preReveal) {
+                const yesPlayers = results.filter(r => r.answer === true).map(r => r.playerName);
+                resultsSummaryEl.textContent = yesPlayers.length > 0
+                    ? `✅ Ja gesagt: ${yesPlayers.join(', ')}`
+                    : '✅ Niemand hat mit "Ja" geantwortet';
+            } else {
+                resultsSummaryEl.textContent = preReveal
+                    ? `🎭 ${actualYesCount} von ${totalPlayers || results.length} Spielern haben mit "Ja" geantwortet – bereit zum Aufdecken?`
+                    : `✅ ${actualYesCount} von ${totalPlayers || results.length} aktiven Spielern haben mit "Ja" geantwortet`;
+            }
         }
 
         // Find current player's result
         const currentPlayerId = getPlayerKey();
-
         const myResult = results.find(r => r.playerId === currentPlayerId);
 
-        if (myResult) {
-            const personalBox = document.getElementById('personal-result');
-            if (personalBox) {
-                // ✅ CSP FIX: Use CSS class instead of inline style
+        const personalBox = document.getElementById('personal-result');
+        if (personalBox) {
+            if (!myResult) {
+                personalBox.classList.add('hidden');
+            } else {
                 personalBox.classList.remove('hidden');
-            }
 
+                const estEl = document.getElementById('personal-estimation');
+                if (estEl) {
+                    estEl.textContent = myResult.estimation;
+                }
 
-            const estEl = document.getElementById('personal-estimation');
-            if (estEl) {
-                estEl.textContent = myResult.estimation;
-            }
+                const statusText = myResult.isCorrect ?
+                    '✅ Richtig geschätzt!' :
+                    `❌ Falsch (Diff: ${myResult.difference})`;
 
-            const statusText = myResult.isCorrect ?
-                '✅ Richtig geschätzt!' :
-                `❌ Falsch (Diff: ${myResult.difference})`;
+                const statusEl = document.getElementById('personal-status');
+                if (statusEl) {
+                    statusEl.textContent = statusText;
+                    statusEl.classList.remove('status-correct', 'status-incorrect');
+                    statusEl.classList.add(myResult.isCorrect ? 'status-correct' : 'status-incorrect');
+                }
 
-            const statusEl = document.getElementById('personal-status');
-            if (statusEl) {
-                statusEl.textContent = statusText;
-                // ✅ CSP FIX: Use CSS classes instead of inline style
-                statusEl.classList.remove('status-correct', 'status-incorrect');
-                statusEl.classList.add(myResult.isCorrect ? 'status-correct' : 'status-incorrect');
-            }
+                const sipsText = myResult.sips === 0 ?
+                    '🎯 Keine! Perfekt!' :
+                    `${myResult.sips} 🍺`;
 
-            const sipsText = myResult.sips === 0 ?
-                '🎯 Keine! Perfekt!' :
-                `${myResult.sips} 🍺`;
-
-            const sipsEl = document.getElementById('personal-sips');
-            if (sipsEl) {
-                sipsEl.textContent = sipsText;
+                const sipsEl = document.getElementById('personal-sips');
+                if (sipsEl) {
+                    sipsEl.textContent = sipsText;
+                }
             }
         }
 
@@ -3620,8 +3689,8 @@
 
             const isMe = result.playerId === currentPlayerId;
             if (isMe) resultItem.classList.add('is-me');
-            else if (result.isCorrect) resultItem.classList.add('correct-not-me');
-            else resultItem.classList.add('wrong');
+            else if (!preReveal && result.isCorrect) resultItem.classList.add('correct-not-me');
+            else if (!preReveal) resultItem.classList.add('wrong');
 
             const avatar = result.playerName.substring(0, 2).toUpperCase();
             const sipsText = result.sips === 0 ? 'Perfekt! 🎯' : `${result.sips} 🍺`;
@@ -3642,16 +3711,19 @@
             playerName.className = 'player-name';
             playerName.textContent = result.playerName;
 
-            const playerAnswer = document.createElement('div');
-            playerAnswer.className = 'player-answer';
-            if (isFSK16Question(currentQuestion)) {
-                playerAnswer.textContent = `Gewählte Spieler: ${result.estimation}`;
-            } else {
-                playerAnswer.textContent = `Tipp: ${result.estimation}`;
-            }
-
             playerInfo.appendChild(playerName);
-            playerInfo.appendChild(playerAnswer);
+
+            if (!isFSK16Question(currentQuestion)) {
+                const playerAnswer = document.createElement('div');
+                playerAnswer.className = 'player-answer';
+                playerAnswer.textContent = `Tipp: ${result.estimation}`;
+                playerInfo.appendChild(playerAnswer);
+            } else if (!preReveal) {
+                const playerAnswer = document.createElement('div');
+                playerAnswer.className = 'player-answer';
+                playerAnswer.textContent = result.answer ? '✅ Ja' : '❌ Nein';
+                playerInfo.appendChild(playerAnswer);
+            }
 
             playerResult.appendChild(playerAvatar);
             playerResult.appendChild(playerInfo);
