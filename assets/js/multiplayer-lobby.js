@@ -642,7 +642,7 @@
             const details = error?.details || null;
 
             if (code.toString().toLowerCase().includes('permission-denied')) {
-                errorMessage = 'Keine Berechtigung für die ausgewählte Kategorie. FSK18-Zugriff erforderlich.';
+                errorMessage = 'Keine Berechtigung. Bitte stelle sicher, dass die Datenbankregeln aktuell sind.';
             } else if (code.toString().toLowerCase().includes('invalid-argument')) {
                 errorMessage = message || 'Ungültige Eingabedaten für die Spielerstellung.';
             } else if (message) {

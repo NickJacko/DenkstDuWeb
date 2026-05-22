@@ -978,8 +978,8 @@ function normalizeCategories(input) {
  * ✅ special: Requires premium
  */
 async function assertCategoryAllowed(categoryId, context) {
-    // ✅ FSK0 & FSK16 always allowed (no age check)
-    if (categoryId === "fsk0" || categoryId === "fsk16") {
+    // ✅ FSK0, FSK16, imposter always allowed (no age check)
+    if (categoryId === "fsk0" || categoryId === "fsk16" || categoryId === "imposter") {
         return true;
     }
 
