@@ -2810,7 +2810,10 @@
 
         if (categoryEl) {
             categoryEl.textContent = categoryNames[question.category] || '🎮 Spiel';
+            categoryEl.className = 'question-category';
+            if (question.category) categoryEl.classList.add(question.category);
         }
+        document.body.dataset.category = question.category || '';
 
         updateAnswerButtonLabels(question);
 
@@ -2840,6 +2843,10 @@
     function getAnswerLabels(question) {
         if (!question || !question.text) {
             return { yes: 'Ja', no: 'Nein' };
+        }
+
+        if (isFSK16Question(question)) {
+            return { yes: 'Ja, ich würde!', no: 'Nein, niemals!' };
         }
 
         const text = question.text.toLowerCase();

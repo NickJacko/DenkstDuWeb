@@ -54,12 +54,13 @@ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) fixed;
    LAYOUT - KOMPAKT
    ============================================================================ */
 .app-container {
-    padding: 0.875rem;
-    padding-top: max(0.875rem, env(safe-area-inset-top, 0) + 0.875rem);
-    padding-bottom: max(0.875rem, env(safe-area-inset-bottom, 0) + 0.875rem);
+    padding: 0.625rem;
+    padding-top: max(0.625rem, env(safe-area-inset-top, 0) + 0.625rem);
+    padding-bottom: max(0.625rem, env(safe-area-inset-bottom, 0) + 0.625rem);
     max-width: 1200px;
     margin: 0 auto;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
 }
@@ -68,14 +69,16 @@ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) fixed;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
-    border-radius: 1rem;
+    border-radius: 0.875rem;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 1rem 0.875rem;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    padding: 0.75rem;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
     width: 100%;
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* ============================================================================
@@ -345,6 +348,12 @@ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) fixed;
     box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3);
 }
 
+.category-card.imposter.selected {
+    border-color: #9C27B0;
+    background: rgba(156, 39, 176, 0.18);
+    box-shadow: 0 8px 24px rgba(156, 39, 176, 0.4);
+}
+
 /* ============================================================================
    LOCKED OVERLAY - KOMPAKT
    ============================================================================ */
@@ -475,6 +484,11 @@ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) fixed;
 
 .special-badge {
     background: linear-gradient(45deg, #FFD700, #FFA500);
+    color: white;
+}
+
+.imposter-badge {
+    background: linear-gradient(135deg, #9C27B0, #7B1FA2);
     color: white;
 }
 
@@ -964,4 +978,54 @@ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) fixed;
     .category-card.selected {
         border: 3px solid #4CAF50;
     }
+}
+
+/* ============================================================================
+   KATEGORIE-SPEZIFISCHE CARD-THEMES
+   ============================================================================ */
+
+/* Subtle colored border tint per category */
+.category-card.fsk0   { border-color: rgba(76, 175, 80, 0.28); }
+.category-card.fsk16  { border-color: rgba(255, 152, 0, 0.28); }
+.category-card.fsk18  { border-color: rgba(244, 67, 54, 0.28); }
+.category-card.special { border-color: rgba(255, 215, 0, 0.28); }
+.category-card.imposter { border-color: rgba(156, 39, 176, 0.28); }
+
+/* Desktop: category-colored hover glow (overrides generic blue hover) */
+@media (min-width: 1024px) {
+    .category-card.fsk0:hover:not(.locked):not(.guest-disabled):not(.selected) {
+        border-color: rgba(76, 175, 80, 0.65);
+        background: rgba(76, 175, 80, 0.08);
+        box-shadow: 0 12px 30px rgba(76, 175, 80, 0.22);
+    }
+
+    .category-card.fsk16:hover:not(.locked):not(.guest-disabled):not(.selected) {
+        border-color: rgba(255, 152, 0, 0.65);
+        background: rgba(255, 152, 0, 0.08);
+        box-shadow: 0 12px 30px rgba(255, 152, 0, 0.22);
+    }
+
+    .category-card.fsk18:hover:not(.locked):not(.guest-disabled):not(.selected) {
+        border-color: rgba(244, 67, 54, 0.65);
+        background: rgba(244, 67, 54, 0.08);
+        box-shadow: 0 12px 30px rgba(244, 67, 54, 0.22);
+    }
+
+    .category-card.special:hover:not(.locked):not(.guest-disabled):not(.selected) {
+        border-color: rgba(255, 215, 0, 0.65);
+        background: rgba(255, 215, 0, 0.08);
+        box-shadow: 0 12px 30px rgba(255, 215, 0, 0.22);
+    }
+
+    .category-card.imposter:hover:not(.locked):not(.guest-disabled):not(.selected) {
+        border-color: rgba(156, 39, 176, 0.65);
+        background: rgba(156, 39, 176, 0.08);
+        box-shadow: 0 12px 30px rgba(156, 39, 176, 0.22);
+    }
+}
+
+/* Wer würde? badge — warmer amber gradient */
+.fsk16-badge {
+    background: linear-gradient(135deg, #FF9800, #FF5722);
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
 }

@@ -30,8 +30,8 @@ body {
 }
 
 body, .app-container {
-    min-height: 100vh;
     height: 100vh;
+    height: 100dvh;
 }
 
 /* ============================================================================
@@ -86,15 +86,13 @@ body, .app-container {
    LAYOUT - MOBILE FIRST
    ============================================================================ */
 .app-container {
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 0.75rem;
-    padding-top: max(3.75rem, env(safe-area-inset-top, 0) + 3.75rem);
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0));
-    max-width: 450px;
+    padding: 0.5rem;
+    padding-top: max(3.25rem, env(safe-area-inset-top, 0) + 3.25rem);
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0));
+    max-width: 480px;
     margin: 0 auto;
     position: relative;
     z-index: 1;
@@ -135,8 +133,7 @@ body, .app-container {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: 0.75rem;
-    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
+    padding: 0.375rem 0.25rem;
     max-width: 480px;
     margin: 0 auto;
     width: 100%;
@@ -146,13 +143,13 @@ body, .app-container {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    overflow-y: auto;
-    scroll-behavior: smooth;
-    max-height: calc(100vh - 5rem);
+    overflow: hidden;
+    min-height: 0;
 }
 
 .game-phase > * {
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-height: 0;
     width: 100%;
 }
 
@@ -163,14 +160,15 @@ body, .app-container {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08));
     backdrop-filter: blur(35px);
     -webkit-backdrop-filter: blur(35px);
-    border-radius: 1.4rem;
+    border-radius: 1.25rem;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 1.4rem 1.15rem;
-    margin-bottom: 1rem;
+    padding: 0.875rem 1rem;
+    margin-bottom: 0.5rem;
     text-align: center;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .question-card::before {
@@ -194,8 +192,8 @@ body, .app-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.625rem;
-    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+    margin-bottom: 0.45rem;
     flex-wrap: wrap;
 }
 
@@ -203,25 +201,25 @@ body, .app-container {
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.4));
     border: 1.5px solid rgba(76, 175, 80, 0.6);
     color: white;
-    padding: 0.5625rem 1.125rem;
-    border-radius: 1.25rem;
-    font-size: 0.9rem;
+    padding: 0.35rem 0.875rem;
+    border-radius: 1rem;
+    font-size: 0.78rem;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
     text-transform: uppercase;
     display: inline-block;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 3px 12px rgba(76, 175, 80, 0.25);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
 }
 
 .question-text {
     color: white;
-    font-size: 1.2rem;
+    font-size: clamp(0.95rem, 3.5vw, 1.15rem);
     font-weight: 700;
-    line-height: 1.45;
-    letter-spacing: 0.2px;
-    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+    line-height: 1.38;
+    letter-spacing: 0.15px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================================================
@@ -272,46 +270,47 @@ body, .app-container {
    ANSWER SECTION
    ============================================================================ */
 .answer-section {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
 }
 
 .answer-title {
     color: white;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     text-align: center;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    letter-spacing: 0.3px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.2px;
 }
 
 .answer-buttons {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
 .answer-btn {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08));
-    border: 2.2px solid rgba(255, 255, 255, 0.28);
+    border: 2px solid rgba(255, 255, 255, 0.28);
     color: white;
-    padding: 1.15rem 0.95rem;
-    border-radius: 1.15rem;
-    font-size: 1rem;
+    padding: 0.7rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     font-family: 'Poppins', sans-serif;
-    letter-spacing: 0.28px;
+    letter-spacing: 0.2px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.65rem;
-    min-height: 88px;
+    gap: 0.4rem;
+    min-height: 68px;
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -352,8 +351,8 @@ body, .app-container {
 }
 
 .answer-emoji {
-    font-size: 2rem;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+    font-size: 1.55rem;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.2));
     transition: transform 0.2s;
 }
 
@@ -368,47 +367,53 @@ body, .app-container {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    border-radius: 1.35rem;
+    border-radius: 1.1rem;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 1.25rem 1rem 1.4rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    padding: 0.75rem 0.875rem 0.875rem;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     overflow: visible;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .estimation-title {
     color: white;
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     font-weight: 700;
     text-align: center;
-    margin-bottom: 1.25rem;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-    letter-spacing: 0.3px;
-    line-height: 1.5;
+    margin-bottom: 0.625rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    letter-spacing: 0.2px;
+    line-height: 1.4;
     opacity: 0.95;
+    flex-shrink: 0;
 }
 
 .number-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
-    gap: 0.875rem;
-    margin-bottom: 1.125rem;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 0.45rem;
+    margin-bottom: 0.5rem;
     justify-items: center;
-    padding: 0.5rem;
     overflow: visible;
+    flex: 1;
+    align-content: start;
 }
 
 .number-btn {
-    width: 58px;
-    height: 58px;
+    width: 46px;
+    height: 46px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.12));
-    border: 2.5px solid rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.45);
     color: white;
     border-radius: 50%;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 800;
     font-family: 'Poppins', sans-serif;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -418,7 +423,7 @@ body, .app-container {
     -webkit-backdrop-filter: blur(20px);
     position: relative;
     overflow: visible;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), inset 0 2px 4px rgba(255, 255, 255, 0.15);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -459,121 +464,47 @@ body, .app-container {
 }
 
 /* ============================================================================
-   SMALL SCREENS & LOW HEIGHT REFINEMENTS
+   VERY SMALL SCREENS (max-height 580px — e.g. iPhone SE landscape)
    ============================================================================ */
-@media (max-width: 420px), (max-height: 700px) {
+@media (max-height: 580px) {
     .app-container {
-        padding: 0.6rem;
-        padding-top: max(3.2rem, env(safe-area-inset-top, 0) + 3.2rem);
-    }
-
-    .game-phase {
-        padding: 0.5rem;
+        padding-top: max(2.8rem, env(safe-area-inset-top, 0) + 2.8rem);
     }
 
     .question-card {
-        padding: 1.1rem 1rem;
-        margin-bottom: 0.85rem;
-    }
-
-    .question-text {
-        font-size: 1.05rem;
-    }
-
-    .question-category {
-        padding: 0.45rem 0.9rem;
-        font-size: 0.82rem;
+        padding: 0.625rem 0.875rem;
+        margin-bottom: 0.375rem;
     }
 
     .answer-btn {
-        padding: 1rem 0.8rem;
-        min-height: 82px;
-        font-size: 0.95rem;
+        min-height: 56px;
+        padding: 0.5rem 0.625rem;
+        gap: 0.25rem;
     }
 
-    .answer-buttons {
-        gap: 0.75rem;
+    .answer-emoji {
+        font-size: 1.3rem;
     }
 
     .estimation-section {
-        padding: 1.1rem 0.95rem 1.2rem;
+        padding: 0.5rem 0.75rem 0.625rem;
     }
 
     .estimation-title {
-        font-size: 1.1rem;
+        font-size: 0.82rem;
+        margin-bottom: 0.4rem;
     }
 
-    .number-grid {
-        gap: 0.7rem;
+    .number-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 0.88rem;
     }
 
     .submit-btn {
-        padding: 1.1rem 1.3rem;
-        font-size: 1.15rem;
-    }
-
-    .game-phase.active {
-        max-height: calc(100vh - 5rem);
-    }
-
-    .question-card,
-    .estimation-section,
-    .guess-section,
-    .results-header,
-    .waiting-screen,
-    .players-status,
-    .host-controls,
-    .personal-result-box {
-        padding: 0.95rem;
-        margin-bottom: 0.8rem;
-    }
-
-    .answer-section,
-    .submit-section {
-        margin-bottom: 0.8rem;
-    }
-
-    .guess-player-grid {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    }
-
-    .players-status {
-        max-height: 180px;
-        overflow-y: auto;
-    }
-
-    .number-grid {
-        grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
-    }
-
-    .current-selection {
-        margin-bottom: 1rem;
-    }
-
-    .guess-player-grid {
-        gap: 0.65rem;
-    }
-
-    .guess-player-btn {
-        padding: 0.75rem 0.85rem;
-        font-size: 0.92rem;
-    }
-
-    .results-header {
-        padding: 0.9rem;
-        margin-bottom: 0.85rem;
-    }
-
-    .results-title {
-        font-size: 1rem;
-    }
-
-    .results-summary {
-        font-size: 0.9rem;
-    }
-
-    .player-status-item {
-        padding: 0.85rem 0.9rem;
+        min-height: 44px;
+        padding: 0.625rem 1rem;
+        font-size: 0.95rem;
     }
 }
 
@@ -582,11 +513,12 @@ body, .app-container {
    ============================================================================ */
 .current-selection {
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
     display: none;
     opacity: 0;
     transform: scale(0.9);
     transition: all 0.2s;
+    flex-shrink: 0;
 }
 
 .current-selection.show {
@@ -596,69 +528,69 @@ body, .app-container {
 }
 
 .selection-display {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.4), rgba(33, 150, 243, 0.35));
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.38), rgba(33, 150, 243, 0.32));
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
-    border: 3.5px solid rgba(76, 175, 80, 0.9);
-    border-radius: 1.75rem;
-    padding: 1.5rem 2.5rem;
-    display: inline-block;
-    min-width: 240px;
-    box-shadow: 0 16px 50px rgba(76, 175, 80, 0.5), 0 0 60px rgba(76, 175, 80, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    border: 2.5px solid rgba(76, 175, 80, 0.85);
+    border-radius: 1.25rem;
+    padding: 0.625rem 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 8px 28px rgba(76, 175, 80, 0.42), inset 0 1px 3px rgba(255, 255, 255, 0.2);
     position: relative;
     animation: selectionGlow 2s ease-in-out infinite;
 }
 
 @keyframes selectionGlow {
-    0%, 100% { box-shadow: 0 16px 50px rgba(76, 175, 80, 0.5), 0 0 60px rgba(76, 175, 80, 0.4); }
-    50% { box-shadow: 0 20px 60px rgba(76, 175, 80, 0.7), 0 0 80px rgba(76, 175, 80, 0.6); }
+    0%, 100% { box-shadow: 0 8px 28px rgba(76, 175, 80, 0.42); }
+    50% { box-shadow: 0 12px 36px rgba(76, 175, 80, 0.62); }
 }
 
 .selection-number {
     color: white;
-    font-size: 3rem;
+    font-size: 1.9rem;
     font-weight: 900;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 40px rgba(76, 175, 80, 0.8);
-    margin-bottom: 0.5rem;
-    letter-spacing: 3px;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 0 24px rgba(76, 175, 80, 0.7);
+    letter-spacing: 1px;
     line-height: 1;
 }
 
 .selection-label {
-    color: rgba(255, 255, 255, 1);
-    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.88rem;
     font-weight: 700;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-    letter-spacing: 0.8px;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.3px;
+    line-height: 1.3;
 }
 
 /* ============================================================================
    SUBMIT BUTTON
    ============================================================================ */
 .submit-section {
-    margin-bottom: 0.5rem;
-    position: sticky;
-    bottom: 0;
+    margin-bottom: 0;
+    margin-top: auto;
     z-index: 1;
-    background: linear-gradient(180deg, rgba(102, 126, 234, 0), rgba(118, 75, 162, 0.15));
-    padding-top: 0.45rem;
+    padding-top: 0.375rem;
+    flex-shrink: 0;
 }
 
 .submit-btn {
     width: 100%;
-    padding: 1.25rem 1.75rem;
-    min-height: 60px;
+    padding: 0.875rem 1.5rem;
+    min-height: 50px;
     background: linear-gradient(135deg, #4CAF50, #45a049);
     color: white;
     border: none;
-    border-radius: 1.25rem;
-    font-size: 1.25rem;
+    border-radius: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 800;
     font-family: 'Poppins', sans-serif;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
     cursor: pointer;
     transition: all 0.2s;
-    box-shadow: 0 12px 35px rgba(76, 175, 80, 0.25);
+    box-shadow: 0 10px 28px rgba(76, 175, 80, 0.25);
     position: relative;
     overflow: hidden;
     touch-action: manipulation;
@@ -694,18 +626,19 @@ body, .app-container {
    ============================================================================ */
 .waiting-screen {
     text-align: center;
-    padding: 2.5rem 1.25rem;
+    padding: 1.25rem 0.75rem;
+    overflow-y: auto;
 }
 
 .waiting-spinner {
-    width: 80px;
-    height: 80px;
-    border: 6px solid rgba(255, 255, 255, 0.1);
-    border-top: 6px solid #4CAF50;
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(255, 255, 255, 0.1);
+    border-top: 5px solid #4CAF50;
     border-radius: 50%;
     animation: spin 1.5s linear infinite;
-    margin: 0 auto 1.875rem;
-    box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+    margin: 0 auto 1rem;
+    box-shadow: 0 0 24px rgba(76, 175, 80, 0.3);
 }
 
 @keyframes spin {
@@ -715,28 +648,30 @@ body, .app-container {
 
 .waiting-title {
     color: white;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 800;
-    margin-bottom: 1rem;
+    margin-bottom: 0.625rem;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .waiting-description {
     color: rgba(255, 255, 255, 0.8);
-    font-size: 1rem;
-    line-height: 1.5;
+    font-size: 0.9rem;
+    line-height: 1.4;
     font-weight: 500;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.875rem;
 }
 
 .players-status {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 1rem;
-    padding: 1rem;
-    margin: 1.5rem 0;
+    border-radius: 0.875rem;
+    padding: 0.75rem;
+    margin: 0.75rem 0;
     display: grid;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    overflow-y: auto;
+    max-height: 50vh;
 }
 
 .player-status-item {
@@ -778,15 +713,16 @@ body, .app-container {
 .results-screen,
 .guess-screen,
 .waiting-screen {
-    padding: 0.3125rem 0;
+    padding: 0.25rem 0;
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     min-height: 0;
     overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 1rem;
+    padding: 0.625rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 .results-title {
@@ -1592,25 +1528,51 @@ body, .app-container {
    ============================================================================ */
 @media (min-width: 640px) {
     .app-container {
-        padding: 1.5rem;
-        padding-top: max(4.5rem, env(safe-area-inset-top, 0) + 4.5rem);
+        padding: 1rem;
+        padding-top: max(4rem, env(safe-area-inset-top, 0) + 4rem);
+    }
+
+    .question-card {
+        padding: 1.1rem 1.25rem;
+        margin-bottom: 0.75rem;
     }
 
     .question-text {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
     }
 
     .answer-buttons {
-        gap: 1.25rem;
+        gap: 0.875rem;
+    }
+
+    .answer-btn {
+        min-height: 80px;
+        padding: 0.9rem 0.875rem;
+    }
+
+    .estimation-section {
+        padding: 1rem 1.1rem 1.2rem;
+    }
+
+    .estimation-title {
+        font-size: 1.05rem;
+        margin-bottom: 0.875rem;
     }
 
     .number-grid {
-        gap: 1rem;
+        gap: 0.75rem;
     }
 
     .number-btn {
-        width: 62px;
-        height: 62px;
+        width: 54px;
+        height: 54px;
+        font-size: 1.1rem;
+    }
+
+    .submit-btn {
+        padding: 1rem 1.5rem;
+        min-height: 56px;
+        font-size: 1.15rem;
     }
 }
 
@@ -1673,66 +1635,23 @@ body, .app-container {
 }
 
 /* ============================================================================
-   SMALL MOBILE (480px and below)
+   SMALL MOBILE (480px and below) — tighten up a touch further
    ============================================================================ */
-@media (max-width: 480px) {
-    .app-container {
-        padding: 0.75rem;
-        padding-top: max(3.5rem, env(safe-area-inset-top, 0) + 3.5rem);
-    }
-
+@media (max-width: 380px) {
     .game-info-top {
-        font-size: 0.8rem;
-        gap: 0.5rem;
-    }
-
-    .question-card {
-        padding: 1.25rem 1rem;
-    }
-
-    .question-text {
-        font-size: 1.05rem;
-    }
-
-    .answer-btn {
-        padding: 1.125rem 0.75rem;
-        font-size: 0.95rem;
-    }
-
-    .answer-emoji {
-        font-size: 1.6rem;
+        font-size: 0.75rem;
+        gap: 0.375rem;
     }
 
     .number-btn {
-        width: 50px;
-        height: 50px;
-        font-size: 1.05rem;
+        width: 42px;
+        height: 42px;
+        font-size: 0.9rem;
     }
 
-    .estimation-title,
-    .answer-title {
-        font-size: 1rem;
-    }
-
-    .submit-btn {
-        font-size: 1.1rem;
-        padding: 1rem;
-    }
-
-    .results-title {
-        font-size: 1rem;
-    }
-
-    .personal-result-box {
-        padding: 0.75rem;
-    }
-
-    .overall-title {
-        font-size: 1.4rem;
-    }
-
-    .stat-number {
-        font-size: 1.5rem;
+    .answer-btn {
+        font-size: 0.85rem;
+        min-height: 62px;
     }
 }
 
@@ -1857,5 +1776,142 @@ body, .app-container {
     .results-grid {
         break-inside: avoid;
         page-break-inside: avoid;
+    }
+}
+
+/* ============================================================================
+   WER WÜRDE? (FSK16) THEME
+   ============================================================================ */
+
+/* Category badge — amber/orange */
+.question-category.fsk16 {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.32), rgba(255, 193, 7, 0.35));
+    border: 1.5px solid rgba(255, 152, 0, 0.65);
+    box-shadow: 0 3px 12px rgba(255, 152, 0, 0.25);
+    text-transform: none;
+    letter-spacing: 0.2px;
+}
+
+/* Question card top stripe — amber shimmer */
+body[data-category="fsk16"] .question-card::before {
+    background: linear-gradient(90deg, #FF9800 0%, #FFD700 33%, #FF5722 66%, #FF9800 100%);
+    background-size: 200% 100%;
+    animation: shimmer 3.5s ease-in-out infinite;
+}
+
+/* Screens border accent */
+body[data-category="fsk16"] .results-screen,
+body[data-category="fsk16"] .reveal-screen,
+body[data-category="fsk16"] .guess-screen {
+    border-color: rgba(255, 152, 0, 0.28);
+}
+
+/* Results header separator */
+.results-header {
+    padding: 0 0.25rem 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body[data-category="fsk16"] .results-header {
+    border-bottom-color: rgba(255, 152, 0, 0.35);
+}
+
+/* Reveal & guess phase titles */
+body[data-category="fsk16"] .reveal-title,
+body[data-category="fsk16"] .guess-title {
+    color: #FFB74D;
+    text-shadow: 0 2px 10px rgba(255, 152, 0, 0.4);
+}
+
+/* Guess player buttons */
+body[data-category="fsk16"] .guess-player-btn.selected {
+    background: rgba(255, 152, 0, 0.28);
+    border-color: #FF9800;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(255, 152, 0, 0.3);
+}
+
+/* Answer button — yes/selected in amber for fsk16 */
+body[data-category="fsk16"] .answer-btn.yes.selected {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.35), rgba(255, 152, 0, 0.48));
+    border-color: #FF9800;
+    box-shadow: 0 15px 45px rgba(255, 152, 0, 0.42), 0 0 30px rgba(255, 152, 0, 0.28);
+}
+
+/* Submit button */
+body[data-category="fsk16"] .submit-btn.enabled {
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    box-shadow: 0 15px 45px rgba(255, 152, 0, 0.32);
+}
+
+body[data-category="fsk16"] .submit-btn.enabled:active {
+    box-shadow: 0 10px 30px rgba(255, 152, 0, 0.4);
+}
+
+/* Guess submit button */
+body[data-category="fsk16"] .guess-submit-btn {
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+}
+
+/* Nav buttons — primary amber */
+body[data-category="fsk16"] .nav-btn.primary,
+#fsk16-reveal-controls .nav-btn.primary {
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    box-shadow: 0 10px 30px rgba(255, 152, 0, 0.28);
+}
+
+body[data-category="fsk16"] .nav-btn.primary:active,
+#fsk16-reveal-controls .nav-btn.primary:active {
+    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.42);
+}
+
+/* Host controls — amber accent */
+body[data-category="fsk16"] .host-controls {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 193, 7, 0.12));
+    border-color: rgba(255, 152, 0, 0.32);
+}
+
+body[data-category="fsk16"] .host-title {
+    color: #FFB74D;
+}
+
+/* Waiting spinner */
+body[data-category="fsk16"] .waiting-spinner {
+    border-top-color: #FF9800;
+    box-shadow: 0 0 30px rgba(255, 152, 0, 0.3);
+}
+
+/* FSK16 badge — polished amber */
+.fsk-badge.fsk-16 {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.95), rgba(255, 193, 7, 0.95));
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 2px 10px rgba(255, 152, 0, 0.5);
+    animation: pulse-fsk-16 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-fsk-16 {
+    0%, 100% { box-shadow: 0 2px 10px rgba(255, 152, 0, 0.5); transform: scale(1); }
+    50% { box-shadow: 0 4px 18px rgba(255, 152, 0, 0.72); transform: scale(1.03); }
+}
+
+/* Desktop hover overrides */
+@media (min-width: 1024px) {
+    body[data-category="fsk16"] .submit-btn.enabled:hover {
+        background: linear-gradient(135deg, #F57C00, #FF9800);
+        box-shadow: 0 18px 55px rgba(255, 152, 0, 0.52);
+        transform: translateY(-3px) scale(1.01);
+    }
+
+    body[data-category="fsk16"] .nav-btn.primary:hover,
+    #fsk16-reveal-controls .nav-btn.primary:hover {
+        background: linear-gradient(135deg, #F57C00, #FF9800);
+        box-shadow: 0 15px 40px rgba(255, 152, 0, 0.42);
+        transform: translateY(-2px);
+    }
+
+    body[data-category="fsk16"] .guess-player-btn:hover:not(.selected) {
+        border-color: rgba(255, 152, 0, 0.65);
+        background: rgba(255, 152, 0, 0.1);
     }
 }
