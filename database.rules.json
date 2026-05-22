@@ -124,9 +124,9 @@
           ".validate": "newData.hasChildren(['categories', 'difficulty', 'alcoholMode'])",
 
           "categories": {
-            ".validate": "(newData.hasChildren(['0']) && newData.child('0').isString()) || (newData.child('fsk0').exists() || newData.child('fsk16').exists() || newData.child('fsk18').exists() || newData.child('special').exists())",
+            ".validate": "(newData.hasChildren(['0']) && newData.child('0').isString()) || (newData.child('fsk0').exists() || newData.child('fsk16').exists() || newData.child('fsk18').exists() || newData.child('special').exists() || newData.child('imposter').exists())",
             "$i": {
-              ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special')"
+              ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special' || newData.val() === 'imposter')"
             }
           },
 
@@ -136,6 +136,10 @@
 
           "alcoholMode": {
             ".validate": "newData.isBoolean()"
+          },
+
+          "imposterCount": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 3"
           }
         },
 
@@ -193,6 +197,69 @@
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000 && (newData.val() - data.val() <= 100 || !data.exists())"
             }
           }
+        },
+
+        "imposterRound": {
+          ".read": "auth != null",
+          ".write": "auth != null",
+
+          "roundNumber": {
+            ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+
+          "word": {
+            ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
+          },
+
+          "imposters": {
+            ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+            "$uid": { ".validate": "newData.isBoolean()" }
+          },
+
+          "starter": {
+            ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+            ".validate": "newData.isString()"
+          },
+
+          "phase": {
+            ".write": "auth != null",
+            ".validate": "newData.isString() && (newData.val() === 'word' || newData.val() === 'ended' || newData.val() === 'waiting')"
+          },
+
+          "wordSeenBy": {
+            "$uid": {
+              ".write": "auth != null && $uid === auth.uid",
+              ".validate": "newData.isBoolean()"
+            }
+          },
+
+          "votes": {
+            "$uid": {
+              ".write": "auth != null && $uid === auth.uid",
+              ".validate": "newData.hasChildren(['submittedAt'])",
+              "submittedAt": { ".validate": "newData.isNumber() && newData.val() > 0" }
+            }
+          },
+
+          "resolution": {
+            ".write": "auth != null",
+            "imposterUid": { ".validate": "newData.isString()" },
+            "decision": { ".validate": "newData.isString() && (newData.val() === 'erwischt' || newData.val() === 'nicht_erwischt')" },
+            "clickedAt": { ".validate": "newData.isNumber() && newData.val() > 0" }
+          },
+
+          "schlucke": {
+            ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+            "$uid": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+          }
+        },
+
+        "totalSchlucke": {
+          ".read": "auth != null",
+          ".write": "auth != null && (root.child('games').child($gameId).child('hostId').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).child('isHost').val() === true)",
+          "$uid": { ".validate": "newData.isNumber() && newData.val() >= 0" }
         },
 
         "rounds": {
@@ -288,7 +355,7 @@
         "categories": {
           ".validate": "newData.hasChildren()",
           "$i": {
-            ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special')"
+            ".validate": "newData.isString() && (newData.val() === 'fsk0' || newData.val() === 'fsk16' || newData.val() === 'fsk18' || newData.val() === 'special' || newData.val() === 'imposter')"
           }
         },
 

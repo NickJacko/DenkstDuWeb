@@ -181,6 +181,17 @@
                 </div>
             </div>
 
+            <!-- Imposter count (only visible in Imposter mode) -->
+            <div class="setting-row" id="imposter-count-row" hidden>
+                <div class="setting-header">🕵️ Anzahl Imposter</div>
+                <div class="imposter-count-selector host-only" id="imposter-count-selector" role="group" aria-label="Anzahl der Imposter wählen">
+                    <button class="count-btn active" data-count="1" type="button" aria-pressed="true">1</button>
+                    <button class="count-btn" data-count="2" type="button" aria-pressed="false">2</button>
+                    <button class="count-btn" data-count="3" type="button" aria-pressed="false">3</button>
+                </div>
+                <div class="setting-content imposter-count-display" id="imposter-count-display" aria-live="polite">1 Imposter</div>
+            </div>
+
             <button class="edit-settings-btn host-only"
                     id="edit-settings-btn"
                     type="button"

@@ -97,14 +97,16 @@
         fsk0: '👨‍👩‍👧‍👦',
         fsk16: '🎉',
         fsk18: '🔥',
-        special: '⭐'
+        special: '⭐',
+        imposter: '🕵️'
     };
 
     const categoryNames = {
         fsk0: 'Familie & Freunde',
         fsk16: 'Party Time',
         fsk18: 'Heiß & Gewagt',
-        special: 'Special'
+        special: 'Special',
+        imposter: 'Imposter'
     };
 
     const difficultyNames = {
@@ -621,7 +623,7 @@
                 ? selectedCategories
                 : (selectedCategories ? Object.values(selectedCategories) : []);
 
-            displaySettings({ categories: categoriesForUI, difficulty });
+            displaySettings({ categories: categoriesForUI, difficulty, imposterCount: currentImposterCount });
             try { MultiplayerLobbyModule.gameState.save?.(true); } catch (e) {}
 // ✅ Listen to the real game by gameId
             setupGameListener(gameId);
@@ -683,7 +685,10 @@
                 || MultiplayerLobbyModule.gameState.difficulty
                 || 'medium';
 
-            displaySettings({ categories, difficulty });
+            const imposterCount = game.settings?.imposterCount || 1;
+            currentImposterCount = imposterCount;
+
+            displaySettings({ categories, difficulty, imposterCount });
 
             // ✅ P0 FIX: Ensure we have a stable player key before checking player existence
             const ensurePlayerKey = async (timeoutMs = 3000, intervalMs = 50) => {
@@ -946,7 +951,8 @@
                 gamePhase: 'playing',
                 playerName: MultiplayerLobbyModule.gameState.playerName,
                 selectedCategories: MultiplayerLobbyModule.gameState.selectedCategories,
-                difficulty: MultiplayerLobbyModule.gameState.difficulty
+                difficulty: MultiplayerLobbyModule.gameState.difficulty,
+                imposterCount: currentImposterCount
             };
 
             // Method 1: NocapUtils
@@ -977,7 +983,13 @@
             }
 
             // Method 4: URL parameter
-            const targetUrl = 'multiplayer-gameplay.html?gameId=' + encodeURIComponent(currentGameId);
+            const catsG = MultiplayerLobbyModule.gameState.selectedCategories || [];
+            const catArrayG = Array.isArray(catsG) ? catsG : Object.values(catsG);
+            const isImposterModeG = catArrayG.includes('imposter');
+            const targetPageG = isImposterModeG
+                ? 'multiplayer-imposter-gameplay.html'
+                : 'multiplayer-gameplay.html';
+            const targetUrl = targetPageG + '?gameId=' + encodeURIComponent(currentGameId);
 
             showNotification('Spiel startet!', 'success', 300);
             setTimeout(() => {
@@ -1184,6 +1196,9 @@
                 } else if (cat === 'special') {
                     fskLevel = 'special';
                     fskText = 'PREMIUM';
+                } else if (cat === 'imposter') {
+                    fskLevel = 'imposter';
+                    fskText = 'Für alle';
                 }
 
                 const tag = document.createElement('div');
@@ -1204,7 +1219,7 @@
                 tag.appendChild(nameSpan);
 
                 // ✅ P1 DSGVO: Add FSK Badge for age-restricted categories
-                if (fskLevel !== 'fsk0') {
+                if (fskLevel !== 'fsk0' && fskLevel !== 'imposter') {
                     const badge = document.createElement('span');
                     badge.className = `fsk-badge ${fskLevel}-badge`;
                     badge.textContent = fskText;
@@ -1220,6 +1235,44 @@
         const difficultyDisplay = document.getElementById('difficulty-display');
         if (difficultyDisplay && settings.difficulty) {
             difficultyDisplay.textContent = difficultyNames[settings.difficulty] || settings.difficulty;
+        }
+
+        // Show/hide imposter count row based on whether imposter mode is selected
+        const isImposterMode = settings.categories && settings.categories.includes('imposter');
+        const imposterRow = document.getElementById('imposter-count-row');
+        if (imposterRow) {
+            if (isImposterMode) {
+                imposterRow.removeAttribute('hidden');
+                // Load imposter count from settings or default
+                const count = settings.imposterCount || 1;
+                updateImposterCountDisplay(count);
+            } else {
+                imposterRow.setAttribute('hidden', '');
+            }
+        }
+    }
+
+    let currentImposterCount = 1;
+
+    function updateImposterCountDisplay(count) {
+        currentImposterCount = count;
+        const display = document.getElementById('imposter-count-display');
+        if (display) display.textContent = `${count} Imposter`;
+
+        document.querySelectorAll('.count-btn').forEach(btn => {
+            const btnCount = parseInt(btn.dataset.count);
+            btn.classList.toggle('active', btnCount === count);
+            btn.setAttribute('aria-pressed', String(btnCount === count));
+        });
+    }
+
+    async function setImposterCount(count) {
+        if (!isHost) return;
+        updateImposterCountDisplay(count);
+        try {
+            await firebase.database().ref(`games/${currentGameId}/settings/imposterCount`).set(count);
+        } catch (e) {
+            console.warn('⚠️ Could not save imposterCount:', e.message);
         }
     }
 
@@ -1670,7 +1723,8 @@
                 gamePhase: 'playing',
                 playerName: MultiplayerLobbyModule.gameState.playerName,
                 selectedCategories: MultiplayerLobbyModule.gameState.selectedCategories,
-                difficulty: MultiplayerLobbyModule.gameState.difficulty
+                difficulty: MultiplayerLobbyModule.gameState.difficulty,
+                imposterCount: currentImposterCount
             };
 
             // Method 1: NocapUtils localStorage (if available)
@@ -1701,7 +1755,13 @@
             }
 
             // Method 4: URL parameter as absolute fallback
-            const targetUrl = 'multiplayer-gameplay.html?gameId=' + encodeURIComponent(currentGameId);
+            const cats = MultiplayerLobbyModule.gameState.selectedCategories || [];
+            const catArray = Array.isArray(cats) ? cats : Object.values(cats);
+            const isImposterMode = catArray.includes('imposter');
+            const targetPage = isImposterMode
+                ? 'multiplayer-imposter-gameplay.html'
+                : 'multiplayer-gameplay.html';
+            const targetUrl = targetPage + '?gameId=' + encodeURIComponent(currentGameId);
 
             showNotification('Spiel gestartet!', 'success', 300);
 
@@ -1876,6 +1936,14 @@
                     hideLeaveConfirmation();
                 }
             }
+        });
+
+        // Imposter count buttons
+        document.querySelectorAll('.count-btn').forEach(btn => {
+            addTrackedEventListener(btn, 'click', () => {
+                const count = parseInt(btn.dataset.count);
+                if (!isNaN(count)) setImposterCount(count);
+            });
         });
 
         if (MultiplayerLobbyModule.isDevelopment) {

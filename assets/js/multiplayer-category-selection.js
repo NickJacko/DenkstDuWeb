@@ -32,7 +32,7 @@
             hostHasPremium: false,
             gameState: null,
             firebaseService: null,
-            questionCounts: { fsk0: 200, fsk16: 300, fsk18: 250, special: 150 },
+            questionCounts: { fsk0: 200, fsk16: 300, fsk18: 250, special: 150, imposter: 200 },
             playerNameConfirmed: false,
             isHost: true,
             eventListenerCleanup: [],
@@ -146,6 +146,16 @@
             ageRange: 'Exklusiv',
             description: 'Exklusive Premium-Fragen für besondere Momente',
             examples: ['Premium Inhalte', 'Exklusive Fragen'],
+            requiresAge: 0
+        },
+        imposter: {
+            name: 'Imposter',
+            icon: '🕵️',
+            color: '#9C27B0',
+            fsk: 'Für alle',
+            ageRange: 'Für alle',
+            description: 'Finde die Imposter! Kennen sie das Wort – oder bluffen sie nur?',
+            examples: ['Wer kennt das Wort nicht?', 'Entlarve die Imposter!'],
             requiresAge: 0
         }
     };
@@ -506,6 +516,9 @@
             // ✅ Load counts for each category via Cloud Function
             for (const key of Object.keys(categoryData)) {
                 try {
+                    // ✅ imposter: words embedded in gameplay JS, no DB lookup needed
+                    if (key === 'imposter') continue;
+
                     // ✅ FSK0, FSK16, special: Direct database access (allowed)
                     if (key === 'fsk0' || key === 'fsk16' || key === 'special') {
                         const database = instances?.database;
@@ -679,7 +692,7 @@
 
             const isGuest = !MultiplayerCategoryModule.isHost;
 
-            // ✅ FSK18-SYSTEM: FSK0 & FSK16 always unlocked
+            // ✅ FSK18-SYSTEM: FSK0 & FSK16 always unlocked; imposter always unlocked
             const locked = isGuest ||
                 (key === 'fsk18' && (!verified || ageLevel < 18)) ||
                 (key === 'special' && !hasPremium);
@@ -938,6 +951,31 @@
 
                 if (!confirm(`${warningMessage}\n\nMöchtest du ${categoryData[key].name} wirklich aktivieren?`)) {
                     return;
+                }
+            }
+
+            // Imposter is an exclusive mode – deselect all other categories
+            if (key === 'imposter') {
+                const currentSelected = getSelectedCategories();
+                currentSelected.forEach(cat => {
+                    MultiplayerCategoryModule.gameState.removeCategory(cat);
+                    const otherCard = document.querySelector(`[data-category="${cat}"]`);
+                    if (otherCard) {
+                        otherCard.classList.remove('selected');
+                        otherCard.classList.remove(cat);
+                        otherCard.setAttribute('aria-pressed', 'false');
+                    }
+                });
+            }
+
+            // When selecting any non-imposter category, deselect imposter
+            if (key !== 'imposter' && selectedCategories.includes('imposter')) {
+                MultiplayerCategoryModule.gameState.removeCategory('imposter');
+                const imposterCard = document.querySelector('[data-category="imposter"]');
+                if (imposterCard) {
+                    imposterCard.classList.remove('selected');
+                    imposterCard.classList.remove('imposter');
+                    imposterCard.setAttribute('aria-pressed', 'false');
                 }
             }
 
@@ -1214,8 +1252,15 @@
         }
 
         showNotification('Kategorien gespeichert!', 'success', 500);
+
+        // Imposter mode skips difficulty selection and goes straight to lobby
+        const isImposterMode = selectedCategories.includes('imposter') && selectedCategories.length === 1;
+        const nextPage = isImposterMode
+            ? 'multiplayer-lobby.html'
+            : 'multiplayer-difficulty-selection.html';
+
         setTimeout(() => {
-            window.location.href = 'multiplayer-difficulty-selection.html';
+            window.location.href = nextPage;
         }, 500);
     }
 

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#9C27B0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>No-Cap - Imposter Modus</title>
+
+    <!-- SECURITY: Security Headers -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+    <!-- P0 SECURITY: Firebase Config via Meta Tags -->
+    <meta name="firebase-api-key" content="AIzaSyC_cu_2X2uFCPcxYetxIUHi2v56F1Mz0Vk">
+    <meta name="firebase-auth-domain" content="denkstduwebsite.firebaseapp.com">
+    <meta name="firebase-database-url" content="https://denkstduwebsite-default-rtdb.europe-west1.firebasedatabase.app">
+    <meta name="firebase-project-id" content="denkstduwebsite">
+    <meta name="firebase-storage-bucket" content="denkstduwebsite.firebasestorage.app">
+    <meta name="firebase-messaging-sender-id" content="27029260611">
+    <meta name="firebase-app-id" content="1:27029260611:web:3c7da4db0bf92e8ce247f6">
+    <meta name="firebase-measurement-id" content="G-BNKNW95HK8">
+    <meta name="nocap-app-check-key" content="6LeEL0UsAAAAABN-JYDFEshwg9Qnmq09IyWzaJ9l">
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕵️</text></svg>">
+
+    <!-- SECURITY: External CSS ONLY -->
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/multiplayer-imposter-gameplay.css">
+
+    <!-- SECURITY: DOMPurify lokal gehostet -->
+    <script src="/assets/lib/purify.min.js"></script>
+
+    <!-- SECURITY: Firebase SDK -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js" crossorigin="anonymous"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js" crossorigin="anonymous"></script>
+
+    <!-- Core Scripts -->
+    <script defer src="/assets/js/GameState.js"></script>
+    <script defer src="/assets/js/utils.js"></script>
+    <script defer src="/assets/js/firebase-config.js"></script>
+    <script defer src="/assets/js/firebase-auth.js"></script>
+    <script defer src="/assets/js/firebase-service.js"></script>
+    <script defer src="/assets/js/multiplayer-imposter-gameplay.js"></script>
+</head>
+<body>
+
+<!-- Background Particles -->
+<div class="background-particles" aria-hidden="true">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
+
+<!-- Loading Spinner -->
+<div class="loading" id="loading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-text">Verbinde...</p>
+</div>
+
+<!-- Connection Indicator -->
+<div class="connection-indicator connected" id="connection-indicator" role="status" aria-live="polite">
+    🟢 Verbunden
+</div>
+
+<!-- App Container -->
+<div class="app-container" id="app-container">
+
+    <!-- Header -->
+    <header class="game-header">
+        <div class="header-info">
+            <span class="game-mode-badge">🕵️ Imposter</span>
+            <span class="round-display" id="round-display">Runde 1</span>
+        </div>
+        <div class="header-stats">
+            <span class="player-name-display" id="my-name-display"></span>
+            <span class="difficulty-badge" id="difficulty-badge"></span>
+        </div>
+    </header>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- PHASE: WAITING (between rounds / start)   -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="game-phase" id="phase-waiting" role="main" aria-label="Wartebereich">
+        <div class="glass-card waiting-card">
+            <div class="waiting-icon" aria-hidden="true">🕵️</div>
+            <h1 class="waiting-title">Imposter Modus</h1>
+            <p class="waiting-subtitle" id="waiting-subtitle">Warte auf den Host...</p>
+
+            <!-- Total Schlücke board -->
+            <div class="schlucke-board" id="waiting-schlucke-board" hidden>
+                <h2 class="schlucke-board-title">🍺 Schlücke bisher</h2>
+                <ul class="schlucke-list" id="waiting-schlucke-list" role="list" aria-label="Aktueller Spielstand"></ul>
+            </div>
+
+            <!-- Host: start game button -->
+            <div class="host-controls host-only" id="waiting-host-controls" hidden>
+                <button class="btn-start-round" id="start-round-btn" type="button">
+                    🎮 Erste Runde starten
+                </button>
+                <button class="btn-end-game" id="end-game-btn-waiting" type="button">
+                    🏁 Spiel beenden
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- PHASE: WORD (players see their word)       -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="game-phase hidden" id="phase-word" role="main" aria-label="Wortanzeige">
+        <div class="glass-card word-card">
+
+            <!-- Normal player: sees the word -->
+            <div id="word-display-normal" hidden>
+                <p class="word-label">Dein Begriff:</p>
+                <div class="word-box" id="word-box" aria-live="polite">
+                    <span class="word-text" id="word-text"></span>
+                </div>
+                <p class="word-hint">Rede über diesen Begriff – ohne ihn direkt zu nennen!</p>
+            </div>
+
+            <!-- Imposter: sees imposter label -->
+            <div id="word-display-imposter" hidden>
+                <p class="imposter-label-pre">Du bist:</p>
+                <div class="imposter-box" aria-live="polite">
+                    <span class="imposter-label-text">🕵️ IMPOSTER!</span>
+                </div>
+                <p class="word-hint">Tue so als ob du den Begriff kennst. Werde nicht erwischt!</p>
+            </div>
+
+            <!-- Starter notice -->
+            <div class="starter-notice" id="starter-notice" hidden role="alert" aria-live="assertive">
+                <span class="starter-icon" aria-hidden="true">👆</span>
+                <span class="starter-text">Du fängst an zu reden!</span>
+            </div>
+
+            <button class="btn-weiter" id="weiter-btn" type="button" aria-label="Weiter zum Abstimmen">
+                Weiter →
+            </button>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- PHASE: VOTING                             -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="game-phase hidden" id="phase-voting" role="main" aria-label="Abstimmungsbereich">
+
+        <!-- Normal players: vote -->
+        <div class="glass-card voting-card" id="voting-normal" hidden>
+            <h2 class="voting-title">Wer ist der Imposter?</h2>
+            <p class="voting-subtitle">
+                Wähle <strong id="required-count-display">1</strong> Person aus:
+            </p>
+
+            <div class="player-vote-grid" id="player-vote-grid" role="group" aria-label="Spieler auswählen">
+                <!-- Dynamically filled -->
+            </div>
+
+            <div class="vote-actions">
+                <button class="btn-submit-vote" id="submit-vote-btn" type="button" disabled aria-disabled="true">
+                    Abstimmen ✓
+                </button>
+            </div>
+
+            <p class="vote-submitted-msg hidden" id="vote-submitted-msg" role="alert" aria-live="polite">
+                ✅ Deine Stimme wurde abgegeben! Warte auf den Imposter...
+            </p>
+        </div>
+
+        <!-- Imposter: decision -->
+        <div class="glass-card imposter-decision-card" id="voting-imposter" hidden>
+            <div class="imposter-eye" aria-hidden="true">🕵️</div>
+            <h2 class="decision-title">Die anderen diskutieren...</h2>
+            <p class="decision-subtitle">Wurdest du entlarvt?</p>
+
+            <div class="decision-buttons">
+                <button class="btn-erwischt" id="erwischt-btn" type="button">
+                    ✋ Erwischt!
+                </button>
+                <button class="btn-nicht-erwischt" id="nicht-erwischt-btn" type="button">
+                    🎭 Nicht erwischt!
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- PHASE: ROUND ENDED (Zwischenergebnisse)   -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="game-phase hidden" id="phase-ended" role="main" aria-label="Rundenübersicht">
+        <div class="glass-card results-card">
+            <h2 class="results-title">📊 Rundenübersicht</h2>
+
+            <!-- Who was the imposter -->
+            <div class="imposter-reveal" id="imposter-reveal" aria-live="polite">
+                <p class="reveal-label">🕵️ Der/die Imposter war/waren:</p>
+                <div class="imposter-names" id="imposter-names-display"></div>
+            </div>
+
+            <!-- Decision info -->
+            <div class="decision-info" id="decision-info"></div>
+
+            <!-- Word reveal -->
+            <div class="word-reveal" id="word-reveal">
+                <p class="reveal-label">Das Wort war:</p>
+                <div class="revealed-word" id="revealed-word-text"></div>
+            </div>
+
+            <!-- Vote results -->
+            <div class="vote-results-section" id="vote-results-section" hidden>
+                <h3 class="vote-results-title">Wie haben alle abgestimmt?</h3>
+                <ul class="vote-results-list" id="vote-results-list" role="list"></ul>
+            </div>
+
+            <!-- Schlücke this round -->
+            <div class="round-schlucke-section">
+                <h3 class="round-schlucke-title">🍺 Schlücke diese Runde</h3>
+                <ul class="round-schlucke-list" id="round-schlucke-list" role="list" aria-label="Schlücke diese Runde"></ul>
+            </div>
+
+            <!-- Total schlücke -->
+            <div class="total-schlucke-section">
+                <h3 class="total-schlucke-title">📊 Gesamt-Schlücke</h3>
+                <ul class="total-schlucke-list" id="total-schlucke-list" role="list" aria-label="Gesamt Schlücke"></ul>
+            </div>
+
+            <!-- Controls -->
+            <div class="round-controls">
+                <!-- Host only -->
+                <div class="host-controls host-only" id="round-host-controls" hidden>
+                    <button class="btn-next-round" id="next-round-btn" type="button">
+                        ▶ Nächste Runde
+                    </button>
+                    <button class="btn-end-game" id="end-game-btn-results" type="button">
+                        🏁 Spiel beenden
+                    </button>
+                </div>
+                <!-- All players: waiting message -->
+                <p class="guest-waiting" id="guest-waiting-next" hidden>
+                    Warte auf den Host für die nächste Runde...
+                </p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Notification Container -->
+<div id="notification-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Error Boundary -->
+<script src="/assets/js/error-boundary.js"></script>
+
+</body>
+</html>
