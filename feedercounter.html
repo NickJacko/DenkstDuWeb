@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Feeder">
+    <title>Feeder Counter</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #13131a;
+            --border: rgba(255,255,255,0.08);
+            --accent: #4fc3f7;
+            --accent2: #ff8a65;
+            --green: #69f0ae;
+            --text: #e8eaf6;
+            --muted: #7986cb;
+            --danger: #ef5350;
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
+            min-height: 100dvh;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* ── Main Clock ── */
+        .clock-ring {
+            position: relative;
+            width: min(72vw, 280px);
+            height: min(72vw, 280px);
+            margin-bottom: 28px;
+            flex-shrink: 0;
+        }
+        .clock-ring svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .ring-bg { fill: none; stroke: var(--surface); stroke-width: 12; }
+        .ring-fill {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear, stroke 0.4s;
+        }
+        .clock-inner {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .time-display {
+            font-size: clamp(2.8rem, 12vw, 4.2rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+        .phase-label {
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* ── Status ── */
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 36px;
+            font-size: 0.82rem;
+            color: var(--muted);
+            min-height: 22px;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        .status-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .status-dot.alarm  { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+        #status-text { transition: color 0.3s; }
+
+        /* ── Counter chips ── */
+        .counters {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 36px;
+        }
+        .chip {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 18px;
+            text-align: center;
+            min-width: 80px;
+        }
+        .chip-val {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .chip-lbl {
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* ── Buttons ── */
+        .btn-main {
+            width: min(72vw, 280px);
+            padding: 18px;
+            border: none;
+            border-radius: 20px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: transform 0.12s, opacity 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-main:active { transform: scale(0.96); opacity: 0.85; }
+        .btn-start {
+            background: linear-gradient(135deg, #4fc3f7, #1976d2);
+            color: #fff;
+        }
+        .btn-stop {
+            background: linear-gradient(135deg, #ef5350, #b71c1c);
+            color: #fff;
+        }
+        .btn-notify {
+            width: min(72vw, 280px);
+            margin-bottom: 12px;
+            padding: 14px;
+            border-radius: 16px;
+            border: 1.5px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-notify:active { transform: scale(0.96); }
+        .btn-notify.granted { border-color: var(--green); color: var(--green); pointer-events: none; }
+
+        /* ── Info banner ── */
+        .info {
+            margin-top: 20px;
+            font-size: 0.72rem;
+            color: var(--muted);
+            text-align: center;
+            line-height: 1.55;
+            max-width: 300px;
+        }
+        .info a { color: var(--accent); text-decoration: none; }
+
+        /* ── Alarm flash overlay ── */
+        .flash {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 138, 101, 0.18);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 99;
+        }
+        .flash.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+
+<div class="header">
+    <h1>Feeder Counter</h1>
+</div>
+
+<!-- Clock ring -->
+<div class="clock-ring" id="clockRing">
+    <svg viewBox="0 0 100 100">
+        <circle class="ring-bg" cx="50" cy="50" r="44"/>
+        <circle class="ring-fill" id="ringFill" cx="50" cy="50" r="44"
+                stroke-dasharray="276.46" stroke-dashoffset="0" stroke="#4fc3f7"/>
+    </svg>
+    <div class="clock-inner">
+        <div class="time-display" id="timeDisplay">15:00</div>
+        <div class="phase-label" id="phaseLabel">Bereit</div>
+    </div>
+</div>
+
+<!-- Status -->
+<div class="status-row">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="status-text">Tippe Start um zu beginnen</span>
+</div>
+
+<!-- Counters -->
+<div class="counters">
+    <div class="chip">
+        <div class="chip-val" id="alarmCount">0</div>
+        <div class="chip-lbl">Alarme</div>
+    </div>
+    <div class="chip">
+        <div class="chip-val" id="reminderCount">0</div>
+        <div class="chip-lbl">Erinnerungen</div>
+    </div>
+</div>
+
+<!-- Notification button -->
+<button class="btn-notify" id="btnNotify" onclick="requestNotify()">
+    🔔 Benachrichtigungen erlauben
+</button>
+
+<!-- Start/Stop -->
+<button class="btn-main btn-start" id="btnMain" onclick="toggleTimer()">
+    ▶ Start
+</button>
+
+<div class="info" id="infoText">
+    Für Apple Watch: Benachrichtigungen erlauben &amp; Uhr mit iPhone verbunden lassen.<br>
+    Für Hintergrund-Betrieb: Seite zum <strong>Home Screen hinzufügen</strong>.
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────
+const ALARM_MS   = 15 * 60 * 1000;   // 15 Minuten
+const REMIND_MS  =  2 * 60 * 1000;   //  2 Minuten
+const RING_CIRC  = 276.46;            // 2π × 44 (SVG radius)
+
+// ── State ──────────────────────────────────────────────────
+let running        = false;
+let phase          = 'alarm';         // 'alarm' | 'reminder'
+let remaining      = ALARM_MS;
+let phaseDuration  = ALARM_MS;
+let alarmCount     = 0;
+let reminderCount  = 0;
+let tickInterval   = null;
+let lastTick       = null;
+let wakeLock       = null;
+let audioCtx       = null;
+let noSleepNode    = null;
+
+// ── DOM refs ───────────────────────────────────────────────
+const timeDisplay   = document.getElementById('timeDisplay');
+const phaseLabel    = document.getElementById('phaseLabel');
+const statusDot     = document.getElementById('statusDot');
+const statusText    = document.getElementById('status-text');
+const btnMain       = document.getElementById('btnMain');
+const btnNotify     = document.getElementById('btnNotify');
+const ringFill      = document.getElementById('ringFill');
+const alarmEl       = document.getElementById('alarmCount');
+const reminderEl    = document.getElementById('reminderCount');
+const flash         = document.getElementById('flash');
+
+// ── Notification permission ────────────────────────────────
+async function requestNotify() {
+    if (!('Notification' in window)) {
+        setStatus('Benachrichtigungen nicht verfügbar', false);
+        return;
+    }
+    const result = await Notification.requestPermission();
+    updateNotifyBtn(result);
+}
+
+function updateNotifyBtn(state) {
+    state = state || (('Notification' in window) ? Notification.permission : 'denied');
+    if (state === 'granted') {
+        btnNotify.textContent = '✅ Benachrichtigungen aktiv';
+        btnNotify.classList.add('granted');
+    } else if (state === 'denied') {
+        btnNotify.textContent = '🚫 Benachrichtigungen gesperrt';
+        btnNotify.classList.add('granted');
+    }
+}
+
+// ── NoSleep via silent audio ───────────────────────────────
+function startNoSleep() {
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.5, audioCtx.sampleRate);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buf;
+        source.loop = true;
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.001;
+        source.connect(gain);
+        gain.connect(audioCtx.destination);
+        source.start();
+        noSleepNode = source;
+    } catch (e) {
+        // Silent fail – audio not available
+    }
+}
+
+function stopNoSleep() {
+    try {
+        if (noSleepNode) { noSleepNode.stop(); noSleepNode = null; }
+        if (audioCtx)    { audioCtx.close();   audioCtx = null; }
+    } catch (e) {}
+}
+
+// ── Wake Lock ──────────────────────────────────────────────
+async function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) {}
+}
+
+async function releaseWakeLock() {
+    if (wakeLock) { try { await wakeLock.release(); } catch (e) {} wakeLock = null; }
+}
+
+// Re-acquire wake lock when page becomes visible again
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && running && !wakeLock) acquireWakeLock();
+});
+
+// ── Timer logic ────────────────────────────────────────────
+function toggleTimer() {
+    if (running) stopTimer();
+    else         startTimer();
+}
+
+async function startTimer() {
+    running       = true;
+    phase         = 'alarm';
+    remaining     = ALARM_MS;
+    phaseDuration = ALARM_MS;
+    alarmCount    = 0;
+    reminderCount = 0;
+    lastTick      = Date.now();
+
+    alarmEl.textContent    = '0';
+    reminderEl.textContent = '0';
+
+    btnMain.textContent = '■ Stop';
+    btnMain.className   = 'btn-main btn-stop';
+    statusDot.classList.add('active');
+    setStatus('Läuft – nächster Alarm in 15 Min', true);
+    phaseLabel.textContent = 'Alarm in…';
+    ringFill.style.stroke  = 'var(--accent)';
+
+    startNoSleep();
+    await acquireWakeLock();
+
+    tickInterval = setInterval(tick, 500);
+    updateDisplay();
+}
+
+function stopTimer() {
+    running = false;
+    clearInterval(tickInterval);
+    tickInterval = null;
+    stopNoSleep();
+    releaseWakeLock();
+
+    btnMain.textContent = '▶ Start';
+    btnMain.className   = 'btn-main btn-start';
+    statusDot.classList.remove('active', 'alarm');
+    setStatus('Gestoppt', false);
+    phaseLabel.textContent = 'Bereit';
+    timeDisplay.textContent = '15:00';
+    ringFill.style.strokeDashoffset = '0';
+    ringFill.style.stroke = 'var(--accent)';
+}
+
+function tick() {
+    const now   = Date.now();
+    const delta = now - lastTick;
+    lastTick    = now;
+    remaining  -= delta;
+
+    if (remaining <= 0) {
+        fireEvent();
+    } else {
+        updateDisplay();
+    }
+}
+
+function fireEvent() {
+    if (phase === 'alarm') {
+        alarmCount++;
+        alarmEl.textContent = alarmCount;
+        sendAlarm('⏰ Feeder Alarm', `Alarm #${alarmCount} – Zeit zu füttern!`);
+        phase         = 'reminder';
+        remaining     = REMIND_MS;
+        phaseDuration = REMIND_MS;
+        phaseLabel.textContent = 'Erinnerung in…';
+        ringFill.style.stroke  = 'var(--accent2)';
+        setStatus(`Alarm #${alarmCount} – Erinnerung in 2 Min`, true);
+    } else {
+        reminderCount++;
+        reminderEl.textContent = reminderCount;
+        sendAlarm('🔔 Erinnerung', `Hast du Alarm #${alarmCount} gesehen?`);
+        phase         = 'alarm';
+        remaining     = ALARM_MS;
+        phaseDuration = ALARM_MS;
+        phaseLabel.textContent = 'Alarm in…';
+        ringFill.style.stroke  = 'var(--accent)';
+        setStatus(`Nächster Alarm in 15 Min (Runde ${alarmCount + 1})`, true);
+    }
+    lastTick = Date.now();
+    updateDisplay();
+    triggerFlash();
+}
+
+// ── Alarm delivery ─────────────────────────────────────────
+function sendAlarm(title, body) {
+    // Vibrate phone
+    if (navigator.vibrate) {
+        navigator.vibrate([400, 200, 400, 200, 600]);
+    }
+    // System notification → mirrored to Apple Watch
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+            new Notification(title, {
+                body,
+                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%234fc3f7"/><text x="16" y="22" text-anchor="middle" font-size="18">⏰</text></svg>',
+                requireInteraction: true,
+                silent: false
+            });
+        } catch (e) {}
+    }
+    // Tone via Web Audio
+    playBeep();
+}
+
+function playBeep() {
+    try {
+        const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.6, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.8);
+        setTimeout(() => ctx.close(), 1200);
+    } catch (e) {}
+}
+
+// ── Display update ─────────────────────────────────────────
+function updateDisplay() {
+    const ms   = Math.max(0, remaining);
+    const min  = Math.floor(ms / 60000);
+    const sec  = Math.floor((ms % 60000) / 1000);
+    timeDisplay.textContent = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+
+    const progress = 1 - (ms / phaseDuration);
+    ringFill.style.strokeDashoffset = String(RING_CIRC * (1 - progress));
+}
+
+function triggerFlash() {
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 400);
+}
+
+function setStatus(text, active) {
+    statusText.textContent = text;
+    if (active) statusDot.classList.add('active');
+    else        statusDot.classList.remove('active');
+}
+
+// ── Page visibility: compensate for timer drift when hidden ─
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && running) {
+        // lastTick is stale – next tick() call will correct via delta
+        lastTick = Date.now();
+    }
+});
+
+// ── Init ───────────────────────────────────────────────────
+updateNotifyBtn();
+
+// Show install prompt on iOS if not already standalone
+if (window.navigator.standalone === false) {
+    document.getElementById('infoText').innerHTML =
+        '⬆️ <strong>Zum Home Screen hinzufügen</strong> für zuverlässigen Hintergrund-Betrieb.<br>' +
+        'Dann: Benachrichtigungen erlauben → Apple Watch bekommt alle Alarme.';
+}
+</script>
+</body>
+</html>
