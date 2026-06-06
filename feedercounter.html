@@ -132,6 +132,42 @@
         .info { margin-top: 14px; font-size: .67rem; color: var(--muted); text-align: center; line-height: 1.55; max-width: 280px; }
         .info strong { color: var(--text); }
 
+        /* ── Apple Watch help link ── */
+        .watch-link {
+            margin-top: 7px; font-size: .62rem; color: var(--muted);
+            text-decoration: underline; text-underline-offset: 3px;
+            cursor: pointer; text-align: center;
+        }
+
+        /* ── Apple Watch bottom sheet ── */
+        .watch-sheet {
+            position: fixed; inset: 0; background: rgba(0,0,0,.55);
+            display: flex; align-items: flex-end; z-index: 200;
+            opacity: 0; pointer-events: none;
+            transition: opacity .22s;
+        }
+        .watch-sheet.open { opacity: 1; pointer-events: all; }
+        .watch-sheet-card {
+            background: var(--surface); width: 100%; border-radius: 20px 20px 0 0;
+            padding: 18px 22px env(safe-area-inset-bottom,18px);
+            transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
+        }
+        .watch-sheet.open .watch-sheet-card { transform: translateY(0); }
+        .watch-sheet-handle {
+            width: 36px; height: 4px; border-radius: 2px;
+            background: var(--border); margin: 0 auto 16px;
+        }
+        .watch-sheet h3 { font-size: .85rem; font-weight: 600; margin-bottom: 10px; }
+        .watch-sheet p  { font-size: .72rem; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+        .watch-sheet p strong { color: var(--text); }
+        .watch-sheet ol { font-size: .72rem; color: var(--muted); line-height: 1.7; padding-left: 18px; margin-bottom: 14px; }
+        .watch-sheet li strong { color: var(--text); }
+        .watch-sheet-close {
+            width: 100%; padding: 13px; border: none; border-radius: 13px;
+            background: rgba(255,255,255,.07); color: var(--text);
+            font-size: .85rem; font-weight: 600; cursor: pointer;
+        }
+
         /* ── Flash ── */
         .flash { position: fixed; inset: 0; background: rgba(255,138,101,.16);
                  pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 99; }
@@ -198,6 +234,23 @@
 <div class="info" id="infoTxt">
     Benachrichtigungen erlauben → erscheinen automatisch auf der ⌚ Apple Watch.<br>
     Für sicheren Hintergrund-Betrieb: Seite zum <strong>Home Screen hinzufügen</strong>.
+</div>
+
+<div class="watch-link" onclick="openWatchHelp()">⌚ Uhr klappt nicht?</div>
+
+<div class="watch-sheet" id="watchSheet" onclick="if(event.target===this)closeWatchHelp()">
+    <div class="watch-sheet-card">
+        <div class="watch-sheet-handle"></div>
+        <h3>⌚ Apple Watch einrichten</h3>
+        <p><strong>Auf der Uhr selbst gibt es keine Einstellung.</strong> Alles wird am iPhone eingestellt:</p>
+        <ol>
+            <li>Hier oben auf <strong>🔔 Benachrichtigungen erlauben</strong> tippen und bestätigen</li>
+            <li>iPhone: <strong>Einstellungen → Mitteilungen → Safari</strong> (oder App-Name) → <strong>Mitteilungen erlauben</strong> ✓</li>
+            <li><strong>Watch App</strong> auf dem iPhone → <strong>Meine Watch → Mitteilungen</strong> → App-Name → <strong>Von iPhone spiegeln</strong> ✓</li>
+        </ol>
+        <p>Danach erscheinen Alarme automatisch auf der Uhr.</p>
+        <button class="watch-sheet-close" onclick="closeWatchHelp()">Schließen</button>
+    </div>
 </div>
 
 <script>
@@ -519,6 +572,10 @@ function triggerFlash() {
 }
 
 function setStatus(txt) { $('statusTxt').textContent = txt; }
+
+// ── Apple Watch help sheet ────────────────────────────────────
+function openWatchHelp()  { $('watchSheet').classList.add('open'); }
+function closeWatchHelp() { $('watchSheet').classList.remove('open'); }
 
 // ── Init ──────────────────────────────────────────────────────
 setNotifyBtn();
