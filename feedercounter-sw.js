@@ -4,34 +4,30 @@ self.addEventListener('install',  () => self.skipWaiting());
 self.addEventListener('activate', e  => e.waitUntil(self.clients.claim()));
 
 // ── State ────────────────────────────────────────────────────
-let stopped       = true;
+let loopGen      = 0;   // incremented on every cancel; each loop validates against its own snapshot
 let pendingTimer  = null;
 let pendingResolve = null;
 
 function cancelPending() {
-    stopped = true;
+    loopGen++;                                              // invalidates any running loop
     if (pendingTimer)   { clearTimeout(pendingTimer);  pendingTimer  = null; }
     if (pendingResolve) { pendingResolve();              pendingResolve = null; }
 }
 
 // ── Autonomous scheduling loop ───────────────────────────────
-// Runs inside event.waitUntil → keeps SW alive across multiple cycles.
-// Fires a notification, then immediately schedules the next one itself.
 async function runLoop(data) {
-    stopped = false;
-
+    const myGen = loopGen; // snapshot – if loopGen changes, this loop is stale
     let { fireAt, phase, seq, alarmIdx, alarmMs, remindMs } = data;
 
-    while (!stopped) {
+    while (loopGen === myGen) {
         const delay = Math.max(0, fireAt - Date.now());
 
-        // Breakable sleep
         await new Promise(resolve => {
             pendingResolve = resolve;
             pendingTimer   = setTimeout(() => { pendingResolve = null; resolve(); }, delay);
         });
 
-        if (stopped) break;
+        if (loopGen !== myGen) break; // stale check after await (fixes race with cancelPending)
         pendingTimer = pendingResolve = null;
 
         const isAlarm = phase === 'alarm';
@@ -48,11 +44,11 @@ async function runLoop(data) {
             vibrate:           [400, 200, 400, 200, 600]
         });
 
-        // Tell any open tabs which event just fired (for counter sync + dedup)
+        if (loopGen !== myGen) break; // also check after async showNotification
+
         const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
         clients.forEach(c => c.postMessage({ type: 'SW_FIRED', phase, seq, alarmIdx }));
 
-        // Advance to next event
         if (isAlarm) {
             phase   = 'reminder';
             fireAt += remindMs;
@@ -75,8 +71,8 @@ self.addEventListener('message', event => {
     }
 
     if (data.type === 'SCHEDULE') {
-        cancelPending(); // Stop any existing loop
-        event.waitUntil(runLoop(data));
+        cancelPending();                    // loopGen++ happens here …
+        event.waitUntil(runLoop(data));     // … so myGen = loopGen is captured correctly
     }
 });
 
