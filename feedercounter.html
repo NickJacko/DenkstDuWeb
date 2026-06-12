@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Feeder">
+    <title>Feeder Counter</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:      #0a0a0f;
+            --surface: #13131a;
+            --border:  rgba(255,255,255,0.09);
+            --accent:  #4fc3f7;
+            --accent2: #ff8a65;
+            --green:   #69f0ae;
+            --text:    #e8eaf6;
+            --muted:   #7986cb;
+        }
+
+        html, body {
+            height: 100%; background: var(--bg); color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased; overflow: hidden;
+            user-select: none; -webkit-user-select: none;
+        }
+        body {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: env(safe-area-inset-top,20px) 20px env(safe-area-inset-bottom,20px);
+            min-height: 100dvh; gap: 0;
+        }
+
+        /* ── Header ── */
+        .hd { text-align: center; margin-bottom: 20px; }
+        .hd h1 { font-size: 1rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+        /* ── Ring clock ── */
+        .ring-wrap {
+            position: relative; width: min(58vw,220px); height: min(58vw,220px);
+            margin-bottom: 16px; flex-shrink: 0;
+        }
+        .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ring-bg   { fill: none; stroke: var(--surface); stroke-width: 12; }
+        .ring-fill { fill: none; stroke-width: 12; stroke-linecap: round;
+                     transition: stroke-dashoffset .9s linear, stroke .4s; }
+        .ring-inner {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 3px;
+        }
+        .time-disp {
+            font-size: clamp(2.2rem,9.5vw,3.4rem); font-weight: 700;
+            letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1;
+        }
+        .phase-lbl { font-size: .65rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+        /* ── Status ── */
+        .status-row {
+            display: flex; align-items: center; gap: 8px;
+            font-size: .75rem; color: var(--muted); min-height: 18px; margin-bottom: 12px;
+        }
+        .sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background .3s; flex-shrink: 0; }
+        .sdot.on { background: var(--green); box-shadow: 0 0 7px var(--green); }
+
+        /* ── BG badge ── */
+        .bg-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .65rem; padding: 3px 9px; border-radius: 20px;
+            border: 1px solid var(--border); color: var(--muted); margin-bottom: 14px;
+            transition: all .3s;
+        }
+        .bg-badge.ok   { border-color: rgba(105,240,174,.4); color: var(--green); }
+        .bg-badge.warn { border-color: rgba(255,193,7,.35);  color: #ffd54f; }
+        .bg-badge .bdot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+        /* ── Settings ── */
+        .settings {
+            display: flex; gap: 10px; margin-bottom: 14px;
+            transition: opacity .3s;
+        }
+        .settings.disabled { opacity: .35; pointer-events: none; }
+        .scard {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 14px; padding: 10px 12px; text-align: center;
+            min-width: 120px;
+        }
+        .scard-lbl { font-size: .6rem; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 7px; }
+        .scard-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .sadj {
+            width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border);
+            background: rgba(255,255,255,.06); color: var(--text);
+            font-size: 1.1rem; line-height: 1; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background .15s; -webkit-tap-highlight-color: transparent;
+        }
+        .sadj:active { background: rgba(255,255,255,.14); }
+        .sval { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 28px; }
+        .sunit { font-size: .6rem; color: var(--muted); margin-top: 3px; }
+
+        /* ── Counters ── */
+        .counters { display: flex; gap: 12px; margin-bottom: 14px; }
+        .chip { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px 16px; text-align: center; min-width: 74px; }
+        .chip-v { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .chip-l { font-size: .58rem; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; margin-top: 1px; }
+
+        /* ── Buttons ── */
+        .btn-notify {
+            width: min(76vw,290px); padding: 12px; border-radius: 13px;
+            border: 1.5px solid var(--accent); background: transparent; color: var(--accent);
+            font-size: .85rem; font-weight: 600; cursor: pointer;
+            transition: background .2s, transform .12s; margin-bottom: 9px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-notify:active   { transform: scale(.96); }
+        .btn-notify.granted  { border-color: var(--green); color: var(--green); pointer-events: none; }
+        .btn-notify.denied   { border-color: #ef5350; color: #ef5350; pointer-events: none; }
+
+        .btn-main {
+            width: min(76vw,290px); padding: 16px; border: none; border-radius: 16px;
+            font-size: .98rem; font-weight: 700; letter-spacing: .04em; cursor: pointer;
+            transition: transform .12s, opacity .12s; margin-bottom: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-main:active { transform: scale(.96); opacity: .85; }
+        .btn-start { background: linear-gradient(135deg,#4fc3f7,#1976d2); color: #fff; }
+        .btn-stop  { background: linear-gradient(135deg,#ef5350,#b71c1c); color: #fff; }
+
+        /* ── Info ── */
+        .info { margin-top: 14px; font-size: .67rem; color: var(--muted); text-align: center; line-height: 1.55; max-width: 280px; }
+        .info strong { color: var(--text); }
+
+        /* ── Apple Watch help link ── */
+        .watch-link {
+            margin-top: 7px; font-size: .62rem; color: var(--muted);
+            text-decoration: underline; text-underline-offset: 3px;
+            cursor: pointer; text-align: center;
+        }
+
+        /* ── Apple Watch bottom sheet ── */
+        .watch-sheet {
+            position: fixed; inset: 0; background: rgba(0,0,0,.55);
+            display: flex; align-items: flex-end; z-index: 200;
+            opacity: 0; pointer-events: none;
+            transition: opacity .22s;
+        }
+        .watch-sheet.open { opacity: 1; pointer-events: all; }
+        .watch-sheet-card {
+            background: var(--surface); width: 100%; border-radius: 20px 20px 0 0;
+            padding: 18px 22px env(safe-area-inset-bottom,18px);
+            transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
+        }
+        .watch-sheet.open .watch-sheet-card { transform: translateY(0); }
+        .watch-sheet-handle {
+            width: 36px; height: 4px; border-radius: 2px;
+            background: var(--border); margin: 0 auto 16px;
+        }
+        .watch-sheet h3 { font-size: .85rem; font-weight: 600; margin-bottom: 10px; }
+        .watch-sheet p  { font-size: .72rem; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+        .watch-sheet p strong { color: var(--text); }
+        .watch-sheet ol { font-size: .72rem; color: var(--muted); line-height: 1.7; padding-left: 18px; margin-bottom: 14px; }
+        .watch-sheet li strong { color: var(--text); }
+        .watch-sheet-close {
+            width: 100%; padding: 13px; border: none; border-radius: 13px;
+            background: rgba(255,255,255,.07); color: var(--text);
+            font-size: .85rem; font-weight: 600; cursor: pointer;
+        }
+
+        /* ── Flash ── */
+        .flash { position: fixed; inset: 0; background: rgba(255,138,101,.16);
+                 pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 99; }
+        .flash.on { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+
+<div class="hd"><h1>Feeder Counter</h1></div>
+
+<div class="ring-wrap">
+    <svg viewBox="0 0 100 100">
+        <circle class="ring-bg"   cx="50" cy="50" r="44"/>
+        <circle class="ring-fill" id="ringFill" cx="50" cy="50" r="44"
+                stroke-dasharray="276.46" stroke-dashoffset="0" stroke="#4fc3f7"/>
+    </svg>
+    <div class="ring-inner">
+        <div class="time-disp" id="timeDisp">––:––</div>
+        <div class="phase-lbl" id="phaseLbl">Bereit</div>
+    </div>
+</div>
+
+<div class="status-row">
+    <div class="sdot" id="sdot"></div>
+    <span id="statusTxt">Tippe Start um zu beginnen</span>
+</div>
+
+<div class="bg-badge warn" id="bgBadge">
+    <span class="bdot"></span><span id="bgTxt">Hintergrund: prüfe…</span>
+</div>
+
+<!-- ── Settings ── -->
+<div class="settings" id="settings">
+    <div class="scard">
+        <div class="scard-lbl">Alarm alle</div>
+        <div class="scard-row">
+            <button class="sadj" onclick="adj('alarm',-1)">−</button>
+            <span class="sval" id="alarmMins">15</span>
+            <button class="sadj" onclick="adj('alarm',+1)">+</button>
+        </div>
+        <div class="sunit">Minuten</div>
+    </div>
+    <div class="scard">
+        <div class="scard-lbl">Erinnerung nach</div>
+        <div class="scard-row">
+            <button class="sadj" onclick="adj('remind',-1)">−</button>
+            <span class="sval" id="remMins">2</span>
+            <button class="sadj" onclick="adj('remind',+1)">+</button>
+        </div>
+        <div class="sunit">Minuten</div>
+    </div>
+</div>
+
+<div class="counters">
+    <div class="chip"><div class="chip-v" id="alarmCnt">0</div><div class="chip-l">Alarme</div></div>
+    <div class="chip"><div class="chip-v" id="remCnt">0</div><div class="chip-l">Erinnerungen</div></div>
+</div>
+
+<button class="btn-notify" id="btnNotify" onclick="reqNotify()">🔔 Benachrichtigungen erlauben</button>
+<button class="btn-main btn-start" id="btnMain" onclick="toggle()">▶ Start</button>
+
+<div class="info" id="infoTxt">
+    Benachrichtigungen erlauben → erscheinen automatisch auf der ⌚ Apple Watch.<br>
+    Für sicheren Hintergrund-Betrieb: Seite zum <strong>Home Screen hinzufügen</strong>.
+</div>
+
+<div class="watch-link" onclick="openWatchHelp()">⌚ Uhr klappt nicht?</div>
+
+<div class="watch-sheet" id="watchSheet" onclick="if(event.target===this)closeWatchHelp()">
+    <div class="watch-sheet-card">
+        <div class="watch-sheet-handle"></div>
+        <h3>⌚ Apple Watch einrichten</h3>
+        <p><strong>Auf der Uhr selbst gibt es keine Einstellung.</strong> Alles wird am iPhone eingestellt:</p>
+        <ol>
+            <li>Hier oben auf <strong>🔔 Benachrichtigungen erlauben</strong> tippen und bestätigen</li>
+            <li>iPhone: <strong>Einstellungen → Mitteilungen → Safari</strong> (oder App-Name) → <strong>Mitteilungen erlauben</strong> ✓</li>
+            <li><strong>Watch App</strong> auf dem iPhone → <strong>Meine Watch → Mitteilungen</strong> → App-Name → <strong>Von iPhone spiegeln</strong> ✓</li>
+        </ol>
+        <p>Danach erscheinen Alarme automatisch auf der Uhr.</p>
+        <button class="watch-sheet-close" onclick="closeWatchHelp()">Schließen</button>
+    </div>
+</div>
+
+<script>
+// ── Config (editable) ────────────────────────────────────────
+let alarmMinutes  = 15;
+let remindMinutes =  2;
+
+const MIN_ALARM  = 1;
+const MAX_ALARM  = 120;
+const MIN_REMIND = 1;
+
+function adj(which, delta) {
+    if (which === 'alarm') {
+        alarmMinutes = Math.max(MIN_ALARM, Math.min(MAX_ALARM, alarmMinutes + delta));
+        document.getElementById('alarmMins').textContent = alarmMinutes;
+        // Clamp remind so it's less than alarm
+        if (remindMinutes >= alarmMinutes) {
+            remindMinutes = Math.max(MIN_REMIND, alarmMinutes - 1);
+            document.getElementById('remMins').textContent = remindMinutes;
+        }
+    } else {
+        remindMinutes = Math.max(MIN_REMIND, Math.min(alarmMinutes - 1, remindMinutes + delta));
+        document.getElementById('remMins').textContent = remindMinutes;
+    }
+}
+
+// ── Derived ms values ────────────────────────────────────────
+function alarmMs()  { return alarmMinutes  * 60000; }
+function remindMs() { return remindMinutes * 60000; }
+
+// ── State ─────────────────────────────────────────────────────
+let running       = false;
+let phase         = 'alarm';    // 'alarm' | 'reminder'
+let nextEventTime = 0;          // absolute epoch ms
+let phaseDuration = 0;
+let alarmIdx      = 1;          // current alarm number
+let alarmCount    = 0;
+let remCount      = 0;
+let eventSeq      = 0;          // increments each fired event; used for dedup with SW
+let tickId        = null;
+let wakeLock      = null;
+let audioCtx      = null;
+let noSleepOsc    = null;
+let swReg         = null;
+
+// ── DOM ──────────────────────────────────────────────────────
+const $   = id => document.getElementById(id);
+const rd  = $('ringFill');
+const CIRC = 276.46;
+
+// ── Settings toggle ───────────────────────────────────────────
+function setSettingsLock(locked) {
+    $('settings').classList.toggle('disabled', locked);
+}
+
+// ── SW ────────────────────────────────────────────────────────
+async function initSW() {
+    if (!('serviceWorker' in navigator)) {
+        setBg(false, 'Hintergrund: nicht verfügbar'); return;
+    }
+    try {
+        swReg = await navigator.serviceWorker.register('/feedercounter-sw.js', { scope: '/' });
+        setBg(true, 'Hintergrund: aktiv ✓');
+        navigator.serviceWorker.addEventListener('message', onSWMsg);
+    } catch (e) {
+        setBg(false, 'Hintergrund: eingeschränkt');
+    }
+}
+
+function onSWMsg(e) {
+    const { type, phase: fp, seq, alarmIdx: ai } = e.data || {};
+    if (type !== 'SW_FIRED' || !running) return;
+
+    // Dedup: if seq doesn't match current eventSeq, main thread already handled it
+    if (seq !== eventSeq) return;
+
+    // SW fired this event while main thread was suspended
+    eventSeq++;
+    if (fp === 'alarm') {
+        alarmCount++; $('alarmCnt').textContent = alarmCount;
+    } else {
+        remCount++; $('remCnt').textContent = remCount;
+    }
+    advancePhase(fp);
+    updateDisp();
+    // SW handles its own rescheduling – no need to re-send SCHEDULE
+    triggerFlash();
+    if (navigator.vibrate) navigator.vibrate([400,200,400,200,600]);
+}
+
+async function sendSWSchedule() {
+    if (!swReg) return;
+    try {
+        const reg    = await navigator.serviceWorker.ready;
+        const active = reg.active;
+        if (!active) return;
+        active.postMessage({
+            type:      'SCHEDULE',
+            fireAt:    nextEventTime,
+            phase,
+            seq:       eventSeq,
+            alarmIdx,
+            alarmMs:   alarmMs(),
+            remindMs:  remindMs()
+        });
+    } catch (e) {}
+}
+
+async function sendSWStop() {
+    if (!swReg) return;
+    try {
+        const reg    = await navigator.serviceWorker.ready;
+        const active = reg.active;
+        if (active) active.postMessage({ type: 'STOP' });
+    } catch (e) {}
+}
+
+function setBg(ok, txt) {
+    $('bgBadge').className = `bg-badge ${ok ? 'ok' : 'warn'}`;
+    $('bgTxt').textContent = txt;
+}
+
+// ── Notifications ─────────────────────────────────────────────
+async function reqNotify() {
+    if (!('Notification' in window)) { setNotifyBtn('denied'); return; }
+    const r = await Notification.requestPermission();
+    setNotifyBtn(r);
+}
+
+function setNotifyBtn(s) {
+    s = s || (('Notification' in window) ? Notification.permission : 'default');
+    const b = $('btnNotify');
+    if (s === 'granted') {
+        b.textContent = '✅ Benachrichtigungen aktiv'; b.className = 'btn-notify granted';
+    } else if (s === 'denied') {
+        b.textContent = '🚫 In Einstellungen erlauben'; b.className = 'btn-notify denied';
+    }
+}
+
+// ── NoSleep: sub-audible oscillator keeps iOS audio session alive ──
+function startNoSleep() {
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioCtx.resume();
+        noSleepOsc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        noSleepOsc.type            = 'sine';
+        noSleepOsc.frequency.value = 0.1;    // 0.1 Hz – completely below hearing
+        gain.gain.value            = 0.0015; // near-silent but > 0 to keep session alive
+        noSleepOsc.connect(gain);
+        gain.connect(audioCtx.destination);
+        noSleepOsc.start(0);
+    } catch (e) {}
+}
+
+function stopNoSleep() {
+    try { noSleepOsc?.stop(); } catch(e) {} noSleepOsc = null;
+    try { audioCtx?.close(); }  catch(e) {} audioCtx   = null;
+}
+
+// ── Wake Lock ─────────────────────────────────────────────────
+async function grabWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) {}
+}
+async function dropWakeLock() {
+    if (wakeLock) { try { await wakeLock.release(); } catch(e) {} wakeLock = null; }
+}
+
+document.addEventListener('visibilitychange', async () => {
+    if (document.hidden || !running) return;
+    if (!wakeLock) grabWakeLock();
+    processTick(); // catch up immediately on page becoming visible
+});
+
+// ── Timer ─────────────────────────────────────────────────────
+function toggle() { running ? stopTimer() : startTimer(); }
+
+async function startTimer() {
+    running       = true;
+    phase         = 'alarm';
+    alarmIdx      = 1;
+    alarmCount    = 0;
+    remCount      = 0;
+    eventSeq      = 0;
+    phaseDuration = alarmMs();
+    nextEventTime = Date.now() + alarmMs();
+
+    $('alarmCnt').textContent = '0';
+    $('remCnt').textContent   = '0';
+
+    applyPhaseStyle();
+    $('btnMain').textContent = '■ Stop';
+    $('btnMain').className   = 'btn-main btn-stop';
+    $('sdot').classList.add('on');
+    setStatus(`Läuft – Alarm in ${alarmMinutes} Min`);
+    setSettingsLock(true);
+
+    startNoSleep();
+    await grabWakeLock();
+    await sendSWSchedule();
+
+    tickId = setInterval(processTick, 500);
+    updateDisp();
+}
+
+function stopTimer() {
+    running = false;
+    clearInterval(tickId); tickId = null;
+    stopNoSleep();
+    dropWakeLock();
+    sendSWStop();
+    setSettingsLock(false);
+
+    $('btnMain').textContent = '▶ Start';
+    $('btnMain').className   = 'btn-main btn-start';
+    $('sdot').classList.remove('on');
+    $('phaseLbl').textContent = 'Bereit';
+    $('timeDisp').textContent = '––:––';
+    rd.style.strokeDashoffset = '0';
+    rd.style.stroke = 'var(--accent)';
+    setStatus('Gestoppt');
+}
+
+// ── Tick (absolute timestamps = immune to suspension drift) ──
+function processTick() {
+    const now = Date.now();
+    let fired = false;
+
+    // Handle ALL missed events (catches up after screen unlock)
+    while (running && now >= nextEventTime) {
+        const fp = phase;
+        eventSeq++;
+
+        if (fp === 'alarm') {
+            alarmCount++; $('alarmCnt').textContent = alarmCount;
+            doAlarmBeep(`⏰ Feeder Alarm`, `Alarm #${alarmIdx} – Zeit zu handeln!`);
+        } else {
+            remCount++; $('remCnt').textContent = remCount;
+            doAlarmBeep(`🔔 Feeder Erinnerung`, `Hast du Alarm #${alarmIdx} gesehen?`);
+        }
+        advancePhase(fp);
+        fired = true;
+    }
+
+    if (fired) {
+        triggerFlash();
+        // SW handles its own loop – only re-send SCHEDULE after catch-up
+        // so SW seq stays in sync with main thread
+        sendSWSchedule();
+    }
+    updateDisp();
+}
+
+function advancePhase(fp) {
+    if (fp === 'alarm') {
+        phase         = 'reminder';
+        phaseDuration = remindMs();
+        nextEventTime += remindMs();
+        setStatus(`Alarm #${alarmIdx} – Erinnerung in ${remindMinutes} Min`);
+    } else {
+        alarmIdx++;
+        phase         = 'alarm';
+        phaseDuration = alarmMs();
+        nextEventTime += alarmMs();
+        setStatus(`Nächster Alarm in ${alarmMinutes} Min (Runde ${alarmIdx})`);
+    }
+    applyPhaseStyle();
+}
+
+function applyPhaseStyle() {
+    const isAlarm = phase === 'alarm';
+    rd.style.stroke = isAlarm ? 'var(--accent)' : 'var(--accent2)';
+    $('phaseLbl').textContent = isAlarm ? `Alarm in…` : `Erinnerung in…`;
+}
+
+// ── Alarm delivery ────────────────────────────────────────────
+function doAlarmBeep(title, body) {
+    if (navigator.vibrate) navigator.vibrate([400,200,400,200,600]);
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification(title, { body, requireInteraction: true, tag: 'feeder', renotify: true }); }
+        catch (e) {}
+    }
+    playBeep();
+}
+
+function playBeep() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+        osc.type  = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        g.gain.setValueAtTime(0.5, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.9);
+        setTimeout(() => ctx.close(), 1400);
+    } catch (e) {}
+}
+
+// ── Display ───────────────────────────────────────────────────
+function updateDisp() {
+    const ms  = Math.max(0, nextEventTime - Date.now());
+    const min = Math.floor(ms / 60000);
+    const sec = Math.floor((ms % 60000) / 1000);
+    $('timeDisp').textContent = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    const prog = running ? Math.max(0, Math.min(1, 1 - ms / phaseDuration)) : 0;
+    rd.style.strokeDashoffset = String(CIRC * (1 - prog));
+}
+
+function triggerFlash() {
+    const f = $('flash');
+    f.classList.add('on');
+    setTimeout(() => f.classList.remove('on'), 400);
+}
+
+function setStatus(txt) { $('statusTxt').textContent = txt; }
+
+// ── Apple Watch help sheet ────────────────────────────────────
+function openWatchHelp()  { $('watchSheet').classList.add('open'); }
+function closeWatchHelp() { $('watchSheet').classList.remove('open'); }
+
+// ── Init ──────────────────────────────────────────────────────
+setNotifyBtn();
+initSW();
+
+// Show install hint on iOS when NOT running as PWA
+if (window.navigator.standalone === false) {
+    $('infoTxt').innerHTML =
+        '⬆️ <strong>Teilen → Zum Home-Bildschirm</strong> für zuverlässigen Hintergrund-Betrieb.<br>' +
+        'Benachrichtigungen erlauben → automatisch auf der ⌚ Apple Watch.';
+}
+
+// Show default time in ring immediately
+updateDisp();
+// Set initial ring display
+rd.style.strokeDashoffset = '0';
+$('timeDisp').textContent = `${String(alarmMinutes).padStart(2,'0')}:00`;
+</script>
+</body>
+</html>
